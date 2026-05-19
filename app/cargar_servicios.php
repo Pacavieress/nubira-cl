@@ -207,7 +207,7 @@ foreach ($servicios as $i => $row):
 
    if ($es_oferta) {
         $precio_oferta = (int)$row['precio_oferta'];
-        $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-orange-500 font-extrabold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span></div>';
+        $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-gray-900 font-extrabold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span></div>';
     
     } else {
         if (is_numeric($precio_val) && $precio_val > 0) {
@@ -216,7 +216,7 @@ foreach ($servicios as $i => $row):
             $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
         } else {
             $precio = "Gratis"; 
-            $precio_class = "text-emerald-600 font-bold tracking-tight";
+            $precio_class = "text-gray-900 font-bold tracking-tight";
             $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
         }
     }
@@ -296,7 +296,7 @@ foreach ($servicios as $i => $row):
 <a href="/detalle-servicio/<?= $link_hash ?>"
    class="block rounded-xl flex flex-col mb-4 transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
 
-  <div class="card-apunte relative overflow-hidden w-full <?= $compacto ? 'aspect-square rounded-2xl' : 'aspect-[3/2] rounded-2xl' ?> bg-gray-100 shadow-sm border <?= $es_oferta ? 'border-orange-300' : 'border-gray-100' ?>">
+  <div class="card-apunte relative overflow-hidden w-full <?= $compacto ? 'aspect-square rounded-xl' : 'aspect-[3/2] rounded-xl' ?> bg-gray-100 border border-gray-200">
     <img src="<?= htmlspecialchars($portada_url) ?>"
          alt="<?= htmlspecialchars($row['titulo']) ?>"
        class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -305,9 +305,9 @@ foreach ($servicios as $i => $row):
     
   <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
     <?php if ($es_oferta): ?>
-        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50">
-            🔥 <?= (int)$row['cupos_oferta'] ?> CUPOS
-        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">
+    <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+</span>
     <?php elseif ($nivel_tutor === 'leyenda'): ?>
         <span class="bg-gradient-to-tr from-red-700 to-rose-500 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-400/30">
             <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 
@@ -326,9 +326,9 @@ foreach ($servicios as $i => $row):
         </span>
     <?php else: ?>
         <?php if ($es_nuevo): ?>
-            <span class="bg-white/95 backdrop-blur-sm text-emerald-600 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-100 flex items-center gap-1 shadow-sm">
-                <i class="fa-solid fa-sparkles text-[10px]"></i> Nuevo
-            </span>
+<span class="bg-white/95 backdrop-blur-sm text-gray-900 text-[10px] font-semibold px-2.5 py-1 rounded-full border border-gray-200">
+    Nuevo
+</span>
         <?php endif; ?>
     <?php endif; ?>
     
