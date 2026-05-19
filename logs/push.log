@@ -1,0 +1,215 @@
+[2026-04-22 17:24:16] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-22 17:43:28] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"5bfd82e3-243d-45e1-b7b3-da50da3636c3","external_id":null}
+[2026-04-22 13:50:02] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"3be713ff-ab5c-4061-a31e-95d858f25c3c","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-22 13:50:45] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-22 13:51:07] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"2a75c1ba-f847-4df5-b403-2f8193f0ded7","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-22 18:20:19] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"7e9791b4-241c-45c8-9182-45bf162bc577","external_id":null}
+[2026-04-22 18:21:01] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"5a951ae8-8139-48fd-9fd7-284d2c5bb56c","external_id":null}
+[2026-04-22 18:21:31] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"711d970c-5590-4b95-80af-64d1f3564c6c","external_id":null}
+[2026-04-22 18:22:06] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"04529b98-cf55-46aa-8da2-1041e13131a7","external_id":null}
+[2026-04-23 11:26:44] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 12:20:44] enviar_push_nubira user=10057 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 12:20:52] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 12:21:01] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 12:31:43] enviar_push_nubira user=10057 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 12:33:22] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 12:33:36] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 12:33:52] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 12:36:08] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 12:37:40] enviar_push_nubira user=10057 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 12:37:45] enviar_push_nubira user=10057 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 12:53:59] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 13:07:51] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 13:18:50] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"c9b85916-5639-4984-b6e1-71ea3740bbd9","external_id":null}
+[2026-04-23 13:19:39] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 13:39:15] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"31a8cccd-1075-43b6-8dd8-a45c1b3b53b4","external_id":null}
+[2026-04-23 13:43:43] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"2cff294a-5e5b-40b3-96cb-89e60df6bf09","external_id":null}
+[2026-04-23 14:10:49] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 14:12:01] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"227e8776-d3fb-4ec7-b925-39f8c23e8028","external_id":null}
+[2026-04-23 14:12:46] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 14:18:09] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"7fdeecde-6477-42ec-9300-2f8ad2f428ac","external_id":null}
+[2026-04-23 14:18:18] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"a41e4247-cf2f-4230-994e-4b99dd2edef4","external_id":null}
+[2026-04-23 14:25:29] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 14:25:38] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 14:34:46] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"212c0445-b278-4793-9228-db49a66aed73","external_id":null}
+[2026-04-23 14:35:14] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:13:18] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:29:19] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:29:54] enviar_push_nubira user=10057 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 16:31:04] enviar_push_nubira user=10056 http=200 curl_err=- response={"id":"62272c80-998e-4933-be0a-641593b529a1","external_id":null}
+[2026-04-23 16:32:15] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 16:35:20] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:36:26] enviar_push_nubira user=10056 http=200 curl_err=- response={"id":"5ae5489f-2d9d-4b12-8b5c-04e9dd03d99c","external_id":null}
+[2026-04-23 16:37:20] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:41:40] enviar_push_nubira user=10056 http=200 curl_err=- response={"id":"f78dea5d-7388-4941-ba38-86da5043e2be","external_id":null}
+[2026-04-23 16:45:14] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:45:45] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:46:37] enviar_push_nubira user=10056 http=200 curl_err=- response={"id":"830dfbe7-9c7d-41d5-88c6-3f3efdf0daab","external_id":null}
+[2026-04-23 16:50:39] enviar_push_nubira user=10056 http=200 curl_err=- response={"id":"6ea95da4-2ee2-4051-8197-c7ce56cca6f1","external_id":null}
+[2026-04-23 16:51:09] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:51:44] enviar_push_nubira user=10056 http=200 curl_err=- response={"id":"e2a7fd4d-b7f2-421e-a61f-654a7b8daf02","external_id":null}
+[2026-04-23 16:57:39] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:57:45] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 16:59:35] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 17:05:09] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 17:06:36] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 17:06:55] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 17:07:28] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 17:08:10] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 17:21:48] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 17:22:07] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 17:22:24] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 17:22:51] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 17:24:13] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 18:27:20] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 18:32:50] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 19:09:06] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 19:11:59] enviar_push_nubira user=10039 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-23 20:28:14] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-23 20:30:11] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-23 20:31:06] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 08:41:29] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"d42fc329-bfdd-4a19-ab44-4df164195a53","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-24 08:41:35] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"067d4438-b64f-4b4c-b352-49dbf7251205","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-24 08:42:05] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"60de3ce1-f256-4706-82f6-894cfc1760ec","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-24 08:42:41] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-24 08:42:55] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-24 08:43:34] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 08:44:31] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040"]}}}
+[2026-04-24 08:46:12] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 12:58:39] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040","10040"]}}}
+[2026-04-24 13:00:05] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040","10040"]}}}
+[2026-04-24 13:16:02] enviar_push_nubira user=10054 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10054"]}}}
+[2026-04-24 13:21:07] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10036"]}}}
+[2026-04-24 13:23:52] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 14:00:41] enviar_push_nubira user=10052 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 16:05:26] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040","10040"]}}}
+[2026-04-24 16:08:49] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 16:52:27] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"843744cf-e732-4afb-a097-73943160922f","external_id":null}
+[2026-04-24 16:53:09] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"e8724038-b061-499a-9892-b8dd87e6df90","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-24 16:53:52] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"b777944e-6fc6-4954-a33c-298c23b4c9ac","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-24 17:04:07] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"a1ef7e1f-fca4-44cc-8302-e643d9d661d0","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-24 17:04:52] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"5049666d-1b2e-4267-85c1-5abd1506042f","external_id":null,"errors":{"invalid_aliases":{"external_id":["167"]}}}
+[2026-04-24 17:06:51] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":{"invalid_aliases":{"external_id":["10040","10040","10040"]}}}
+[2026-04-24 21:09:40] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"9fea657d-0a0f-4d45-9c81-c61e2dabbe96","external_id":null}
+[2026-04-24 17:11:30] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"435fdc17-4e50-442d-a97c-aba02b005d65","external_id":null}
+[2026-04-24 17:11:44] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"5f49da20-fae4-4bfa-8ce9-3053deee1b54","external_id":null}
+[2026-04-24 17:54:03] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"6079eaef-9989-4f6e-a1dc-18b825e10c93","external_id":null}
+[2026-04-24 17:54:47] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-24 17:55:01] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"4f2d873a-544e-459c-962f-4e21dc9b1f2e","external_id":null}
+[2026-04-24 18:28:49] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 18:52:28] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-24 18:53:23] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-24 18:54:15] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-24 18:54:25] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-24 21:00:14] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"1941938a-bcf4-42fe-bb80-8f7d35320e4c","external_id":null}
+[2026-04-24 21:01:17] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-24 21:01:31] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"3e55b2d6-d37f-48e0-b058-59fa42ae48d7","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-24 23:26:59] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 23:35:07] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-24 23:36:31] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-24 23:44:28] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-25 00:24:53] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-25 07:27:34] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"52de08b4-f004-429a-a618-2633670e2314","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-25 08:19:19] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"bd90923f-f02e-40a0-8225-7644277769ce","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-25 11:20:11] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-25 11:22:58] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-25 11:57:37] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"af4b97f7-9bd7-45ac-b348-e4c195c2dd6c","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-25 11:59:58] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"68120cce-34a3-4b53-85ba-05f9c9991c7c","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-25 13:13:50] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-25 13:47:02] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"a466f9f0-c1f1-490b-b946-10f81a68fbf4","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-26 08:36:37] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"e9118143-c402-45ed-93dc-55d68c1afb3e","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-26 15:58:12] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"24e01e4c-ca6e-46c1-8683-3de0fa8b04a9","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-26 16:12:51] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"575667ed-d1c2-4acc-8f52-1d54917ad0ab","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-26 16:13:00] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"ccc561bb-9592-4fea-bf09-64975690e747","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-26 16:56:36] enviar_push_nubira user=10055 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10055\"]"}}
+[2026-04-26 16:57:09] enviar_push_nubira user=10054 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10054\"]"}}
+[2026-04-26 16:57:35] enviar_push_nubira user=142 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-26 17:20:25] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"028ff685-affd-45f1-9f54-9a7c6aa4d721","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-26 18:48:29] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"b49c7040-6286-45b1-9bdc-92b6afc7f826","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-27 10:09:19] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"b4533304-6684-432d-9f16-456d9b202767","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-27 11:00:41] enviar_push_nubira user=142 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-27 11:13:48] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"6373f0b2-bcba-495d-8446-fbf2fa9efa24","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-27 11:54:26] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-28 10:51:38] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-28 10:52:32] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-28 10:54:40] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-28 11:06:49] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-04-28 23:36:31] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"76099e1f-1417-4695-b7eb-4e63cfa0d242","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-28 23:39:30] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"b1f3deba-83bc-4341-9568-980551140112","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-28 23:42:09] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"99d44d25-203b-41a5-9575-3676c3cf65da","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-29 08:26:49] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"953c88f7-e116-462d-92c3-da9b24679fc8","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-29 08:26:55] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"60408945-b35a-4769-b296-f20f24ff4cb2","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-29 08:27:02] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"ec832b76-3b1e-474b-8cf0-c5f8130e1f38","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-29 08:27:05] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"68ac9a57-951b-44ad-9b67-960ef23c6298","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-29 08:27:13] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-29 08:27:16] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-29 08:27:19] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-29 08:27:29] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"a42841fb-be24-4d33-9f4c-c55c4cd5cb0a","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-04-30 15:32:06] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-30 15:32:13] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-30 15:32:24] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-30 15:33:59] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-30 18:28:18] enviar_push_nubira user=142 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-04-30 18:34:31] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"60978247-6b01-4633-930d-3b2834c16923","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-04-30 18:56:29] enviar_push_nubira user=142 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-01 10:18:14] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"ae0e9cd8-ab9c-4cbe-aa6c-a913d89f7b69","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-01 10:18:50] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-01 10:20:51] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"0a8fe66f-97bd-40cb-aded-27ba499d0aef","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-01 11:14:16] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-01 11:14:33] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"c1d9bea9-178e-4e27-9c08-c52bc15a93b0","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-01 11:21:57] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-01 11:22:01] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-01 11:24:24] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-01 11:25:18] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-01 11:27:06] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-01 14:29:25] enviar_push_nubira user=10052 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:04:54] enviar_push_nubira user=112 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:05:18] enviar_push_nubira user=119 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:05:57] enviar_push_nubira user=110 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:06:13] enviar_push_nubira user=112 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:06:27] enviar_push_nubira user=119 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:06:53] enviar_push_nubira user=108 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:07:35] enviar_push_nubira user=155 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 12:08:03] enviar_push_nubira user=10007 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 13:58:59] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"ec9c0a01-63d5-411e-b90d-7e271fe6ab08","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-03 13:59:03] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"3180a11d-0e6a-4de1-9c0b-547b31dfeeb8","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-03 13:59:26] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-03 14:28:57] enviar_push_nubira user=155 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"155\"]"}}
+[2026-05-03 14:42:26] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"d21e960f-f38c-4ea3-8454-b75f06e381a9","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-03 14:42:53] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"e3f3f34b-60ce-46a6-bffa-0654fd4b60d1","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-03 14:43:03] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"b5c66986-3d6e-4031-beb1-81f709e6e2ac","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-05 00:27:01] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"31673e8d-d724-4a9b-a7f8-2312f3259c45","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-05 00:28:05] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-05 21:30:39] enviar_push_nubira user=10069 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-05 21:30:42] enviar_push_nubira user=10069 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-05 21:31:00] enviar_push_nubira user=10069 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-05 22:39:56] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-05 22:40:11] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-05 22:40:26] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-05 22:41:02] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-05 23:44:43] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-05 23:45:19] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-05 23:47:02] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 10:49:08] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 10:49:24] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 11:00:07] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 11:01:23] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 11:30:21] enviar_push_nubira user=10069 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-06 11:30:39] enviar_push_nubira user=10069 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-06 11:31:27] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}
+[2026-05-06 11:38:53] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 11:39:17] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 11:42:21] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 11:53:42] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-06 16:45:47] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"b3571047-489d-4de4-bc14-c38f29a44c04","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-06 16:46:43] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"a2981c1d-c85f-4b69-ab68-c3dc6e80c90d","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-06 16:47:02] enviar_push_nubira user=10040 http=200 curl_err=- response={"id":"4f3917a8-f16d-4f5d-bb9a-99dfbde7caa4","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10040\"]"}}
+[2026-05-06 16:47:44] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"46f9aeed-56cc-4960-b0de-1f68d740d6b5","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-06 18:54:35] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"234084ea-2308-4f8c-8329-000e93e664e9","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-07 11:09:12] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"70625637-3f75-4bfe-8978-de13811d7a68","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-07 12:34:35] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"a2385fba-eb07-45cd-815e-3ce9a1776a19","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-07 12:35:03] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"69f1105e-7ee2-49e3-b6d1-26adf4aaf79f","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-08 13:00:29] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-08 13:00:50] enviar_push_nubira user=10036 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"],"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"10036\"]"}}
+[2026-05-08 21:26:07] enviar_push_nubira user=167 http=200 curl_err=- response={"id":"2bd07417-e6dd-4c4d-bc36-f491d5adf111","external_id":null,"warnings":{"invalid_external_user_ids":"The following external_ids have unsubscribed subscriptions attached: [\"167\"]"}}
+[2026-05-08 21:27:19] enviar_push_nubira user=1 http=200 curl_err=- response={"id":"","errors":["All included players are not subscribed"]}

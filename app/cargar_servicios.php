@@ -1,0 +1,418 @@
+<?php
+session_start();
+
+// === BLOQUE ANTI-CACHE ===
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); 
+
+require_once __DIR__ . '/helpers/usuario_helper.php';
+require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/helpers/portada_helper.php';
+
+// [NUBIRA 2.0] Cargar iconos oficiales de la plataforma
+$rutas_iconos = [__DIR__.'/iconos.php', __DIR__.'/../iconos.php', $_SERVER['DOCUMENT_ROOT'].'/app/iconos.php', $_SERVER['DOCUMENT_ROOT'].'/iconos.php'];
+foreach($rutas_iconos as $ri) {
+    if(file_exists($ri)){ 
+        require_once $ri; 
+        break; 
+    }
+}
+
+// [NUBIRA SHIELD] Cargar enmascarador de URLs
+$rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/../seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
+foreach ($rutas_shield as $rs) {
+    if (file_exists($rs)) {
+        require_once $rs;
+        break;
+    }
+}
+
+// === SEGURIDAD LAZY REGISTRATION ===
+$is_guest = !isset($_SESSION['usuario_id']);
+$rol    = $_SESSION['rol'] ?? 'alumno';
+$pagina = max(1, intval($_GET['pagina'] ?? 1));
+
+date_default_timezone_set('America/Santiago');
+
+// === CONFIGURACIÓN ===
+$limite = 12; 
+$offset = ($pagina - 1) * $limite;
+$hide_inst = !empty($_GET['hide_inst']); 
+$compacto  = !empty($_GET['compacto']);  
+
+// === FILTROS ===
+// === FILTROS ===
+// [NUBIRA 2.0] Exigimos que tanto el servicio como el autor estén visibles (Soft Delete Shield)
+$filtros = [
+    "TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')",
+    "s.visible = 1",
+    "COALESCE(a.visible, 1) = 1"
+];
+$params  = [];
+$tipos   = "";
+
+$institucion_param = trim($_GET['institucion'] ?? '');
+$ver_todas         = !empty($_GET['ver_todas']);
+
+if ($rol !== 'admin' && !$ver_todas && $institucion_param !== '') {
+    $filtros[] = "s.institucion = ?";
+    $params[]  = $institucion_param;
+    $tipos     .= "s";
+}
+
+$campos = ['categoria', 'modalidad', 'ubicacion', 'area'];
+foreach ($campos as $f) {
+    if (!isset($_GET[$f]) || $_GET[$f] === '') continue;
+    $valor = trim($_GET[$f]);
+    if ($f === 'ubicacion') {
+        $filtros[] = "s.$f LIKE ?";
+        $params[]  = "%$valor%";
+        $tipos     .= "s";
+    } else {
+        $filtros[] = "s.$f = ?";
+        $params[]  = $valor;
+        $tipos     .= "s";
+    }
+}
+
+$q = trim($_GET['q'] ?? '');
+if ($q !== '') {
+    $filtros[] = "(s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ?)";
+    $busqueda = "%$q%";
+    $params[] = $busqueda; $params[] = $busqueda; $params[] = $busqueda;
+    $tipos .= "sss";
+}
+
+// === CONSULTA MAESTRA (GAMIFICACIÓN ENTERPRISE) ===
+$modo = $_GET['modo'] ?? 'default';
+$hour = (int)date('G');
+$bucket = (int)floor($hour / 4);
+$seed = date('Y-m-d') . "|$bucket";
+
+// 1. SELECT PRINCIPAL (Sin GROUP BY innecesario)
+$select_sql = "SELECT s.*, 
+                      COALESCE(dp.institucion, a.institucion) as institucion_maestra,
+                      (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+                      (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
+                      a.foto_perfil,
+                      a.nombre as nombre_tutor
+               FROM servicios s
+               LEFT JOIN alumnos a ON s.alumno_id = a.id
+               LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio";
+
+// 2. WHERE CONDICIONALES
+$where_sql = "WHERE " . implode(" AND ", $filtros);
+
+// 3. LA GUERRA DEL DESEMPATE LEE s.score_nubira
+switch ($modo) {
+    case 'top':
+        // FIX: Se agregó OFFSET para que el scroll infinito no cicle los mismos resultados
+        $sql = "$select_sql $where_sql 
+                AND (s.visitas > 0 OR s.contrataciones > 0) 
+                ORDER BY s.score_nubira DESC, total_votos DESC, rating_promedio DESC, (s.visitas + (s.contrataciones * 10)) DESC 
+                LIMIT ? OFFSET ?";
+        $params[] = $limite; $params[] = $offset; $tipos .= "ii";
+        break;
+        
+    case 'recientes':
+        $sql = "$select_sql $where_sql 
+                ORDER BY s.score_nubira DESC, total_votos DESC, rating_promedio DESC, s.fecha_publicacion DESC 
+                LIMIT ? OFFSET ?";
+        $params[] = $limite; $params[] = $offset; $tipos .= "ii";
+        break;
+        
+    default:
+        // Mezcla inteligente sembrada cada 4 horas
+        $sql = "$select_sql $where_sql 
+                ORDER BY s.score_nubira DESC, total_votos DESC, rating_promedio DESC, SHA2(CONCAT(CAST(s.id AS CHAR), '|', ?), 256) ASC 
+                LIMIT ? OFFSET ?";
+        $params[] = $seed; $params[] = $limite; $params[] = $offset; $tipos .= "sii";
+        break;
+}
+
+$stmt = $conn->prepare($sql);
+if (!$stmt) exit("Error SQL: " . $conn->error);
+if (!empty($tipos)) {
+    $stmt->bind_param($tipos, ...$params);
+}
+$stmt->execute();
+$res = $stmt->get_result();
+
+$servicios = [];
+while ($row = $res->fetch_assoc()) {
+    $servicios[] = $row;
+}
+$stmt->close();
+
+if (empty($servicios)) {
+    if ($pagina == 1) echo '<div class="col-span-full flex flex-col items-center justify-center text-center py-12 text-gray-400"><i class="fa-solid fa-inbox text-4xl mb-3 opacity-50"></i><p class="text-sm">No encontramos servicios con estos filtros.</p></div>';
+    exit;
+}
+
+// === BANNERS ===
+$inst_banner = ($rol === 'admin') ? ($institucion_param ?: '') : ($is_guest ? '' : obtenerInstitucionUsuario());
+
+if ($is_guest) {
+    $stmtB = $conn->prepare("SELECT * FROM banners WHERE activo = 1 AND (institucion IS NULL OR institucion = '') AND ubicacion = 'servicios' ORDER BY orden ASC");
+} else {
+    $stmtB = $conn->prepare("SELECT * FROM banners WHERE activo = 1 AND (institucion = ? OR institucion IS NULL) AND ubicacion = 'servicios' ORDER BY orden ASC");
+    $stmtB->bind_param("s", $inst_banner);
+}
+
+$stmtB->execute();
+$resB = $stmtB->get_result();
+$banners_servicios = [];
+while ($b = $resB->fetch_assoc()) $banners_servicios[] = $b;
+$stmtB->close();
+
+/* ==========================================================================
+   RENDERIZADO (DISEÑO ULTRA LIMPIO Y COMPACTO CON ESCALAFONES DE STATUS)
+   ========================================================================== */
+$hoy = new DateTime();
+$frecuencia_banner = 4;
+
+foreach ($servicios as $i => $row):
+    
+    // [NUBIRA SHIELD] Enmascarar ID
+    $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
+    
+    // 1. DATA PREP PORTADA
+    $nombre_archivo = basename($row['imagen'] ?? '');
+    $ruta_relativa  = '/upload/servicios/' . $nombre_archivo;
+    $ruta_fisica    = $_SERVER['DOCUMENT_ROOT'] . $ruta_relativa;
+    $portada_url    = '';
+
+    if (($row['imagen_estado'] ?? '') === 'aprobada' && !empty($nombre_archivo) && file_exists($ruta_fisica)) {
+        clearstatcache(true, $ruta_fisica);
+        $portada_url = $ruta_relativa . '?v=' . filemtime($ruta_fisica);
+    } else {
+        $portada_url = portada_servicio($row['imagen'] ?? null, $row['categoria'] ?? 'otro');
+        $ruta_fisica_h = $_SERVER['DOCUMENT_ROOT'] . $portada_url;
+        if (file_exists($ruta_fisica_h)) $portada_url .= '?v=' . filemtime($ruta_fisica_h);
+    }
+
+    $fecha_pub = !empty($row['fecha_publicacion']) ? new DateTime($row['fecha_publicacion']) : $hoy;
+    $es_nuevo  = ($hoy->diff($fecha_pub)->days <= 14); 
+    
+    // Rating
+    $rating_val = isset($row['rating_promedio']) ? (float)$row['rating_promedio'] : 0;
+    $total_v    = isset($row['total_votos']) ? (int)$row['total_votos'] : 0;
+
+   // --- LÓGICA DE PRECIOS Y OFERTAS (NUBIRA 2.0) ---
+    $precio_val = $row['precio'] ?? 0;
+    $es_oferta = (isset($row['is_subvencionado']) && $row['is_subvencionado'] == 1 && (int)$row['cupos_oferta'] > 0);
+    $precio_html = "";
+
+   if ($es_oferta) {
+        $precio_oferta = (int)$row['precio_oferta'];
+        $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-orange-500 font-extrabold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span></div>';
+    
+    } else {
+        if (is_numeric($precio_val) && $precio_val > 0) {
+            $precio = "$" . number_format($precio_val, 0, ',', '.'); 
+            $precio_class = "text-gray-900 font-bold tracking-tight"; 
+            $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
+        } else {
+            $precio = "Gratis"; 
+            $precio_class = "text-emerald-600 font-bold tracking-tight";
+            $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
+        }
+    }
+    
+    // --- LÓGICA DE ESCALAFONES DE STATUS (TIERS NUBIRA 2.0) ---
+    $score = (int)($row['score_nubira'] ?? 0);
+    $nivel_tutor = '';
+    $es_basico = ($score < 60);
+
+    if ($score >= 100 && $total_v >= 10 && $rating_val >= 4.7) {
+        $nivel_tutor = 'leyenda';
+    } elseif ($score >= 80 && $total_v >= 3 && $rating_val >= 4.0) {
+        $nivel_tutor = 'elite';
+    } elseif ($score >= 80) {
+        $nivel_tutor = 'pro';
+    } elseif ($score >= 60) {
+        $nivel_tutor = 'top';
+    }
+    
+    // --- LÓGICA DE AVATAR Y TUTOR ---
+    $nombre_completo = !empty($row['nombre_tutor']) ? $row['nombre_tutor'] : 'Profesor';
+    $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
+    $tutor_nombre = "Profesor";
+    if (!empty($partes_nombre[0])) {
+        $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
+        if (count($partes_nombre) >= 2) {
+            $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
+        }
+    }
+    $foto_tutor = !empty($row['foto_perfil']) ? '/app/perfil/fotos/' . $row['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b";
+    
+    // Modalidad Icono
+    $mod = ucfirst($row['modalidad'] ?? '');
+    if (stripos($mod, 'online') !== false) $icon_mod = '<i class="fa-solid fa-wifi text-[10px]"></i>';
+    elseif (stripos($mod, 'presencial') !== false) $icon_mod = '<i class="fa-solid fa-user-group text-[10px]"></i>';
+    else $icon_mod = '<i class="fa-solid fa-laptop text-[10px]"></i>';
+
+    // --- HTML RATING (Derecha) ---
+    $html_stars = '';
+    if ($total_v > 0) {
+        $html_stars = '<div class="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+            <svg class="w-3 h-3 text-gray-900 pb-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+            <span class="text-[10px] font-bold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
+        </div>';
+    } else {
+        $html_stars = '<span class="text-[10px] font-medium text-gray-400">Nuevo</span>';
+    }
+
+    // --- HTML INSTITUCIÓN (Izquierda) ---
+    $inst_text = '';
+    if (!$hide_inst) {
+        $inst_raw = $row['institucion_maestra'] ?? ($row['institucion'] ?? '');
+        if (!empty($inst_raw)) {
+            $inst_clean = $inst_raw;
+            $dicc = [
+                'Economía y Negocios' => 'FEN U. Chile', 'ECONOMíA Y NEGOCIOS' => 'FEN U. Chile',
+                'Servicio Local de Educ' => 'SLEP', 'SERVICIO LOCAL DE EDUC' => 'SLEP',
+                'Santísima Concepci' => 'UCSC', 'SANTíSIMA CONCEPCI' => 'UCSC', 'Santisima Concepci' => 'UCSC',
+                'Konrad Lorenz' => 'Konrad Lorenz', 'Universidad Andr' => 'UNAB', 'Universidad Nac' => 'UNAB',
+                'Pontificia Universidad Cat' => 'PUC', 'Universidad de Santiago' => 'USACH',
+                'Universidad de Concepci' => 'UdeC', 'Universidad T' => 'USM', 
+                'Federico Santa Mar' => 'USM', 'Adolfo Ib' => 'UAI', 'Universidad de Chile' => 'U. de Chile', 
+                'Universidad del B' => 'UBB', 'Bío Bío' => 'UBB', 'Bio Bio' => 'UBB',
+                'Universidad' => 'U.', 'Instituto Profesional' => 'IP', 'Centro de Formación Técnica' => 'CFT'
+            ];
+            foreach($dicc as $parcial => $corto) {
+                if (stripos($inst_clean, $parcial) !== false) {
+                    if (strlen($corto) <= 6) $inst_clean = $corto; else $inst_clean = str_ireplace($parcial, $corto, $inst_clean);
+                    break; 
+                }
+            }
+            $inst_text = htmlspecialchars(mb_strimwidth($inst_clean, 0, 22, '...'));
+        }
+    }
+?>
+
+<a href="/detalle-servicio/<?= $link_hash ?>"
+   class="block rounded-xl flex flex-col mb-4 transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
+
+  <div class="card-apunte relative overflow-hidden w-full <?= $compacto ? 'aspect-square rounded-2xl' : 'aspect-[3/2] rounded-2xl' ?> bg-gray-100 shadow-sm border <?= $es_oferta ? 'border-orange-300' : 'border-gray-100' ?>">
+    <img src="<?= htmlspecialchars($portada_url) ?>"
+         alt="<?= htmlspecialchars($row['titulo']) ?>"
+       class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+         loading="lazy"
+         onerror="this.src='/upload/preview/default_file.webp'">
+    
+  <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
+    <?php if ($es_oferta): ?>
+        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50">
+            🔥 <?= (int)$row['cupos_oferta'] ?> CUPOS
+        </span>
+    <?php elseif ($nivel_tutor === 'leyenda'): ?>
+        <span class="bg-gradient-to-tr from-red-700 to-rose-500 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-400/30">
+            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 
+        </span>
+    <?php elseif ($nivel_tutor === 'elite'): ?>
+        <span class="bg-gradient-to-tr from-cyan-400 to-blue-500 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-cyan-300/30 flex items-center gap-1 shadow-sm">
+            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 
+        </span>
+    <?php elseif ($nivel_tutor === 'pro'): ?>
+        <span class="bg-gradient-to-tr from-yellow-400 to-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-yellow-300/30 shadow-sm flex items-center gap-1">
+            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 
+        </span>
+    <?php elseif ($nivel_tutor === 'top'): ?>
+        <span class="bg-gradient-to-tr from-slate-200 to-gray-300 text-slate-800 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-white/60 flex items-center gap-1 shadow-sm">
+            <svg class="w-2.5 h-2.5 text-slate-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> 
+        </span>
+    <?php else: ?>
+        <?php if ($es_nuevo): ?>
+            <span class="bg-white/95 backdrop-blur-sm text-emerald-600 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-100 flex items-center gap-1 shadow-sm">
+                <i class="fa-solid fa-sparkles text-[10px]"></i> Nuevo
+            </span>
+        <?php endif; ?>
+    <?php endif; ?>
+    
+</div>
+ <div class="absolute top-2 right-2 z-10 shrink-0">
+    <img src="<?= htmlspecialchars($foto_tutor, ENT_QUOTES, 'UTF-8') ?>" 
+         class="w-8 h-8 rounded-full object-cover shadow-md border-[1.5px] border-white/95 bg-gray-50 transform-gpu"
+         style="image-rendering: -webkit-optimize-contrast; backface-visibility: hidden;">
+</div>
+  </div>
+
+ <div class="pl-1 pr-1 pt-3 pb-1 flex flex-col flex-1 text-left min-h-[90px]">
+      
+      <?php if ($compacto): ?>
+      <h6 class="font-bold text-[14px] leading-[1.3] text-gray-900 line-clamp-2 h-[36px] overflow-hidden">
+              <?= htmlspecialchars($row['titulo']) ?>
+          </h6>
+          
+          <?= $precio_html ?>
+
+<div class="flex items-center justify-between">
+              <div class="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                <?php if(!empty($inst_text)): ?>
+                    <?php if(function_exists('icon')): ?>
+                        <?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?>
+                    <?php else: ?>
+                        <i class="fa-solid fa-building text-[10px] text-gray-300 flex-shrink-0"></i>
+                    <?php endif; ?>
+                    <span class="truncate"><?= $inst_text ?></span>
+                <?php endif; ?>
+              </div>
+              <div class="shrink-0 flex items-center gap-1">
+                  <span class="text-gray-300 scale-75"><?= $icon_mod ?></span>
+                  <?= $html_stars ?>
+              </div>
+          </div>
+
+      <?php else: ?>
+          <h6 class="font-bold text-[14px] leading-[1.3] text-gray-900 line-clamp-2 h-[36px] overflow-hidden mb-1">
+              <?= htmlspecialchars($row['titulo']) ?>
+          </h6>
+
+          <?= $precio_html ?>
+
+<div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
+                <?php if(!empty($inst_text)): ?>
+                    <?php if(function_exists('icon')): ?>
+                        <?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?>
+                    <?php else: ?>
+                        <i class="fa-solid fa-building text-[11px] text-gray-300 flex-shrink-0"></i>
+                    <?php endif; ?>
+                    <span class="truncate"><?= $inst_text ?></span>
+                <?php endif; ?>
+              </div>
+              <div class="shrink-0 flex items-center gap-2">
+                  <span class="text-gray-300 text-xs"><?= $icon_mod ?></span>
+                  <?= $html_stars ?>
+              </div>
+          </div>
+      <?php endif; ?>
+  </div>
+</a>
+<?php
+if (!empty($banners_servicios) && (($i + 1) % $frecuencia_banner === 0)):
+    $banner_idx = (($i + 1) / $frecuencia_banner) % count($banners_servicios);
+    $b = $banners_servicios[$banner_idx];
+    
+    // Banner Bug Fix
+    $ruta_b_rel = '/upload/banners/' . basename($b['imagen']);
+    $ruta_b_fis = $_SERVER['DOCUMENT_ROOT'] . $ruta_b_rel;
+    $src_banner = $ruta_b_rel;
+    
+    if (file_exists($ruta_b_fis)) {
+        clearstatcache(true, $ruta_b_fis);
+        $src_banner .= '?v=' . filemtime($ruta_b_fis);
+    }
+?>
+<article class="bg-white p-6 rounded-2xl shadow border border-blue-50 relative mb-6 flex flex-col overflow-hidden <?= $compacto ? 'aspect-square' : 'h-[320px]' ?>">
+    <div class="absolute inset-0">
+        <img src="<?= htmlspecialchars($src_banner) ?>" class="w-full h-full object-cover" alt="Publicidad">
+    </div>
+    <a href="<?= htmlspecialchars($b['enlace'] ?? '#') ?>" target="_blank" class="absolute inset-0 z-10"></a>
+</article>
+<?php endif; endforeach; ?>
+
+<div class="sentinel absolute bottom-0 left-0 w-full h-1 -z-10 opacity-0 pointer-events-none" data-next="<?= $pagina + 1 ?>"></div>

@@ -1,0 +1,1024 @@
+===== INICIO CRON: 2026-05-01 10:32:31 =====
+MODO: DRY-RUN (no se escriben cambios)
+Tutores con actividad en últimos 30 días: 1
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      1
+Con métrica calculada:   0
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-01 10:33:09 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 1
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      1
+Con métrica calculada:   0
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-02 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-02 00:15:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-02 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-02 00:45:03 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-03 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-03 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-03 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-03 00:45:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 2
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      2
+Con métrica calculada:   0
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-04 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-04 00:15:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-04 00:30:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-04 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-05 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-05 00:15:03 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-05 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-05 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: solo 3 respuestas (< 5) → NULL
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   1
+Insuficientes (< 5):    2
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-06 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: 8 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-06 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: 8 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-06 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: 8 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-06 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 1 respuestas (< 5) → NULL
+Tutor #10036: 8 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-07 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-07 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-07 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-07 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-08 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-08 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-08 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-08 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 2 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-09 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-09 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-09 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-09 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-10 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-10 00:15:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-10 00:30:06 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-10 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-11 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-11 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-11 00:30:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-11 00:45:03 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-12 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-12 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-12 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-12 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-13 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-13 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-13 00:30:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-13 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-14 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-14 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-14 00:30:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-14 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-15 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-15 00:15:03 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-15 00:30:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-15 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-16 00:00:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-16 00:15:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-16 00:30:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-16 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-17 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-17 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-17 00:30:06 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-17 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-18 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-18 00:15:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-18 00:30:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-18 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-19 00:00:05 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0.01s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-19 00:15:03 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-19 00:30:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+
+===== INICIO CRON: 2026-05-19 00:45:04 =====
+MODO: PRODUCCIÓN
+Tutores con actividad en últimos 30 días: 3
+Tutor #155: 5 respuestas | mediana = 14 min | min=13 max=111
+Tutor #167: solo 3 respuestas (< 5) → NULL
+Tutor #10036: 11 respuestas | mediana = 10 min | min=0 max=261
+Registros borrados (> 90 días): 0
+----- RESUMEN -----
+Tutores procesados:      3
+Con métrica calculada:   2
+Insuficientes (< 5):    1
+Duración:                0s
+===== FIN CRON =====
+

@@ -1,0 +1,13 @@
+RewriteEngine On
+# Permite archivos reales
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Permite emails (sin referer) y proxys de correo
+RewriteCond %{HTTP_REFERER} ^$ [OR]
+RewriteCond %{HTTP_REFERER} (nubira\.cl|googleusercontent\.com|mail\.google\.com|outlook\.com|office365\.com|live\.com|hotmail\.com|yahoo\.com) [NC]
+RewriteRule . - [L]
+
+# Bloquea el resto
+RewriteRule . - [F]

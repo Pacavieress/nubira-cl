@@ -1,0 +1,35 @@
+2026-03-11 11:32:22 - [MP_RETURN] contrato_id=7036, status=approved, ref=, id=
+2026-03-11 11:35:24 - [MP_RETURN] contrato_id=7037, status=approved, ref=CONTRATO_7037, id=149155501899
+2026-03-23 09:41:55 - [MP_RETURN] contrato_id=7038, status=approved, ref=CONTRATO_7038, id=150835204181
+2026-03-23 15:56:40 - [MP_RETURN] contrato_id=7039, status=approved, ref=CONTRATO_7039, id=150882412303
+2026-03-24 13:33:31 - [MP_RETURN] contrato_id=7040, status=approved, ref=CONTRATO_7040, id=150992813041
+2026-03-24 15:07:30 - [MP_RETURN] contrato_id=7041, status=approved, ref=CONTRATO_7041, id=151733356862
+2026-03-24 16:09:33 - [MP_RETURN] contrato_id=7042, status=approved, ref=CONTRATO_7042, id=151009092343
+2026-04-05 02:18:45 - [MP_RETURN] contrato_id=7047, status=approved, ref=CONTRATO_7047, id=153337720296
+2026-04-05 02:26:16 - [MP_RETURN] contrato_id=7048, status=approved, ref=CONTRATO_7048, id=152596701723
+2026-04-13 16:17:32 - [MP_RETURN] contrato_id=7050, status=approved, ref=CONTRATO_7050, id=153868152631
+2026-04-13 17:18:52 - [MP_RETURN] contrato_id=7051, status=approved, ref=CONTRATO_7051, id=154627342126
+2026-04-14 09:11:28 - [MP_RETURN] contrato_id=7053, status=approved, ref=CONTRATO_7053, id=154713044550
+2026-04-14 10:37:59 - [MP_RETURN] contrato_id=7054, status=approved, ref=CONTRATO_7054, id=154725711168
+2026-04-14 12:55:11 - [MP_RETURN] contrato_id=7055, status=approved, ref=CONTRATO_7055, id=154747398744
+2026-04-15 16:26:30 - ℹ️ Contrato #7058: Usuario canceló en checkout
+2026-04-15 16:33:21 - ℹ️ Contrato #7059: Usuario canceló en checkout
+2026-04-15 16:35:06 - ℹ️ Contrato #7060: Usuario canceló en checkout
+2026-04-19 01:07:11 - ℹ️ Contrato #7063: Usuario canceló en checkout
+2026-04-19 02:21:23 - ℹ️ Contrato #7064: Usuario canceló en checkout
+2026-04-29 16:34:52 - [MP_RETURN] contrato_id=7069, status=approved, ref=CONTRATO_7069, id=156981364320
+2026-05-01 08:36:05 - ℹ️ Contrato #7071: Usuario canceló en checkout
+2026-05-01 08:36:12 - ℹ️ Contrato #7071: Usuario canceló en checkout
+2026-05-01 08:36:16 - ℹ️ Contrato #7071: Usuario canceló en checkout
+2026-05-01 13:24:22 - ℹ️ Contrato #7072: Usuario canceló en checkout
+2026-05-01 13:24:26 - ℹ️ Contrato #7072: Usuario canceló en checkout
+2026-05-01 13:24:29 - ℹ️ Contrato #7072: Usuario canceló en checkout
+2026-05-01 13:24:41 - ℹ️ Contrato #7072: Usuario canceló en checkout
+2026-05-01 13:25:17 - ℹ️ Contrato #7072: Usuario canceló en checkout
+2026-05-01 15:37:20 - ℹ️ Contrato #7073: Usuario canceló en checkout
+2026-05-01 15:53:17 - ℹ️ Contrato #7075: Usuario canceló en checkout
+2026-05-01 15:59:21 - [MP_RETURN] contrato_id=7077, status=approved, ref=CONTRATO_7077, id=156522023105
+2026-05-01 16:01:52 - ℹ️ Contrato #7078: Usuario canceló en checkout
+2026-05-01 16:11:32 - ℹ️ Contrato #7079: Usuario canceló en checkout
+2026-05-05 21:23:05 - [MP_RETURN] contrato_id=7080, status=approved, ref=CONTRATO_7080, id=157148145497
+2026-05-05 21:23:08 - [MP_RETURN] contrato_id=7080, status=approved, ref=CONTRATO_7080, id=157148145497

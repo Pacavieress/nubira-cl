@@ -1,0 +1,15 @@
+2025-11-12T13:00:43+00:00 RAW: {"resource":"132919377501","topic":"payment"}
+2025-11-12T13:00:43+00:00 RAW: {"action":"payment.created","api_version":"v1","data":{"id":"132919956453"},"date_created":"2025-11-12T12:08:22Z","id":126234358973,"live_mode":true,"type":"payment","user_id":"703767907"}
+2025-11-12T10:00:44-03:00 OK: payment_id=132919956453 status=rejected contrato_id=27
+2025-11-12T13:00:45+00:00 RAW: {"resource":"https://api.mercadolibre.com/merchant_orders/35512076364","topic":"merchant_order"}
+2025-11-12T13:00:46+00:00 RAW: {"resource":"https://api.mercadolibre.com/merchant_orders/35512006056","topic":"merchant_order"}
+2025-11-12T13:00:46+00:00 RAW: {"action":"payment.created","api_version":"v1","data":{"id":"132919377501"},"date_created":"2025-11-12T12:04:10Z","id":126330905394,"live_mode":true,"type":"payment","user_id":"703767907"}
+2025-11-12T10:00:47-03:00 OK: payment_id=132919377501 status=rejected contrato_id=27
+2025-11-12T13:00:51+00:00 RAW: {"resource":"132919956453","topic":"payment"}
+2025-11-12T14:45:04+00:00 RAW: {}
+2025-11-12T15:16:57+00:00 RAW: {"resource":"https://api.mercadolibre.com/merchant_orders/35516644970","topic":"merchant_order"}
+2025-11-12T15:16:59+00:00 RAW: {"action":"payment.created","api_version":"v1","data":{"id":"132942786665"},"date_created":"2025-11-12T15:16:57Z","id":126333880250,"live_mode":true,"type":"payment","user_id":"703767907"}
+2025-11-12T15:16:59+00:00 RAW: {"resource":"132942786665","topic":"payment"}
+2025-11-12T12:16:59-03:00 OK: payment_id=132942786665 status=rejected contrato_id=29
+2025-11-12T15:16:59+00:00 RAW: {"resource":"https://api.mercadolibre.com/merchant_orders/35516644970","topic":"merchant_order"}
+2026-05-01T17:24:57+00:00 RAW: {"resource":"https://api.mercadolibre.com/merchant_orders/40472665342","topic":"merchant_order"}

@@ -1,0 +1,662 @@
+2026-01-06 11:14:31 [OK] Enviado a rbuonocore@alumnos.uai.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-07 13:49:08 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-01-07 13:49:10 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-01-07 13:49:23 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-01-07 13:49:25 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-01-07 14:13:06 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-01-07 14:13:08 [OK] Enviado a contacto@nubira.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-01-07 17:28:16 [OK] Enviado a pacavieress@uc.cl | Asunto: Prueba Técnica SMTP - 17:28:15
+2026-01-07 14:35:27 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-01-07 14:35:29 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-01-08 17:15:13 [OK] Enviado a yuflacristian@gmail.com | Asunto: Estado Solicitud: aiep
+2026-01-09 08:00:06 [OK] Enviado a rbuonocore@alumnos.uai.cl | Asunto: 👋 Rafaela, ¿te animas a publicar?
+2026-01-09 10:32:02 [OK] Enviado a complaciencia.contacto@gmail.com | Asunto: Estado Solicitud: Universidad de Santiago de Chile
+2026-01-09 10:32:07 [OK] Enviado a villagrasamudioclara@gmail.com | Asunto: Estado Solicitud: Instituto Nacional de Educación Superior Doctor Raúl Peña
+2026-01-09 10:32:12 [OK] Enviado a luismigueludobolivar@gmail.com | Asunto: Estado Solicitud: Universidad de Oriente-Núcleo de Anzoátegui
+2026-01-09 22:28:36 [OK] Enviado a vicente.orellanaa@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-01-10 08:00:05 [OK] Enviado a vicente.orellanaa@correoaiep.cl | Asunto: 👋 vicente, ¿te animas a publicar?
+2026-01-10 12:34:32 [OK] Enviado a enmanuelsf@gmail.com | Asunto: Estado Solicitud: Universidad de Los Andes
+2026-01-10 12:37:09 [OK] Enviado a juan.anzola@iacc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-10 12:37:18 [OK] Enviado a juan.anzola@iacc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-11 17:00:03 [OK] Enviado a eliramos335@gmail.com | Asunto: Estado Solicitud: Colegio jetonimo fernandez
+2026-01-12 17:38:02 [OK] Enviado a j.marin58@alumnos.santotomas.cl | Asunto: Bienvenido a Nubira
+2026-01-12 23:14:59 [OK] Enviado a catalina.cordova@usach.cl | Asunto: Estado Solicitud: Universidad de Santiago de Chile
+2026-01-12 23:15:17 [OK] Enviado a retrofreef2@gmail.com | Asunto: Estado Solicitud: Universidad de Matanzas
+2026-01-13 08:00:07 [OK] Enviado a rbuonocore@alumnos.uai.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-01-13 08:00:11 [OK] Enviado a j.marin58@alumnos.santotomas.cl | Asunto: 👋 Josefina, ¿te animas a publicar?
+2026-01-14 09:26:15 [OK] Enviado a b.caceresmejias@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-01-14 09:59:14 [OK] Enviado a grecia.gomez@mi.unc.edu.ar | Asunto: Estado Solicitud: Universidad Nacional de Córdoba
+2026-01-14 09:59:28 [OK] Enviado a joelsurielguzman08@icloud.com | Asunto: Estado Solicitud: Politécnico Francisco Ant.
+2026-01-15 08:00:07 [OK] Enviado a b.caceresmejias@uandresbello.edu | Asunto: 👋 Benjamin, ¿te animas a publicar?
+2026-01-15 16:28:40 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-15 16:31:09 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-16 15:47:23 [OK] Enviado a cquintupil2023@udec.cl | Asunto: Estado Solicitud: universidad de concepción
+2026-01-17 08:00:06 [OK] Enviado a juan.anzola@iacc.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-01-20 08:00:06 [OK] Enviado a rbuonocore@alumnos.uai.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-01-20 08:00:08 [OK] Enviado a camila.v@uchile.cl | Asunto: 👋 Camila, ¿te animas a publicar?
+2026-01-20 08:00:13 [OK] Enviado a fmunoz@uc.cl | Asunto: 👋 Felipe, ¿te animas a publicar?
+2026-01-20 08:00:15 [OK] Enviado a a.rios@usach.cl | Asunto: 👋 Andrea, ¿te animas a publicar?
+2026-01-21 15:22:41 [OK] Enviado a 361453@students.esic.edu | Asunto: Estado Solicitud: Esic
+2026-01-22 09:18:23 [OK] Enviado a maria.escobars1@userena.cl | Asunto: Estado Solicitud: Universidad de la serena
+2026-01-22 09:18:51 [OK] Enviado a 205024158@academicos.uamericas.cl | Asunto: Estado Solicitud: UDLA
+2026-01-24 08:00:06 [OK] Enviado a juan.anzola@iacc.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-01-24 19:27:43 [OK] Enviado a smerino4@santotomas.cl | Asunto: Estado Solicitud: Universidad - IP CFT Santo Tomas
+2026-01-24 20:33:21 [OK] Enviado a smerino4@santotomas.cl | Asunto: Bienvenido a Nubira
+2026-01-24 20:35:13 [OK] Enviado a a.gajardo14@alumnos.santotomas.cl | Asunto: Bienvenido a Nubira
+2026-01-24 23:46:38 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: Estado Solicitud: Pontificia Universidad Católica de Valparaíso
+2026-01-24 23:48:28 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: Bienvenido a Nubira
+2026-01-24 23:57:49 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-25 00:00:07 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-25 08:00:07 [OK] Enviado a smerino4@santotomas.cl | Asunto: 👋 Suzanne, ¿te animas a publicar?
+2026-01-25 08:00:09 [OK] Enviado a a.gajardo14@alumnos.santotomas.cl | Asunto: 👋 Abel, ¿te animas a publicar?
+2026-01-25 08:11:01 [OK] Enviado a claudia.munoz@alu.ucm.cl | Asunto: Estado Solicitud: Universidad Católica del Maule
+2026-01-25 08:13:12 [OK] Enviado a claudia.munoz@alu.ucm.cl | Asunto: Bienvenido a Nubira
+2026-01-25 16:35:43 [OK] Enviado a msanchezs@ebasica.ucsc.cl | Asunto: Estado Solicitud: Ucsc
+2026-01-26 08:00:06 [OK] Enviado a claudia.munoz@alu.ucm.cl | Asunto: 👋 Claudia, ¿te animas a publicar?
+2026-01-26 21:55:30 [OK] Enviado a msanchezs@ebasica.ucsc.cl | Asunto: Bienvenido a Nubira
+2026-01-27 09:18:40 [OK] Enviado a msanchezs@ebasica.ucsc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-27 17:16:52 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: Actualiza la imagen de tu servicio
+2026-01-28 08:00:05 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: 👋 Claudia, ¿te animas a publicar?
+2026-01-28 14:31:43 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de italiano
+2026-01-28 14:31:45 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de italiano
+2026-01-29 10:31:24 [OK] Enviado a claraya@abc.gob.ar | Asunto: Estado Solicitud: The english institute
+2026-01-29 10:57:56 [OK] Enviado a lisette.osorio@eduandresbello.cl | Asunto: Estado Solicitud: Andres bello
+2026-01-29 20:05:22 [OK] Enviado a p.navea3@alumnos.santotomas.cl | Asunto: Bienvenido a Nubira
+2026-01-29 22:29:21 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-01-30 08:00:07 [OK] Enviado a msanchezs@ebasica.ucsc.cl | Asunto: 👋 María, ¿te animas a publicar?
+2026-01-30 08:00:09 [OK] Enviado a p.navea3@alumnos.santotomas.cl | Asunto: 👋 Pía, ¿te animas a publicar?
+2026-01-31 08:00:06 [OK] Enviado a i.villegasgonzalez@uandresbello.edu | Asunto: 👋 Isabel, ¿te animas a publicar?
+2026-02-01 08:00:06 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-02-02 10:41:37 [OK] Enviado a mmunozg2@correo.uss.cl | Asunto: Estado Solicitud: Universidad San Sebastián
+2026-02-02 16:00:43 [OK] Enviado a mossesn@duoc.cl | Asunto: Estado Solicitud: DuocUC
+2026-02-02 20:08:14 [OK] Enviado a belen.vargasl@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-02-03 08:00:06 [OK] Enviado a msanchezs@ebasica.ucsc.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-02-05 02:42:09 [OK] Enviado a leyton23356480k@uc.cl | Asunto: Bienvenido a Nubira
+2026-02-05 08:00:08 [OK] Enviado a leyton23356480k@uc.cl | Asunto: 👋 Agustina, ¿te animas a publicar?
+2026-02-06 08:00:06 [OK] Enviado a belen.vargasl@correoaiep.cl | Asunto: 👋 Belén, ¿te animas a publicar?
+2026-02-08 02:07:18 [OK] Enviado a pacavieres@uc.cl | Asunto: Tu cuenta en Nubira te espera
+2026-02-08 02:08:26 [OK] Enviado a pacavieres@uc.cl | Asunto: Tu cuenta en Nubira te espera
+2026-02-08 08:00:05 [OK] Enviado a claudia.gonzalez.p01@mail.pucv.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-02-09 20:57:55 [OK] Enviado a asesorias@isacarsoluciones.com | Asunto: Estado Solicitud: Isacar Soluciones
+2026-02-10 08:00:07 [OK] Enviado a msanchezs@ebasica.ucsc.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-02-10 08:00:09 [OK] Enviado a belen.vargasl@correoaiep.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-02-12 23:43:07 [OK] Enviado a gsamper@unc.edu.ar | Asunto: Estado Solicitud: Universidad nacional de Córdoba
+2026-02-13 08:00:07 [OK] Enviado a mghiotto@abc.gob.ar | Asunto: 👋 Mariano, ¿te animas a publicar?
+2026-02-17 08:00:06 [OK] Enviado a belen.vargasl@correoaiep.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-02-18 10:30:06 [OK] Enviado a karenworks07@gmail.com | Asunto: Bienvenido a Nubira
+2026-02-19 08:00:07 [OK] Enviado a karenworks07@urc.com | Asunto: 👋 KAREN, ¿te animas a publicar?
+2026-02-19 08:00:09 [OK] Enviado a pablocavieressagredo@gmail.com | Asunto: 👋 Pablo, ¿te animas a publicar?
+2026-02-19 09:51:12 [OK] Enviado a pablocavieressagredo@gmail.com | Asunto: Bienvenido a Nubira
+2026-02-19 09:59:20 [OK] Enviado a viztasync@gmail.com | Asunto: Bienvenido a Nubira
+2026-02-19 10:14:15 [OK] Enviado a viztasync@gmail.com | Asunto: Bienvenido a Nubira
+2026-02-19 10:26:07 [OK] Enviado a viztasync@gmail.com | Asunto: Bienvenido a Nubira
+2026-02-19 10:31:00 [OK] Enviado a viztasync@gmail.com | Asunto: Bienvenido a Nubira
+2026-02-19 10:31:33 [OK] Enviado a karenworks07@urc.com | Asunto: Bienvenido a Nubira
+2026-02-19 10:31:46 [OK] Enviado a mghiotto@abc.gob.ar | Asunto: Bienvenido a Nubira
+2026-02-19 20:50:19 [OK] Enviado a spencer.franceschi@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-02-20 10:48:29 [OK] Enviado a pablocavieressagredo@gmail.com | Asunto: Bienvenido a Nubira
+2026-02-20 16:56:16 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: Estado Solicitud: Fundación Universitaria Konrad Lorenz
+2026-02-21 08:00:05 [OK] Enviado a pablocavieressagredo@gmail.com | Asunto: 👋 Pablo, ¿te animas a publicar?
+2026-02-23 08:00:06 [OK] Enviado a spencer.franceschi@correoaiep.cl | Asunto: 👋 Spencer, ¿te animas a publicar?
+2026-02-26 15:41:44 [OK] Enviado a lchacanareinoso@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-02-27 08:00:07 [OK] Enviado a spencer.franceschi@correoaiep.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-02-27 08:00:09 [OK] Enviado a lchacanareinoso@uandresbello.edu | Asunto: 👋 LORENZA, ¿te animas a publicar?
+2026-03-02 00:51:22 [OK] Enviado a antonella.bustamante@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-03-02 01:17:48 [OK] Enviado a pablocavieressagredo@gmail.com | Asunto: Bienvenido a Nubira
+2026-03-02 08:00:08 [OK] Enviado a antonella.bustamante@correoaiep.cl | Asunto: 👋 Antonella, ¿te animas a publicar?
+2026-03-02 08:00:10 [OK] Enviado a pablocavieressagredo@gmail.com | Asunto: 👋 Pablo, ¿te animas a publicar?
+2026-03-02 12:50:18 [OK] Enviado a lchacanareinoso@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-03-02 13:41:49 [OK] Enviado a katherie.figueroa25@inacapmail.cl | Asunto: Estado Solicitud: Inacap
+2026-03-02 13:51:42 [OK] Enviado a katherine.figueroa25@inacapmail.cl | Asunto: Estado Solicitud: Instituto profesional inacap
+2026-03-02 14:58:18 [OK] Enviado a katherine.figueroa25@inacapmail.cl | Asunto: Bienvenido a Nubira
+2026-03-02 15:00:22 [OK] Enviado a katherine.figueroa19@inacapmail.cl | Asunto: Bienvenido a Nubira
+2026-03-03 08:00:07 [OK] Enviado a katherine.figueroa19@inacapmail.cl | Asunto: 👋 Katherine, ¿te animas a publicar?
+2026-03-05 09:02:22 [OK] Enviado a antonella.bustamante@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-03-06 08:00:06 [OK] Enviado a spencer.franceschi@correoaiep.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-03-06 18:12:33 [OK] Enviado a katyavallejo@loutaif.cl | Asunto: Estado Solicitud: IES 6023
+2026-03-08 02:02:07 [OK] Enviado a a.troncoso08@ufromail.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-08 02:05:28 [OK] Enviado a patriciaespinozam@csaq.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-08 02:08:31 [OK] Enviado a la.apaza.mamani@unslp.edu.bo | Asunto: Tu cuenta en Nubira te espera
+2026-03-08 02:09:39 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: Tu cuenta en Nubira te espera
+2026-03-08 02:10:54 [OK] Enviado a nevargas@ucv.edu.ve | Asunto: Tu cuenta en Nubira te espera
+2026-03-08 02:11:55 [OK] Enviado a claraya@abc.gob.ar | Asunto: Tu cuenta en Nubira te espera
+2026-03-08 02:12:20 [OK] Enviado a lisette.osorio@eduandresbello.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-09 14:12:06 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 14:12:08 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 14:12:52 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 14:12:54 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:07:38 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:07:40 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:12:09 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:12:11 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:23:18 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:23:20 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:24:29 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:24:31 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:24:50 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:24:52 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:25:05 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:25:06 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:25:58 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:26:01 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:27:50 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:27:52 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-09 15:49:29 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-09 15:49:31 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-10 11:54:45 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-10 11:54:47 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-10 12:14:57 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-10 12:14:59 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-10 12:47:59 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico
+2026-03-10 12:48:01 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-10 13:29:28 [OK] Enviado a kespinoza2017@udec.cl | Asunto: Bienvenido a Nubira
+2026-03-10 14:36:27 [OK] Enviado a pacavieress@uc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Lenguaje Académico 🎁 (El alumno pagó $2.000, pero Nubira Subsidia la diferencia. ¡Tú recibes el 100% íntegro!)
+2026-03-10 14:36:29 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clases de Lenguaje Académico
+2026-03-11 08:00:07 [OK] Enviado a kespinoza2017@udec.cl | Asunto: 👋 Karen, ¿te animas a publicar?
+2026-03-11 09:39:12 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-11 10:43:21 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 10:43:23 [OK] Enviado a belen.vargasl@correoaiep.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 10:48:58 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 10:49:00 [OK] Enviado a belen.vargasl@correoaiep.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 10:51:10 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 10:51:12 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 10:58:15 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 10:58:17 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 10:58:53 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 10:58:55 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:03:47 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:03:51 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:04:41 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:04:44 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:06:25 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:06:27 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:07:43 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:07:44 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:16:22 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:16:24 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:24:10 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:24:12 [OK] Enviado a belen.vargasl@correoaiep.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:26:19 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:26:20 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:32:28 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-03-11 11:32:29 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-03-11 11:34:48 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-11 11:34:51 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-11 11:35:25 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-03-11 11:35:27 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-03-12 12:25:07 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-12 12:27:20 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-13 21:12:10 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-15 00:20:40 [OK] Enviado a dieinostroza@alumnos.uai.cl | Asunto: Bienvenido a Nubira
+2026-03-15 08:00:07 [OK] Enviado a dieinostroza@alumnos.uai.cl | Asunto: 👋 Diego, ¿te animas a publicar?
+2026-03-16 10:04:13 [OK] Enviado a danitza.ciaterna@uaconcagua.cl | Asunto: Estado Solicitud: universidad de aconcagua
+2026-03-16 10:06:45 [OK] Enviado a faaravena@salesianoslinares.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-16 10:08:06 [OK] Enviado a claudia.gonzalezpino@slepvalparaiso.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-16 10:09:04 [OK] Enviado a mmunozg2@correo.uss.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-16 10:30:17 [OK] Enviado a danitza.cisterna@uaconcagua.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-17 08:01:55 [OK] Enviado a faaravena@salesianoslinares.cl | Asunto: Bienvenido a Nubira
+2026-03-18 08:00:06 [OK] Enviado a faaravena@salesianoslinares.cl | Asunto: 👋 Francisca, ¿te animas a publicar?
+2026-03-20 15:30:53 [OK] Enviado a josefaerrazuriz@inacapmail.cl | Asunto: Bienvenido a Nubira
+2026-03-20 21:17:27 [OK] Enviado a ana.isla@cloud.uautonoma.cl | Asunto: Estado Solicitud: Universidad Autónoma
+2026-03-20 21:17:53 [OK] Enviado a ana.isla@cloud.uautonoma.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-20 22:00:02 [OK] Enviado a josefaerrazuriz@inacapmail.cl | Asunto: Bienvenido a Nubira
+2026-03-21 08:00:06 [OK] Enviado a josefaerrazuriz@inacapmail.cl | Asunto: 👋 Josefa, ¿te animas a publicar?
+2026-03-21 17:27:00 [OK] Enviado a benjamin.diaz.v@usach.cl | Asunto: Bienvenido a Nubira
+2026-03-21 20:31:10 [OK] Enviado a benjamin.diaz.v@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-23 08:05:13 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: Estado Solicitud: Universidad de Chile
+2026-03-23 08:06:26 [OK] Enviado a educar@instituto.cl | Asunto: Estado Solicitud: Educar
+2026-03-23 08:13:57 [OK] Enviado a mreyes@scollege.cl | Asunto: Tu cuenta en Nubira te espera
+2026-03-23 08:15:38 [OK] Enviado a grecia.gomez@mi.unc.edu.ar | Asunto: Tu cuenta en Nubira te espera
+2026-03-23 09:10:59 [OK] Enviado a esther.ramirez2@unmsm.edu.pe | Asunto: Bienvenido a Nubira
+2026-03-23 09:36:21 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-23 09:36:22 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-23 09:41:57 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-03-23 09:41:59 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-03-23 15:54:11 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-23 15:54:13 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-23 15:56:42 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-03-23 15:56:43 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-03-24 08:00:06 [OK] Enviado a esther.ramirez2@unmsm.edu.pe | Asunto: 👋 Esther, ¿te animas a publicar?
+2026-03-24 13:27:36 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-24 13:27:38 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-24 13:33:33 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-03-24 13:33:34 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-03-24 15:05:48 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-24 15:05:50 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-24 15:07:31 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-03-24 15:07:34 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-03-24 15:43:40 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ Pago Transferido
+2026-03-24 16:04:08 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-24 16:04:11 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-24 16:09:35 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-03-24 16:09:37 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-03-24 16:19:26 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ Pago Transferido
+2026-03-24 16:57:12 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-03-24 16:57:14 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-03-25 07:57:16 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: Bienvenido a Nubira
+2026-03-25 08:00:07 [OK] Enviado a benjamin.diaz.v@usach.cl | Asunto: 👋 Benjamin, ¿te animas a publicar?
+2026-03-25 08:00:09 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: 👋 Samuel, ¿te animas a publicar?
+2026-03-25 23:43:30 [OK] Enviado a jespinoza@utem.cl | Asunto: Bienvenido a Nubira
+2026-03-25 23:45:55 [OK] Enviado a juan.anzola@iacc.cl | Asunto: ¡Tienes un nuevo alumno! - Clases particulares de Estadísticas
+2026-03-25 23:45:57 [OK] Enviado a jespinoza@utem.cl | Asunto: Solicitud enviada: Clases particulares de Estadísticas
+2026-03-26 08:00:06 [OK] Enviado a jespinoza@utem.cl | Asunto: 👋 José, ¿te animas a publicar?
+2026-03-26 09:38:32 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-27 00:20:09 [OK] Enviado a karen.almonacid@usach.cl | Asunto: Bienvenido a Nubira
+2026-03-27 08:00:07 [OK] Enviado a karen.almonacid@usach.cl | Asunto: 👋 Karen, ¿te animas a publicar?
+2026-03-28 02:50:22 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Bienvenido a Nubira
+2026-03-28 07:04:21 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-28 07:04:54 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-29 08:00:06 [OK] Enviado a benjamin.diaz.v@usach.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-03-29 16:12:47 [OK] Enviado a g.jaramillo5@alumnos.santotomas.cl | Asunto: Bienvenido a Nubira
+2026-03-29 16:49:48 [OK] Enviado a g.jaramillo5@alumnos.santotomas.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-29 20:01:19 [OK] Enviado a g.jaramillo5@alumnos.santotomas.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-29 20:03:02 [OK] Enviado a g.jaramillo5@alumnos.santotomas.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-03-31 08:00:06 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: 👋 Katherine, ¿te animas a publicar?
+2026-03-31 09:48:28 [OK] Enviado a s.barrerabarrera1@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-03-31 12:30:43 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de italiano
+2026-03-31 12:30:46 [OK] Enviado a s.barrerabarrera1@uandresbello.edu | Asunto: Solicitud enviada: Clases de italiano
+2026-04-01 08:00:07 [OK] Enviado a s.barrerabarrera1@uandresbello.edu | Asunto: 👋 Sergio, ¿te animas a publicar?
+2026-04-02 08:00:06 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-02 08:00:09 [OK] Enviado a EL_CORREO_REAL_QUE_ENCONTRASTE@gmail.com | Asunto: 👋 Giuliana, ¿te animas a publicar?
+2026-04-02 08:23:58 [OK] Enviado a francisca.lopez.v@usach.cl | Asunto: Bienvenido a Nubira
+2026-04-02 12:27:12 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-02 12:32:02 [OK] Enviado a pacavieress@uc.cl | Asunto: Bienvenido a Nubira
+2026-04-03 08:00:06 [OK] Enviado a francisca.lopez.v@usach.cl | Asunto: 👋 FRANCISCA, ¿te animas a publicar?
+2026-04-03 08:00:08 [OK] Enviado a pacavieress@uc.cl | Asunto: 👋 Pablo, ¿te animas a publicar?
+2026-04-03 16:45:05 [OK] Enviado a ahormazabal@kinesiologia.ucsc.cl | Asunto: Estado Solicitud: Universidad Católica de la Santísima Concepción
+2026-04-03 16:45:13 [OK] Enviado a ahormazabal@xn--kinesiologa-xcb.ucsc.cl | Asunto: Estado Solicitud: Universidad Católica de la Santísima Concepción
+2026-04-03 18:01:09 [OK] Enviado a ahormazabal@kinesiologia.ucsc.cl | Asunto: Bienvenido a Nubira
+2026-04-03 18:46:01 [OK] Enviado a hanthonia.tapia@slepvalparaiso.cl | Asunto: Bienvenido a Nubira
+2026-04-04 03:41:40 [OK] Enviado a sebastian.sepulveda.c@alumnos.ipg.cl | Asunto: Estado Solicitud: Instituto ipg
+2026-04-04 03:42:13 [OK] Enviado a macarena.diaz.f@quilicuraeduca.cl | Asunto: Estado Solicitud: Usach
+2026-04-04 08:00:08 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-04 08:00:10 [OK] Enviado a hanthonia.tapia@slepvalparaiso.cl | Asunto: 👋 Hanthonia, ¿te animas a publicar?
+2026-04-04 16:18:09 [OK] Enviado a mghiotto@abc.gob.ar | Asunto: Bienvenido a Nubira
+2026-04-05 02:17:10 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-05 02:17:11 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-05 02:17:57 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-05 02:17:59 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-05 02:18:47 [OK] Enviado a admin@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-05 02:18:49 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-05 02:25:40 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-05 02:25:42 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-05 02:26:18 [OK] Enviado a admin@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-05 02:26:20 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-05 07:00:07 [OK] Enviado a mghiotto@abc.gob.ar | Asunto: 👋 mariano, ¿te animas a publicar?
+2026-04-05 13:10:26 [OK] Enviado a mghiotto@abc.gob.ar | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-05 18:41:59 [OK] Enviado a hanthonia.tapia@slepvalparaiso.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-05 22:51:06 [OK] Enviado a jnunezr@docente.uss.cl | Asunto: Estado Solicitud: Universidad San Sebastián
+2026-04-06 07:00:07 [OK] Enviado a EL_CORREO_REAL_QUE_ENCONTRASTE@gmail.com | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-06 09:10:14 [OK] Enviado a tsalazar@ing.unlp.edu.ar | Asunto: Estado Solicitud: Universidad Nacional de La Plata
+2026-04-06 09:11:18 [OK] Enviado a al253916@alumnos.uacj.mx | Asunto: Estado Solicitud: Universidad autonoma de ciudad juarez
+2026-04-06 09:15:27 [OK] Enviado a donkanus@profesormatematica.cl | Asunto: Estado Solicitud: USACH
+2026-04-06 09:20:48 [OK] Enviado a al338928@uji.es | Asunto: Estado Solicitud: Universidad Jaume I
+2026-04-06 09:23:28 [OK] Enviado a petricioletv@gmail.edu | Asunto: Estado Solicitud: Benito Juárez García
+2026-04-06 14:15:32 [OK] Enviado a al338928@uji.es | Asunto: Bienvenido a Nubira
+2026-04-06 14:18:41 [OK] Enviado a fsandoval@loscarreradechile.com | Asunto: Estado Solicitud: Alberto Hurtado
+2026-04-06 14:57:53 [OK] Enviado a al338928@uji.es | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-07 07:00:07 [OK] Enviado a ahormazabal@kinesiologia.ucsc.cl | Asunto: 👋 Anaís, ¿te animas a publicar?
+2026-04-07 08:21:55 [OK] Enviado a al338928@uji.es | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-07 08:22:31 [OK] Enviado a francisca.lopez.v@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-07 08:28:15 [OK] Enviado a pacavieress@uc.cl | Asunto: Respuesta a tu Reclamo - Nubira
+2026-04-08 16:10:49 [OK] Enviado a contacto@nubira.cl | Asunto: Respuesta a tu Reclamo - Nubira
+2026-04-08 16:14:51 [OK] Enviado a contacto@nubira.cl | Asunto: Respuesta a tu Reclamo - Nubira
+2026-04-10 01:01:21 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: Bienvenido a Nubira
+2026-04-10 07:00:08 [OK] Enviado a al338928@uji.es | Asunto: 👋 Yasmina, ¿te animas a publicar?
+2026-04-10 07:00:10 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: 👋 Katherine, ¿te animas a publicar?
+2026-04-11 07:00:08 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-11 07:00:11 [OK] Enviado a ahormazabal@kinesiologia.ucsc.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-12 00:37:26 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-12 00:38:24 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-12 16:10:33 [OK] Enviado a k.gonzlezramirez@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-04-12 16:49:02 [OK] Enviado a k.gonzlezramirez@uandresbello.edu | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-12 16:49:42 [OK] Enviado a k.gonzlezramirez@uandresbello.edu | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-12 18:29:28 [OK] Enviado a k.gonzlezramirez@uandresbello.edu | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-13 07:00:08 [OK] Enviado a benjamin.diaz.v@usach.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-13 07:00:10 [OK] Enviado a EL_CORREO_REAL_QUE_ENCONTRASTE@gmail.com | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-13 07:00:12 [OK] Enviado a hanthonia.tapia@slepvalparaiso.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-13 07:00:16 [OK] Enviado a mghiotto@abc.gob.ar | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-13 10:52:43 [OK] Enviado a josefaerrazuriz@inacapmail.cl | Asunto: Bienvenido a Nubira
+2026-04-13 16:02:58 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-13 16:03:00 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-13 16:15:02 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-13 16:15:04 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-13 16:17:34 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-13 16:17:36 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-13 17:14:45 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-13 17:14:46 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-13 17:18:54 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-13 17:18:56 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-14 07:00:09 [OK] Enviado a francisca.lopez.v@usach.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-14 07:00:12 [OK] Enviado a al338928@uji.es | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-14 09:04:47 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba 🎁 (El alumno pagó $500, pero Nubira cubrió la diferencia).
+2026-04-14 09:04:49 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-14 09:09:57 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba 🎁 (El alumno pagó $500, pero Nubira cubrió la diferencia).
+2026-04-14 09:09:58 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-14 09:11:30 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-14 09:11:32 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-14 09:33:54 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ Pago Transferido
+2026-04-14 09:37:32 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ Pago Transferido
+2026-04-14 10:35:23 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-04-14 10:35:24 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-14 10:38:01 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-14 10:38:03 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-14 12:00:43 [OK] Enviado a c.altamiranofuentes@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-04-14 12:52:25 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$100 | Tú recibes: $900)
+2026-04-14 12:52:27 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-14 12:55:25 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-14 12:55:40 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-14 13:27:03 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Estado Solicitud: Universidad Técnica Federico Santa Maria
+2026-04-14 21:01:11 [OK] Enviado a rosa.caris@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-04-15 07:00:06 [OK] Enviado a c.altamiranofuentes@uandresbello.edu | Asunto: 👋 Cristian, ¿te animas a publicar?
+2026-04-15 07:00:08 [OK] Enviado a rosa.caris@correoaiep.cl | Asunto: 👋 Rosa, ¿te animas a publicar?
+2026-04-15 14:56:13 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$100 | Tú recibes: $900)
+2026-04-15 14:56:15 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-15 15:59:27 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$100 | Tú recibes: $900)
+2026-04-15 15:59:29 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-15 16:03:41 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$100 | Tú recibes: $900)
+2026-04-15 16:03:43 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-15 16:33:13 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$100 | Tú recibes: $900)
+2026-04-15 16:33:15 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-15 16:34:47 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$100 | Tú recibes: $900)
+2026-04-15 16:34:49 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-15 18:39:32 [OK] Enviado a antoniagalindo@estudiante.uc.cl | Asunto: Estado Solicitud: pontificia universidad católica
+2026-04-15 22:08:58 [OK] Enviado a dunia.aguilera@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-04-16 05:26:12 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-16 07:00:08 [OK] Enviado a k.gonzlezramirez@uandresbello.edu | Asunto: 👋 Kathia, ¿te animas a publicar?
+2026-04-16 07:00:10 [OK] Enviado a dunia.aguilera@correoaiep.cl | Asunto: 👋 Dunia, ¿te animas a publicar?
+2026-04-16 11:02:11 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-16 11:02:48 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-16 11:04:38 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-16 11:05:39 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-16 11:07:51 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-16 16:28:35 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba (Valor Total: $1.000 | Comisión Nubira: -$100 | Tú recibes: $900)
+2026-04-16 16:28:37 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-16 22:53:03 [OK] Enviado a pagalleguillos@yahoo.es | Asunto: Estado Solicitud: universidad Andres Bello
+2026-04-17 09:42:42 [OK] Enviado a joalbornoz14@alumnos.utalca.cl | Asunto: Estado Solicitud: Universidad de Talca
+2026-04-17 13:00:41 [OK] Enviado a contacto@nubira.cl | Asunto: Tienes un nuevo mensaje de Administrador
+2026-04-17 14:28:08 [OK] Enviado a contacto@nubira.cl | Asunto: Tienes un nuevo mensaje de Administrador
+2026-04-17 15:40:30 [OK] Enviado a vict.mujica@duocuc.cl | Asunto: Bienvenido a Nubira
+2026-04-17 15:44:30 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: ¡Tienes un nuevo alumno! - Resuelvo ejercicios de Matemática y Física (Universitario/Escolar)
+2026-04-17 15:44:32 [OK] Enviado a vict.mujica@duocuc.cl | Asunto: Solicitud enviada: Resuelvo ejercicios de Matemática y Física (Universitario/Escolar)
+2026-04-17 15:44:33 [OK] Enviado a contacto@nubira.cl | Asunto: Tienes un nuevo mensaje de Administrador
+2026-04-17 20:23:02 [OK] Enviado a joalbornoz14@alumnos.utalca.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-17 20:23:11 [OK] Enviado a antoniagalindo@estudiante.uc.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-18 07:00:19 [OK] Enviado a ahormazabal@kinesiologia.ucsc.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-18 07:00:21 [OK] Enviado a vict.mujica@duocuc.cl | Asunto: 👋 Victoria, ¿te animas a publicar?
+2026-04-18 09:27:44 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-18 14:29:43 [OK] Enviado a rsotov7@correo.uss.cl | Asunto: Bienvenido a Nubira
+2026-04-19 01:06:59 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-19 01:07:01 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-19 02:21:13 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Clase de Prueba
+2026-04-19 02:21:14 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Clase de Prueba
+2026-04-19 07:00:07 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-19 21:58:32 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-19 22:05:20 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-19 22:44:59 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-20 00:12:01 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-20 00:13:08 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-20 06:13:19 [OK] Enviado a jatoledo@uc.cl | Asunto: Bienvenido a Nubira
+2026-04-20 07:00:08 [OK] Enviado a hanthonia.tapia@slepvalparaiso.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-20 07:00:10 [OK] Enviado a mghiotto@abc.gob.ar | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-20 07:00:21 [OK] Enviado a k.gonzlezramirez@uandresbello.edu | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-20 07:55:45 [OK] Enviado a jnunezr@docente.uss.cl | Asunto: Bienvenido a Nubira
+2026-04-20 09:05:03 [OK] Enviado a jatoledo@uc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-21 07:00:08 [OK] Enviado a francisca.lopez.v@usach.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-21 07:00:10 [OK] Enviado a al338928@uji.es | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-21 07:00:13 [OK] Enviado a jnunezr@docente.uss.cl | Asunto: 👋 Juan, ¿te animas a publicar?
+2026-04-21 10:54:45 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: Bienvenido a Nubira
+2026-04-21 12:02:00 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-21 17:06:37 [OK] Enviado a fernanda.munoz.cubillos@students.stjohns.cl | Asunto: Estado Solicitud: Universidad de Concepción
+2026-04-21 21:52:09 [OK] Enviado a valentina.vasquezar@correoaiep.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-21 21:52:38 [OK] Enviado a c.pezayala@uandresbello.edu | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-22 07:00:07 [OK] Enviado a rsotov7@correo.uss.cl | Asunto: 👋 Rayen, ¿te animas a publicar?
+2026-04-22 07:35:59 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Bienvenido a Nubira
+2026-04-22 08:32:39 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-22 08:33:43 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-22 08:45:11 [OK] Enviado a contacto@nubira.cl | Asunto: Tienes un nuevo mensaje de Administrador
+2026-04-22 09:08:21 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Tutor
+2026-04-22 12:27:45 [OK] Enviado a felipe.valderrama.v@usach.cl | Asunto: Bienvenido a Nubira
+2026-04-22 12:45:34 [OK] Enviado a felipe.valderrama.v@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-22 13:57:56 [OK] Enviado a spando@estudiante.uc.cl | Asunto: Bienvenido a Nubira
+2026-04-23 07:00:08 [OK] Enviado a jatoledo@uc.cl | Asunto: 👋 jorge, ¿te animas a publicar?
+2026-04-23 07:00:10 [OK] Enviado a spando@estudiante.uc.cl | Asunto: 👋 Sofía, ¿te animas a publicar?
+2026-04-23 08:38:43 [OK] Enviado a belen.gonzalez@uah.cl | Asunto: Estado Solicitud: Universidad Alberto Hurtado
+2026-04-23 08:39:15 [OK] Enviado a algarrir@alumnos.uahurtado.cl | Asunto: Estado Solicitud: alberto hurtado
+2026-04-23 11:26:46 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Sofía
+2026-04-23 12:20:46 [OK] Enviado a spando@estudiante.uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-23 12:36:10 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-23 14:10:51 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Tutor
+2026-04-23 16:13:20 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Felipe
+2026-04-23 16:29:21 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-23 16:29:56 [OK] Enviado a spando@estudiante.uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-23 16:32:17 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-23 17:05:11 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-23 19:09:08 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-23 19:12:00 [OK] Enviado a francisca.lopez.v@usach.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-23 20:28:16 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Sofía
+2026-04-23 20:30:13 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-24 08:24:17 [OK] Enviado a josefaerrazuriz@inacapmail.cl | Asunto: Bienvenido a Nubira
+2026-04-24 08:24:41 [OK] Enviado a antonella.bustamante@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-04-24 08:25:01 [OK] Enviado a lchacanareinoso@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-04-24 08:43:37 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-24 08:44:41 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Tamara
+2026-04-24 13:21:09 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-04-24 13:23:54 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-24 16:05:28 [OK] Enviado a pacavieress@uc.cl | Asunto: Tienes un nuevo mensaje de Tamara
+2026-04-24 16:08:52 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-24 18:28:51 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-24 18:52:31 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-04-24 22:15:36 [OK] Enviado a carla.opazo@usach.cl | Asunto: Bienvenido a Nubira
+2026-04-24 23:35:09 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-04-25 00:24:55 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-25 07:00:07 [OK] Enviado a carla.opazo@usach.cl | Asunto: 👋 Carla, ¿te animas a publicar?
+2026-04-25 10:00:14 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-25 10:00:49 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-25 10:03:08 [OK] Enviado a martina.reyes@alumnos.ucm.cl | Asunto: Estado Solicitud: Universidad católica del maule
+2026-04-25 10:05:07 [OK] Enviado a mariaj.espinoza@pregrado.uoh.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-25 11:20:13 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-25 13:13:52 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-25 20:47:12 [OK] Enviado a giuliana.ramosc@alumnos.uta.cl | Asunto: Bienvenido a Nubira
+2026-04-25 20:48:49 [OK] Enviado a giuliana.ramos.currivil@alumnos.uta.cl | Asunto: Bienvenido a Nubira
+2026-04-25 23:02:23 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-25 23:02:42 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-25 23:02:59 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-26 00:46:07 [OK] Enviado a admin@uc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-26 01:07:05 [OK] Enviado a martina.reyes@alumos.ucm.cl | Asunto: Estado Solicitud: universidad católica del maule
+2026-04-26 01:09:27 [OK] Enviado a martina.reyes@alumnos.ucm.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:09:44 [OK] Enviado a belen.gonzalez@uah.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:10:07 [OK] Enviado a algarrir@alumnos.uahurtado.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:11:10 [OK] Enviado a alisson.sanchezc@ug.edu.ec | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:11:28 [OK] Enviado a fsandoval@loscarreradechile.com | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:12:18 [OK] Enviado a macarena.diaz.f@quilicuraeduca.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:12:48 [OK] Enviado a macarena.diaz.f@quilicuraeduca.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:13:05 [OK] Enviado a sebastian.sepulveda.c@alumnos.ipg.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:13:59 [OK] Enviado a berta.cordova.sc@upc.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:14:47 [OK] Enviado a 205024158@academicos.uamericas.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:15:20 [OK] Enviado a maria.escobars1@userena.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 01:15:50 [OK] Enviado a cquintupil2023@udec.cl | Asunto: Tu cuenta en Nubira te espera
+2026-04-26 07:00:07 [OK] Enviado a ktoledou@fen.uchile.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-26 07:00:09 [OK] Enviado a rsotov7@correo.uss.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-26 07:00:11 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: 👋 Nicolas, ¿te animas a publicar?
+2026-04-26 07:00:13 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: 👋 Tamara, ¿te animas a publicar?
+2026-04-26 07:00:15 [OK] Enviado a felipe.valderrama.v@usach.cl | Asunto: 👋 Felipe, ¿te animas a publicar?
+2026-04-26 07:00:17 [OK] Enviado a giuliana.ramosc@alumnos.uta.cl | Asunto: 👋 Giuliana, ¿te animas a publicar?
+2026-04-26 07:00:19 [OK] Enviado a giuliana.ramos.currivil@alumnos.uta.cl | Asunto: 👋 Giuliana, ¿te animas a publicar?
+2026-04-26 13:13:48 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-26 16:56:38 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-26 16:57:11 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-26 16:57:37 [OK] Enviado a juan.anzola@iacc.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-26 23:52:23 [OK] Enviado a javiera.barriga@pregrado.uoh.cl | Asunto: Bienvenido a Nubira
+2026-04-27 07:00:08 [OK] Enviado a k.gonzlezramirez@uandresbello.edu | Asunto: 💡 Tu conocimiento vale mucho
+2026-04-27 07:00:10 [OK] Enviado a jatoledo@uc.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-27 07:00:12 [OK] Enviado a javiera.barriga@pregrado.uoh.cl | Asunto: 👋 Javiera, ¿te animas a publicar?
+2026-04-27 09:03:16 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 09:37:52 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 10:00:18 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 10:01:43 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 11:00:44 [OK] Enviado a juan.anzola@iacc.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-04-27 11:07:05 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 11:33:24 [OK] Enviado a elianagg2023@gmail.com.cl | Asunto: Estado Solicitud: ILADES de Tucumán Argentina
+2026-04-27 11:54:28 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-04-27 13:48:35 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 14:03:19 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 15:05:52 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-27 17:03:12 [OK] Enviado a leandro.cardenasm@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-04-27 19:50:26 [OK] Enviado a patricio.alonsog@correoaiep.cl | Asunto: Bienvenido a Nubira
+2026-04-28 07:00:07 [OK] Enviado a patricio.alonsog@correoaiep.cl | Asunto: 👋 Patricio, ¿te animas a publicar?
+2026-04-28 10:51:40 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-04-28 10:52:33 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-04-28 23:26:15 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-29 11:49:48 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-04-29 11:49:51 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-04-29 11:55:07 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-04-29 11:55:09 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-04-29 12:02:02 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-04-29 12:02:04 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-04-29 12:34:29 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-04-29 12:34:31 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-04-29 13:10:08 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-04-29 16:33:45 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-04-29 16:33:47 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-04-29 16:34:54 [OK] Enviado a admin@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-04-29 16:34:56 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-04-30 07:00:07 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-30 07:00:09 [OK] Enviado a felipe.valderrama.v@usach.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-04-30 18:28:20 [OK] Enviado a juan.anzola@iacc.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-01 07:00:07 [OK] Enviado a samuel.sobarzo@usach.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-01 07:00:09 [OK] Enviado a leandro.cardenasm@correoaiep.cl | Asunto: 👋 Leandro, ¿te animas a publicar?
+2026-05-01 08:24:46 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 08:24:49 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 08:34:53 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 08:34:57 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 11:14:18 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-05-01 13:05:38 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 13:05:41 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 14:29:27 [OK] Enviado a jatoledo@uc.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-01 15:36:40 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-05-01 15:36:41 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 15:49:34 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 15:49:36 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 15:51:23 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-05-01 15:51:25 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 15:53:48 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 15:53:50 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 15:54:04 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 15:54:06 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 15:59:23 [OK] Enviado a pacavieress@uc.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-05-01 15:59:25 [OK] Enviado a contacto@nubira.cl | Asunto: 💼 Nuevo servicio contratado - Nubira
+2026-05-01 16:01:37 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 16:01:39 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 16:10:39 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba (Valor Total: $1.000 | Comisión Nubira: -$0 | Tú recibes: $1.000)
+2026-05-01 16:10:41 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-01 23:50:56 [OK] Enviado a nayareth.villalobos@cloud.uautonoma.cl | Asunto: Bienvenido a Nubira
+2026-05-02 07:00:08 [OK] Enviado a nayareth.villalobos@cloud.uautonoma.cl | Asunto: 👋 nay, ¿te animas a publicar?
+2026-05-02 10:24:28 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-05-02 10:25:23 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-05-02 22:33:58 [OK] Enviado a cviveros2025@udec.cl | Asunto: Bienvenido a Nubira
+2026-05-02 23:24:04 [OK] Enviado a cpinoh@utem.cl | Asunto: Bienvenido a Nubira
+2026-05-03 07:00:06 [OK] Enviado a rsotov7@correo.uss.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-03 12:04:56 [OK] Enviado a f.cerda@uandresbello.edu | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-03 12:05:20 [OK] Enviado a m.crdenasoyarzn@uandresbello.edu | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-03 12:05:59 [OK] Enviado a c.pezayala@uandresbello.edu | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-03 12:06:55 [OK] Enviado a valentina.vasquezar@correoaiep.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-03 12:07:37 [OK] Enviado a claudio.veloso@uc.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-03 12:08:05 [OK] Enviado a msanchezs@ebasica.ucsc.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-03 13:49:47 [OK] Enviado a claudio.veloso@uc.cl | Asunto: Recupera tu acceso - Nubira
+2026-05-03 13:59:28 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Claudio
+2026-05-03 14:28:59 [OK] Enviado a claudio.veloso@uc.cl | Asunto: Tienes un nuevo mensaje de Pablo
+2026-05-03 23:15:54 [OK] Enviado a mariana.vargas@alumnos.ucm.cl | Asunto: Bienvenido a Nubira
+2026-05-04 00:57:53 [OK] Enviado a jimena.pairo.cuba@alumnos.uta.cl | Asunto: Bienvenido a Nubira
+2026-05-04 07:00:06 [OK] Enviado a jatoledo@uc.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-04 07:00:08 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-05-04 07:00:10 [OK] Enviado a mariana.vargas@alumnos.ucm.cl | Asunto: 👋 Mariana, ¿te animas a publicar?
+2026-05-04 07:00:12 [OK] Enviado a jimena.pairo.cuba@alumnos.uta.cl | Asunto: 👋 Jimena, ¿te animas a publicar?
+2026-05-05 00:28:19 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Milena
+2026-05-05 07:00:07 [OK] Enviado a leandro.cardenasm@correoaiep.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-05-05 20:16:05 [OK] Enviado a mateo.inostroza2601@alumnos.ubiobio.cl | Asunto: Bienvenido a Nubira
+2026-05-05 21:20:21 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: ¡Tienes un nuevo alumno! - Clases de Cálculo (Valor Total: $7.000 | Comisión Nubira: -$0 | Tú recibes: $7.000)
+2026-05-05 21:20:23 [OK] Enviado a mateo.inostroza2601@alumnos.ubiobio.cl | Asunto: Solicitud enviada: Clases de Cálculo
+2026-05-05 21:23:07 [OK] Enviado a mateo.inostroza2601@alumnos.ubiobio.cl | Asunto: ✅ Pago en custodia confirmado - Nubira
+2026-05-05 21:30:41 [OK] Enviado a mateo.inostroza2601@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-05-05 22:39:58 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-05-06 07:00:17 [OK] Enviado a cviveros2025@udec.cl | Asunto: 👋 Camila, ¿te animas a publicar?
+2026-05-06 07:00:19 [OK] Enviado a mateo.inostroza2601@alumnos.ubiobio.cl | Asunto: 👋 Mateo, ¿te animas a publicar?
+2026-05-06 09:52:18 [OK] Enviado a contacto@nubira.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-05-06 10:39:53 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-05-06 10:39:56 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-06 10:40:21 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-05-06 10:40:23 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-06 10:49:11 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Mateo
+2026-05-06 11:00:09 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-05-06 11:30:23 [OK] Enviado a mateo.inostroza2601@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-05-06 11:31:30 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Katherine
+2026-05-06 11:38:56 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-05-06 13:46:40 [OK] Enviado a k.rodriguezcabezas@uandresbello.edu | Asunto: Bienvenido a Nubira
+2026-05-06 14:07:48 [OK] Enviado a k.rodriguezcabezas@unab.edu | Asunto: Estado Solicitud: Andres bello
+2026-05-06 15:23:49 [OK] Enviado a pacavieress@uc.cl | Asunto: ⏰ Tu clase con Tutor Nubira.cl empieza en 1 hora
+2026-05-06 15:23:51 [OK] Enviado a contacto@nubira.cl | Asunto: ⏰ Tu clase con Pablo Cavieres Sagredo empieza en 1 hora
+2026-05-07 07:00:07 [OK] Enviado a nicolas.camargor@konradlorenz.edu.co | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-07 07:00:09 [OK] Enviado a felipe.valderrama.v@usach.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-07 07:00:11 [OK] Enviado a k.rodriguezcabezas@uandresbello.edu | Asunto: 👋 Kayla, ¿te animas a publicar?
+2026-05-07 11:13:03 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-05-07 11:13:05 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-07 13:31:54 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-05-07 13:31:56 [OK] Enviado a pacavieress@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-07 15:11:57 [OK] Enviado a contacto@nubira.cl | Asunto: ¡Tienes un nuevo alumno! - Prueba
+2026-05-07 15:11:59 [OK] Enviado a admin@uc.cl | Asunto: Solicitud enviada: Prueba
+2026-05-07 15:30:09 [OK] Enviado a pacavieress@uc.cl | Asunto: ⏰ Tu clase con Tutor Nubira.cl empieza en 1 hora
+2026-05-07 15:30:11 [OK] Enviado a contacto@nubira.cl | Asunto: ⏰ Tu clase con Pablo Cavieres Sagredo empieza en 1 hora
+2026-05-08 13:00:31 [OK] Enviado a katherine.almendras2401@alumnos.ubiobio.cl | Asunto: Tienes un nuevo mensaje de Soporte
+2026-05-08 21:27:21 [OK] Enviado a admin@uc.cl | Asunto: Tienes un nuevo mensaje de Tutor
+2026-05-09 07:00:06 [OK] Enviado a cpinoh@utem.cl | Asunto: 👋 Catalina, ¿te animas a publicar?
+2026-05-09 13:14:16 [OK] Enviado a cdonosov4@correo.uss.cl | Asunto: Bienvenido a Nubira
+2026-05-10 00:25:40 [OK] Enviado a maura.guerrero@alumnos.uaysen.cl | Asunto: Estado Solicitud: Universidad de Aysen
+2026-05-10 00:26:31 [OK] Enviado a k.rodriguezcabezas@unab.edu | Asunto: Tu cuenta en Nubira te espera
+2026-05-10 00:29:52 [OK] Enviado a isidora.espinoza.galdamez@colegiorauquen.cl | Asunto: Tu cuenta en Nubira te espera
+2026-05-10 07:00:19 [OK] Enviado a cviveros2025@udec.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-05-10 07:00:21 [OK] Enviado a cdonosov4@correo.uss.cl | Asunto: 👋 Catalina, ¿te animas a publicar?
+2026-05-10 09:00:06 [OK] Enviado a pacavieress@uc.cl | Asunto: 📅 Tu clase con Tutor Nubira.cl es mañana
+2026-05-10 09:00:08 [OK] Enviado a contacto@nubira.cl | Asunto: 📅 Tu clase con Pablo Cavieres Sagredo es mañana
+2026-05-10 10:00:07 [OK] Enviado a pacavieress@uc.cl | Asunto: 📅 Tu clase con Tutor Nubira.cl es mañana
+2026-05-10 10:00:09 [OK] Enviado a contacto@nubira.cl | Asunto: 📅 Tu clase con Pablo Cavieres Sagredo es mañana
+2026-05-11 07:00:07 [OK] Enviado a tamara.valdivia.12@sansano.usm.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-11 09:00:11 [OK] Enviado a pacavieress@uc.cl | Asunto: ⏰ Tu clase con Tutor Nubira.cl empieza en 1 hora
+2026-05-11 09:00:13 [OK] Enviado a contacto@nubira.cl | Asunto: ⏰ Tu clase con Pablo Cavieres Sagredo empieza en 1 hora
+2026-05-11 10:00:07 [OK] Enviado a pacavieress@uc.cl | Asunto: ⏰ Tu clase con Tutor Nubira.cl empieza en 1 hora
+2026-05-11 10:00:09 [OK] Enviado a contacto@nubira.cl | Asunto: ⏰ Tu clase con Pablo Cavieres Sagredo empieza en 1 hora
+2026-05-11 12:28:20 [OK] Enviado a karen.almonacid@usach.cl | Asunto: ✅ ¡Tu servicio está publicado!
+2026-05-11 12:28:51 [OK] Enviado a maura.guerrero@alumnos.uaysen.cl | Asunto: Tu cuenta en Nubira te espera
+2026-05-11 18:22:09 [OK] Enviado a m.crdenasoyarzn@uandresbello.edu | Asunto: ✅ ¡Tu servicio está publicado!
+2026-05-12 07:00:07 [OK] Enviado a leandro.cardenasm@correoaiep.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-12 08:44:15 [OK] Enviado a carlos.garrido@uacademia.cl | Asunto: Estado Solicitud: Universidad Academia Humanismo Cristiano
+2026-05-13 07:00:07 [OK] Enviado a cpinoh@utem.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-05-13 15:29:24 [OK] Enviado a carlos.garrido@uacademia.cl | Asunto: Tu cuenta en Nubira te espera
+2026-05-13 15:30:09 [OK] Enviado a admin@uc.cl | Asunto: 📅 Tu clase con Tutor Nubira.cl es mañana
+2026-05-13 15:30:11 [OK] Enviado a contacto@nubira.cl | Asunto: 📅 Tu clase con Soporte Nubira es mañana
+2026-05-14 13:57:21 [OK] Enviado a david.cid.pena@alumnos.uta.cl | Asunto: Bienvenido a Nubira
+2026-05-14 15:30:08 [OK] Enviado a admin@uc.cl | Asunto: ⏰ Tu clase con Tutor Nubira.cl empieza en 1 hora
+2026-05-14 15:30:10 [OK] Enviado a contacto@nubira.cl | Asunto: ⏰ Tu clase con Soporte Nubira empieza en 1 hora
+2026-05-14 22:11:54 [OK] Enviado a david.cid.pena@alumnos.uta.cl | Asunto: Bienvenido a Nubira
+2026-05-15 07:00:10 [OK] Enviado a david.cid.pena@alumnos.uta.cl | Asunto: 👋 David, ¿te animas a publicar?
+2026-05-15 08:47:58 [OK] Enviado a amoralesiturriaga-4ma@colegiosanramonnonato.cl | Asunto: Estado Solicitud: colegio san Ramón nonato
+2026-05-15 22:07:12 [OK] Enviado a jabalboa@alumnos.uahurtado.cl | Asunto: Bienvenido a Nubira
+2026-05-16 01:00:29 [OK] Enviado a jabalboa@alumnos.uahurtado.cl | Asunto: Bienvenido a Nubira
+2026-05-16 01:01:05 [OK] Enviado a amoralesiturriaga-4ma@colegiosanramonnonato.cl | Asunto: Tu cuenta en Nubira te espera
+2026-05-16 07:00:07 [OK] Enviado a jimena.pairo.cuba@alumnos.uta.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-05-16 07:00:09 [OK] Enviado a jabalboa@alumnos.uahurtado.cl | Asunto: 👋 Javiera, ¿te animas a publicar?
+2026-05-16 08:27:24 [OK] Enviado a pacavieress@uc.cl | Asunto: Bienvenido a Nubira
+2026-05-16 09:08:59 [OK] Enviado a pacavieress@uc.cl | Asunto: Bienvenido a Nubira
+2026-05-16 09:12:00 [OK] Enviado a pacavieress@uc.cl | Asunto: Bienvenido a Nubira
+2026-05-16 09:16:48 [OK] Enviado a pacavieress@uc.cl | Asunto: Bienvenido a Nubira
+2026-05-16 09:20:03 [OK] Enviado a pacavieress@uc.cl | Asunto: Bienvenido a Nubira
+2026-05-16 09:22:32 [OK] Enviado a pacavieress@uc.cl | Asunto: Bienvenido a Nubira
+2026-05-16 10:56:38 [OK] Enviado a tomas.riquelme@uchile.cl | Asunto: Estado Solicitud: Universidad de Chile
+2026-05-16 12:10:43 [OK] Enviado a jabalboa@alumnos.uahurtado.cl | Asunto: Bienvenido a Nubira
+2026-05-17 07:00:06 [OK] Enviado a cviveros2025@udec.cl | Asunto: 💡 Tu conocimiento vale mucho
+2026-05-17 22:35:32 [OK] Enviado a jabalboa@alumnos.uahurtado.cl | Asunto: Bienvenido a Nubira
+2026-05-18 08:18:44 [OK] Enviado a mperezdearce@tecnologiamedica.ucsc.cl | Asunto: Estado Solicitud: universidad católica de la santísima concepcion
+2026-05-19 07:00:06 [OK] Enviado a karen.almonacid@usach.cl | Asunto: 👀 Mira lo que están subiendo en tu U
+2026-05-19 08:17:21 [OK] Enviado a mperezdearce@tecnologiamedica.ucsc.cl | Asunto: Tu cuenta en Nubira te espera
+2026-05-19 08:17:25 [OK] Enviado a tomas.riquelme@uchile.cl | Asunto: Tu cuenta en Nubira te espera
+2026-05-19 11:23:13 [OK] Enviado a mperezdearce@tecnologiamedica.ucsc.cl | Asunto: Bienvenido a Nubira

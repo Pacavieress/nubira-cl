@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8889:80"  # Puedes cambiar este puerto si lo necesitas
+    volumes:
+      - .:/var/www/html  # Monta todo el proyecto, no solo /public
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: plataforma_apuntes
+    volumes:
+      - ./db:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8890:80"  # phpMyAdmin accesible en http://localhost:8890
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root

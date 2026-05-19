@@ -1,0 +1,261 @@
+
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType image/jpeg .jpg
+  AddType image/jpeg .jpeg
+  AddType image/png .png
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.(webp|jpg|jpeg|png)$">
+    Header set Cache-Control "public, no-transform"
+  </FilesMatch>
+</IfModule>
+
+RewriteEngine On
+# ... (El resto del código sigue igual)
+RewriteEngine On
+RewriteBase /
+
+
+# Evita reescribir si archivo o directorio existe (Permite carga de imágenes y CSS)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+####################################
+# ENLACES CORTOS Y SEGUROS (Token)
+####################################
+RewriteRule ^s/([a-zA-Z0-9_-]+)$ app/detalle_servicio.php?token_seguro=$1 [L,QSA]
+RewriteRule ^a/([a-zA-Z0-9\-\_=]+)$ app/ver_apunte.php?token_seguro=$1 [L,QSA]
+
+# Adjuntos de chat (URL bonita: /archivo-chat/646)
+RewriteRule ^archivo-chat/([0-9]+)/?$ app/ver_archivo_chat.php?m=$1 [L,QSA]
+
+####################################
+# RUTAS DE USUARIO Y AUTH
+####################################
+# Fix para el botón "Regístrate Gratis" (ambas funcionan)
+RewriteRule ^registro$                register.php                      [L,QSA]
+RewriteRule ^register$                register.php                      [L,QSA]
+
+RewriteRule ^login$                   login.php                         [L,QSA]
+RewriteRule ^logout$                  app/logout.php                    [L,QSA]
+RewriteRule ^recuperar$               recuperar.php                     [L,QSA]
+RewriteRule ^restablecer$             restablecer.php                   [L,QSA]
+RewriteRule ^procesar-cambio$         procesar_cambio.php               [L,QSA]
+RewriteRule ^enviar_recuperacion$     enviar_recuperacion.php           [L,QSA]
+
+# Dashboard y Perfil
+RewriteRule ^dashboard$               app/dashboard.php                 [L,QSA]
+# 1. Redirigimos la URL vieja a la nueva optimizada (sin tildes y con guiones)
+RewriteRule ^editar_mis_datos/?$ /configurar-cuenta [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^configurar-cuenta/?$ app/editar_datos.php [L,QSA]
+RewriteRule ^cambiar-clave$           app/cambiar_password_forzado.php  [L,QSA]
+RewriteRule ^perfil/([a-zA-Z0-9_-]+)/?$ app/perfil.php?id=$1            [L,QSA]
+RewriteRule ^cuenta-eliminada$        app/cuenta-eliminada.php          [L,QSA]
+
+# Nuevas rutas financieras modulares Nubira 2.0
+# 1. Redirigimos la URL vieja a la nueva optimizada
+RewriteRule ^ventas_clases/?$ /clases-vendidas [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^clases-vendidas/?$ app/ventas_clases.php [L,QSA]
+# 1. Redirigimos la URL vieja a la nueva optimizada sin "stop words"
+RewriteRule ^ventas_apuntes/?$ /ventas-apuntes [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^ventas-apuntes/?$ app/ventas_apuntes.php [L,QSA]
+# 1. Redirigimos la URL vieja a la nueva optimizada
+RewriteRule ^datos_bancarios/?$ /mi-billetera [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^mi-billetera/?$ app/datos_bancarios.php [L,QSA]
+
+####################################
+# PÁGINAS INFORMATIVAS
+####################################
+RewriteRule ^$                        /explorar                         [R=302,L]
+RewriteRule ^inicio$                  /explorar                         [R=301,L]
+RewriteRule ^sobre-nosotros$          sobre-nosotros.php                [L,QSA]
+RewriteRule ^privacidad$              privacidad.php                    [L,QSA]
+RewriteRule ^terminos$                terminos.php                      [L,QSA]
+# RewriteRule ^soporte$                 app/soporte.php                   [L,QSA]
+RewriteRule ^soporte$    app/reclamos_sugerencias.php      [L,QSA]
+
+####################################
+# VITRINAS, SERVICIOS Y APUNTES
+####################################
+# === RUTA LIMPIA PARA VITRINA PRINCIPAL ===
+RewriteRule ^explorar/?$               app/vitrina.php              [L,QSA]
+
+# (Redirección SEO por si alguien usa el link viejo)
+RewriteRule ^vitrina/?$                /explorar                    [R=301,L]
+
+
+
+RewriteRule ^apuntes/?$               app/vitrina_apuntes.php           [L,QSA]
+
+# (Redirecciones por si alguien usa los links viejos)
+RewriteRule ^vitrina-apuntes/?$       /apuntes                          [R=301,L]
+RewriteRule ^explorar-apuntes/?$      /apuntes                          [R=301,L]
+
+RewriteRule ^vitrina-proyectos$       app/vitrina_proyectos.php         [L,QSA]
+RewriteRule ^descubre$                app/descubre.php                  [L,QSA]
+
+# Cargas AJAX
+RewriteRule ^cargar-proyectos$        app/cargar_proyectos.php          [L,QSA]
+RewriteRule ^cargar-oportunidades$    app/cargar_oportunidades.php      [L,QSA]
+
+# Detalles (Unificados para evitar error 404/imágenes rotas)
+RewriteRule ^detalle-servicio/([a-zA-Z0-9_-]+)/?$ app/detalle_servicio.php?id=$1 [L,QSA]
+RewriteRule ^detalle-servicio$            app/detalle_servicio.php       [L,QSA]
+
+# === REGLA NUEVA ESTILO AIRBNB (Apuntes) ===
+RewriteRule ^apunte/([a-zA-Z0-9_-]+)/?$   app/ver_apunte.php?id=$1       [L,QSA]
+RewriteRule ^ver-apunte$                  app/ver_apunte.php             [L,QSA]
+RewriteRule ^detalle-oportunidad/([0-9]+)$ app/detalle_oportunidad.php?id=$1 [L,QSA]
+
+
+# Gestión de Servicios y Apuntes
+RewriteRule ^publicar-servicio$       app/publicar_servicio.php         [L,QSA]
+RewriteRule ^guardar-servicio$        app/guardar_servicio.php          [L,QSA]
+
+# === RUTA LIMPIA PARA SERVICIOS ===
+RewriteRule ^servicios/?$                  app/clases_servicios.php          [L,QSA]
+
+# (Redirecciones SEO por si alguien usa los links viejos)
+RewriteRule ^explorar-clases-servicos/?$   /servicios                        [R=301,L]
+RewriteRule ^clases-servicios/?$           /servicios                        [R=301,L]
+
+# 1. Redirigimos permanentemente si alguien intenta acceder al archivo físico .php
+RewriteRule ^app/bandeja_entrada\.php$ /bandeja-entrada [R=301,L]
+
+# 2. Asignamos la nueva URL limpia al archivo interno
+RewriteRule ^bandeja-entrada/?$ app/bandeja_entrada.php [L,QSA]
+# 1. Redirigimos permanentemente la URL vieja a la nueva óptima para SEO
+RewriteRule ^mis_servicios_publicados$ /mis-publicaciones [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^mis-publicaciones$ app/mis_servicios.php [L,QSA]
+RewriteRule ^mis_servicios_contratados$ /mis-contratos [R=301,L]
+RewriteRule ^mis-contratos$ app/mis_contratos.php [L,QSA]
+RewriteRule ^mis_apuntes_publicados$  app/mis_apuntes.php               [L,QSA]
+RewriteRule ^formulario-subir-apunte$ app/formulario_subir_apunte.php   [L,QSA]
+RewriteRule ^mis-archivos-subidos$    app/mis_archivos_subidos.php      [L,QSA]
+RewriteRule ^reportar-servicio(?:/)?$ app/reportar-servicio.php         [L,QSA]
+
+####################################
+# FINANZAS Y PAGOS
+####################################
+# 1. Redirigimos la URL vieja (con guion bajo) a la nueva optimizada
+RewriteRule ^mis_ventas/?$ /mis-ventas [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^mis-ventas/?$ app/mis_ventas.php [L,QSA]
+
+# 1. Redirigimos la URL vieja (con guion bajo) a la nueva optimizada
+RewriteRule ^mis_compras/?$ /mis-compras [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^mis-compras/?$ app/mis_compras.php [L,QSA]
+
+RewriteRule ^solicitar-retiro$        app/solicitar_retiro.php          [L,QSA]
+RewriteRule ^editar-datos-bancarios$  app/editar_datos_bancarios.php    [L,QSA]
+RewriteRule ^iniciar-pago$            app/iniciar_pago.php              [L,QSA]
+RewriteRule ^iniciar-pago-servicio$   app/iniciar_pago_servicio.php     [L,QSA]
+RewriteRule ^pagar-oportunidad$       app/pagar_oportunidad.php         [L,QSA]
+RewriteRule ^busqueda$                app/busqueda.php        [L,QSA]
+
+# Retornos de Pasarela
+RewriteRule ^pago-error$              pago_error.php                    [L,QSA]
+RewriteRule ^pago-exitoso-publicacion$ app/pago_exitoso_publicacion.php [L,QSA]
+RewriteRule ^pago-error-publicacion$  app/pago_error_publicacion.php    [L,QSA]
+RewriteRule ^pago-oportunidad-exitoso$ app/pago_oportunidad_exitoso.php [L,QSA]
+RewriteRule ^pago-exitoso-contacto$   app/pago_exitoso_contacto.php     [L,QSA]
+
+####################################
+# INTERACCIONES
+####################################
+RewriteRule ^oportunidades$           app/oportunidades.php             [L,QSA]
+RewriteRule ^crear-oportunidad$       app/crear_oportunidad.php         [L,QSA]
+RewriteRule ^crear_oportunidad\.php$  app/crear_oportunidad.php         [L,QSA]
+RewriteRule ^mis-preguntas$           app/mis_preguntas.php             [L,QSA]
+# 1. Redirigimos la URL vieja a la nueva optimizada
+RewriteRule ^mis_evaluaciones/?$ /mis-evaluaciones [R=301,L]
+
+# 2. Asignamos la nueva URL al archivo físico
+RewriteRule ^mis-evaluaciones/?$ app/mis_evaluaciones.php [L,QSA]
+RewriteRule ^opiniones$               app/opiniones.php                 [L,QSA]
+RewriteRule ^test_contacto?$          app/test_contacto.php             [L,QSA]
+
+####################################
+# PANEL ADMIN (NUBIRA 2.0)
+####################################
+RewriteRule ^admin/dashboard$         app/admin_dashboard.php           [L,QSA]
+RewriteRule ^admin/panel$             app/admin_panel.php               [L,QSA]
+RewriteRule ^admin/usuarios$          app/admin_usuarios.php            [L,QSA]
+RewriteRule ^admin/solicitudes$       app/admin_solicitudes.php         [L,QSA]
+RewriteRule ^admin/login-fallos$      app/admin_login_fallos.php        [L,QSA]
+RewriteRule ^admin/dominios$          app/admin_dominios.php            [L,QSA]
+RewriteRule ^admin/servicios$         app/admin_servicios.php           [L,QSA]
+RewriteRule ^admin/ofertas$           app/admin_ofertas.php             [L,QSA]
+RewriteRule ^admin/ofertas-apuntes$   app/admin_ofertas_apuntes.php     [L,QSA]
+RewriteRule ^admin/servicios-detalle/([0-9]+)$ app/admin_servicios_detalle.php?id=$1 [L,QSA]
+RewriteRule ^admin/servicios-accion$  app/admin_servicios_accion.php    [L,QSA]
+RewriteRule ^admin/contratos$         app/admin_contratos.php           [L,QSA]
+RewriteRule ^admin/autores_servicios$ app/admin_autores_servicios.php   [L,QSA]
+RewriteRule ^admin/reporte-servicios$ app/admin_reportes_servicios.php  [L,QSA]
+RewriteRule ^admin/apuntes$           app/admin_apuntes.php             [L,QSA]
+RewriteRule ^admin/acciones-apunte$   app/acciones_apunte.php           [L,QSA]
+RewriteRule ^admin/retiros$           app/admin_retiros.php             [L,QSA]
+RewriteRule ^admin/pagos$             app/admin_pagos.php               [L,QSA]
+RewriteRule ^admin/cuentas-bancarias$ app/admin_cuentas.php              [L,QSA]
+RewriteRule ^admin/agregar-banco$     app/agregar_banco.php             [L,QSA]
+RewriteRule ^admin/editar-datos-bancarios$ app/editar_datos_bancarios.php [L,QSA]
+RewriteRule ^admin/chats$             app/admin_chats.php               [L,QSA]
+RewriteRule ^admin/soporte$           app/admin_soporte.php             [L,QSA]
+RewriteRule ^admin/reclamos$          app/admin_reclamos.php            [L,QSA]
+RewriteRule ^admin/correos$           app/admin_correos.php             [L,QSA]
+RewriteRule ^admin/logs-correo$       app/admin_logs_correo.php         [L,QSA]
+RewriteRule ^admin/banners$           app/admin_banners.php             [L,QSA]
+RewriteRule ^admin/vitrina$           app/vitrina.php                   [L,QSA]
+RewriteRule ^admin/recordatorios$     app/admin_recordatorios.php       [L,QSA]
+RewriteRule ^admin/popup$             app/admin_popup.php               [L,QSA]
+RewriteRule ^admin/excepciones$       app/admin_excepciones.php         [L,QSA]
+RewriteRule ^admin/corregir-urls$     admin/admin_corregir_urls.php     [L,QSA]
+RewriteRule ^admin/ver-logs$          app/admin_ver_logs.php            [L,QSA]
+RewriteRule ^admin/ver_clicks/([0-9]+)$ app/admin_ver_clicks_banner.php?id=$1 [L,QSA]
+RewriteRule ^admin/ia/?$              app/admin_ia.php                  [L,QSA]
+RewriteRule ^admin/precios$           app/admin_config_precios.php      [L,QSA]
+RewriteRule ^admin/config-precio$     app/admin_config_precios.php      [L,QSA]
+RewriteRule ^admin/accesos$           app/admin_accesos_vitrina.php     [L,QSA]
+RewriteRule ^admin/cupones$            app/cupones.php                  [L,QSA]
+RewriteRule ^admin/avisos/?$            app/admin_avisos.php [L,QSA]
+
+
+# Acciones Admin Oportunidades
+RewriteRule ^admin/oportunidades/aprobar/([0-9]+)$  app/admin_oportunidades.php?action=aprobar&id=$1  [L,QSA]
+RewriteRule ^admin/oportunidades/rechazar/([0-9]+)$ app/admin_oportunidades.php?action=rechazar&id=$1 [L,QSA]
+RewriteRule ^admin/oportunidades/eliminar/([0-9]+)$ app/admin_oportunidades.php?action=eliminar&id=$1 [L,QSA]
+
+# Retrocompatibilidad final (archivos .php sueltos)
+RewriteRule ^mis_ventas\.php$         /mis-ventas                       [R=301,L]
+RewriteRule ^solicitar_retiro\.php$   /solicitar-retiro                 [R=301,L]
+RewriteRule ^mis_compras\.php$        /mis-compras                      [R=301,L]
+RewriteRule ^mis_archivos_subidos\.php$ /mis-archivos-subidos           [R=301,L]
+
+######################
+# ERRORES PERSONALIZADOS
+######################
+ErrorDocument 404 /error_general.php?code=404
+ErrorDocument 403 /error_general.php?code=403
+ErrorDocument 401 /error_general.php?code=401
+ErrorDocument 500 /error_general.php?code=500
+
+######################
+# CAPTURA FINAL
+######################
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ /error_general.php?code=404 [L]
