@@ -207,12 +207,12 @@ foreach ($servicios as $i => $row):
 
    if ($es_oferta) {
         $precio_oferta = (int)$row['precio_oferta'];
-        $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-gray-900 font-extrabold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span></div>';
+        $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span></div>';
     
     } else {
         if (is_numeric($precio_val) && $precio_val > 0) {
             $precio = "$" . number_format($precio_val, 0, ',', '.'); 
-            $precio_class = "text-gray-900 font-bold tracking-tight"; 
+            $precio_class = "text-gray-700 font-semibold tracking-tight";
             $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
         } else {
             $precio = "Gratis"; 
@@ -303,12 +303,9 @@ foreach ($servicios as $i => $row):
          loading="lazy"
          onerror="this.src='/upload/preview/default_file.webp'">
     
-  <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
-    <?php if ($es_oferta): ?>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">
-    <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
-</span>
-    <?php elseif ($nivel_tutor === 'leyenda'): ?>
+  <!-- Badge nivel (izquierda) -->
+  <div class="absolute top-2.5 left-2.5 z-10">
+    <?php if ($nivel_tutor === 'leyenda'): ?>
         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">
             Leyenda
         </span>
@@ -324,15 +321,21 @@ foreach ($servicios as $i => $row):
         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">
             Top
         </span>
-    <?php else: ?>
-        <?php if ($es_nuevo): ?>
-<span class="bg-white/95 backdrop-blur-sm text-gray-900 text-[10px] font-semibold px-2.5 py-1 rounded-full border border-gray-200">
-    Nuevo
-</span>
-        <?php endif; ?>
+    <?php elseif ($es_nuevo): ?>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">
+            Nuevo
+        </span>
     <?php endif; ?>
-    
-</div>
+  </div>
+
+  <!-- Badge cupos (derecha) -->
+  <?php if ($es_oferta): ?>
+  <div class="absolute top-2.5 right-2.5 z-10">
+    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+        <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+    </span>
+  </div>
+  <?php endif; ?>
   </div>
 
  <div class="pl-1 pr-1 pt-3 pb-1 flex flex-col flex-1 text-left min-h-[90px]">
