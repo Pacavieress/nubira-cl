@@ -37,7 +37,7 @@ if ($tipo === 'servicio') {
     
     // 3. Formateo de precio base (por si no es oferta)
     $precio = ($precio_normal > 0) ? "$".number_format($precio_normal,0,',','.') : "Gratis";
-    $precio_cls = ($precio_normal > 0) ? "text-gray-900" : "text-green-600";
+    $precio_cls = ($precio_normal > 0) ? "text-gray-700" : "text-gray-700";
     $tag = "CLASES"; // <--- AJUSTADO A PLURAL
     $tag_color = "text-[#54A6D8]";
     $link = "/detalle-servicio/$id";
@@ -68,7 +68,7 @@ if ($tipo === 'servicio') {
             <span class="text-[10px] font-bold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
         </div>';
     } else {
-        $html_stars = '<span class="text-[10px] font-medium text-gray-400">Nuevo</span>';
+        $html_stars = '';
     }
 } elseif ($tipo === 'apunte') {
     $sql = "SELECT titulo, precio, portada, archivo, asignatura FROM apuntes WHERE id=$id LIMIT 1";
@@ -93,7 +93,7 @@ if ($tipo === 'servicio') {
 ?>
 
 <a href="<?= $link ?>" 
-   class="group flex-shrink-0 w-[240px] md:w-[320px] h-[96px] md:h-[112px] bg-white rounded-2xl border <?= (!empty($es_oferta) && $es_oferta) ? 'border-orange-300' : 'border-gray-100' ?> flex gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all snap-start overflow-hidden relative items-center p-1.5 md:p-2 <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
+   class="group flex-shrink-0 w-[240px] md:w-[320px] h-[96px] md:h-[112px] bg-white rounded-xl border border-gray-200 hover:border-gray-300 flex gap-3 transition-all snap-start overflow-hidden relative items-center p-1.5 md:p-2 <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
     
     <!-- 1. IMAGEN (Medidas exactas Nubira 2.0: 84px/88px) -->
     <div class="w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden relative self-center shadow-sm">
@@ -102,21 +102,13 @@ if ($tipo === 'servicio') {
         <?php if($tipo === 'servicio' && isset($nivel_tutor) && $nivel_tutor !== '' && empty($es_oferta)): ?>
             <div class="absolute top-1 left-1 z-10 scale-90 origin-top-left">
                 <?php if ($nivel_tutor === 'leyenda'): ?>
-                    <span class="bg-gradient-to-tr from-red-700 to-rose-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-400/30">
-                        <i class="fa-solid fa-gem text-[7px]"></i> 
-                    </span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
                 <?php elseif ($nivel_tutor === 'elite'): ?>
-                    <span class="bg-gradient-to-tr from-cyan-400 to-blue-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full border border-cyan-300/30 flex items-center gap-1 shadow-sm">
-                        <i class="fa-solid fa-diamond text-[7px]"></i>
-                    </span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
                 <?php elseif ($nivel_tutor === 'pro'): ?>
-                    <span class="bg-gradient-to-tr from-yellow-400 to-amber-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full border border-yellow-300/30 shadow-sm flex items-center gap-1">
-                        <i class="fa-solid fa-star text-[7px]"></i> 
-                    </span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
                 <?php elseif ($nivel_tutor === 'top'): ?>
-                    <span class="bg-gradient-to-tr from-slate-200 to-gray-300 text-slate-800 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full border border-white/60 flex items-center gap-1 shadow-sm">
-                        <i class="fa-solid fa-star text-[7px]"></i> 
-                    </span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -129,8 +121,8 @@ if ($tipo === 'servicio') {
     <!-- 2. BADGE DE OFERTA FLOTANTE (Esquina superior derecha) -->
     <?php if(!empty($es_oferta)): ?>
     <div class="absolute top-2 right-2 md:top-2.5 md:right-2.5 flex z-10">
-        <span class="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-sm">
-            🔥 <?= $cupos_oferta ?> CUPOS
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+            <?= $cupos_oferta ?> <?= (int)$cupos_oferta === 1 ? 'cupo' : 'cupos' ?>
         </span>
     </div>
     <?php endif; ?>
@@ -144,7 +136,7 @@ if ($tipo === 'servicio') {
             <div class="flex flex-col justify-end mt-1">
                 <?php if(!empty($es_oferta)): ?>
                     <span class="text-[9px] md:text-[10px] text-gray-400 line-through font-medium block leading-none mb-0.5">Normal $<?= number_format($precio_normal, 0, ',', '.') ?></span>
-                    <span class="text-base md:text-lg text-orange-500 font-extrabold tracking-tight leading-none">$<?= number_format($precio_oferta, 0, ',', '.') ?></span>
+                    <span class="text-base md:text-lg text-gray-700 font-semibold tracking-tight leading-none">$<?= number_format($precio_oferta, 0, ',', '.') ?></span>
                 <?php else: ?>
                     <span class="text-[13px] md:text-[15px] <?= $precio_cls ?> font-bold tracking-tight leading-none"><?= $precio ?></span>
                 <?php endif; ?>

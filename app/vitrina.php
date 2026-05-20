@@ -747,7 +747,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                         <?php if($es_activa): ?>
 <a href="/detalle-servicio/<?= $link_hash_of ?>" 
    onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
-   class="group flex-shrink-0 w-[240px] md:w-[320px] h-[96px] md:h-[112px] bg-white rounded-2xl border border-orange-300 flex gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all snap-start overflow-hidden relative items-center p-1.5 md:p-2">
+   class="group flex-shrink-0 w-[240px] md:w-[320px] h-[96px] md:h-[112px] bg-white rounded-xl border border-gray-200 flex gap-3 hover:border-gray-300 transition-all snap-start overflow-hidden relative items-center p-1.5 md:p-2">
                                 
                                <!-- IMAGEN (Tamaño exacto Nubira 2.0) -->
                                 <div class="w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden relative self-center shadow-sm">
@@ -762,8 +762,8 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                 
                                <!-- BADGE FLOTANTE (Optimizado para Móvil) -->
                                 <div class="absolute top-2 right-2 md:top-2.5 md:right-2.5 flex z-10">
-                                    <span class="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-sm">
-                                        🔥 <?= (int)$row_of['cupos_oferta'] ?> CUPOS
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                        <?= (int)$row_of['cupos_oferta'] ?> <?= (int)$row_of['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                                     </span>
                                 </div>
                                 
@@ -775,7 +775,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                     <div class="mt-auto flex items-end justify-between w-full">
                                         <div class="flex flex-col justify-end mt-1">
                                             <span class="text-[9px] md:text-[10px] text-gray-400 line-through font-medium block leading-none mb-0.5">Normal $<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
-                                            <span class="text-base md:text-lg text-orange-500 font-extrabold tracking-tight leading-none">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
+                                            <span class="text-base md:text-lg text-gray-700 font-semibold tracking-tight leading-none">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
                                         </div>
                                         <div class="shrink-0 flex items-center mb-0.5">
                                             <?= $html_stars_of ?>

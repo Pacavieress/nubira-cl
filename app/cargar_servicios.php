@@ -348,11 +348,6 @@ foreach ($servicios as $i => $row):
 <div class="flex items-center justify-between">
               <div class="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
                 <?php if(!empty($inst_text)): ?>
-                    <?php if(function_exists('icon')): ?>
-                        <?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?>
-                    <?php else: ?>
-                        <i class="fa-solid fa-building text-[10px] text-gray-300 flex-shrink-0"></i>
-                    <?php endif; ?>
                     <span class="truncate"><?= $inst_text ?></span>
                 <?php endif; ?>
               </div>
@@ -369,11 +364,6 @@ foreach ($servicios as $i => $row):
 <div class="flex items-center justify-between pt-1">
               <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
                 <?php if(!empty($inst_text)): ?>
-                    <?php if(function_exists('icon')): ?>
-                        <?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?>
-                    <?php else: ?>
-                        <i class="fa-solid fa-building text-[11px] text-gray-300 flex-shrink-0"></i>
-                    <?php endif; ?>
                     <span class="truncate"><?= $inst_text ?></span>
                 <?php endif; ?>
               </div>
