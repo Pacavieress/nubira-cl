@@ -392,10 +392,10 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
             <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 md:mx-0 md:px-0">
                 <div class="relative shrink-0">
                     <select id="ordenar_por" onchange="window.location.href='<?= $url_base ?>' + this.value" class="appearance-none pl-3 pr-7 py-1.5 text-xs font-bold bg-gray-900 text-white border border-gray-900 rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
-                        <option value="" <?= (empty($orden_usuario))?'selected':'' ?>>✨ Recomendados</option>
-                        <option value="calificacion" <?= ($orden_usuario=='calificacion')?'selected':'' ?>>⭐ Mejor Calificados</option>
-                        <option value="precio_desc" <?= ($orden_usuario=='precio_desc')?'selected':'' ?>>💎 Mayor Precio</option>
-                        <option value="precio_asc"  <?= ($orden_usuario=='precio_asc')?'selected':'' ?>>💲 Menor Precio</option>
+                        <option value="" <?= (empty($orden_usuario))?'selected':'' ?>>Recomendados</option>
+                        <option value="calificacion" <?= ($orden_usuario=='calificacion')?'selected':'' ?>>Mejor Calificados</option>
+                        <option value="precio_desc" <?= ($orden_usuario=='precio_desc')?'selected':'' ?>>Mayor Precio</option>
+                        <option value="precio_asc"  <?= ($orden_usuario=='precio_asc')?'selected':'' ?>>Menor Precio</option>
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-white">
                         <i class="fa-solid fa-chevron-down text-[9px]"></i>
@@ -404,14 +404,14 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
 
                 <div class="h-4 w-px bg-gray-200 shrink-0 mx-0.5"></div>
 
-                <a href="?q=<?= urlencode($q) ?>&orden=precio_asc" class="shrink-0 px-3 py-1.5 bg-white border <?= $orden_usuario=='precio_asc' ? 'border-green-400 text-green-600 bg-green-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
-                    <i class="fa-solid fa-bolt text-yellow-400"></i> Económicos
+                <a href="?q=<?= urlencode($q) ?>&orden=precio_asc" class="shrink-0 px-3 py-1.5 bg-white border <?= $orden_usuario=='precio_asc' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                    Económicos
                 </a>
-                <a href="?q=<?= urlencode($q) ?>&orden=calificacion" class="shrink-0 px-3 py-1.5 bg-white border <?= $orden_usuario=='calificacion' ? 'border-yellow-400 text-yellow-700 bg-yellow-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
-                    <i class="fa-solid fa-star text-yellow-400"></i> Top 5 Estrellas
+                <a href="?q=<?= urlencode($q) ?>&orden=calificacion" class="shrink-0 px-3 py-1.5 bg-white border <?= $orden_usuario=='calificacion' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                    Mejor Calificados
                 </a>
-                <a href="?q=<?= urlencode($q) ?>&modalidad=Remoto" class="shrink-0 px-3 py-1.5 bg-white border <?= $mod_filtro=='Remoto' ? 'border-purple-400 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
-                    <i class="fa-solid fa-laptop text-purple-400"></i> 100% Online
+                <a href="?q=<?= urlencode($q) ?>&modalidad=Remoto" class="shrink-0 px-3 py-1.5 bg-white border <?= $mod_filtro=='Remoto' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                    100% Online
                 </a>
             </div>
         </div>
@@ -501,7 +501,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                        onclick="if(typeof registrarClick === 'function') registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
                        class="block rounded-xl flex flex-col mb-4 transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
-                        <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-2xl bg-gray-100 shadow-sm border <?= $es_oferta ? 'border-orange-300' : 'border-gray-100' ?>">
+                          <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-gray-200">
                             <img src="<?= htmlspecialchars((string)$img_url) ?>"
                                  alt="<?= htmlspecialchars($row['titulo']) ?>"
                                  class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -511,40 +511,26 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                                  width="320" height="240"
                                  onerror="this.onerror=null;this.src='/upload/preview/default_file.webp';">
 
-                            <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
-                                <?php if ($es_oferta): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50">
-                                        🔥 <?= (int)$row['cupos_oferta'] ?> CUPOS
-                                    </span>
-                                <?php elseif ($nivel_tutor === 'leyenda'): ?>
-                                    <span class="bg-gradient-to-tr from-red-700 to-rose-500 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-400/30">
-                                        <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                    </span>
+                            <div class="absolute top-2.5 left-2.5 z-10">
+                                <?php if ($nivel_tutor === 'leyenda'): ?>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
                                 <?php elseif ($nivel_tutor === 'elite'): ?>
-                                    <span class="bg-gradient-to-tr from-cyan-400 to-blue-500 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-cyan-300/30 flex items-center gap-1 shadow-sm">
-                                        <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
                                 <?php elseif ($nivel_tutor === 'pro'): ?>
-                                    <span class="bg-gradient-to-tr from-yellow-400 to-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-yellow-300/30 shadow-sm flex items-center gap-1">
-                                        <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
                                 <?php elseif ($nivel_tutor === 'top'): ?>
-                                    <span class="bg-gradient-to-tr from-slate-200 to-gray-300 text-slate-800 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-white/60 flex items-center gap-1 shadow-sm">
-                                        <svg class="w-2.5 h-2.5 text-slate-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
                                 <?php elseif ($es_nuevo): ?>
-                                    <span class="bg-white/95 backdrop-blur-sm text-emerald-600 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-100 flex items-center gap-1 shadow-sm">
-                                        <i class="fa-solid fa-sparkles text-[10px]"></i> Nuevo
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Nuevo</span>
                                 <?php endif; ?>
                             </div>
-
-                            <div class="absolute top-2 right-2 z-10 shrink-0">
-                                <img src="<?= htmlspecialchars($foto_tutor, ENT_QUOTES, 'UTF-8') ?>"
-                                     class="w-8 h-8 rounded-full object-cover shadow-md border-[1.5px] border-white/95 bg-gray-50 transform-gpu"
-                                     width="32" height="32" decoding="async" loading="lazy"
-                                     style="image-rendering: -webkit-optimize-contrast; backface-visibility: hidden;">
+                            <?php if ($es_oferta): ?>
+                            <div class="absolute top-2.5 right-2.5 z-10">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                    <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                                </span>
                             </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="pl-1 pr-1 pt-3 pb-1 flex flex-col flex-1 text-left min-h-[90px]">
@@ -557,11 +543,6 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                             <div class="flex items-center justify-between pt-1">
                                 <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
                                     <?php if(!empty($inst_text)): ?>
-                                        <?php if(function_exists('icon')): ?>
-                                            <?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?>
-                                        <?php else: ?>
-                                            <i class="fa-solid fa-building text-[11px] text-gray-300 flex-shrink-0"></i>
-                                        <?php endif; ?>
                                         <span class="truncate"><?= $inst_text ?></span>
                                     <?php endif; ?>
                                 </div>
@@ -614,7 +595,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                        onclick="if(typeof registrarClick === 'function') registrarClick(<?= (int)$a['id'] ?>, 'apunte')"
                        class="block rounded-xl flex flex-col mb-4 transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full">
 
-                        <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-2xl bg-gray-100 shadow-sm border border-gray-100">
+                        <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-gray-200">
                             <img src="<?= htmlspecialchars((string)$img_ap) ?>"
                                  alt="<?= htmlspecialchars($a['titulo']) ?>"
                                  class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -624,17 +605,8 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                                  width="320" height="240"
                                  onerror="this.onerror=null;this.src='/upload/preview/default_file.webp';">
 
-                            <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider bg-white/95 backdrop-blur-sm text-slate-700 border border-slate-100 shadow-sm">
-                                    <i class="fa-solid fa-file-pdf text-[10px] text-purple-500"></i> Apunte
-                                </span>
-                            </div>
-
-                            <div class="absolute top-2 right-2 z-10 shrink-0">
-                                <img src="<?= htmlspecialchars((string)$foto_tutor_ap, ENT_QUOTES, 'UTF-8') ?>"
-                                     class="w-8 h-8 rounded-full object-cover shadow-md border-[1.5px] border-white/95 bg-gray-50 transform-gpu"
-                                     width="32" height="32" decoding="async" loading="lazy"
-                                     style="image-rendering: -webkit-optimize-contrast; backface-visibility: hidden;">
+                            <div class="absolute top-2.5 left-2.5 z-10">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Apunte</span>
                             </div>
                         </div>
 
@@ -648,11 +620,6 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                             <div class="flex items-center justify-between pt-1">
                                 <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
                                     <?php if(!empty($inst_text_ap)): ?>
-                                        <?php if(function_exists('icon')): ?>
-                                            <?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?>
-                                        <?php else: ?>
-                                            <i class="fa-solid fa-building text-[11px] text-gray-300 flex-shrink-0"></i>
-                                        <?php endif; ?>
                                         <span class="truncate"><?= $inst_text_ap ?></span>
                                     <?php endif; ?>
                                 </div>

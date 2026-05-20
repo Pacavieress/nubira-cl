@@ -491,9 +491,9 @@ session_write_close();
 
                 <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                     <div class="flex items-center gap-3 mb-3">
-                        <span class="px-2.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#54A6D8] border border-blue-100 uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
+                          <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
                         <div class="flex items-center gap-1.5 text-sm text-gray-500">
-                           <i class="fa-solid fa-star text-yellow-400 text-xs"></i>
+                             <i class="fa-solid fa-star text-gray-700 text-xs"></i>
 <span id="val-promedio" class="font-bold text-gray-900"><?= $promedio > 0 ? $promedio : 'Nuevo' ?></span>
 <?php if($tot_votos > 0): ?>
     <span id="val-bullet" class="text-gray-300">•</span>
@@ -708,7 +708,7 @@ session_write_close();
 
             <div class="lg:col-span-4 relative">
                 <div class="sticky top-24 space-y-6">
-                    <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-lg shadow-gray-100">
+                      <div class="bg-white rounded-2xl border border-gray-200 p-6">
                         <?php 
 // [INYECCIÓN NUBIRA] Lógica de oferta
 $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 0); 
@@ -729,14 +729,14 @@ $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 
     <p class="text-xs text-gray-500 font-bold uppercase mb-1">Inversión total</p>
     
     <?php if($is_oferta): ?>
-        <div class="absolute top-0 right-0 bg-gradient-to-r from-orange-300 to-orange-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm animate-pulse z-10">
-            🔥 SOLO <?= (int)$servicio['cupos_oferta'] ?> CUPOS
-        </div>
+          <div class="absolute top-0 right-0 bg-amber-100 text-amber-900 text-[10px] font-semibold px-2.5 py-1 rounded-full border border-amber-200 z-10">
+              Solo <?= (int)$servicio['cupos_oferta'] ?> <?= (int)$servicio['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+          </div>
         <div class="flex flex-col gap-0.5" id="precio-block">
             <span class="text-sm text-gray-400 line-through font-medium">Normal $<?= number_format($servicio['precio'], 0, ',', '.') ?></span>
             <div class="flex items-baseline gap-2">
-                <span class="text-4xl font-black text-[#54A6D8] tracking-tight leading-none">$<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?></span>
-                <span class="text-[10px] font-bold bg-orange-50 px-2 py-1 rounded text-orange-600 uppercase tracking-wide border border-orange-100">Subsidio Nubira</span>
+                  <span class="text-4xl font-black text-gray-900 tracking-tight leading-none">$<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?></span>
+                  <span class="text-[10px] font-semibold bg-gray-100 px-2 py-1 rounded text-gray-700 uppercase tracking-wide border border-gray-200">Subsidio Nubira</span>
             </div>
         </div>
     <?php else: ?>
@@ -768,13 +768,12 @@ $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 
     <input type="hidden" name="codigo_beca" id="codigo_beca_hidden" value="">
     
     <?php if($is_oferta): ?>
-        <button type="submit" id="btn-submit-pago" class="w-full text-white bg-gradient-to-r from-orange-300 to-orange-500 hover:from-orange-400 hover:to-orange-600 font-bold rounded-xl text-sm px-5 py-3 text-center shadow-lg transform active:scale-95 transition-all shadow-orange-500/30 flex flex-col items-center justify-center gap-0.5"
-                data-track-click="contact:contratar_oferta">
-            <span id="txt-btn-pago">Contratar por $<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?></span>
-            <span class="text-[10px] font-medium opacity-90" id="txt-btn-sub">Aprovechar subsidio antes que se agote</span>
-        </button>
+          <button type="submit" id="btn-submit-pago" class="w-full text-white bg-[#54A6D8] hover:bg-blue-600 font-bold rounded-xl text-sm px-5 py-3.5 text-center transition-all active:scale-95 flex items-center justify-center"
+                  data-track-click="contact:contratar_oferta">
+              <span id="txt-btn-pago">Contratar por $<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?></span>
+          </button>
     <?php else: ?>
-        <button type="submit" id="btn-submit-pago" class="w-full text-white bg-gradient-to-r from-[#54A6D8] to-blue-600 hover:to-blue-700 font-bold rounded-xl text-sm px-5 py-3.5 text-center shadow-md transform active:scale-95 transition-all"
+          <button type="submit" id="btn-submit-pago" class="w-full text-white bg-[#54A6D8] hover:bg-blue-600 font-bold rounded-xl text-sm px-5 py-3.5 text-center transition-all active:scale-95"
                 data-track-click="contact:contratar">
             <span id="txt-btn-pago">Contratar Servicio</span>
         </button>
@@ -876,7 +875,7 @@ $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 
                 <span class="text-[10px] font-bold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
             </div>';
         } else {
-            $html_stars = '<span class="text-[10px] font-medium text-gray-400">Nuevo</span>';
+            $html_stars = '';
         }
         
         // [NUBIRA 2.0] Limpiar y formatear institución (Diccionario Global)
@@ -900,25 +899,27 @@ $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 
                 'Federico Santa Mar' => 'USM', 'Adolfo Ib' => 'UAI',
                 'Universidad de Chile' => 'U. de Chile', 
                 'Universidad del B' => 'UBB', 'Bío Bío' => 'UBB', 'Bio Bio' => 'UBB',
-                'Universidad' => 'U.',
                 'Instituto Profesional' => 'IP', 'Centro de Formación Técnica' => 'CFT'
             ];
-            
+
             foreach($dicc as $parcial => $corto) {
                 if (stripos($inst_clean, $parcial) !== false) {
                     if (strlen($corto) <= 6) {
-                        $inst_clean = $corto; 
+                        $inst_clean = $corto;
                     } else {
                         $inst_clean = str_ireplace($parcial, $corto, $inst_clean);
                     }
-                    break; 
+                    break;
                 }
             }
+              if (stripos($inst_clean, 'universidad ') === 0) {
+                  $inst_clean = 'U. ' . substr($inst_clean, 12);
+              }
             $inst_text = htmlspecialchars(mb_strimwidth($inst_clean, 0, 22, '...'));
         }
     ?>
         <a href="/detalle-servicio/<?= $r['id'] ?>" class="group block snap-start shrink-0 w-[240px] md:w-[280px]" data-track-click="rec:<?= $r['id'] ?>">
-            <div class="relative bg-white rounded-xl overflow-hidden aspect-[4/3] mb-3 border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
+                  <div class="relative bg-white rounded-xl overflow-hidden aspect-[4/3] mb-3 border border-gray-200 transition-all">
                 <img src="<?= $ir ?>" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='<?= $default_image ?>'">
             </div>
             <div class="px-1 flex flex-col">
@@ -927,15 +928,14 @@ $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 
                     <?= htmlspecialchars($r['titulo']) ?>
                 </h6>
                 
-                <div class="text-[13px] text-gray-600 font-medium leading-none mb-0 mt-0.5">
+                  <div class="text-[13px] text-gray-700 font-semibold leading-none mb-0 mt-0.5">
                     $<?= number_format($r['precio'], 0, ',', '.') ?>
                 </div>
 
                 <div class="flex items-center justify-between mt-1">
-                    <div class="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
-                        <i class="fa-solid fa-building text-[10px] text-gray-300 flex-shrink-0"></i>
-                        <span class="truncate"><?= $inst_text ?></span>
-                    </div>
+                      <div class="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                          <span class="truncate"><?= $inst_text ?></span>
+                      </div>
                     <div class="shrink-0 flex items-center gap-1">
                         <?= $html_stars ?>
                     </div>
