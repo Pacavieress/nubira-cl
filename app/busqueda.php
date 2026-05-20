@@ -69,7 +69,7 @@ if (!function_exists('render_rating_html')) {
                         <span class="text-[10px] font-bold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
                     </div>';
         }
-        return '<span class="text-[10px] font-medium text-gray-400">' . htmlspecialchars($fallback_label) . '</span>';
+        return '';
     }
 }
 
@@ -451,16 +451,16 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                             $precio_oferta = (int)$row['precio_oferta'];
                             $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5">
                                 <span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span>
-                                <span class="text-[14px] text-orange-500 font-extrabold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>
+                                <span class="text-[14px] text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>
                             </div>';
                         } else {
                             if (is_numeric($precio_val) && $precio_val > 0) {
                                 $precio = "$" . number_format($precio_val, 0, ',', '.');
-                                $precio_class = "text-gray-900 font-bold tracking-tight";
+                                $precio_class = "text-gray-700 font-semibold tracking-tight";
                                 $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
                             } else {
                                 $precio = "Gratis";
-                                $precio_class = "text-emerald-600 font-bold tracking-tight";
+                                $precio_class = "text-gray-700 font-semibold tracking-tight";
                                 $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
                             }
                         }
@@ -582,10 +582,10 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                         $precio_val_ap = $a['precio'] ?? 0;
                         if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
                             $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.');
-                            $precio_class_ap = "text-gray-900 font-bold tracking-tight"; 
+                            $precio_class_ap = "text-gray-700 font-semibold tracking-tight";
                         } else {
                             $precio_ap = "Gratis";
-                            $precio_class_ap = "text-emerald-600 font-bold tracking-tight";
+                            $precio_class_ap = "text-gray-700 font-semibold tracking-tight";
                         }
 
                         $inst_text_ap = abreviar_institucion($a['institucion_maestra'] ?? ($a['institucion'] ?? ''));
@@ -623,9 +623,9 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                                         <span class="truncate"><?= $inst_text_ap ?></span>
                                     <?php endif; ?>
                                 </div>
-                                <div class="shrink-0 flex items-center gap-2">
-                                    <i class="fa-solid fa-file-pdf text-[10px] text-gray-300"></i>
-                                    <span class="text-[10px] font-medium text-gray-400">PDF</span>
+                                <div class="shrink-0 flex items-center gap-1 text-[10px] text-gray-500 font-semibold">
+                                    <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    <?= (int)($a['descargas'] ?? 0) ?>
                                 </div>
                             </div>
                         </div>
