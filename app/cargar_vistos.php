@@ -121,12 +121,12 @@ foreach ($items_ordenados as $item):
         $precio_normal = $row['precio'] ?? 0;
 
         if ($es_oferta) {
-            $precio_html = '<div class="flex flex-col justify-end mt-1"><span class="text-[9px] md:text-[10px] text-gray-400 line-through font-medium block leading-none mb-0.5">Normal $' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-base md:text-lg text-orange-500 font-extrabold tracking-tight leading-none">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span></div>';
+            $precio_html = '<div class="flex flex-col justify-end mt-1"><span class="text-[9px] md:text-[10px] text-gray-400 line-through font-medium block leading-none mb-0.5">Normal $' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-base md:text-lg text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span></div>';
         } else {
             if (is_numeric($precio_normal) && $precio_normal > 0) { 
-                $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-900 font-bold tracking-tight mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>'; 
+                $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-700 font-semibold tracking-tight mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>';
             } else { 
-                $precio_html = '<div class="text-[13px] md:text-[14px] text-emerald-600 font-bold tracking-tight mt-1">Gratis</div>'; 
+                $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-700 font-semibold tracking-tight mt-1">Gratis</div>';
             }
         }
         
@@ -157,7 +157,7 @@ foreach ($items_ordenados as $item):
                 <span class="text-[10px] font-bold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
             </div>';
         } else {
-            $html_stars = '<span class="text-[10px] font-medium text-gray-400">Nuevo</span>';
+            $html_stars = '';
         }
 
     } elseif ($tipo === 'a' && isset($data_apuntes[$id])) {
@@ -168,10 +168,10 @@ foreach ($items_ordenados as $item):
         $precio_val = $row['precio'] ?? 0;
         if (is_numeric($precio_val) && $precio_val > 0) {
             $precio = "$" . number_format($precio_val, 0, ',', '.');
-            $precio_class = "text-gray-900"; 
+            $precio_class = "text-gray-700";
         } else {
             $precio = "Gratis"; 
-            $precio_class = "text-green-600";
+            $precio_class = "text-gray-700";
         }
 
         $img = 'https://nubira.cl/upload/servicios/default_clases.webp';
