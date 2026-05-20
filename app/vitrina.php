@@ -283,26 +283,28 @@ try {
 // --- [NUBIRA 2.0] APUNTES PAES ---
 $res_apuntes_paes = null;
 $mostrar_seccion_paes = false;
+if (false) { // Sección desactivada — query deshabilitada. Para reactivar: quitar este if y descomentar línea interior
 try {
-    $sql_paes = "SELECT ap.*, 
-                        a.foto_perfil, 
+    $sql_paes = "SELECT ap.*,
+                        a.foto_perfil,
                         a.nombre as nombre_tutor,
                         COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                         ap.descargas AS ventas_totales
                  FROM apuntes ap
                  INNER JOIN alumnos a ON ap.id_alumno = a.id
                  LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-                 WHERE ap.estado = 'aprobado' 
+                 WHERE ap.estado = 'aprobado'
                    AND ap.nivel_academico = 'paes'
                  ORDER BY ap.descargas DESC, ap.id DESC LIMIT 8";
     $res_apuntes_paes = $conn->query($sql_paes);
-    
+
     if ($res_apuntes_paes && $res_apuntes_paes->num_rows >= 3) {
         // $mostrar_seccion_paes = true; // OCULTO: sección Apuntes PAES removida de la home — vive en /apuntes
     }
 } catch (Exception $e) {
     error_log("Error cargando apuntes PAES: " . $e->getMessage());
 }
+} // end if(false) PAES
 // --- CONSULTA DE OFERTAS Y RELLENO PERSISTENTE ---
 $lista_ofertas = [];
 $tiene_ofertas_activas = false;
