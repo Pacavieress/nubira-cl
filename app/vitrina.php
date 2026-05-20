@@ -1174,14 +1174,14 @@ $portada_url = $portada_set['card'];
                     // --- Precio ---
                     $precio_val_apn = $row_apn['precio'] ?? 0;
                     if ($es_promo_activa_apn) {
-                        $precio_apn = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_apn, 0, ',', '.') . "</span><span class='text-orange-500 tracking-tight'>¡Gratis!</span>";
+                        $precio_apn = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_apn, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
                         $precio_class_apn = "text-gray-900 font-semibold flex items-center";
                     } else if (is_numeric($precio_val_apn) && $precio_val_apn > 0) {
                         $precio_apn = "$" . number_format($precio_val_apn, 0, ',', '.'); 
-                        $precio_class_apn = "text-gray-900 font-bold";
+                        $precio_class_apn = "text-gray-700 font-semibold";
                     } else { 
                         $precio_apn = "Gratis"; 
-                        $precio_class_apn = "text-green-600 font-bold"; 
+                        $precio_class_apn = "text-gray-700 font-semibold";
                     }
                     $inst_text_apn = abreviar_institucion($row_apn['institucion_maestra'] ?? ($row_apn['institucion'] ?? ''));
                 ?>
@@ -1189,8 +1189,8 @@ $portada_url = $portada_set['card'];
                 <a href="/apunte/<?= $link_hash_apn ?>" onclick="registrarClick(<?= (int)$row_apn['id'] ?>, 'apunte')" 
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
                     
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl transition-all">
-                        <img src="<?= htmlspecialchars($portada_url_apn) ?>" 
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                        <img src="<?= htmlspecialchars($portada_url_apn) ?>"
                              alt="<?= htmlspecialchars($row_apn['titulo']) ?>" 
                              class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" 
                              loading="<?= $es_lcp_apn ? 'eager' : 'lazy' ?>" 
@@ -1200,24 +1200,14 @@ $portada_url = $portada_set['card'];
                              sizes="(max-width: 640px) 220px, 240px"
                              onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
                         
-                        <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
+                        <div class="absolute top-2.5 left-2.5 z-10">
                             <?php if ($es_promo_activa_apn): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50">
-                                    🔥 Quedan <?= $descargas_restantes_apn ?>
-                                </span>
-                            <?php else: ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-50/90 backdrop-blur-sm text-emerald-600 border border-emerald-200/50 shadow-sm">
-                                    Nuevo
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                    Quedan <?= $descargas_restantes_apn ?>
                                 </span>
                             <?php endif; ?>
                         </div>
 
-                        <div class="absolute top-2 right-2 z-10 shrink-0">
-                            <img src="<?= htmlspecialchars($foto_tutor_apn, ENT_QUOTES, 'UTF-8') ?>" 
-                                 class="w-8 h-8 rounded-full object-cover shadow-md border-[1.5px] border-white/95 bg-gray-50 transform-gpu"
-                                 width="32" height="32" decoding="async" loading="lazy"
-                                 alt="Tutor">
-                        </div>
                     </div>
                     
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
@@ -1227,16 +1217,12 @@ $portada_url = $portada_set['card'];
                         
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
-                                <?php if(!empty($inst_text_apn)): ?><?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?><span class="truncate"><?= $inst_text_apn ?></span><?php endif; ?>
+                                <?php if(!empty($inst_text_apn)): ?><span class="truncate"><?= $inst_text_apn ?></span><?php endif; ?>
                             </div>
                             <?php if ($ventas_totales_apn > 0): ?>
-                            <div class="shrink-0 flex items-center bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                                <span class="text-[10px] font-bold text-gray-800 leading-none">
-                                    <?= $ventas_txt_apn ?> <span class="font-medium text-gray-500">descargas</span>
-                                </span>
+                            <div class="shrink-0 flex items-center">
+                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt_apn ?> descargas</span>
                             </div>
-                            <?php else: ?>
-                            <span class="text-[10px] font-medium text-emerald-600">Recién subido</span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -1297,12 +1283,12 @@ $portada_url = $portada_set['card'];
                     
                     $precio_val_ap = $row_ap['precio'] ?? 0;
                     if ($es_promo_activa) {
-                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-orange-500 tracking-tight'>¡Gratis!</span>";
+                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
                         $precio_class_ap = "text-gray-900 font-semibold flex items-center";
                     } else if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
-                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-gray-900 font-bold";
+                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-gray-700 font-semibold";
                     } else { 
-                        $precio_ap = "Gratis"; $precio_class_ap = "text-green-600 font-bold"; 
+                        $precio_ap = "Gratis"; $precio_class_ap = "text-gray-700 font-semibold";
                     }
                     $inst_text_ap = abreviar_institucion($row_ap['institucion_maestra'] ?? ($row_ap['institucion'] ?? ''));
                 ?>
@@ -1310,8 +1296,8 @@ $portada_url = $portada_set['card'];
                 <a href="/apunte/<?= $link_hash_ap ?>" onclick="registrarClick(<?= (int)$row_ap['id'] ?>, 'apunte')" 
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
                     
-                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl transition-all">
-                       <img src="<?= htmlspecialchars($portada_url_ap) ?>" 
+                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                       <img src="<?= htmlspecialchars($portada_url_ap) ?>"
      alt="<?= htmlspecialchars($row_ap['titulo']) ?>" 
      class="w-full h-full object-cover" 
      loading="<?= $es_lcp_ap ? 'eager' : 'lazy' ?>" 
@@ -1320,24 +1306,18 @@ $portada_url = $portada_set['card'];
      width="240" height="180"
      sizes="(max-width: 640px) 220px, 240px"
      onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
-                        <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
+                        <div class="absolute top-2.5 left-2.5 z-10">
                             <?php if ($es_promo_activa): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50">
-                                    🔥 Quedan <?= $descargas_restantes ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                    Quedan <?= $descargas_restantes ?>
                                 </span>
                             <?php elseif ($es_nuevo_ap): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-50/90 backdrop-blur-sm text-emerald-600 border border-emerald-200/50 shadow-sm">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">
                                     Nuevo
                                 </span>
                             <?php endif; ?>
                         </div>
 
-                        <div class="absolute top-2 right-2 z-10 shrink-0">
-                            <img src="<?= htmlspecialchars($foto_tutor, ENT_QUOTES, 'UTF-8') ?>" 
-                                 class="w-8 h-8 rounded-full object-cover shadow-md border-[1.5px] border-white/95 bg-gray-50 transform-gpu"
-                                 width="32" height="32" decoding="async" loading="lazy"
-                                 style="image-rendering: -webkit-optimize-contrast; backface-visibility: hidden;">
-                        </div>
                     </div>
                     
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
@@ -1347,13 +1327,11 @@ $portada_url = $portada_set['card'];
                         
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
-                                <?php if(!empty($inst_text_ap)): ?><?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
+                                <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
                             </div>
-                            <div class="shrink-0 flex items-center bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-    <span class="text-[10px] font-bold text-gray-800 leading-none">
-        <?= $ventas_txt ?> <span class="font-medium text-gray-500">comprados</span>
-    </span>
-</div>
+                            <div class="shrink-0 flex items-center">
+                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
+                            </div>
                         </div>
                     </div>
                 </a>
