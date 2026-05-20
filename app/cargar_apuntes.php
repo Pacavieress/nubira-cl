@@ -222,11 +222,11 @@ foreach ($apuntes as $i => $a):
     
     // Precio (Modificado para Promo Flash)
     if ($es_promo_activa) {
-        $txtPrecio = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio, 0, ',', '.') . "</span><span class='text-orange-500 tracking-tight'>¡Gratis!</span>";
+        $txtPrecio = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
         $precio_class = "text-gray-900 font-bold flex items-center";
     } else {
         $txtPrecio = ($precio > 0) ? '$' . number_format($precio, 0, ',', '.') : 'Gratis';
-        $precio_class = ($precio > 0) ? "text-gray-600 font-medium" : "text-green-600 font-bold";
+        $precio_class = ($precio > 0) ? "text-gray-600 font-medium" : "text-gray-700 font-semibold";
     }
     
     // --- LECTURA DIRECTA DEL TOTAL DE VENTAS DESDE MYSQL ---
@@ -281,13 +281,13 @@ foreach ($apuntes as $i => $a):
              loading="lazy"
              onerror="this.src='/img/logo2.webp'">
         
-        <div class="absolute top-2 left-2 flex flex-wrap gap-2 z-10">
+        <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-2 z-10">
             <?php if ($es_promo_activa): ?>
-                <span class="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm shadow-orange-500/30 flex items-center gap-1 animate-pulse">
-                    🔥 Quedan <?= $descargas_restantes ?>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                    Quedan <?= $descargas_restantes ?>
                 </span>
             <?php elseif ($es_nuevo): ?>
-                <span class="bg-white/90 backdrop-blur text-green-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm border border-white/50">Nuevo</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Nuevo</span>
             <?php endif; ?>
         </div>
 
