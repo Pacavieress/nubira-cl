@@ -298,7 +298,7 @@ try {
     $res_apuntes_paes = $conn->query($sql_paes);
     
     if ($res_apuntes_paes && $res_apuntes_paes->num_rows >= 3) {
-        $mostrar_seccion_paes = true;
+        // $mostrar_seccion_paes = true; // OCULTO: sección Apuntes PAES removida de la home — vive en /apuntes
     }
 } catch (Exception $e) {
     error_log("Error cargando apuntes PAES: " . $e->getMessage());
@@ -528,7 +528,7 @@ if (!function_exists('render_rating_html')) {
                         <span class="text-[10px] font-bold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
                     </div>';
         }
-        return '<span class="text-[10px] font-medium text-gray-400">' . htmlspecialchars($fallback_label) . '</span>';
+        return '';
     }
 }
 // Banner Seguro
@@ -923,14 +923,14 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $precio_normal_n = $row_n['precio'] ?? 0;
                     
                     if ($es_oferta_n) {
-                        $precio_html_n = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_n, 0, ',', '.') . "</span><span class='text-orange-500 font-bold tracking-tight'>$" . number_format($row_n['precio_oferta'], 0, ',', '.') . "</span>";
+                        $precio_html_n = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_n, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row_n['precio_oferta'], 0, ',', '.') . "</span>";
                         $precio_class_n = "text-gray-900 font-semibold flex items-center";
                     } else if (is_numeric($precio_normal_n) && $precio_normal_n > 0) {
                         $precio_html_n = "$" . number_format($precio_normal_n, 0, ',', '.');
-                        $precio_class_n = "text-gray-900 font-bold";
+                        $precio_class_n = "text-gray-700 font-semibold";
                     } else {
                         $precio_html_n = "Gratis";
-                        $precio_class_n = "text-green-600 font-bold";
+                        $precio_class_n = "text-gray-700 font-semibold";
                     }
                     
                     $html_stars_n = render_rating_html($rating_val_n, $total_v_n);
@@ -940,7 +940,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                 <a href="/detalle-servicio/<?= $link_hash_n ?>" onclick="registrarClick(<?= (int)$row_n['id'] ?>, 'servicio')" 
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
 
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl transition-all">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
                         <img src="<?= htmlspecialchars($portada_url_n) ?>" 
      srcset="<?= htmlspecialchars($portada_set_n['thumb']) ?> 240w,
              <?= htmlspecialchars($portada_set_n['card']) ?> 480w,
@@ -954,27 +954,14 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
      width="240" height="180"
      onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
                         
-                       <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
-                            <?php if ($es_oferta_n): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50">
-                                    🔥 <?= (int)$row_n['cupos_oferta'] ?> CUPOS
-                                </span>
-                            <?php else: ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-50/90 backdrop-blur-sm text-emerald-600 border border-emerald-200/50 shadow-sm">
-                                    Nuevo
-                                </span>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="absolute top-2 right-2 z-10 shrink-0">
-                            <img src="<?= htmlspecialchars($foto_tutor_n, ENT_QUOTES, 'UTF-8') ?>" 
-     class="w-8 h-8 rounded-full object-cover shadow-md border-[1.5px] border-white/95 bg-gray-50 transform-gpu"
-     width="32" height="32" 
-     decoding="async" 
-     loading="lazy"
-     sizes="32px"
-     alt="Tutor">
-                        </div>
+                       <!-- Badge cupos (derecha) -->
+                       <?php if ($es_oferta_n): ?>
+                       <div class="absolute top-2.5 right-2.5 z-10">
+                           <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                               <?= (int)$row_n['cupos_oferta'] ?> <?= (int)$row_n['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                           </span>
+                       </div>
+                       <?php endif; ?>
                     </div>
 
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
@@ -983,7 +970,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                         
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
-                                <?php if(!empty($inst_text_n)): ?><?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?><span class="truncate"><?= $inst_text_n ?></span><?php endif; ?>
+                                <?php if(!empty($inst_text_n)): ?><span class="truncate"><?= $inst_text_n ?></span><?php endif; ?>
                             </div>
                             <div class="shrink-0 flex items-center gap-1"><?= $html_stars_n ?></div>
                         </div>
@@ -1062,14 +1049,14 @@ $portada_url = $portada_set['card'];
                     $precio_normal = $row['precio'] ?? 0;
                     
                     if ($es_oferta) {
-                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-orange-500 font-bold tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>";
+                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>";
                         $precio_class = "text-gray-900 font-semibold flex items-center";
                     } else if (is_numeric($precio_normal) && $precio_normal > 0) {
                         $precio_html = "$" . number_format($precio_normal, 0, ',', '.');
-                        $precio_class = "text-gray-900 font-bold";
+                        $precio_class = "text-gray-700 font-semibold";
                     } else {
                         $precio_html = "Gratis";
-                        $precio_class = "text-green-600 font-bold";
+                        $precio_class = "text-gray-700 font-semibold";
                     }
                     
                     $mod = strtolower($row['modalidad'] ?? '');
@@ -1084,7 +1071,7 @@ $portada_url = $portada_set['card'];
                 <a href="/detalle-servicio/<?= $link_hash ?>" onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')" 
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
 
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl transition-all">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
                       <img src="<?= htmlspecialchars($portada_url) ?>" 
      srcset="<?= htmlspecialchars($portada_set['thumb']) ?> 240w,
              <?= htmlspecialchars($portada_set['card']) ?> 480w,
@@ -1098,32 +1085,27 @@ $portada_url = $portada_set['card'];
      width="240" height="180"
      onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
                         
-                        <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
-                            <?php if ($es_oferta): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50">
-                                    🔥 <?= (int)$row['cupos_oferta'] ?> CUPOS
-                                </span>
-                            <?php elseif ($nivel_tutor === 'leyenda'): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-red-700 to-rose-500 text-white shadow-sm border border-red-400/30">
-                                    <i class="fa-solid fa-gem text-[7px]"></i> Leyenda
-                                </span>
+                       <!-- Badge nivel (izquierda) -->
+                       <div class="absolute top-2.5 left-2.5 z-10">
+                            <?php if ($nivel_tutor === 'leyenda'): ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
                             <?php elseif ($nivel_tutor === 'elite'): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-cyan-400 to-blue-500 text-white border border-cyan-300/30 shadow-sm">
-                                    <i class="fa-solid fa-diamond text-[7px]"></i> Élite
-                                </span>
-                            <?php elseif ($nivel_tutor === 'pro' || $nivel_tutor === 'top'): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-slate-100/90 backdrop-blur-sm text-slate-700 border border-slate-200/50 shadow-sm">
-                                    <i class="fa-solid fa-star text-[7px]"></i> 
-                                </span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+                            <?php elseif ($nivel_tutor === 'pro'): ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+                            <?php elseif ($nivel_tutor === 'top'): ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
                             <?php endif; ?>
-                        </div>
+                       </div>
 
-                       <div class="absolute top-2 right-2 z-10 shrink-0">
-                        <img src="<?= htmlspecialchars($foto_tutor, ENT_QUOTES, 'UTF-8') ?>" 
-                             class="w-8 h-8 rounded-full object-cover shadow-md border-[1.5px] border-white/95 bg-gray-50 transform-gpu"
-                             width="32" height="32" decoding="async" loading="lazy"
-                             style="image-rendering: -webkit-optimize-contrast; backface-visibility: hidden;">
-                        </div>
+                       <!-- Badge cupos (derecha) -->
+                       <?php if ($es_oferta): ?>
+                       <div class="absolute top-2.5 right-2.5 z-10">
+                           <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                               <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                           </span>
+                       </div>
+                       <?php endif; ?>
                     </div>
 
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
@@ -1132,7 +1114,7 @@ $portada_url = $portada_set['card'];
                         
                         <div class="flex items-center justify-between">
     <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
-        <?php if(!empty($inst_text)): ?><?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?><span class="truncate"><?= $inst_text ?></span><?php endif; ?>
+        <?php if(!empty($inst_text)): ?><span class="truncate"><?= $inst_text ?></span><?php endif; ?>
     </div>
     <div class="shrink-0 flex items-center gap-1"><?= $html_stars ?></div>
 </div>
