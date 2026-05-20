@@ -130,54 +130,54 @@ if (!$no_banners) {
  * ============================ */
 // [NUBIRA 2.0] Filtro estricto de Soft Delete (Apunte visible + Creador visible)
 $filtros = [
-    "publico = 1",
-    "visible = 1",
-    "id_alumno IN (SELECT id FROM alumnos WHERE visible = 1)"
+    "ap.publico = 1",
+    "ap.visible = 1",
+    "al.visible = 1"
 ];
 $params  = [];
 $tipos   = "";
 
 if ($q !== '') {
-    $filtros[] = "(titulo LIKE ? OR asignatura LIKE ? OR nombre_curso LIKE ? OR ia_keywords LIKE ? OR categoria LIKE ?)";
+    $filtros[] = "(ap.titulo LIKE ? OR ap.asignatura LIKE ? OR ap.nombre_curso LIKE ? OR ap.ia_keywords LIKE ? OR ap.categoria LIKE ?)";
     $like = "%{$q}%";
     $params[] = $like; $params[] = $like; $params[] = $like; $params[] = $like; $params[] = $like;
     $tipos .= "sssss";
 }
-if ($asignatura !== '') { $filtros[] = "asignatura = ?"; $params[] = $asignatura; $tipos .= "s"; }
-if ($anio !== '') { $filtros[] = "anio = ?"; $params[] = (int)$anio; $tipos .= "i"; }
-if ($precioFiltro === 'gratis') $filtros[] = "precio = 0";
-elseif ($precioFiltro === 'pagado') $filtros[] = "precio > 0";
-if ($institFiltro !== '') { $filtros[] = "institucion = ?"; $params[] = $institFiltro; $tipos .= "s"; }
-if ($nivelFiltro !== '' && in_array($nivelFiltro, $niveles_validos, true)) { 
-    $filtros[] = "nivel_academico = ?"; 
-    $params[] = $nivelFiltro; 
-    $tipos .= "s"; 
+if ($asignatura !== '') { $filtros[] = "ap.asignatura = ?"; $params[] = $asignatura; $tipos .= "s"; }
+if ($anio !== '') { $filtros[] = "ap.anio = ?"; $params[] = (int)$anio; $tipos .= "i"; }
+if ($precioFiltro === 'gratis') $filtros[] = "ap.precio = 0";
+elseif ($precioFiltro === 'pagado') $filtros[] = "ap.precio > 0";
+if ($institFiltro !== '') { $filtros[] = "ap.institucion = ?"; $params[] = $institFiltro; $tipos .= "s"; }
+if ($nivelFiltro !== '' && in_array($nivelFiltro, $niveles_validos, true)) {
+    $filtros[] = "ap.nivel_academico = ?";
+    $params[] = $nivelFiltro;
+    $tipos .= "s";
 } else {
     // Sin filtro de nivel = vitrina general → excluir PAES
-    $filtros[] = "nivel_academico != 'paes'";
+    $filtros[] = "ap.nivel_academico != 'paes'";
 }
 
 // OPTIMIZACIÓN DE ORDENAMIENTO
-$orderBy = 'fecha_subida DESC, id DESC';
+$orderBy = 'ap.fecha_subida DESC, ap.id DESC';
 $seed_int = crc32(date('Y-m-d') . floor(date('G') / 4));
 
 switch ($order) {
-    case 'fecha_asc':   $orderBy = 'fecha_subida ASC, id ASC'; break;
-    case 'precio_desc': $orderBy = 'precio DESC, id DESC'; break;
-    case 'precio_asc':  $orderBy = 'precio ASC, id ASC'; break;
-    case 'vendidos_desc': 
+    case 'fecha_asc':   $orderBy = 'ap.fecha_subida ASC, ap.id ASC'; break;
+    case 'precio_desc': $orderBy = 'ap.precio DESC, ap.id DESC'; break;
+    case 'precio_asc':  $orderBy = 'ap.precio ASC, ap.id ASC'; break;
+    case 'vendidos_desc':
     case 'tendencia':
-        $orderBy = "ventas_totales DESC, id DESC"; 
+        $orderBy = "ventas_totales DESC, ap.id DESC";
         break;
-    default: 
+    default:
         $orderBy = "RAND($seed_int)";
         break;
 }
 
 // --- FIX ABSOLUTO NUBIRA: CÁLCULO DE VENTAS DIRECTO EN MYSQL ---
-$cols = "id, id_alumno, titulo, precio, archivo, descripcion, fecha_subida, portada, preview, asignatura, institucion, ia_used, categoria, promo_gratis, promo_limite, promo_contador, ((SELECT COUNT(*) FROM ventas_apuntes WHERE apunte_id = apuntes.id AND precio > 0) + COALESCE(descargas, 0)) AS ventas_totales";
+$cols = "ap.id, ap.id_alumno, ap.titulo, ap.precio, ap.archivo, ap.descripcion, ap.fecha_subida, ap.portada, ap.preview, ap.asignatura, COALESCE(dp.institucion, NULLIF(ap.institucion,''), al.institucion) AS institucion, ap.ia_used, ap.categoria, ap.promo_gratis, ap.promo_limite, ap.promo_contador, ((SELECT COUNT(*) FROM ventas_apuntes WHERE apunte_id = ap.id AND precio > 0) + COALESCE(ap.descargas, 0)) AS ventas_totales";
 
-$sql = "SELECT $cols FROM apuntes WHERE " . implode(" AND ", $filtros) . " ORDER BY $orderBy LIMIT ? OFFSET ?";
+$sql = "SELECT $cols FROM apuntes ap JOIN alumnos al ON al.id = ap.id_alumno LEFT JOIN dominios_permitidos dp ON al.dominio = dp.dominio WHERE " . implode(" AND ", $filtros) . " ORDER BY $orderBy LIMIT ? OFFSET ?";
 $params[] = $limite; 
 $params[] = $offset; 
 $tipos .= "ii";
