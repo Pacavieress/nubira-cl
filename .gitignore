@@ -29,3 +29,4 @@ Thumbs.db
 .DS_Store
 app/sala_activa_*.txt
 app/_logger_sonda.txt
+.claude/

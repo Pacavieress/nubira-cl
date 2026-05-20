@@ -152,9 +152,6 @@ if ($nivelFiltro !== '' && in_array($nivelFiltro, $niveles_validos, true)) {
     $filtros[] = "ap.nivel_academico = ?";
     $params[] = $nivelFiltro;
     $tipos .= "s";
-} else {
-    // Sin filtro de nivel = vitrina general → excluir PAES
-    $filtros[] = "ap.nivel_academico != 'paes'";
 }
 
 // OPTIMIZACIÓN DE ORDENAMIENTO
