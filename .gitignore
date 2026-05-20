@@ -1,0 +1,31 @@
+# Credenciales y configuración sensible
+.env
+app/config.php
+
+# Base de datos local (dumps y data de MySQL)
+/db/
+/sql/*.sql
+
+# Logs
+*.log
+*.txt
+app/logs/
+logs/
+app/cron/logs/
+
+# Archivos subidos por usuarios
+/upload/
+/upload_mini_aula/
+app/chat_archivos/
+app/uploads_entregas/
+app/cache_ia/
+
+# Dependencias (se reinstalan con composer)
+/vendor/
+
+# Archivos temporales y de sistema
+*.tmp
+Thumbs.db
+.DS_Store
+app/sala_activa_*.txt
+app/_logger_sonda.txt
