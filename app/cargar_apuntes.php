@@ -259,10 +259,13 @@ foreach ($apuntes as $i => $a):
             'Pontificia Universidad Cat'=>'PUC','Universidad de Santiago'=>'USACH',
             'Universidad de Concepci'=>'UdeC','Universidad T'=>'USM',
             'Federico Santa Mar'=>'USM','Adolfo Ib'=>'UAI',
-            'Universidad de Chile'=>'U. de Chile','Universidad'=>'U.',
+            'Universidad de Chile'=>'U. de Chile',
             'Instituto Profesional'=>'IP','Centro de Formación Técnica'=>'CFT'
         ];
         foreach($dicc as $k=>$v) { if (stripos($inst_clean, $k)!==false) { if(strlen($v)<=6)$inst_clean=$v; else $inst_clean=str_ireplace($k,$v,$inst_clean); break; } }
+        if (stripos($inst_clean, 'universidad ') === 0) {
+            $inst_clean = 'U. ' . substr($inst_clean, 12);
+        }
         $inst_text = htmlspecialchars(mb_strimwidth($inst_clean, 0, 22, '...'));
     }
 ?>
