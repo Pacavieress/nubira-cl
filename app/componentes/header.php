@@ -147,10 +147,10 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
         <div class="flex flex-shrink-0 items-center gap-2 md:gap-4">
             <?php if ($mostrar_botones): ?>
             <div class="hidden md:flex items-center gap-3">
-                <a href="<?= $url_subir_apunte ?>" class="px-4 py-1.5 bg-gradient-to-r from-orange-300 to-orange-500 hover:to-orange-600 text-white text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 hover:scale-[1.02]">
-                    <?= icon('publish-doc', 'w-4 h-4 text-white') ?> <span>Publicar Apunte</span>
+                <a href="<?= $url_subir_apunte ?>" class="px-4 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-[#54A6D8] text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2">
+                    <?= icon('publish-doc', 'w-4 h-4 text-[#54A6D8]') ?> <span>Publicar Apunte</span>
                 </a>
-                <a href="<?= $url_publicar_clase ?>" class="px-4 py-1.5 bg-gradient-to-r from-sky-400 to-[#54A6D8] hover:to-blue-500 text-white text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 hover:scale-[1.02]">
+                <a href="<?= $url_publicar_clase ?>" class="px-4 py-1.5 bg-[#54A6D8] hover:bg-blue-600 text-white text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2">
                     <?= icon('publish-class', 'w-4 h-4 text-white') ?> <span>Publicar Clase</span>
                 </a>
             </div>
