@@ -3,7 +3,7 @@
 // NUBIRA SHIELD - MIDDLEWARE ANTI-BOT
 // ==========================================
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
 function check_nubira_shield($conn) {
     // 1. IPs en lista blanca (No bloquear nunca)

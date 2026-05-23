@@ -6,7 +6,7 @@
  * - YouTube Edition Badges
  */
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 if (!isset($_SESSION['usuario_id'])) exit;
 
 $rutas = [__DIR__.'/conexion.php', __DIR__.'/../conexion.php', $_SERVER['DOCUMENT_ROOT'].'/conexion.php'];

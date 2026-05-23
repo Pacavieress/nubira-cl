@@ -6,7 +6,7 @@
  * * [UI] LAYOUT: Botones en formato App (Ícono arriba, texto abajo) para evitar cortes.
  */
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
 if ((!isset($es_propio) || !$es_propio) && (!isset($es_admin) || !$es_admin)) return;
 

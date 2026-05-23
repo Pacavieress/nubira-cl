@@ -5,7 +5,7 @@ ini_set('display_errors', $IS_DEV ? 1 : 0);
 ini_set('display_startup_errors', $IS_DEV ? 1 : 0);
 error_reporting($IS_DEV ? E_ALL : 0);
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
 $rutas_conexion = [__DIR__.'/conexion.php', __DIR__.'/../conexion.php', $_SERVER['DOCUMENT_ROOT'].'/app/conexion.php', $_SERVER['DOCUMENT_ROOT'].'/conexion.php'];
 $conn_found = false;

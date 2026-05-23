@@ -22,7 +22,7 @@ try {
     require_once $ruta_conexion;
 
     // 3. INICIAR SESIÓN
-    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
     $uid = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : 0;
     
     // Validar si el usuario actual es admin (Idealmente usar una variable de sesión real como $_SESSION['es_admin'])

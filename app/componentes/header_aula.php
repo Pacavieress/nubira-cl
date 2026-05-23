@@ -3,7 +3,7 @@
 // VERSIÓN "FOCUS" PARA EL AULA VIRTUAL (Sin buscador ni botones de publicar)
 
 // 1. INICIALIZACIÓN
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) { session_start(); }
 
 $usuario_id = $_SESSION['usuario_id'] ?? null;
 $es_visitante = ($usuario_id === null);

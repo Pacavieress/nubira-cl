@@ -8,7 +8,7 @@
 // Evitar caché para que los mensajes aparezcan al instante
 header("Cache-Control: no-cache, must-revalidate");
 ini_set('display_errors', 0);
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
 // 1. CONEXIÓN INTELIGENTE
 $rutas = [__DIR__ . '/conexion.php', dirname(__DIR__) . '/conexion.php', __DIR__ . '/../conexion.php'];
