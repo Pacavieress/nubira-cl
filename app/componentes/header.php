@@ -2,7 +2,7 @@
 // app/componentes/header.php
 
 // 1. INICIALIZACIÓN
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) { session_start(); }
 
 // [NUBIRA 2.0] Captura de búsqueda con sanitización reforzada
 if (isset($_GET['q'])) {
