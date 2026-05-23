@@ -314,11 +314,11 @@ textarea, input {
     <div id="toast-container" class="fixed top-20 left-1/2 z-50 hidden w-[90%] max-w-sm transform -translate-x-1/2 transition-all duration-300">
         <div class="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-xl flex items-start justify-between gap-3 border border-red-600">
             <div class="flex items-start gap-3">
-                <i class="fa-solid fa-triangle-exclamation text-lg shrink-0 mt-0.5"></i>
+                <?= icon('exclamation-triangle', 'w-5 h-5 shrink-0 mt-0.5') ?>
                 <p id="toast-msg" class="text-[13px] font-medium leading-snug"></p>
             </div>
             <button type="button" onclick="hideToast()" class="text-white hover:text-red-200 shrink-0 p-1 transition-colors">
-                <i class="fa-solid fa-xmark text-lg"></i>
+                <?= icon('x-mark', 'w-5 h-5') ?>
             </button>
         </div>
     </div>
@@ -327,7 +327,7 @@ textarea, input {
         <div class="flex items-center gap-2 overflow-hidden">
            
 <a href="/app/bandeja_entrada.php" class="text-gray-500 hover:text-[#54A6D8] w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-50 transition-colors -ml-1">
-    <i class="fa-solid fa-arrow-left text-[18px]"></i>
+    <?= icon('arrow-left', 'w-5 h-5') ?>
 </a>
 
             <div class="relative shrink-0">
@@ -346,7 +346,7 @@ textarea, input {
                     <?= htmlspecialchars($nombre_mostrar) ?>
                 </h1>
                 <p class="text-[11px] text-gray-500 truncate max-w-[160px] opacity-90">
-                    <i class="fa-solid fa-tag text-[9px] mr-0.5"></i> <?= htmlspecialchars($chat['servicio_titulo']) ?>
+                    <?= htmlspecialchars($chat['servicio_titulo']) ?>
                 </p>
             </div>
         </div>
@@ -377,7 +377,7 @@ textarea, input {
         <div id="mensajes-wrapper"><?= $html_mensajes_iniciales ?></div>
 
 <!-- [NUBIRA 2.0] Typing indicator - estilo WhatsApp/Airbnb -->
-<div id="typing-indicator" class="hidden justify-start mb-2 fade-in">
+<div id="typing-indicator" class="justify-start mb-2 fade-in">
     <div class="bubble-other relative max-w-[85%] md:max-w-[70%] px-4 py-3 shadow-sm flex items-center gap-1.5">
         <span class="typing-dot"></span>
         <span class="typing-dot"></span>
@@ -396,7 +396,7 @@ textarea, input {
             <div class="max-w-4xl mx-auto w-full bg-orange-50 border border-orange-200 rounded-2xl p-3 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left mb-3">
                 <div class="flex items-center gap-3">
                      <div class="w-8 h-8 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-user-clock text-sm"></i>
+                        <?= icon('user', 'w-4 h-4') ?>
                     </div>
                     <div>
                         <h4 class="text-[12px] font-bold text-orange-800 tracking-tight">Tutor inactivo (más de 48 hrs)</h4>
@@ -404,7 +404,7 @@ textarea, input {
                     </div>
                 </div>
                 <a href="/vitrina" class="bg-white hover:bg-orange-100 text-orange-600 border border-orange-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 shadow-sm whitespace-nowrap">
-                    Buscar otro servicio <i class="fa-solid fa-arrow-right ml-1"></i>
+                    Buscar otro servicio <?= icon('arrow-right', 'w-3.5 h-3.5 ml-1 inline') ?>
                 </a>
             </div>
         <?php endif; ?>
@@ -428,9 +428,9 @@ textarea, input {
             class="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 hover:text-[#54A6D8] hover:bg-blue-50 transition-all active:scale-90"
             title="Adjuntar archivo"
         >
-            <i class="fa-solid fa-paperclip text-lg"></i>
+            <?= icon('paperclip', 'w-5 h-5') ?>
         </button>
-        <span 
+        <span
             class="feature-badge" 
             id="badge-adjuntar"
             data-feature-key="adjuntar_archivos"
@@ -450,12 +450,12 @@ textarea, input {
             </div>
 
             <button type="submit" id="btn-enviar" disabled class="bg-[#54A6D8] text-white w-11 h-11 rounded-full flex items-center justify-center hover:bg-blue-600 hover:shadow-md transition-all shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-90 disabled:active:scale-100">
-                <i class="fa-solid fa-paper-plane text-sm ml-0.5"></i>
+                <?= icon('paper-airplane', 'w-5 h-5') ?>
             </button>
         </form>
         
         <div class="text-[10px] text-center text-gray-400 mt-2 select-none flex items-center justify-center gap-1.5 opacity-70 pb-1">
-             <i class="fa-solid fa-lock text-[8px]"></i> Pagos y chat protegidos por Nubira.
+             <?= icon('lock', 'w-3 h-3') ?> Pagos y chat protegidos por Nubira.
         </div>
     </footer>
 
@@ -474,7 +474,7 @@ textarea, input {
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-blue-50 text-[#54A6D8] rounded-full flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-paperclip text-sm"></i>
+                    <?= icon('paperclip', 'w-4 h-4') ?>
                 </div>
                 <h3 class="font-bold text-gray-900 text-[15px]">Enviar archivo</h3>
             </div>
@@ -483,7 +483,7 @@ textarea, input {
                 id="btn-cerrar-modal-archivo" 
                 class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-50 transition-colors"
             >
-                <i class="fa-solid fa-xmark text-lg"></i>
+                <?= icon('x-mark', 'w-5 h-5') ?>
             </button>
         </div>
 
@@ -501,7 +501,7 @@ textarea, input {
             <!-- Preview PDF/genérico -->
             <div id="preview-archivo" class="hidden mb-4 bg-gray-50 rounded-xl border border-gray-100 p-4 flex items-center gap-3">
                 <div class="w-12 h-12 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-file-pdf text-2xl"></i>
+                    <?= icon('publish-doc', 'w-8 h-8') ?>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p id="preview-archivo-nombre" class="font-medium text-gray-900 text-sm truncate"></p>
@@ -533,7 +533,7 @@ textarea, input {
                 id="btn-enviar-archivo" 
                 class="flex-1 py-2.5 text-sm font-bold text-white bg-[#54A6D8] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <i class="fa-solid fa-paper-plane text-xs mr-1"></i>
+                <?= icon('paper-airplane', 'w-4 h-4 mr-1 inline') ?>
                 Enviar
             </button>
         </div>

@@ -35,6 +35,11 @@ function icon($name, $classes = "w-6 h-6") {
         case 'chat-bubble': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z' /></svg>";
         case 'chevron-right': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M8.25 4.5l7.5 7.5-7.5 7.5' /></svg>";
         case 'shield-check': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M9 12.75L11.25 15 15 9.75M21 12c0 5.591-3.824 10.29-9 11.622C6.824 22.29 3 17.591 3 12V5.487c0-.694.376-1.33.985-1.664A47.962 47.962 0 0112 2.25c2.717 0 5.358.32 7.515.857.609.336.985.972.985 1.664V12z' /></svg>";
+        case 'arrow-left': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18' /></svg>";
+        case 'x-mark': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M6 18L18 6M6 6l12 12' /></svg>";
+        case 'exclamation-triangle': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z' /></svg>";
+        case 'paperclip': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13' /></svg>";
+        case 'paper-airplane': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5' /></svg>";
 
         default: return "";
     }
