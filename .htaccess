@@ -128,9 +128,6 @@ RewriteRule ^servicios/?$                  app/clases_servicios.php          [L,
 RewriteRule ^explorar-clases-servicos/?$   /servicios                        [R=301,L]
 RewriteRule ^clases-servicios/?$           /servicios                        [R=301,L]
 
-# 1. Redirigimos permanentemente si alguien intenta acceder al archivo físico .php
-RewriteRule ^app/bandeja_entrada\.php$ /bandeja-entrada [R=301,L]
-
 # 2. Asignamos la nueva URL limpia al archivo interno
 RewriteRule ^bandeja-entrada/?$ app/bandeja_entrada.php [L,QSA]
 # 1. Redirigimos permanentemente la URL vieja a la nueva óptima para SEO
