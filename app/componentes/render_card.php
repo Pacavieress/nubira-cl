@@ -92,56 +92,53 @@ if ($tipo === 'servicio') {
 }
 ?>
 
-<a href="<?= $link ?>" 
-   class="group flex-shrink-0 w-[240px] md:w-[320px] h-[96px] md:h-[112px] bg-white rounded-xl border border-gray-200 hover:border-gray-300 flex gap-3 transition-all snap-start overflow-hidden relative items-center p-1.5 md:p-2 <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
-    
-    <!-- 1. IMAGEN (Medidas exactas Nubira 2.0: 84px/88px) -->
-    <div class="w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden relative self-center shadow-sm">
-        <img src="<?= $img ?>" class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy">
-        
-        <?php if($tipo === 'servicio' && isset($nivel_tutor) && $nivel_tutor !== '' && empty($es_oferta)): ?>
-            <div class="absolute top-1 left-1 z-10 scale-90 origin-top-left">
-                <?php if ($nivel_tutor === 'leyenda'): ?>
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
-                <?php elseif ($nivel_tutor === 'elite'): ?>
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
-                <?php elseif ($nivel_tutor === 'pro'): ?>
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
-                <?php elseif ($nivel_tutor === 'top'): ?>
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
-                <?php endif; ?>
-            </div>
+<a href="<?= $link ?>"
+   class="block flex flex-col cursor-pointer group snap-center w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
+
+    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+        <img src="<?= $img ?>"
+             class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+             loading="lazy" decoding="async" width="240" height="180">
+
+        <!-- Badge nivel (izquierda) - solo servicios -->
+        <?php if ($tipo === 'servicio' && !empty($nivel_tutor) && empty($es_oferta)): ?>
+        <div class="absolute top-2.5 left-2.5 z-10">
+            <?php
+              $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? '';
+            ?>
+            <?php if ($nivel_label): ?>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
+            <?php endif; ?>
+        </div>
         <?php endif; ?>
 
-        <?php if($tipo === 'apunte' && empty($es_oferta)): ?>
-            <div class="absolute bottom-1 right-1 bg-white/95 text-orange-600 text-[7px] font-bold px-1.5 py-0.5 rounded border border-gray-100 z-10">PDF</div>
+        <!-- Badge cupos (derecha) -->
+        <?php if (!empty($es_oferta)): ?>
+        <div class="absolute top-2.5 right-2.5 z-10">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                <?= (int)$cupos_oferta ?> <?= (int)$cupos_oferta === 1 ? 'cupo' : 'cupos' ?>
+            </span>
+        </div>
         <?php endif; ?>
     </div>
 
-    <!-- 2. BADGE DE OFERTA FLOTANTE (Esquina superior derecha) -->
-    <?php if(!empty($es_oferta)): ?>
-    <div class="absolute top-2 right-2 md:top-2.5 md:right-2.5 flex z-10">
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-            <?= $cupos_oferta ?> <?= (int)$cupos_oferta === 1 ? 'cupo' : 'cupos' ?>
-        </span>
-    </div>
-    <?php endif; ?>
+    <div class="pt-2.5 flex flex-col flex-1 text-left">
+        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= $titulo ?></h3>
 
-    <!-- 3. TEXTOS Y PRECIOS (Con padding derecho pr-12 para no chocar con el badge) -->
-    <div class="flex flex-col justify-center min-w-0 w-full h-full py-0.5">
-        <p class="text-[8px] md:text-[9px] font-bold <?= $tag_color ?> uppercase tracking-wider mb-0.5 truncate pr-12 md:pr-16"><?= $tag ?></p>
-        <h4 class="text-[13px] md:text-[14px] font-semibold text-gray-900 leading-tight line-clamp-2 mb-1 pr-12 md:pr-16"><?= $titulo ?></h4>
-        
-        <div class="mt-auto flex items-end justify-between w-full">
-            <div class="flex flex-col justify-end mt-1">
-                <?php if(!empty($es_oferta)): ?>
-                    <span class="text-[9px] md:text-[10px] text-gray-400 line-through font-medium block leading-none mb-0.5">Normal $<?= number_format($precio_normal, 0, ',', '.') ?></span>
-                    <span class="text-base md:text-lg text-gray-700 font-semibold tracking-tight leading-none">$<?= number_format($precio_oferta, 0, ',', '.') ?></span>
-                <?php else: ?>
-                    <span class="text-[13px] md:text-[15px] <?= $precio_cls ?> font-bold tracking-tight leading-none"><?= $precio ?></span>
-                <?php endif; ?>
+        <div class="text-[14px] mt-auto mb-1.5 leading-none">
+            <?php if (!empty($es_oferta)): ?>
+                <span class="text-[11px] text-gray-400 line-through font-medium mr-1">$<?= number_format($precio_normal, 0, ',', '.') ?></span>
+                <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($precio_oferta, 0, ',', '.') ?></span>
+            <?php else: ?>
+                <span class="text-gray-700 font-semibold tracking-tight"><?= $precio ?></span>
+            <?php endif; ?>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                <span class="truncate"><?= $tag ?></span>
             </div>
-            <div class="shrink-0 flex items-center mb-0.5">
+            <div class="shrink-0 flex items-center gap-1">
                 <?php if ($tipo === 'servicio') echo $html_stars; ?>
             </div>
         </div>

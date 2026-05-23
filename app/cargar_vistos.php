@@ -121,7 +121,7 @@ foreach ($items_ordenados as $item):
         $precio_normal = $row['precio'] ?? 0;
 
         if ($es_oferta) {
-            $precio_html = '<div class="flex flex-col justify-end mt-1"><span class="text-[9px] md:text-[10px] text-gray-400 line-through font-medium block leading-none mb-0.5">Normal $' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-base md:text-lg text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span></div>';
+            $precio_html = '<span class="text-[11px] text-gray-400 line-through font-medium mr-1">$' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-gray-700 font-semibold tracking-tight">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span>';
         } else {
             if (is_numeric($precio_normal) && $precio_normal > 0) { 
                 $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-700 font-semibold tracking-tight mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>';
@@ -225,55 +225,50 @@ foreach ($items_ordenados as $item):
     }
     ?>
 
-<a href="<?= $link ?>" 
-       class="group flex-shrink-0 w-[240px] md:w-[320px] h-[104px] bg-white rounded-2xl flex gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all snap-start overflow-hidden relative items-center p-2 <?= isset($es_oferta) && $es_oferta ? 'border border-orange-300' : 'border border-gray-100' ?> <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
-        
-        <div class="w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden relative self-center">
-            <img src="<?= htmlspecialchars($img) ?>" 
-                 class="w-full h-full object-cover" 
-                 loading="lazy" 
-                 onerror="this.src='/img/logo2.webp'">
-            
-          
+<a href="<?= $link ?>"
+   class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
+
+    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+        <img src="<?= htmlspecialchars($img) ?>"
+             class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+             loading="lazy" decoding="async" width="170" height="128"
+             onerror="this.src='/img/logo2.webp'">
+
+        <!-- Badge nivel (izquierda) - solo servicios sin oferta -->
+        <?php if ($tipo === 's' && !empty($nivel_tutor) && empty($es_oferta)): ?>
+        <?php $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? ''; ?>
+        <?php if ($nivel_label): ?>
+        <div class="absolute top-2.5 left-2.5 z-10">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
         </div>
-        <!-- BADGE FLOTANTE ARRIBA A LA DERECHA (Diseño Airbnb) -->
-        <div class="absolute top-2.5 right-2.5 flex z-10">
-            <?php if (isset($es_oferta) && $es_oferta): ?>
-              <span class="inline-flex items-center w-fit px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gradient-to-tr from-orange-400 to-orange-500 text-white shadow-sm border border-orange-300/50 leading-none">
-    🔥 <?= (int)$row['cupos_oferta'] ?> CUPOS
-</span>
-            <?php elseif ($nivel_tutor === 'leyenda'): ?>
-                <span class="bg-gradient-to-tr from-red-700 to-rose-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm border border-red-400/30">
-                    <i class="fa-solid fa-gem text-[7px]"></i> 
-                </span>
-            <?php elseif ($nivel_tutor === 'elite'): ?>
-                <span class="bg-gradient-to-tr from-cyan-400 to-blue-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border border-cyan-300/30 shadow-sm flex items-center gap-1">
-                    <i class="fa-solid fa-diamond text-[7px]"></i> 
-                </span>
-            <?php elseif ($nivel_tutor === 'pro' || $nivel_tutor === 'top'): ?>
-                <span class="bg-slate-100 text-slate-800 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border border-gray-200 shadow-sm flex items-center gap-1">
-                    <i class="fa-solid fa-star text-[7px]"></i> 
-                </span>
-            <?php endif; ?>
+        <?php endif; ?>
+        <?php endif; ?>
+
+        <!-- Badge cupos (derecha) -->
+        <?php if (isset($es_oferta) && $es_oferta): ?>
+        <div class="absolute top-2.5 right-2.5 z-10">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+            </span>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="pt-2.5 flex flex-col flex-1 text-left">
+        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($titulo) ?></h3>
+
+        <div class="text-[14px] mt-auto mb-1.5 leading-none">
+            <?= isset($precio_html) ? $precio_html : '<span class="text-gray-700 font-semibold tracking-tight">' . ($precio ?? '') . '</span>' ?>
         </div>
 
-      <div class="flex flex-col justify-center min-w-0 w-full h-full py-0.5">
-            <p class="text-[9px] font-bold <?= $tag_color ?> uppercase tracking-wider mb-0.5"><?= $tag ?></p>
-            
-            <h4 class="text-[13px] md:text-[14px] font-semibold text-gray-900 leading-tight line-clamp-2 mb-1 pr-16">
-                <?= htmlspecialchars($titulo) ?>
-            </h4>
-            
-            <div class="mt-auto flex items-end justify-between w-full">
-                <!-- Precio Dinámico (Normal o Apilado) -->
-                <div>
-                    <?= isset($precio_html) ? $precio_html : '<span class="text-[13px] font-bold ' . ($precio_class ?? '') . '">' . ($precio ?? '') . '</span>' ?>
-                </div>
-                
-                <div class="shrink-0 flex items-center mb-0.5">
-                    <?= $html_stars ?>
-                </div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                <span class="truncate"><?= $tag ?></span>
+            </div>
+            <div class="shrink-0 flex items-center gap-1">
+                <?= $html_stars ?>
             </div>
         </div>
-    </a>
+    </div>
+</a>
 <?php endforeach; ?>

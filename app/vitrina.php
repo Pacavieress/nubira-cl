@@ -749,44 +749,41 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                        $tag_color_of = "text-[#54A6D8]";
                     ?>
                         <?php if($es_activa): ?>
-<a href="/detalle-servicio/<?= $link_hash_of ?>" 
-   onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
-   class="group flex-shrink-0 w-[240px] md:w-[320px] h-[96px] md:h-[112px] bg-white rounded-xl border border-gray-200 flex gap-3 hover:border-gray-300 transition-all snap-start overflow-hidden relative items-center p-1.5 md:p-2">
-                                
-                               <!-- IMAGEN (Tamaño exacto Nubira 2.0) -->
-                                <div class="w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden relative self-center shadow-sm">
-                                    <img src="<?= htmlspecialchars($portada_url_of) ?>" 
-                                         srcset="<?= htmlspecialchars($portada_set_of['thumb']) ?> 240w, <?= htmlspecialchars($portada_set_of['card']) ?> 480w"
-                                         class="w-full h-full object-cover" 
-                                         loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" 
-                                         decoding="async" 
-                                         <?= $es_lcp_of ? 'fetchpriority="high"' : '' ?> 
-                                         width="90" height="90" sizes="90px" alt="<?= htmlspecialchars($row_of['titulo']) ?>">
-                                </div>
-                                
-                               <!-- BADGE FLOTANTE (Optimizado para Móvil) -->
-                                <div class="absolute top-2 right-2 md:top-2.5 md:right-2.5 flex z-10">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                        <a href="/detalle-servicio/<?= $link_hash_of ?>"
+                           onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
+                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
+
+                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                                <img src="<?= htmlspecialchars($portada_url_of) ?>"
+                                     srcset="<?= htmlspecialchars($portada_set_of['thumb']) ?> 240w, <?= htmlspecialchars($portada_set_of['card']) ?> 480w"
+                                     sizes="170px"
+                                     alt="<?= htmlspecialchars($row_of['titulo']) ?>"
+                                     class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                     loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" decoding="async"
+                                     <?= $es_lcp_of ? 'fetchpriority="high"' : '' ?>
+                                     width="170" height="128">
+
+                                <div class="absolute top-2.5 right-2.5 z-10">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                                         <?= (int)$row_of['cupos_oferta'] ?> <?= (int)$row_of['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                                     </span>
                                 </div>
-                                
-                                <!-- TEXTOS (Padding responsivo pr-12 en móvil, pr-16 en escritorio) -->
-                                <div class="flex flex-col justify-center min-w-0 w-full h-full py-0.5">
-                                    <p class="text-[8px] md:text-[9px] font-bold <?= $tag_color_of ?> uppercase tracking-wider mb-0.5 truncate pr-12 md:pr-16"><?= $tag_of ?></p>
-                                    <h4 class="text-[13px] md:text-[14px] font-semibold text-gray-900 leading-tight line-clamp-2 mb-1 pr-12 md:pr-16"><?= htmlspecialchars($row_of['titulo']) ?></h4>
-                                    
-                                    <div class="mt-auto flex items-end justify-between w-full">
-                                        <div class="flex flex-col justify-end mt-1">
-                                            <span class="text-[9px] md:text-[10px] text-gray-400 line-through font-medium block leading-none mb-0.5">Normal $<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
-                                            <span class="text-base md:text-lg text-gray-700 font-semibold tracking-tight leading-none">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
-                                        </div>
-                                        <div class="shrink-0 flex items-center mb-0.5">
-                                            <?= $html_stars_of ?>
-                                        </div>
-                                    </div>
+                            </div>
+
+                            <div class="pt-2.5 flex flex-col flex-1 text-left">
+                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
+                                <div class="text-[14px] mt-auto mb-1.5 leading-none">
+                                    <span class="text-[11px] text-gray-400 line-through font-medium mr-1">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
+                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
                                 </div>
-                            </a>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                                        <span class="truncate"><?= $tag_of ?></span>
+                                    </div>
+                                    <div class="shrink-0 flex items-center gap-1"><?= $html_stars_of ?></div>
+                                </div>
+                            </div>
+                        </a>
                         <?php else: ?>
                             <?php 
                                 if (isset($row_of['es_falsa_oferta'])) {
@@ -798,40 +795,34 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                     $precio_old_fake = $row_of['precio_oferta'];
                                 }
                             ?>
-                           <a href="/detalle-servicio/<?= $link_hash_of ?>" 
-   onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
-   class="group flex-shrink-0 w-[240px] md:w-[320px] h-[96px] md:h-[112px] bg-gray-50/50 rounded-2xl border border-gray-200 flex gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all snap-start overflow-hidden relative items-center p-1.5 md:p-2 opacity-70 hover:opacity-100 grayscale-[30%]">
-                                
-                               <div class="w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-xl bg-gray-200 flex-shrink-0 overflow-hidden relative self-center shadow-sm">
-                                    <img src="<?= htmlspecialchars($portada_url_of) ?>" 
-                                         class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" 
-                                         loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" 
-                                         decoding="async" 
-                                         <?= $es_lcp_of ? 'fetchpriority="high"' : '' ?> 
-                                         width="90" height="90" sizes="90px" alt="<?= htmlspecialchars($row_of['titulo']) ?>">
+                        <a href="/detalle-servicio/<?= $link_hash_of ?>"
+                           onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
+                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full opacity-70 hover:opacity-100 grayscale-[30%] transition-all">
+
+                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                                <img src="<?= htmlspecialchars($portada_url_of) ?>"
+                                     alt="<?= htmlspecialchars($row_of['titulo']) ?>"
+                                     class="w-full h-full object-cover"
+                                     loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" decoding="async"
+                                     width="170" height="128">
+
+                                <div class="absolute top-2.5 right-2.5 z-10">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">Agotado</span>
                                 </div>
-                                
-<div class="absolute top-2 right-2 md:top-2.5 md:right-2.5 flex z-10">
-                                    <span class="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider bg-gray-100/90 backdrop-blur-sm text-gray-400 border border-gray-100 shadow-sm">
-                                        Agotado
-                                    </span>
+                            </div>
+
+                            <div class="pt-2.5 flex flex-col flex-1 text-left">
+                                <h3 class="font-semibold text-[14px] leading-snug text-gray-500 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
+                                <div class="text-[13px] mt-auto mb-1.5 leading-none">
+                                    <span class="text-gray-400 font-semibold tracking-tight">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
                                 </div>
-                                
-                                <div class="flex flex-col justify-center min-w-0 w-full h-full py-0.5">
-                                    <p class="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate pr-12 md:pr-16"><?= $tag_of ?></p>
-                                    <h4 class="text-[13px] md:text-[14px] font-medium text-gray-500 leading-tight line-clamp-2 mb-1 pr-12 md:pr-16"><?= htmlspecialchars($row_of['titulo']) ?></h4>
-                                    
-                                    <div class="mt-auto flex items-end justify-between w-full">
-                                        <div class="flex flex-col justify-end mt-1">
-                                            <span class="text-[9px] md:text-[10px] text-gray-400 font-medium block leading-none mb-0.5">Estuvo a $<?= number_format($precio_old_fake, 0, ',', '.') ?></span>
-                                            <span class="text-[13px] md:text-[14px] text-gray-400 font-bold tracking-tight leading-none">Volvió a $<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
-                                        </div>
-                                        <div class="shrink-0 flex items-center mb-0.5 opacity-60">
-                                            <?= $html_stars_of ?>
-                                        </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                                        <span class="truncate"><?= $tag_of ?></span>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
+                        </a>
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
@@ -840,6 +831,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
         </section>
         <?php endif; ?>
 
+<?php if (false): // OCULTO: seccion IA removida de la home ?>
    <section id="zona-ia" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500">
     
     <?php require_once __DIR__ . '/componentes/seccion_recomendaciones.php'; ?>
@@ -864,6 +856,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
         <button onclick="scrollCarrusel('carrusel-ia', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
+<?php endif; ?>
 
 <?php if (!$is_guest): ?>
     <section id="sec-recientes-wrapper" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500 delay-100">
@@ -872,7 +865,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
         </div>
         <div class="relative group">
             <button onclick="scrollCarrusel('sec-recientes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-md items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-100 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-<div id="sec-recientes" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-center" data-src="/app/cargar_vistos.php">
+<div id="sec-recientes" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-stretch" data-src="/app/cargar_vistos.php">
                     <?php for($i=0; $i<4; $i++): ?>
                     <div class="flex-shrink-0 w-[220px] md:w-[300px] h-[96px] md:h-[112px] bg-white rounded-2xl border border-gray-100 p-2 md:p-3 flex gap-3 snap-start opacity-60 overflow-hidden">
                     <div class="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-gray-100 flex-shrink-0 animate-pulse self-center"></div>
@@ -1131,6 +1124,7 @@ $portada_url = $portada_set['card'];
         <button onclick="scrollCarrusel('sec-servicios', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
+<?php if (false): // OCULTO: seccion Apuntes nuevos removida de la home ?>
 <!-- [NUBIRA 2.0] APUNTES RECIÉN PUBLICADOS -->
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
     <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
@@ -1242,6 +1236,7 @@ $portada_url = $portada_set['card'];
         <button onclick="scrollCarrusel('sec-apuntes-nuevos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
+<?php endif; ?>
 <section class="mb-3 md:mb-5 relative">
 <div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
         <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_apuntes ?></h2>
