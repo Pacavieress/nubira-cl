@@ -164,7 +164,6 @@ function obtener_iniciales($nombre_completo) {
         .custom-check { width: 22px; height: 22px; border: 2px solid #cbd5e1; border-radius: 50%; display: grid; place-items: center; transition: all 0.2s; }
         .row-checkbox:checked + .custom-check { background-color: #54A6D8; border-color: #54A6D8; }
         .row-checkbox:checked + .custom-check i { transform: scale(1); }
-        .hidden-header { display: none; }
         
         /* NUBIRA 2.0: ANIMACIONES NATIVAS */
         @keyframes popIn { 
@@ -201,7 +200,7 @@ function obtener_iniciales($nombre_completo) {
                 <?php endif; ?>
             </div>
 
-            <div id="header-edit" class="hidden-header flex items-center justify-between header-section bg-gray-50 rounded-xl p-1.5 border border-gray-100">
+            <div id="header-edit" class="hidden flex items-center justify-between header-section bg-gray-50 rounded-xl p-1.5 border border-gray-100">
                 <button onclick="toggleEditMode(false)" class="text-[15px] font-medium text-gray-500 hover:text-gray-800 px-3 py-1">Cancelar</button>
                 <span class="text-sm font-bold text-gray-800"><span id="selected-count">0</span> seleccionados</span>
                 <button onclick="borrarSeleccionados()" id="btn-trash" class="text-[14px] font-bold text-red-500 hover:text-red-600 bg-white border border-gray-200 px-4 py-1.5 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled>Eliminar</button>
@@ -251,7 +250,7 @@ function obtener_iniciales($nombre_completo) {
                     }
                 ?>
                 
-             <div id="row-<?= $uniqueId ?>" class="group relative hover:bg-gray-50 rounded-xl overflow-hidden transition-all duration-300 border-b border-gray-50 last:border-0 <?= $sinLeer > 0 ? 'bg-blue-50/40' : 'bg-white' ?>">
+             <div id="row-<?= $uniqueId ?>" class="group relative hover:bg-gray-50 rounded-xl overflow-hidden transition-all duration-200 border-b border-gray-100 last:border-0 <?= $sinLeer > 0 ? 'bg-blue-50/40' : 'bg-white' ?>">
                     
                     <div class="check-container z-20">
                         <label class="cursor-pointer p-2">
@@ -276,8 +275,12 @@ function obtener_iniciales($nombre_completo) {
                                 </div>
                             <?php endif; ?>
                             
-                            <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-white flex items-center justify-center text-[8px] text-white shadow-sm <?= $esAula ? 'bg-emerald-500' : 'bg-[#54A6D8]' ?>">
-                                <i class="<?= $esAula ? 'fa-solid fa-graduation-cap' : 'fa-solid fa-comment' ?>"></i>
+                            <div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full border-[1.5px] border-white flex items-center justify-center bg-white shadow-sm">
+                                <?php if ($esAula): ?>
+                                    <?= icon('academic-cap', 'w-3 h-3 text-[#54A6D8]') ?>
+                                <?php else: ?>
+                                    <?= icon('chat-bubble', 'w-3 h-3 text-[#54A6D8]') ?>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -294,7 +297,7 @@ function obtener_iniciales($nombre_completo) {
                                 <?= htmlspecialchars($chat['servicio_titulo'] ?? 'Servicio') ?>
                             </p>
                             <p class="text-[13px] truncate leading-snug <?= $sinLeer > 0 ? 'font-bold text-gray-900' : 'font-normal text-gray-500' ?>">
-                                <?= $chat['ultimo_mensaje'] ? htmlspecialchars($chat['ultimo_mensaje']) : '✨ Inicia la conversación...' ?>
+                                <?= $chat['ultimo_mensaje'] ? htmlspecialchars($chat['ultimo_mensaje']) : 'Inicia la conversación...' ?>
                             </p>
                         </div>
 
@@ -306,7 +309,7 @@ function obtener_iniciales($nombre_completo) {
     </div>
 <?php else: ?>
                             <div class="shrink-0 pl-2">
-                                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+                                <?= icon('chevron-right', 'w-3.5 h-3.5 text-gray-300') ?>
                             </div>
                         <?php endif; ?>
 
@@ -345,13 +348,13 @@ function obtener_iniciales($nombre_completo) {
             const selectAllBox = document.getElementById('select-all-box');
             
             if (active) {
-                headerNormal.classList.add('hidden-header');
-                headerEdit.classList.remove('hidden-header');
+                headerNormal.classList.add('hidden');
+                headerEdit.classList.remove('hidden');
                 lista.classList.add('editing');
                 selectAllBox.classList.remove('hidden');
             } else {
-                headerNormal.classList.remove('hidden-header');
-                headerEdit.classList.add('hidden-header');
+                headerNormal.classList.remove('hidden');
+                headerEdit.classList.add('hidden');
                 lista.classList.remove('editing');
                 selectAllBox.classList.add('hidden');
                 document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);

@@ -31,7 +31,10 @@ function icon($name, $classes = "w-6 h-6") {
         case 'x-circle': return "<svg $solid ...>...</svg>";
         case 'alert-triangle': return "<svg $solid ...>...</svg>";
         case 'info-circle': return "<svg $solid ...>...</svg>";
-        
+        case 'academic-cap': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5' /></svg>";
+        case 'chat-bubble': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z' /></svg>";
+        case 'chevron-right': return "<svg $outline class='$classes'><path stroke-linecap='round' stroke-linejoin='round' d='M8.25 4.5l7.5 7.5-7.5 7.5' /></svg>";
+
         default: return "";
     }
 }
