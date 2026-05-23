@@ -5,7 +5,7 @@
  * [NUBIRA 2.0] Optimizado: cache sesión de alertas, cache-busting estable, polling inteligente
  */
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
 // 1. RUTAS Y VARIABLES VISUALES
 $uri_actual = $_SERVER['REQUEST_URI'] ?? '/';
