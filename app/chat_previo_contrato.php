@@ -17,6 +17,7 @@ foreach ($conn_paths as $cp) {
 }
 if (!$conn_loaded) die("Error de sistema.");
 $conn->set_charset("utf8mb4");
+require_once __DIR__ . '/iconos.php';
 
 // 3. SEGURIDAD
 if (!isset($_SESSION['usuario_id'])) { 
@@ -181,10 +182,10 @@ session_write_close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-        .bubble-me { background: linear-gradient(135deg, #54A6D8 0%, #4092c4 100%); color: white; border-radius: 18px 18px 4px 18px; }
+        .bubble-me { background-color: #54A6D8; color: white; border-radius: 18px 18px 4px 18px; }
         .bubble-other { background-color: white; color: #1f2937; border-radius: 18px 18px 18px 4px; border: 1px solid #f3f4f6; }
         
         /* Animaciones del Toast */
@@ -209,7 +210,7 @@ session_write_close();
             position: absolute;
             top: -4px;
             right: -8px;
-            background: linear-gradient(135deg, #54A6D8 0%, #4092c4 100%);
+            background-color: #54A6D8;
             color: white;
             font-size: 9px;
             font-weight: 700;
@@ -308,7 +309,7 @@ textarea, input {
     </style>
 </head>
 
-<body class="w-full flex flex-col overflow-hidden text-gray-900 bg-[#EFEAE2] bg-opacity-30 relative" style="height: calc(var(--vh, 1vh) * 100);">
+<body class="w-full flex flex-col overflow-hidden text-gray-900 bg-gray-50 relative" style="height: calc(var(--vh, 1vh) * 100);">
     
     <div id="toast-container" class="fixed top-20 left-1/2 z-50 hidden w-[90%] max-w-sm transform -translate-x-1/2 transition-all duration-300">
         <div class="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-xl flex items-start justify-between gap-3 border border-red-600">
@@ -366,8 +367,9 @@ textarea, input {
 <main id="chat-container" class="flex-1 overflow-y-auto p-4 pb-8 space-y-3 w-full relative no-scrollbar">
         
         <div class="flex justify-center mb-6 mt-2">
-            <div class="bg-yellow-50 text-yellow-800 text-[11px] px-4 py-2.5 rounded-xl max-w-[85%] text-center border border-yellow-100 shadow-sm leading-snug">
-                ⚠️ <b>Consejo:</b> Evita compartir datos de contacto antes del pago. Las transacciones fuera de Nubira no tienen garantía.
+            <div class="bg-amber-50 text-amber-900 text-[11px] px-4 py-2.5 rounded-xl max-w-[85%] text-center border border-amber-200 leading-snug flex items-start gap-1.5">
+                <?= icon('shield-check', 'w-4 h-4 text-amber-700 shrink-0 mt-px') ?>
+                <span><b>Consejo:</b> Evita compartir datos de contacto antes del pago. Las transacciones fuera de Nubira no tienen garantía.</span>
             </div>
         </div>
         
