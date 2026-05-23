@@ -979,10 +979,10 @@ $mostrar_barra_movil = (
                     $<?= number_format($servicio['precio'], 0, ',', '.') ?>
                 </span>
                 <div class="flex items-baseline gap-1.5 mt-0.5">
-    <span id="precio-movil-oferta" class="text-xl font-black text-[#54A6D8] tracking-tight leading-none">
+    <span id="precio-movil-oferta" class="text-xl font-black text-gray-900 tracking-tight leading-none">
         $<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?>
     </span>
-    <span class="text-[9px] font-bold text-orange-500 uppercase tracking-wide">Subsidio</span>
+    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Subsidio</span>
 </div>
 <?php else: ?>
 <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-none">Inversión total</span>
@@ -994,13 +994,13 @@ $mostrar_barra_movil = (
 
         <?php if (!$logueado): ?>
             <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>" 
-               class="bg-gradient-to-r from-[#54A6D8] to-blue-600 text-white font-bold rounded-xl px-6 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap">
+               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-6 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap">
                 Ingresar
             </a>
         <?php else: ?>
             <button type="button" 
                     onclick="document.getElementById('btn-submit-pago')?.click()"
-                    class="bg-gradient-to-r <?= $is_oferta ? 'from-orange-300 to-orange-500' : 'from-[#54A6D8] to-blue-600' ?> text-white font-bold rounded-xl px-6 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap"
+                    class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-6 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap"
                     data-track-click="contact:contratar_movil">
                 Contratar ahora
             </button>
