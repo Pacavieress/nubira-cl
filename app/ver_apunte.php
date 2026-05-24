@@ -586,7 +586,7 @@ require_once $base_path . '/componentes/sidebar.php';
                     
                     <div class="absolute inset-0 flex flex-col justify-center items-center z-20 px-6 text-center transition-all duration-700 rounded-2xl pointer-events-none" id="capa-bloqueo">
                         
-                        <div id="msgPreview" class="bg-white/90 backdrop-blur border border-gray-100 rounded-2xl px-6 py-3 shadow-xl mb-4 animate-bounce pointer-events-auto">
+                        <div id="msgPreview" class="bg-white/90 backdrop-blur border border-gray-100 rounded-2xl px-6 py-3 shadow-xl mb-4 pointer-events-auto">
                             <p class="text-gray-800 font-bold text-sm flex items-center gap-2">
                                 <span class="flex h-2 w-2 rounded-full bg-[#54A6D8] animate-ping"></span>
                                 Vista previa: <span id="countdown-timer">5</span>s
@@ -601,13 +601,12 @@ require_once $base_path . '/componentes/sidebar.php';
                             <p class="text-xs text-gray-500 mb-4 leading-relaxed">Únete a Nubira para ver todas las páginas y descargar el archivo original sin marcas.</p>
                             
                             <?php if ($es_promo_activa): ?>
-                               <a href="/app/descargar_promo.php?id=<?= $token_seguro ?>" 
-                                  class="btn-descarga-promo-flash block w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-black transition border border-gray-800 text-center flex items-center justify-center gap-2 relative overflow-hidden"
-                                  data-track="click_contact" data-type="apunte_promo" data-id="<?= $id_apunte ?>">
-                                    <div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 opacity-20 pointer-events-none animate-pulse"></div>
-                                    <span class="relative z-10 flex items-center gap-2"><?= icon('lightning', 'text-orange-400 w-5 h-5') ?> Descargar Gratis</span>
-                                </a>
-                                <p class="text-xs font-bold text-orange-500 mt-3 text-center animate-pulse tracking-wide">🔥 Quedan <?= $descargas_restantes ?> descargas</p>
+                                 <a href="/app/descargar_promo.php?id=<?= $token_seguro ?>"
+                                    class="btn-descarga-promo-flash block w-full bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition text-center flex items-center justify-center gap-2"
+                                    data-track="click_contact" data-type="apunte_promo" data-id="<?= $id_apunte ?>">
+                                     <?= icon('publish-doc', 'w-5 h-5') ?> Descargar Gratis
+                                 </a>
+                                  <p class="text-xs font-semibold text-gray-500 mt-3 text-center tracking-wide">Quedan <?= $descargas_restantes ?> descargas</p>
                             <?php else: ?>
                                 <?php if ($logueado): ?>
                                     <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>" 
@@ -830,16 +829,16 @@ if (file_exists($modal_captacion_path)) {
                 <div class="bg-gray-50 p-5 md:p-8 border-b md:border-b-0 md:border-r border-gray-100">
                     <div class="flex items-center gap-3 mb-4 md:mb-6"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-red-100 text-red-500 flex items-center justify-center shrink-0"><i class="fa-solid fa-chalkboard-user text-lg md:text-xl"></i></div><h4 class="text-base md:text-lg font-bold text-gray-800 tracking-tight">Dar clases por RRSS</h4></div>
                     <ul class="space-y-4 md:space-y-5 text-xs md:text-sm text-gray-600">
-                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><i class="fa-solid fa-xmark"></i></span><div><strong class="text-gray-800 block mb-0.5">Te dejan en "visto"</strong>Pierdes tiempo respondiendo mensajes a personas que preguntan precios y luego desaparecen.</div></li>
-                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><i class="fa-solid fa-xmark"></i></span><div><strong class="text-gray-800 block mb-0.5">Cobros incómodos</strong>Tienes que perseguir a los alumnos para que transfieran.</div></li>
-                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><i class="fa-solid fa-xmark"></i></span><div><strong class="text-gray-800 block mb-0.5">Agenda desordenada</strong>Agendar por WhatsApp mezcla tu vida personal con tus alumnos.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><?= icon('x-mark', 'w-4 h-4') ?></span><div><strong class="text-gray-800 block mb-0.5">Te dejan en "visto"</strong>Pierdes tiempo respondiendo mensajes a personas que preguntan precios y luego desaparecen.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><?= icon('x-mark', 'w-4 h-4') ?></span><div><strong class="text-gray-800 block mb-0.5">Cobros incómodos</strong>Tienes que perseguir a los alumnos para que transfieran.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><?= icon('x-mark', 'w-4 h-4') ?></span><div><strong class="text-gray-800 block mb-0.5">Agenda desordenada</strong>Agendar por WhatsApp mezcla tu vida personal con tus alumnos.</div></li>
                     </ul>
                 </div>
                 <div class="bg-white p-5 md:p-8 flex flex-col">
                     <div class="flex items-center gap-3 mb-4 md:mb-6"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-sky-100 text-[#54A6D8] flex items-center justify-center shrink-0"><i class="fa-solid fa-rocket text-lg md:text-xl"></i></div><h4 class="text-base md:text-lg font-bold text-gray-800 tracking-tight">Enseñar en Nubira</h4></div>
                     <ul class="space-y-4 md:space-y-5 text-xs md:text-sm text-gray-600">
-                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><i class="fa-solid fa-check-circle text-base md:text-lg"></i></span><div><strong class="text-gray-800 block mb-0.5">Pagos 100% garantizados</strong>El alumno paga por adelantado. Tu dinero está seguro siempre.</div></li>
-                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><i class="fa-solid fa-check-circle text-base md:text-lg"></i></span><div><strong class="text-gray-800 block mb-0.5">Ventas en automático</strong>Sube tus apuntes una vez y genera ingresos 24/7.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><?= icon('check-circle', 'w-5 h-5') ?></span><div><strong class="text-gray-800 block mb-0.5">Pagos 100% garantizados</strong>El alumno paga por adelantado. Tu dinero está seguro siempre.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><?= icon('check-circle', 'w-5 h-5') ?></span><div><strong class="text-gray-800 block mb-0.5">Ventas en automático</strong>Sube tus apuntes una vez y genera ingresos 24/7.</div></li>
                     </ul>
                 </div>
             </div>
@@ -870,17 +869,17 @@ if (file_exists($modal_alumno_path)) {
                 <div class="bg-gray-50 p-5 md:p-8 border-b md:border-b-0 md:border-r border-gray-100">
                     <div class="flex items-center gap-3 mb-4 md:mb-6"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-red-100 text-red-500 flex items-center justify-center shrink-0"><i class="fa-brands fa-whatsapp text-lg md:text-xl"></i></div><h4 class="text-base md:text-lg font-bold text-gray-800 tracking-tight">Buscar en RRSS</h4></div>
                     <ul class="space-y-4 md:space-y-5 text-xs md:text-sm text-gray-600">
-                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><i class="fa-solid fa-xmark"></i></span><div><strong class="text-gray-800 block mb-0.5">Apuntes basura o virus</strong>Descargas PDFs dudosos que no tienen la materia de tu prueba.</div></li>
-                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><i class="fa-solid fa-xmark"></i></span><div><strong class="text-gray-800 block mb-0.5">Estafas con tutores</strong>Transfieres por adelantado en Instagram y desaparecen.</div></li>
-                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><i class="fa-solid fa-xmark"></i></span><div><strong class="text-gray-800 block mb-0.5">Tiempo perdido</strong>Pierdes horas rogando por accesos a Drive en grupos muertos.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><?= icon('x-mark', 'w-4 h-4') ?></span><div><strong class="text-gray-800 block mb-0.5">Apuntes basura o virus</strong>Descargas PDFs dudosos que no tienen la materia de tu prueba.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><?= icon('x-mark', 'w-4 h-4') ?></span><div><strong class="text-gray-800 block mb-0.5">Estafas con tutores</strong>Transfieres por adelantado en Instagram y desaparecen.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-red-400 mt-0.5 shrink-0"><?= icon('x-mark', 'w-4 h-4') ?></span><div><strong class="text-gray-800 block mb-0.5">Tiempo perdido</strong>Pierdes horas rogando por accesos a Drive en grupos muertos.</div></li>
                     </ul>
                 </div>
                 <div class="bg-white p-5 md:p-8 flex flex-col">
-                    <div class="flex items-center gap-3 mb-4 md:mb-6"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-sky-100 text-[#54A6D8] flex items-center justify-center shrink-0"><i class="fa-solid fa-graduation-cap text-lg md:text-xl"></i></div><h4 class="text-base md:text-lg font-bold text-gray-800 tracking-tight">Estudiar con Nubira</h4></div>
+                    <div class="flex items-center gap-3 mb-4 md:mb-6"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-sky-100 text-[#54A6D8] flex items-center justify-center shrink-0"><?= icon('academic-cap', 'w-5 h-5') ?></div><h4 class="text-base md:text-lg font-bold text-gray-800 tracking-tight">Estudiar con Nubira</h4></div>
                     <ul class="space-y-4 md:space-y-5 text-xs md:text-sm text-gray-600">
-                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><i class="fa-solid fa-check-circle text-base md:text-lg"></i></span><div><strong class="text-gray-800 block mb-0.5">Material verificado</strong>Resúmenes filtrados por estudiantes reales de tu universidad.</div></li>
-                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><i class="fa-solid fa-check-circle text-base md:text-lg"></i></span><div><strong class="text-gray-800 block mb-0.5">Dinero 100% protegido</strong>Si el apunte o clase no cumple, tienes respaldo total.</div></li>
-                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><i class="fa-solid fa-check-circle text-base md:text-lg"></i></span><div><strong class="text-gray-800 block mb-0.5">Descarga instantánea</strong>Haces clic y el PDF es tuyo de inmediato. Sin esperas.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><?= icon('check-circle', 'w-5 h-5') ?></span><div><strong class="text-gray-800 block mb-0.5">Material verificado</strong>Resúmenes filtrados por estudiantes reales de tu universidad.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><?= icon('check-circle', 'w-5 h-5') ?></span><div><strong class="text-gray-800 block mb-0.5">Dinero 100% protegido</strong>Si el apunte o clase no cumple, tienes respaldo total.</div></li>
+                        <li class="flex items-start gap-2.5"><span class="text-[#54A6D8] mt-0.5 shrink-0"><?= icon('check-circle', 'w-5 h-5') ?></span><div><strong class="text-gray-800 block mb-0.5">Descarga instantánea</strong>Haces clic y el PDF es tuyo de inmediato. Sin esperas.</div></li>
                     </ul>
                 </div>
             </div>
