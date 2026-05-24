@@ -445,6 +445,12 @@ if (!empty($thumb_url)) {
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     .overflow-hidden-strict { overflow: hidden !important; }
+    @media (max-width: 767px) {
+        nav.fixed.bottom-0,
+        .fixed.bottom-0[id*="nav"] {
+            display: none !important;
+        }
+    }
   </style>
 </head>
 
@@ -465,8 +471,20 @@ require_once $base_path . '/componentes/sidebar.php';
       data-track-type="apunte" 
       data-track-id="<?= (int)$id_apunte ?>">
 
+  <!-- Topbar móvil: flecha volver + pill centrado -->
+  <div class="md:hidden flex items-center justify-between mb-4 mt-1 max-w-[1100px] mx-auto">
+      <button type="button"
+          onclick="navegacionSeguraNubira()"
+          class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all"
+          aria-label="Volver">
+          <?= icon('arrow-left', 'w-5 h-5 text-gray-700') ?>
+      </button>
+      <div class="w-10 h-1.5 bg-gray-200 rounded-full"></div>
+      <div class="w-10 h-10"></div>
+  </div>
+
   <div class="w-full max-w-[1600px] mx-auto">
-    
+
         <?php if ($es_dueno && isset($apunte['estado'])): ?>
             <?php if ($apunte['estado'] === 'pendiente'): ?>
                 <div class="mb-6 bg-amber-50 border border-yellow-200 rounded-2xl p-4 flex items-start md:items-center gap-4 animate-pulse">
@@ -802,6 +820,7 @@ require_once $base_path . '/componentes/sidebar.php';
     <?php endif; ?>
 
   </div>
+  <div class="h-16 md:hidden"></div>
 </main>
 
 <?php 
@@ -891,11 +910,59 @@ if (file_exists($modal_alumno_path)) {
 </div>
 <?php } ?>
 
-<?php 
-require_once $base_path . '/componentes/nav_bottom.php'; 
-require_once $base_path . '/componentes/modal_publicar.php'; 
-require_once $base_path . '/componentes/modal_explora.php'; 
+<?php
+require_once $base_path . '/componentes/nav_bottom.php';
+require_once $base_path . '/componentes/modal_publicar.php';
+require_once $base_path . '/componentes/modal_explora.php';
 ?>
+
+<?php if (!$es_dueno): ?>
+<div id="barra-apunte-movil"
+     class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+    <div class="flex items-center justify-between gap-3">
+
+        <div class="flex flex-col min-w-0 flex-1">
+            <?php if ($acceso_completo): ?>
+                <span class="text-xs text-gray-400 font-medium">Ya tienes acceso</span>
+            <?php else: ?>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-none mb-0.5">Precio</span>
+                <span class="text-xl font-extrabold text-gray-900 tracking-tight leading-none"><?= $precio_fmt ?></span>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($es_promo_activa && !$acceso_completo): ?>
+            <a href="/app/descargar_promo.php?id=<?= $token_seguro ?>"
+               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2"
+               data-track="click_contact" data-type="apunte_promo" data-id="<?= $id_apunte ?>">
+                <?= icon('publish-doc', 'w-4 h-4') ?> Descargar gratis
+            </a>
+        <?php elseif ($acceso_completo): ?>
+            <a href="<?= htmlspecialchars($fileUrl) ?>" download
+               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2"
+               data-track="click_contact" data-type="apunte" data-id="<?= $id_apunte ?>">
+                <?= icon('publish-doc', 'w-4 h-4') ?> Descargar
+            </a>
+        <?php elseif (!$logueado && $precio === 0): ?>
+            <a href="<?= $login_redir ?>"
+               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2">
+                <?= icon('user', 'w-4 h-4') ?> Inicia sesión
+            </a>
+        <?php elseif (!$logueado && $precio > 0): ?>
+            <a href="<?= $login_redir ?>"
+               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2">
+                <?= icon('lock', 'w-4 h-4') ?> Comprar
+            </a>
+        <?php elseif ($logueado && !$acceso_completo && !$es_promo_activa): ?>
+            <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>"
+               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2"
+               data-track="click_contact" data-type="apunte" data-id="<?= $id_apunte ?>">
+                <?= icon('lock', 'w-4 h-4') ?> Desbloquear
+            </a>
+        <?php endif; ?>
+
+    </div>
+</div>
+<?php endif; ?>
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } };
 
@@ -1011,6 +1078,18 @@ document.addEventListener('keydown', (e) => {
     }, 1000);
 })();
 <?php endif; ?>
+
+// [NUBIRA 2.0] SMART BACK: Previene bucles infinitos con pasarelas de pago
+window.navegacionSeguraNubira = function() {
+    let ref = document.referrer.toLowerCase();
+    if (ref.includes('mercadopago') || ref.includes('pago_error') || ref.includes('contratar_servicio') || ref.includes('iniciar_pago') || ref.includes('iniciar-pago')) {
+        window.location.href = '/vitrina-apuntes';
+    } else if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/vitrina-apuntes';
+    }
+};
 
 // Modal helpers (unificado)
 function setupModal(triggerId, modalId, cardId, closeId) {
