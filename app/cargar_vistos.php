@@ -121,7 +121,7 @@ foreach ($items_ordenados as $item):
         $precio_normal = $row['precio'] ?? 0;
 
         if ($es_oferta) {
-            $precio_html = '<span class="text-[11px] text-gray-400 line-through font-medium mr-1">$' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-gray-700 font-semibold tracking-tight">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span>';
+            $precio_html = '<span class="text-[10px] text-gray-400 line-through font-medium mr-1">$' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-gray-700 font-semibold tracking-tight">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span>';
         } else {
             if (is_numeric($precio_normal) && $precio_normal > 0) { 
                 $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-700 font-semibold tracking-tight mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>';
@@ -257,7 +257,7 @@ foreach ($items_ordenados as $item):
     <div class="pt-2.5 flex flex-col flex-1 text-left">
         <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($titulo) ?></h3>
 
-        <div class="text-[14px] mt-auto mb-1.5 leading-none">
+        <div class="text-[14px] mt-auto mb-1.5 leading-none min-h-[20px] whitespace-nowrap overflow-hidden">
             <?= isset($precio_html) ? $precio_html : '<span class="text-gray-700 font-semibold tracking-tight">' . ($precio ?? '') . '</span>' ?>
         </div>
 
