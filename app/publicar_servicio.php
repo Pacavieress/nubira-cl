@@ -77,7 +77,28 @@ if ($pubs_hoy >= 2) $ya_publico_hoy = true;
 
 // Función Anti-Contacto
 function contiene_contacto($texto) {
-    $patrones = ['/\b\d{8,}\b/i', '/@/i', '/(gmail|hotmail|yahoo|outlook|uc\.cl|aiep\.cl)/i', '/(https?:\/\/|www\.)/i', '/(whatsapp|wsp|wa\.me|t\.me)/i'];
+    $patrones = [
+        // Teléfonos: 8+ dígitos consecutivos
+        '/\b\d{8,}\b/',
+        // Teléfonos con separadores: "9 1234 5678", "9-1234-5678"
+        '/\b(?:\d[\s\-.]?){7}\d/',
+        // Prefijo de país chileno
+        '/\+56/',
+        // Arroba directa (emails y @handles)
+        '/@/',
+        // "arroba" escrita para evadir el filtro
+        '/\barroba\b/iu',
+        // Dominios de email comunes (sin dominios .cl para evitar falsos positivos)
+        '/\b(gmail|hotmail|yahoo|outlook|protonmail|live|icloud)\b/i',
+        // URLs con protocolo o www
+        '/(https?:\/\/|www\.)/i',
+        // Dominios de mensajería directa sin protocolo
+        '/wa\.me|t\.me/i',
+        // Apps de mensajería y redes sociales
+        '/\b(whatsapp|wsp|wpp|telegram|instagram|insta|tiktok|snapchat|discord|facebook)\b/i',
+        // Frases de evasión explícita
+        '/\b(contact[aá]me|escrí?beme|mi\s+n[uú]mero|fuera\s+de\s+la\s+plataforma)\b/iu',
+    ];
     foreach ($patrones as $p) { if (preg_match($p, $texto)) return true; }
     return false;
 }
@@ -89,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
     $token_recibido = $_POST['csrf_token'] ?? '';
     if (empty($token_recibido) || !hash_equals($_SESSION['csrf_token_publicar'] ?? '', $token_recibido)) {
         error_log("Nubira CSRF Alert - Token inválido. usuario_id={$usuario_id}, IP=" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-        $mensaje = "🔒 Sesión expirada. Por favor recarga la página e intenta nuevamente.";
+        $mensaje = "Sesión expirada. Por favor recarga la página e intenta nuevamente.";
         goto fin_post;
     }
     
@@ -104,14 +125,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
 
     // Validación defensiva de longitud en backend
     if (mb_strlen($titulo) > 70 || mb_strlen($descripcion) > 1500) {
-        $mensaje = "❌ El título o descripción exceden el límite permitido.";
+        $mensaje = "El título o descripción exceden el límite permitido.";
         $titulo = '';
     }
 
     if (!$titulo || !$descripcion || !$categoria || !$modalidad) {
-        if (empty($mensaje)) $mensaje = "❌ Faltan campos obligatorios.";
+        if (empty($mensaje)) $mensaje = "Faltan campos obligatorios.";
     } elseif (contiene_contacto($titulo) || contiene_contacto($descripcion)) {
-        $mensaje = "🚫 Por seguridad, no incluyas teléfonos ni correos.";
+        $mensaje = "Por seguridad, no incluyas teléfonos ni correos.";
     } else {
         $nombreArchivo = ''; 
         $imagen_estado = 'oculta'; 
@@ -199,12 +220,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
                 $nuevo_servicio_id = $stmt->insert_id;
                 actualizar_score_servicio($conn, $nuevo_servicio_id);
 
-                $mensaje = "✅ ¡Excelente! Tu servicio ha sido enviado a revisión.";
+                $mensaje = "¡Excelente! Tu servicio ha sido enviado a revisión.";
                 $exito   = true;
                 $ya_publico_hoy = true;
             } else {
                 error_log("Nubira Error - Insert Servicio: " . $stmt->error);
-                $mensaje = "❌ Error en base de datos al guardar.";
+                $mensaje = "Error en base de datos al guardar.";
             }
             $stmt->close();
         }
@@ -330,23 +351,33 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Categoría</label>
-                            <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 transition outline-none appearance-none cursor-pointer">
-                                <option value="">Selecciona una opción...</option>
-                                <option value="Clases">Clases Particulares</option>
-                                <option value="Tutoría">Tutorías / Ayudantías</option>
-                                <option value="Asesoría">Asesoría Tesis/Proyectos</option>
-                                <option value="Idiomas">Idiomas</option>
-                                <option value="Otros">Otros Servicios</option>
-                            </select>
+                            <div class="relative">
+                                <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
+                                    <option value="">Selecciona una opción...</option>
+                                    <option value="Clases">Clases Particulares</option>
+                                    <option value="Tutoría">Tutorías / Ayudantías</option>
+                                    <option value="Asesoría">Asesoría Tesis/Proyectos</option>
+                                    <option value="Idiomas">Idiomas</option>
+                                    <option value="Otros">Otros Servicios</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                    <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Modalidad</label>
-                            <select name="modalidad" id="modalidad" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 transition outline-none appearance-none cursor-pointer">
-                                <option value="">Selecciona...</option>
-                                <option value="Online">Online</option>
-                                <option value="Presencial">Presencial</option>
-                                <option value="Híbrido">Híbrido</option>
-                            </select>
+                            <div class="relative">
+                                <select name="modalidad" id="modalidad" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
+                                    <option value="">Selecciona...</option>
+                                    <option value="Online">Online</option>
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Híbrido">Híbrido</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                    <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -648,7 +679,7 @@ if (overlayOff) overlayOff.style.opacity = '0';
         // Mostrar error suave al usuario
         const errBox = document.createElement('div');
         errBox.className = 'mt-2 text-xs text-red-500 font-medium bg-red-50 border border-red-200 px-3 py-2 rounded-lg';
-        errBox.textContent = '⚠️ ' + err.message + ' Sube otra imagen.';
+        errBox.textContent = err.message + ' Sube otra imagen.';
         ui.imgPreview.appendChild(errBox);
         setTimeout(() => errBox.remove(), 5000);
         
@@ -662,7 +693,13 @@ ui.modalidad?.addEventListener('change', function() {
     else { ui.ubicacionBox.classList.add('hidden'); ui.ubicacionInput.required = false; ui.ubicacionInput.value = ''; }
 });
 ui.desc?.addEventListener('input', function() {
-    const isBad = [/\d{8,}/, /@/, /\.cl/].some(p => p.test(this.value));
+    const isBad = [
+        /\d{8,}/,
+        /(?:\d[\s\-.]?){7}\d/,
+        /\+56/,
+        /@/,
+        /\b(whatsapp|wsp|wpp|telegram|instagram|insta|tiktok|snapchat|discord|facebook)\b/i
+    ].some(p => p.test(this.value));
     ui.warning.classList.toggle('hidden', !isBad);
     ui.warning.classList.toggle('flex', isBad);
     ui.btnSubmit.disabled = isBad;
@@ -684,7 +721,7 @@ function calcQuality() {
     if(ui.bar) {
         ui.bar.style.width = `${score}%`;
         ui.scoreText.innerText = `${score}%`;
-        ui.bar.className = `h-1.5 rounded-full transition-all duration-500 ease-out ${score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`;
+        ui.bar.className = `h-1.5 rounded-full transition-all duration-500 ease-out ${score === 0 ? 'bg-gray-300' : 'bg-[#54A6D8]'}`;
     }
 }
 
