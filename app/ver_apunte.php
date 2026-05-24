@@ -197,16 +197,50 @@ $recomendados = null;
 $asignatura_actual = $apunte['asignatura'] ?? '';
 $institucion_actual = $apunte['institucion'] ?? '';
 
+if (!function_exists('abreviar_institucion')) {
+    function abreviar_institucion(string $inst_raw, int $max_len = 22): string {
+        if (empty($inst_raw)) return '';
+        $inst_clean = $inst_raw;
+        $dicc = [
+            'Economía y Negocios' => 'FEN U. Chile', 'ECONOMíA Y NEGOCIOS' => 'FEN U. Chile',
+            'Servicio Local de Educ' => 'SLEP', 'SERVICIO LOCAL DE EDUC' => 'SLEP',
+            'Santísima Concepci' => 'UCSC', 'SANTíSIMA CONCEPCI' => 'UCSC', 'Santisima Concepci' => 'UCSC',
+            'Konrad Lorenz' => 'Konrad Lorenz',
+            'Universidad Andr'=>'UNAB', 'Universidad Nac'=>'UNAB',
+            'Pontificia Universidad Cat'=>'PUC', 'Universidad de Santiago'=>'USACH',
+            'Universidad de Concepci'=>'UdeC', 'Universidad T'=>'USM',
+            'Federico Santa Mar'=>'USM', 'Adolfo Ib'=>'UAI',
+            'Universidad de Chile'=>'U. de Chile',
+            'Universidad del B'=>'UBB', 'Bío Bío'=>'UBB', 'Bio Bio'=>'UBB',
+            'Instituto Profesional'=>'IP', 'Centro de Formación Técnica'=>'CFT'
+        ];
+        foreach($dicc as $k=>$v) {
+            if(stripos($inst_clean, $k)!==false){
+                if(strlen($v)<=6) $inst_clean=$v;
+                else $inst_clean=str_ireplace($k,$v,$inst_clean);
+                break;
+            }
+        }
+        if (stripos($inst_clean, 'universidad ') === 0) {
+            $inst_clean = 'U. ' . substr($inst_clean, 12);
+        }
+        return htmlspecialchars(mb_strimwidth($inst_clean, 0, $max_len, '...'));
+    }
+}
+
 // Primero intentamos por asignatura similar
 $stmtRec = $conn->prepare("
-    SELECT id, titulo, precio, institucion, asignatura, portada, archivo 
-    FROM apuntes 
-    WHERE id != ? AND estado = 'aprobado'
-    ORDER BY 
-        (asignatura = ?) DESC,
-        (institucion = ?) DESC,
-        id DESC
-    LIMIT 3
+    SELECT ap.id, ap.titulo, ap.descripcion, ap.precio, ap.asignatura, ap.portada, ap.archivo, ap.descargas,
+           COALESCE(dp.institucion, NULLIF(ap.institucion,''), al.institucion) AS institucion
+    FROM apuntes ap
+    JOIN alumnos al ON al.id = ap.id_alumno
+    LEFT JOIN dominios_permitidos dp ON al.dominio = dp.dominio
+    WHERE ap.id != ? AND ap.estado = 'aprobado'
+    ORDER BY
+        (ap.asignatura = ?) DESC,
+        (ap.institucion = ?) DESC,
+        ap.id DESC
+    LIMIT 4
 ");
 if ($stmtRec) {
     $stmtRec->bind_param("iss", $apunte['id'], $asignatura_actual, $institucion_actual);
@@ -737,9 +771,9 @@ require_once $base_path . '/componentes/sidebar.php';
                 $thumb = miniatura_apunte($rec['id'], $rec['portada'] ?? '', $rec['archivo'] ?? '');
                 $rec_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($rec['id']) : $rec['id'];
             ?>
-            <a href="/apunte/<?= $rec_hash ?>" class="block rounded-xl flex flex-col cursor-pointer w-[150px] md:w-[170px] flex-shrink-0 bg-transparent group transition-transform duration-300 hover:-translate-y-1">
+            <a href="/apunte/<?= $rec_hash ?>" class="block rounded-xl flex flex-col cursor-pointer w-[240px] md:w-[280px] flex-shrink-0 bg-transparent group transition-transform duration-300 hover:-translate-y-1">
 
-                <div class="relative w-full aspect-[3/2] bg-gray-100 overflow-hidden rounded-xl border border-gray-200">
+                <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200">
                     <img src="<?= $thumb ?>"
                          alt="<?= htmlspecialchars($rec['titulo'] ?? '') ?>"
                          class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
@@ -748,12 +782,17 @@ require_once $base_path . '/componentes/sidebar.php';
 
                 <div class="pt-2.5 flex flex-col flex-1 text-left">
                     <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($rec['titulo'] ?? '') ?></h3>
-                    <div class="text-[14px] mt-auto mb-1.5 leading-none">
+                    <p class="text-[13px] text-gray-600 line-clamp-2 leading-snug mb-1 min-h-[36px]"><?= htmlspecialchars($rec['descripcion'] ?? '') ?></p>
+                    <div class="text-[14px] mb-1.5 leading-none">
                         <span class="text-gray-700 font-semibold tracking-tight"><?= $p_fmt ?></span>
                     </div>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
-                            <span class="truncate"><?= htmlspecialchars($rec['institucion'] ?? '') ?></span>
+                            <span class="truncate"><?= abreviar_institucion($rec['institucion'] ?? '') ?></span>
+                        </div>
+                        <div class="flex items-center gap-1 text-[11px] text-gray-500">
+                            <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <?= (int)($rec['descargas'] ?? 0) ?>
                         </div>
                     </div>
                 </div>

@@ -47,15 +47,17 @@ if (!function_exists('abreviar_institucion')) {
             'Federico Santa Mar'=>'USM', 'Adolfo Ib'=>'UAI',
             'Universidad de Chile'=>'U. de Chile',
             'Universidad del B'=>'UBB', 'Bío Bío'=>'UBB', 'Bio Bio'=>'UBB',
-            'Universidad'=>'U.',
             'Instituto Profesional'=>'IP', 'Centro de Formación Técnica'=>'CFT'
         ];
-        foreach($dicc as $k=>$v) { 
-            if(stripos($inst_clean, $k)!==false){ 
-                if(strlen($v)<=6) $inst_clean=$v; 
-                else $inst_clean=str_ireplace($k,$v,$inst_clean); 
-                break; 
-            } 
+        foreach($dicc as $k=>$v) {
+            if(stripos($inst_clean, $k)!==false){
+                if(strlen($v)<=6) $inst_clean=$v;
+                else $inst_clean=str_ireplace($k,$v,$inst_clean);
+                break;
+            }
+        }
+        if (stripos($inst_clean, 'universidad ') === 0) {
+            $inst_clean = 'U. ' . substr($inst_clean, 12);
         }
         return htmlspecialchars(mb_strimwidth($inst_clean, 0, $max_len, '...'));
     }
