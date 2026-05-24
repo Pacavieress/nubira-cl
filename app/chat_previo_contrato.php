@@ -1256,5 +1256,42 @@ form.addEventListener('submit', async (e) => {
             });
         })();
     </script>
+
+<!-- ============================================ -->
+<!-- NUBIRA 2.0 — Lightbox visor de imágenes chat -->
+<!-- ============================================ -->
+<div id="lightbox-img" class="hidden fixed inset-0 z-[100] bg-black/90 items-center justify-center p-4 opacity-0 transition-opacity duration-200">
+    <button id="lightbox-cerrar" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+        <?= icon('x-mark', 'w-6 h-6') ?>
+    </button>
+    <img id="lightbox-contenido" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
+</div>
+
+<script>
+(function(){
+    const lb = document.getElementById('lightbox-img');
+    const lbImg = document.getElementById('lightbox-contenido');
+    const lbClose = document.getElementById('lightbox-cerrar');
+
+    function abrir(src){
+        lbImg.src = src;
+        lb.classList.remove('hidden');
+        lb.classList.add('flex');
+        requestAnimationFrame(()=> lb.classList.remove('opacity-0'));
+    }
+    function cerrar(){
+        lb.classList.add('opacity-0');
+        setTimeout(()=>{ lb.classList.add('hidden'); lb.classList.remove('flex'); lbImg.src=''; }, 200);
+    }
+    // Delegación: las imágenes del chat se cargan dinámicamente por polling
+    document.addEventListener('click', function(e){
+        const img = e.target.closest('.js-chat-imagen');
+        if (img && img.dataset.lightboxSrc){ e.preventDefault(); abrir(img.dataset.lightboxSrc); }
+    });
+    lbClose.addEventListener('click', cerrar);
+    lb.addEventListener('click', function(e){ if (e.target === lb) cerrar(); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !lb.classList.contains('hidden')) cerrar(); });
+})();
+</script>
 </body>
 </html>

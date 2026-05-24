@@ -84,9 +84,9 @@ foreach ($mensajes as $idx => $msg):
 
 <?php if ($es_imagen): ?>
 <div class="relative group/img -mx-4 -mt-2 mb-1 overflow-hidden first:rounded-t-[18px] last:rounded-b-[18px]">
-<a href="/archivo-chat/<?= $msg_id ?>" target="_blank" rel="noopener" class="block">
-<img src="/archivo-chat/<?= $msg_id ?>" alt="<?= $archivo_nombre_safe ?>" class="w-full max-w-[280px] object-cover hover:opacity-90 transition-opacity" loading="lazy">
-</a>
+<img src="/archivo-chat/<?= $msg_id ?>" alt="<?= $archivo_nombre_safe ?>"
+     data-lightbox-src="/archivo-chat/<?= $msg_id ?>"
+     class="w-full max-w-[280px] object-cover hover:opacity-90 transition-opacity cursor-zoom-in js-chat-imagen" loading="lazy">
 <a href="/archivo-chat/<?= $msg_id ?>?dl=1" download="<?= $archivo_nombre_safe ?>" class="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-full flex items-center justify-center transition-all shadow-md" title="Descargar imagen" aria-label="Descargar imagen">
 <i class="fa-solid fa-arrow-down text-xs"></i>
 </a>
