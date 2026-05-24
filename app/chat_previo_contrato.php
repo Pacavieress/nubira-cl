@@ -95,6 +95,19 @@ if (!empty($raw_foto)) {
     $tiene_foto = true;
 }
 
+// C. ESTADO ONLINE DEL INTERLOCUTOR
+$id_otro = $esVendedor ? (int)$chat['comprador_id'] : (int)$chat['vendedor_id'];
+$otro_online = false;
+$stmt_online = $conn->prepare("SELECT ultima_sesion FROM alumnos WHERE id = ? LIMIT 1");
+if ($stmt_online) {
+    $stmt_online->bind_param("i", $id_otro);
+    $stmt_online->execute();
+    $row_online = $stmt_online->get_result()->fetch_assoc();
+    $stmt_online->close();
+    $ultima_sesion_otro = $row_online['ultima_sesion'] ?? null;
+    $otro_online = ($ultima_sesion_otro && strtotime($ultima_sesion_otro) > (time() - 300));
+}
+
 // ========================================================================
 // NUBIRA 2.0: CAPTURA DE INTENCIÓN (SMART DISCOVERY)
 // ========================================================================
@@ -338,7 +351,9 @@ textarea, input {
                         <?= htmlspecialchars($iniciales_avatar) ?>
                     </div>
                 <?php endif; ?>
+                <?php if ($otro_online): ?>
                 <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+                <?php endif; ?>
             </div>
             
             <div class="leading-tight overflow-hidden pl-1">
