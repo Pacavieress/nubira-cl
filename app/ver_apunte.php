@@ -737,15 +737,25 @@ require_once $base_path . '/componentes/sidebar.php';
                 $thumb = miniatura_apunte($rec['id'], $rec['portada'] ?? '', $rec['archivo'] ?? '');
                 $rec_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($rec['id']) : $rec['id'];
             ?>
-            <a href="/apunte/<?= $rec_hash ?>" class="snap-start shrink-0 w-[240px] md:w-[280px] bg-white rounded-2xl border border-gray-200 transition-all hover:border-[#54A6D8] hover:scale-[1.01] overflow-hidden flex flex-col">
-                <div class="aspect-[16/10] w-full overflow-hidden bg-gray-100 relative">
-                    <img src="<?= $thumb ?>" alt="<?= htmlspecialchars($rec['titulo'] ?? '') ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    <div class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold"><?= $p_fmt ?></div>
+            <a href="/apunte/<?= $rec_hash ?>" class="block rounded-xl flex flex-col cursor-pointer w-[150px] md:w-[170px] flex-shrink-0 bg-transparent group transition-transform duration-300 hover:-translate-y-1">
+
+                <div class="relative w-full aspect-[3/2] bg-gray-100 overflow-hidden rounded-xl border border-gray-200">
+                    <img src="<?= $thumb ?>"
+                         alt="<?= htmlspecialchars($rec['titulo'] ?? '') ?>"
+                         class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                         loading="lazy">
                 </div>
-                <div class="p-3 flex flex-col flex-grow">
-                    <span class="text-[9px] font-bold text-[#54A6D8] uppercase tracking-wider mb-1 truncate"><?= htmlspecialchars($rec['asignatura'] ?? 'General') ?></span>
-                    <h4 class="text-xs font-bold text-gray-900 line-clamp-2 leading-tight mb-2 flex-grow"><?= htmlspecialchars($rec['titulo'] ?? '') ?></h4>
-                    <p class="text-[9px] text-gray-400 truncate"><?= htmlspecialchars($rec['institucion'] ?? '') ?></p>
+
+                <div class="pt-2.5 flex flex-col flex-1 text-left">
+                    <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($rec['titulo'] ?? '') ?></h3>
+                    <div class="text-[14px] mt-auto mb-1.5 leading-none">
+                        <span class="text-gray-700 font-semibold tracking-tight"><?= $p_fmt ?></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                            <span class="truncate"><?= htmlspecialchars($rec['institucion'] ?? '') ?></span>
+                        </div>
+                    </div>
                 </div>
             </a>
             <?php endwhile; ?>
