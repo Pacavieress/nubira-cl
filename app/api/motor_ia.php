@@ -93,15 +93,17 @@ if ($faltan > 0) {
         
         // Boost institucional
         if (!empty($institucion_usuario)) {
-            $inst_esc = $conn->real_escape_string($institucion_usuario);
-            $sql_relleno_serv .= " ORDER BY CASE WHEN COALESCE(dp.institucion, a.institucion) LIKE '%$inst_esc%' THEN 1 ELSE 2 END, s.score_nubira DESC LIMIT ?";
+            $sql_relleno_serv .= " ORDER BY CASE WHEN COALESCE(dp.institucion, a.institucion) LIKE ? THEN 1 ELSE 2 END, s.score_nubira DESC LIMIT ?";
+            $params = array_merge($ids_servicios_usados, ['%' . $institucion_usuario . '%', $faltan_servicios]);
+            $types = $types_serv . "si";
         } else {
             $sql_relleno_serv .= " ORDER BY s.score_nubira DESC LIMIT ?";
+            $params = array_merge($ids_servicios_usados, [$faltan_servicios]);
+            $types = $types_serv . "i";
         }
 
         if ($stmt_rs = $conn->prepare($sql_relleno_serv)) {
-            $params = array_merge($ids_servicios_usados, [$faltan_servicios]);
-            $stmt_rs->bind_param($types_serv . "i", ...$params);
+            $stmt_rs->bind_param($types, ...$params);
             $stmt_rs->execute();
             $res_rs = $stmt_rs->get_result();
             while ($row = $res_rs->fetch_assoc()) {
@@ -124,15 +126,17 @@ if ($faltan > 0) {
         
         // Boost institucional
         if (!empty($institucion_usuario)) {
-            $inst_esc = $conn->real_escape_string($institucion_usuario);
-            $sql_relleno_ap .= " ORDER BY CASE WHEN COALESCE(dp.institucion, a.institucion) LIKE '%$inst_esc%' THEN 1 ELSE 2 END, ap.descargas DESC LIMIT ?";
+            $sql_relleno_ap .= " ORDER BY CASE WHEN COALESCE(dp.institucion, a.institucion) LIKE ? THEN 1 ELSE 2 END, ap.descargas DESC LIMIT ?";
+            $params = array_merge($ids_apuntes_usados, ['%' . $institucion_usuario . '%', $faltan_apuntes]);
+            $types = $types_ap . "si";
         } else {
             $sql_relleno_ap .= " ORDER BY ap.descargas DESC LIMIT ?";
+            $params = array_merge($ids_apuntes_usados, [$faltan_apuntes]);
+            $types = $types_ap . "i";
         }
 
         if ($stmt_ra = $conn->prepare($sql_relleno_ap)) {
-            $params = array_merge($ids_apuntes_usados, [$faltan_apuntes]);
-            $stmt_ra->bind_param($types_ap . "i", ...$params);
+            $stmt_ra->bind_param($types, ...$params);
             $stmt_ra->execute();
             $res_ra = $stmt_ra->get_result();
             while ($row = $res_ra->fetch_assoc()) {

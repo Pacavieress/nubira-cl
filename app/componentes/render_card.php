@@ -18,12 +18,14 @@ $es_basico = false; // Por defecto no penaliza a apuntes
 // 3. LOGICA DE RENDERIZADO
 if ($tipo === 'servicio') {
     // 1. Agregamos precio_oferta, cupos_oferta e is_subvencionado a la consulta
-    $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.imagen, s.categoria, s.score_nubira, 
+    $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.imagen, s.categoria, s.score_nubira,
             (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
             (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
-            FROM servicios s WHERE s.id=$id LIMIT 1";
-    
-    $res = $conn->query($sql);
+            FROM servicios s WHERE s.id=? LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $res = $stmt->get_result();
     if (!$res || $res->num_rows === 0) exit;
     $row = $res->fetch_assoc();
 
@@ -71,8 +73,11 @@ if ($tipo === 'servicio') {
         $html_stars = '';
     }
 } elseif ($tipo === 'apunte') {
-    $sql = "SELECT titulo, precio, portada, archivo, asignatura FROM apuntes WHERE id=$id LIMIT 1";
-    $res = $conn->query($sql);
+    $sql = "SELECT titulo, precio, portada, archivo, asignatura FROM apuntes WHERE id=? LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $res = $stmt->get_result();
     if (!$res || $res->num_rows === 0) exit;
     $row = $res->fetch_assoc();
 
