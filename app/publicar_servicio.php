@@ -121,6 +121,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
         if (!file_exists($upload_dir)) @mkdir($upload_dir, 0755, true);
 
         if (!empty($_FILES['imagen']['name'])) {
+            if (isset($_FILES['imagen']['error']) && $_FILES['imagen']['error'] === UPLOAD_ERR_INI_SIZE) {
+                $mensaje = "La imagen es demasiado grande. El máximo permitido es 4MB.";
+                goto fin_post;
+            }
+            if ($_FILES['imagen']['size'] > 4 * 1024 * 1024) {
+                $mensaje = "La imagen no puede superar 4MB.";
+                goto fin_post;
+            }
             $file_tmp  = $_FILES['imagen']['tmp_name'];
             $file_type = mime_content_type($file_tmp);
             
@@ -460,13 +468,7 @@ foreach ($rutas_footer as $ruta) {
         break;
     }
 }
-
-if (!$footer_encontrado): 
 ?>
-    <div style="position:fixed; bottom:0; width:100%; background:red; color:white; padding:10px; text-align:center; z-index:9999;">
-        ⚠️ DEBUG: No se encontró footer.php. Verifica la ruta.
-    </div>
-<?php endif; ?>
 
 <script>
 // --- 0. CONFIGURACIÓN ---
@@ -610,8 +612,6 @@ ui.imgInput?.addEventListener('change', async function() {
     if (!this.files || this.files.length === 0) return;
     
     const fileOriginal = this.files[0];
-    const sizeBefore = (fileOriginal.size / 1024 / 1024).toFixed(2);
-    
     // Mostrar preview inmediato (con la imagen original, antes de comprimir)
     // Esto da sensación instantánea aunque la compresión tome 1-2 segundos
     ui.imgTag.src = URL.createObjectURL(fileOriginal);
@@ -624,8 +624,6 @@ if (overlay) overlay.style.opacity = '1';
     
     try {
         const fileComprimido = await NubiraImageCompressor.compress(fileOriginal);
-        const sizeAfter = (fileComprimido.size / 1024 / 1024).toFixed(2);
-        
         // Reemplazar el archivo del input por el comprimido
         // (DataTransfer es la única forma cross-browser de modificar el input file)
         const dt = new DataTransfer();
@@ -637,9 +635,6 @@ if (overlay) overlay.style.opacity = '1';
         ui.imgTag.style.opacity = '1';
 const overlayOff = document.getElementById('compresion-overlay');
 if (overlayOff) overlayOff.style.opacity = '0';
-        
-        // Log para debug (puedes quitarlo después de validar)
-        console.log(`[Nubira] Imagen comprimida: ${sizeBefore}MB → ${sizeAfter}MB (${Math.round((1 - fileComprimido.size / fileOriginal.size) * 100)}% menos)`);
         
         // Refrescar barra de calidad
         if (typeof calcQuality === 'function') calcQuality();
