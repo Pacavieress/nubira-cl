@@ -595,15 +595,12 @@ require_once $base_path . '/componentes/sidebar.php';
             <!-- IA TAGS + DESCRIPCIÓN -->
             <div class="space-y-6">
                 <?php if ($has_ia && count($ia_tags) > 0): ?>
-                <div class="bg-purple-50 rounded-2xl p-4 md:p-6 border border-purple-100 relative overflow-hidden">
-                    <div class="absolute -top-6 -right-6 text-purple-100 opacity-50 text-[100px] leading-none pointer-events-none"><i class="fa-solid fa-brain"></i></div>
-                    <div class="relative z-10">
-                        <p class="text-[10px] md:text-xs font-bold text-purple-600 uppercase mb-3 flex items-center gap-1.5"><i class="fa-solid fa-sparkles"></i> Etiquetas y Materias Detectadas</p>
-                        <div class="flex flex-wrap gap-2">
-                            <?php foreach($ia_tags as $tag): ?>
-                                <span class="px-3 py-1.5 bg-white border border-purple-100 rounded-md text-xs font-medium text-purple-700 cursor-help hover:border-purple-300 transition-colors" title="Detectado automáticamente"><?= htmlspecialchars(ucfirst($tag)) ?></span>
-                            <?php endforeach; ?>
-                        </div>
+                <div class="bg-gray-50 rounded-2xl p-4 md:p-6 border border-gray-200">
+                    <p class="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-3 tracking-wide">Etiquetas y materias detectadas</p>
+                    <div class="flex flex-wrap gap-2">
+                        <?php foreach($ia_tags as $tag): ?>
+                            <span class="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:border-gray-300 transition-colors"><?= htmlspecialchars(ucfirst($tag)) ?></span>
+                        <?php endforeach; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -622,9 +619,9 @@ require_once $base_path . '/componentes/sidebar.php';
         <div class="lg:col-span-4">
             <div class="sticky top-24 space-y-6">
                 
-                <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                <div class="bg-white rounded-2xl border border-gray-200 p-6">
                     <div class="hidden md:block mb-6 pb-6 border-b border-gray-100">
-                        <span class="bg-blue-50 text-[#54A6D8] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide mb-3 inline-block">
+                        <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3 inline-block border border-gray-200">
                             Asignatura: <?= htmlspecialchars($apunte['asignatura'] ?? 'Apunte') ?>
                         </span>
                         <h1 class="text-2xl font-bold text-gray-900 leading-tight"><?= $titulo ?></h1>
@@ -646,29 +643,28 @@ require_once $base_path . '/componentes/sidebar.php';
                     <?php if ($es_promo_activa && !$acceso_completo): ?>
                         <div class="space-y-3">
                             <a href="/app/descargar_promo.php?id=<?= $token_seguro ?>" target="_blank"
-                               class="btn-descarga-promo-flash block w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-black transition border border-gray-800 text-center flex items-center justify-center gap-2 relative overflow-hidden"
+                               class="btn-descarga-promo-flash block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl hover:bg-blue-600 transition text-center flex items-center justify-center gap-2"
                                data-track="click_contact" data-type="apunte_promo" data-id="<?= $id_apunte ?>">
-                                <div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 opacity-20 pointer-events-none animate-pulse"></div>
-                                <span class="relative z-10 flex items-center gap-2"><?= icon('lightning', 'text-orange-400 w-4 h-4') ?> Descargar Gratis</span>
+                                <?= icon('publish-doc', 'w-5 h-5') ?> Descargar Gratis
                             </a>
-                            <p class="text-[10px] font-bold text-center text-orange-500 uppercase tracking-widest mt-2 animate-pulse">Promo Limitada: Quedan <?= $descargas_restantes ?></p>
+                            <p class="text-[10px] font-bold text-center text-gray-500 uppercase tracking-widest mt-2">Promo Limitada: Quedan <?= $descargas_restantes ?></p>
                         </div>
                     <?php elseif ($acceso_completo): ?>
                         <div class="space-y-3">
-                            <a href="<?= htmlspecialchars($fileUrl) ?>" download 
-                               class="block w-full bg-green-500 text-white font-bold py-3.5 rounded-xl hover:bg-green-600 transition text-center flex items-center justify-center gap-2"
+                            <a href="<?= htmlspecialchars($fileUrl) ?>" download
+                               class="block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl hover:bg-blue-600 transition text-center flex items-center justify-center gap-2"
                                data-track="click_contact" data-type="apunte" data-id="<?= $id_apunte ?>">
                                 <?= icon('publish-doc', 'w-5 h-5') ?> Descargar Archivo
                             </a>
                             <?php if ($es_dueno): ?>
                                 <a href="/app/editar_apunte.php?id=<?= $id_apunte ?>" class="block w-full bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl text-center hover:bg-gray-200 transition flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-pen-to-square"></i> Editar Apunte
+                                    <?= icon('pencil', 'w-4 h-4') ?> Editar Apunte
                                 </a>
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <?php if (!$logueado && $precio === 0): ?>
-                            <a href="<?= $login_redir ?>" class="block w-full bg-green-500 text-white font-bold py-3.5 rounded-xl hover:bg-green-600 transition flex items-center justify-center gap-2">
+                            <a href="<?= $login_redir ?>" class="block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl hover:bg-blue-600 transition flex items-center justify-center gap-2">
                                 <?= icon('publish-doc', 'w-5 h-5') ?> Inicia sesión para descargar
                             </a>
                         <?php elseif (!$logueado && $precio > 0): ?>
@@ -679,11 +675,22 @@ require_once $base_path . '/componentes/sidebar.php';
                     <?php endif; ?>
 
                     <!-- COMPARTIR -->
-                    <div class="flex flex-wrap justify-center gap-3 mt-6 pt-6 border-t border-gray-100">
-                        <a href="https://api.whatsapp.com/send?text=<?= $share_txt ?>%20<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-12 h-12 bg-[#25D366] text-white rounded-full flex items-center justify-center hover:scale-110 transition-all" title="WhatsApp"><i class="fab fa-whatsapp text-2xl"></i></a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-12 h-12 bg-[#1877F2] text-white rounded-full flex items-center justify-center hover:scale-110 transition-all" title="Facebook"><i class="fab fa-facebook-f text-xl"></i></a>
-                        <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-12 h-12 bg-[#0A66C2] text-white rounded-full flex items-center justify-center hover:scale-110 transition-all" title="LinkedIn"><i class="fab fa-linkedin-in text-xl"></i></a>
-                        <button id="btn-copiar-enlace" data-url="<?= htmlspecialchars($url_apunte_masked) ?>" class="w-12 h-12 bg-white border border-gray-200 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-50 hover:scale-110 transition-all" title="Copiar Enlace"><i class="fas fa-link text-xl" id="copy-icon"></i></button>
+                    <div class="mt-6 pt-6 border-t border-gray-100">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-3">Compartir apunte</p>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <a href="https://api.whatsapp.com/send?text=<?= $share_txt ?>%20<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#25D366] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#25D366] hover:text-white hover:border-[#25D366] transition-all duration-300" title="Compartir en WhatsApp">
+                                <i class="fab fa-whatsapp text-lg"></i>
+                            </a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#1877F2] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-all duration-300" title="Compartir en Facebook">
+                                <i class="fab fa-facebook-f text-lg"></i>
+                            </a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#0A66C2] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#0A66C2] hover:text-white hover:border-[#0A66C2] transition-all duration-300" title="Compartir en LinkedIn">
+                                <i class="fab fa-linkedin-in text-lg"></i>
+                            </a>
+                            <button id="btn-copiar-enlace" data-url="<?= htmlspecialchars($url_apunte_masked) ?>" class="w-11 h-11 bg-gray-50 text-gray-500 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-600 hover:text-white hover:border-gray-600 transition-all duration-300" title="Copiar Enlace">
+                                <i class="fas fa-link text-lg" id="copy-icon"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -706,7 +713,7 @@ require_once $base_path . '/componentes/sidebar.php';
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-bold text-gray-900 group-hover:text-[#54A6D8] transition-colors flex items-center gap-1">
                                 Publicado por <?= htmlspecialchars($nombreDisplay) ?>
-                                <i class="fa-solid fa-circle-check text-[#54A6D8] text-xs ml-0.5" title="Alumno Verificado"></i>
+                                <?= icon('check-circle', 'w-3.5 h-3.5 text-[#54A6D8]') ?>
                             </p>
                             <p class="text-xs text-gray-500 flex items-start gap-1 mt-0.5 leading-snug">
                                 <span class="mt-0.5 flex-shrink-0"><?= icon('building', 'w-3 h-3') ?></span>
