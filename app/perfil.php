@@ -361,7 +361,6 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
     <title>Perfil de <?= htmlspecialchars($nombre_display) ?> | Nubira</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/webp" href="/img/logo2.webp">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -940,9 +939,9 @@ require_once __DIR__ . '/componentes/modal_explora.php';
         <div id="msg-admin-form">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <i class="fa-solid fa-shield-halved text-rose-500"></i> Mensaje a <?= htmlspecialchars($nombre_display) ?>
+                    <?= icon('shield-check', 'w-5 h-5 text-rose-500') ?> Mensaje a <?= htmlspecialchars($nombre_display) ?>
                 </h3>
-                <button onclick="cerrarModalMensajeAdmin()" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="cerrarModalMensajeAdmin()" class="text-gray-400 hover:text-gray-700"><?= icon('x-mark', 'w-5 h-5') ?></button>
             </div>
             
             <textarea id="msg-admin-input" maxlength="1000" rows="5" placeholder="Escribe el mensaje oficial..." 
@@ -965,7 +964,7 @@ require_once __DIR__ . '/componentes/modal_explora.php';
         <!-- Estado: Éxito (oculto al inicio) -->
         <div id="msg-admin-success" class="hidden text-center py-6">
             <div class="w-16 h-16 mx-auto rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4">
-                <i class="fa-solid fa-check text-emerald-500 text-2xl"></i>
+                <?= icon('check', 'w-6 h-6 text-emerald-500') ?>
             </div>
             <h3 class="text-base font-bold text-gray-900 mb-1">Mensaje enviado</h3>
             <p class="text-xs text-gray-500">El usuario lo verá en su próxima visita.</p>
@@ -1316,7 +1315,7 @@ window.borrarValoracionPerfil = async function(botonDom, idValoracion) {
     const cardResena = botonDom.closest('.card-horizontal');
     const originalHtml = botonDom.innerHTML;
     
-    botonDom.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm text-red-400"></i>';
+    botonDom.innerHTML = '<div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin text-red-400"></div>';
     botonDom.disabled = true;
 
     try {
