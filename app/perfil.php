@@ -196,12 +196,12 @@ $perfil_incompleto_local = ($es_propio && ($falta_foto || $falta_bio));
 // LÓGICA DE TIERS PARA EL WIDGET
 $tier_actual = "Básico";
 $tier_color = "bg-gray-100 text-gray-500 border-gray-200";
-$tier_icon = "fa-user";
+$tier_icon = "user";
 $progreso_porcentaje = min(100, max(0, $max_score));
 
-if ($max_score >= 100) { $tier_actual = "Leyenda"; $tier_color = "bg-gradient-to-r from-slate-950 to-slate-900 text-amber-400 border-amber-500/30"; $tier_icon = "fa-gem"; }
-elseif ($max_score >= 80) { $tier_actual = "Pro"; $tier_color = "bg-gradient-to-tr from-yellow-400 to-amber-500 text-white border-yellow-300"; $tier_icon = "fa-medal"; }
-elseif ($max_score >= 60) { $tier_actual = "Top"; $tier_color = "bg-gradient-to-tr from-slate-200 to-gray-300 text-slate-800 border-white/60"; $tier_icon = "fa-star text-slate-500"; }
+if ($max_score >= 100) { $tier_actual = "Leyenda"; $tier_color = "bg-gradient-to-r from-slate-950 to-slate-900 text-amber-400 border-amber-500/30"; $tier_icon = "star-solid"; }
+elseif ($max_score >= 80) { $tier_actual = "Pro"; $tier_color = "bg-gradient-to-tr from-yellow-400 to-amber-500 text-white border-yellow-300"; $tier_icon = "star-solid"; }
+elseif ($max_score >= 60) { $tier_actual = "Top"; $tier_color = "bg-gradient-to-tr from-slate-200 to-gray-300 text-slate-800 border-white/60"; $tier_icon = "star-solid"; }
 
 // LÓGICA BANCARIA
 $banco_nombre = (string)($perfil_data['banco_registrado'] ?? '');
@@ -585,13 +585,13 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         <div>
                             <h2 class="text-sm md:text-base font-bold text-gray-900 flex items-center gap-2 group-hover:text-[#54A6D8] transition-colors duration-200">
                                 Tu Nivel de Tutor
-                                <i id="chevron-nivel" class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-300"></i>
+                                <span id="chevron-nivel" class="text-gray-400 transition-transform duration-300 inline-flex"><?= icon('chevron-down', 'w-3 h-3') ?></span>
                             </h2>
                             <p class="text-[10px] md:text-xs text-gray-500 mt-0.5">Sube de nivel completando misiones para destacar en búsquedas.</p>
                         </div>
                         <div class="shrink-0 pl-3">
                             <span class="<?= $tier_color ?> text-[10px] md:text-xs font-extrabold uppercase tracking-wider px-3 md:px-4 py-1.5 md:py-2 rounded-full border shadow-sm flex items-center gap-1.5">
-                                <i class="fa-solid <?= $tier_icon ?>"></i> <?= $tier_actual ?>
+                                <?= icon($tier_icon, 'w-3 h-3') ?> <?= $tier_actual ?>
                             </span>
                         </div>
                     </div>
@@ -609,19 +609,19 @@ require_once __DIR__ . '/componentes/sidebar.php';
                 <div id="misiones-nivel" class="hidden mt-5 pt-5 border-t border-gray-100 animate-slide-in">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= !$falta_foto ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
-                            <i class="fa-solid <?= !$falta_foto ? 'fa-circle-check' : 'fa-circle text-gray-300' ?>"></i> Foto de perfil (+20)
+                            <?= !$falta_foto ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Foto de perfil (+20)
                         </div>
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= !$falta_bio ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
-                            <i class="fa-solid <?= !$falta_bio ? 'fa-circle-check' : 'fa-circle text-gray-300' ?>"></i> Biografía (+20)
+                            <?= !$falta_bio ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Biografía (+20)
                         </div>
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_desc_larga ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60" title="Añade al menos 300 letras a la descripción">
-                            <i class="fa-solid <?= $tiene_desc_larga ? 'fa-circle-check' : 'fa-circle text-gray-300' ?>"></i> Descripción Larga (+20)
+                            <?= $tiene_desc_larga ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Descripción Larga (+20)
                         </div>
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_apunte ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
-                            <i class="fa-solid <?= $tiene_apunte ? 'fa-circle-check' : 'fa-circle text-gray-300' ?>"></i> Subir Apunte Público (+20)
+                            <?= $tiene_apunte ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Subir Apunte Público (+20)
                         </div>
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_resena ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
-                            <i class="fa-solid <?= $tiene_resena ? 'fa-circle-check' : 'fa-circle text-gray-300' ?>"></i> Obtener 1 Reseña (+20)
+                            <?= $tiene_resena ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Obtener 1 Reseña (+20)
                         </div>
                     </div>
                 </div>
@@ -654,8 +654,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         <?php endif; ?>
                     </div>
                     <div class="hidden md:flex items-center gap-2 pb-4">
-                        <button onclick="navScroll('reviews-container', -1)" class="btn-nav-top"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
-                        <button onclick="navScroll('reviews-container', 1)" class="btn-nav-top"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+                        <button onclick="navScroll('reviews-container', -1)" class="btn-nav-top"><?= icon('chevron-left', 'w-3 h-3') ?></button>
+                        <button onclick="navScroll('reviews-container', 1)" class="btn-nav-top"><?= icon('chevron-right', 'w-3 h-3') ?></button>
                     </div>
                 </div>
 
@@ -671,7 +671,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                     <button onclick="borrarValoracionPerfil(this, <?= (int)$r['id'] ?>)" 
                                             class="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-all duration-150 p-2 rounded-full hover:bg-red-50 active:scale-95 z-10 opacity-0 group-hover/resena:opacity-100 focus:opacity-100" 
                                             title="Eliminar reseña (Modo Admin)">
-                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                        <?= icon('trash', 'w-4 h-4') ?>
                                     </button>
                                 <?php endif; ?>
                                 <?php 
@@ -690,8 +690,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
         <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-tight"><?= tiempo_transcurrido($r['fecha'] ?? '') ?></p>
     </div>
 </a>
-                               <div class="flex text-orange-400 text-[10px] gap-0.5">
-                                    <?php $cal = (int)($r['calificacion'] ?? 0); for($i=0; $i<5; $i++) echo ($i < $cal) ? '★' : '<span class="text-gray-200">★</span>'; ?>
+                               <div class="flex text-gray-700 gap-0.5">
+                                    <?php $cal = (int)($r['calificacion'] ?? 0); for($i=0; $i<5; $i++) echo ($i < $cal) ? icon('star-solid', 'w-3 h-3') : icon('star-solid', 'w-3 h-3 text-gray-200'); ?>
                                 </div>
                                 <div class="mt-1">
                                     <p id="rev-t-<?= (int)$r['id'] ?>" class="text-gray-700 text-sm font-normal leading-relaxed line-clamp-3 transition-all duration-300">
@@ -714,7 +714,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                     <button onclick="borrarValoracionPerfil(this, <?= (int)$r['id'] ?>)" 
                                             class="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-all duration-150 p-2 rounded-full hover:bg-red-50 active:scale-95 z-10 opacity-0 group-hover/resena:opacity-100 focus:opacity-100" 
                                             title="Eliminar reseña (Modo Admin)">
-                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                        <?= icon('trash', 'w-4 h-4') ?>
                                     </button>
                                 <?php endif; ?>
 <?php 
@@ -733,8 +733,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
         <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-tight"><?= tiempo_transcurrido($r['fecha'] ?? '') ?></p>
     </div>
 </a>
-                                <div class="flex text-orange-400 text-[10px] gap-0.5">
-                                    <?php $cal = (int)($r['calificacion'] ?? 0); for($i=0; $i<5; $i++) echo ($i < $cal) ? '★' : '<span class="text-gray-200">★</span>'; ?>
+                                <div class="flex text-gray-700 gap-0.5">
+                                    <?php $cal = (int)($r['calificacion'] ?? 0); for($i=0; $i<5; $i++) echo ($i < $cal) ? icon('star-solid', 'w-3 h-3') : icon('star-solid', 'w-3 h-3 text-gray-200'); ?>
                                 </div>
                              <div class="mt-1">
     <p id="rev-a-<?= (int)$r['id'] ?>" class="text-gray-700 text-sm font-normal leading-relaxed line-clamp-3 transition-all duration-300">
@@ -756,8 +756,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
                 <div class="flex items-center justify-between mb-6 min-h-[40px]">
                     <h2 class="text-xl font-bold tracking-tight text-gray-900">Vitrina de <?= htmlspecialchars($nombre_display) ?></h2>
                     <div class="hidden md:flex items-center gap-2">
-                        <button onclick="navScroll('pub-container', -1)" class="btn-nav-top"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
-                        <button onclick="navScroll('pub-container', 1)" class="btn-nav-top"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+                        <button onclick="navScroll('pub-container', -1)" class="btn-nav-top"><?= icon('chevron-left', 'w-3 h-3') ?></button>
+                        <button onclick="navScroll('pub-container', 1)" class="btn-nav-top"><?= icon('chevron-right', 'w-3 h-3') ?></button>
                     </div>
                 </div>
                 
@@ -813,18 +813,15 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
                         // Modalidad
                         $mod = ucfirst($row['modalidad'] ?? '');
-                        if (stripos($mod, 'online') !== false) $icon_mod = '<i class="fa-solid fa-wifi text-[10px]"></i>';
-                        elseif (stripos($mod, 'presencial') !== false) $icon_mod = '<i class="fa-solid fa-user-group text-[10px]"></i>';
-                        else $icon_mod = '<i class="fa-solid fa-laptop text-[10px]"></i>';
+                        if (stripos($mod, 'online') !== false) $icon_mod = icon('wifi', 'w-3 h-3');
+                        elseif (stripos($mod, 'presencial') !== false) $icon_mod = icon('users', 'w-3 h-3');
+                        else $icon_mod = icon('laptop', 'w-3 h-3');
 
-                        // HTML Stars (Estrella blindada con Emoji)
+                        // HTML Stars
                         if ($total_v > 0) {
-                            $html_stars = '<div class="flex items-center gap-1 bg-yellow-50/80 px-1.5 py-0.5 rounded border border-yellow-200/50 shadow-sm">
-                                <span class="text-[10px] leading-none pb-[1px]">⭐</span>
-                                <span class="text-[10px] font-extrabold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
-                            </div>';
+                            $html_stars = '<div class="flex items-center gap-1 px-1.5 py-0.5">'.icon('star-solid', 'w-3 h-3 text-gray-700').'<span class="text-[10px] font-extrabold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span></div>';
                         } else {
-                            $html_stars = '<div class="flex items-center gap-1"><span class="text-[10px] leading-none grayscale opacity-40 pb-[1px]">⭐</span><span class="text-[10px] font-medium text-gray-400">Nuevo</span></div>';
+                            $html_stars = '<div class="flex items-center gap-1">'.icon('star-solid', 'w-3 h-3 text-gray-300').'<span class="text-[10px] font-medium text-gray-400">Nuevo</span></div>';
                         }
 
                         // Institucion (Truncada)
@@ -848,20 +845,20 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             
                             <div class="absolute top-2 left-2 flex flex-wrap gap-1 z-10 scale-90 origin-top-left">
                               <?php if ($nivel_tutor === 'leyenda'): ?>
-                                  <span class="bg-gradient-to-tr from-red-700 to-rose-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-400/30">
-                                      <i class="fa-solid fa-gem text-[7px]"></i> Leyenda
+                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                      Leyenda
                                   </span>
                               <?php elseif ($nivel_tutor === 'elite'): ?>
-                                  <span class="bg-gradient-to-tr from-cyan-400 to-blue-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full border border-cyan-300/30 flex items-center gap-1 shadow-sm">
-                                      <i class="fa-solid fa-diamond text-[7px]"></i> Élite
+                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                      Élite
                                   </span>
                               <?php elseif ($nivel_tutor === 'pro'): ?>
-                                  <span class="bg-gradient-to-tr from-yellow-400 to-amber-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full border border-yellow-300/30 shadow-sm flex items-center gap-1">
-                                      <i class="fa-solid fa-medal text-[7px]"></i> Pro
+                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                      Pro
                                   </span>
                               <?php elseif ($nivel_tutor === 'top'): ?>
-                                  <span class="bg-gradient-to-tr from-slate-200 to-gray-300 text-slate-800 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full border border-white/60 flex items-center gap-1 shadow-sm">
-                                      <i class="fa-solid fa-star text-[7px] text-slate-500"></i> Top
+                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                      Top
                                   </span>
                               <?php endif; ?>
                               
