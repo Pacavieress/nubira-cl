@@ -4,9 +4,10 @@
  * ESTADO: BLINDADO (NUBIRA SHIELD) + SOFT DELETE FILTER + GAMIFICACIÓN + SOCIAL PROOF
  */
 
-// [DEBUG TEMPORAL] Activar errores para diagnosticar 500 — DESACTIVAR EN PRODUCCIÓN
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// Errores: registrar en log, nunca mostrar al usuario
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
 // === BLOQUE ANTI-CACHE ===
