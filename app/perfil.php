@@ -408,7 +408,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                     <div class="bg-white border border-rose-200 rounded-2xl p-3 hover:bg-rose-50/30 active:bg-rose-50 transition-all duration-150 flex items-center justify-between gap-3 group">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center shrink-0 text-rose-500">
-                                <i class="fa-solid fa-building-columns text-xs"></i>
+                                <?= icon('building', 'w-3 h-3') ?>
                             </div>
                             <div class="min-w-0">
                                 <h3 class="text-xs font-semibold text-gray-900 truncate">Configura tus pagos</h3>
@@ -416,7 +416,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             </div>
                         </div>
                         <a href="/datos_bancarios" class="shrink-0 px-4 py-1.5 bg-rose-50 text-rose-600 text-[10px] font-semibold uppercase rounded-2xl hover:bg-rose-500 hover:text-white active:bg-rose-600 transition-colors duration-150">
-                            Ir <i class="fa-solid fa-arrow-right ml-1"></i>
+                            Ir <?= icon('arrow-right', 'w-3 h-3 ml-1') ?>
                         </a>
                     </div>
                     <?php endif; ?>
@@ -425,7 +425,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                     <div class="bg-white border border-orange-200 rounded-2xl p-3 hover:bg-orange-50/30 active:bg-orange-50 transition-all duration-150 flex items-center justify-between gap-3 group">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0 text-orange-500">
-                                <i class="fa-solid fa-sparkles text-xs"></i>
+                                <?= icon('sparkles', 'w-3 h-3') ?>
                             </div>
                             <div class="min-w-0">
                                 <h3 class="text-xs font-semibold text-gray-900 truncate">Impulsa tu perfil</h3>
@@ -455,13 +455,13 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             <img id="img-perfil-visual" src="<?= $foto_url ?>" decoding="async" class="w-full h-full rounded-full object-cover border border-gray-200 transition-opacity duration-300 bg-white">
                             <?php if ($es_propio): ?>
                                 <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 backdrop-blur-[2px]">
-                                    <button onclick="document.getElementById('foto-input').click()" class="text-white hover:text-[#54A6D8] transition-colors duration-200 p-2" title="Cambiar foto"><i class="fa-solid fa-camera text-xl"></i></button>
+                                    <button onclick="document.getElementById('foto-input').click()" class="text-white hover:text-[#54A6D8] transition-colors duration-200 p-2" title="Cambiar foto"><?= icon('camera', 'w-5 h-5') ?></button>
                                     <?php if (!empty($foto_field)): ?>
-                                        <button onclick="eliminarFotoPerfil()" id="btn-borrar-foto" class="text-white hover:text-red-400 transition-colors duration-200 p-2" title="Eliminar foto"><i class="fa-solid fa-trash text-xl"></i></button>
+                                        <button onclick="eliminarFotoPerfil()" id="btn-borrar-foto" class="text-white hover:text-red-400 transition-colors duration-200 p-2" title="Eliminar foto"><?= icon('trash', 'w-5 h-5') ?></button>
                                     <?php endif; ?>
                                 </div>
                                 <input type="file" id="foto-input" class="hidden" accept="image/jpeg,image/png,image/webp" onchange="subirFotoPerfil()">
-                                <div id="foto-spinner" class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full hidden z-20"><i class="fa-solid fa-circle-notch fa-spin text-[#54A6D8]"></i></div>
+                                <div id="foto-spinner" class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full hidden z-20"><div class="w-5 h-5 border-2 border-[#54A6D8] border-t-transparent rounded-full animate-spin"></div></div>
                             <?php endif; ?>
                         </div>
 
@@ -472,10 +472,10 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                 <div class="flex flex-col items-center md:items-start w-full">
                                     <div class="flex items-center justify-center md:justify-start gap-2 w-full">
                                         <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 break-words"><?= htmlspecialchars($nombre_display) ?></h1>
-                                        <i class="fa-solid fa-circle-check text-[#54A6D8] text-base md:text-lg shrink-0" title="Alumno Verificado"></i>
+                                        <span title="Alumno Verificado"><?= icon('check-circle', 'w-5 h-5 text-[#54A6D8] shrink-0') ?></span>
                                     </div>
                                     <p class="text-[11px] md:text-xs text-gray-500 flex items-center justify-center md:justify-start gap-1.5 mt-1.5 md:mt-2 leading-snug w-full">
-                                        <span class="flex-shrink-0 text-gray-400"><i class="fa-solid fa-building-columns text-sm"></i></span>
+                                        <span class="flex-shrink-0 text-gray-400"><?= icon('building', 'w-4 h-4') ?></span>
                                         <span class="break-words font-medium uppercase tracking-wider"><?= htmlspecialchars($inst_display) ?></span>
                                     </p>
                                 </div>
@@ -491,7 +491,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
                                     <div class="px-5 md:px-2 md:border-l md:border-gray-100 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
                                         <p class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1">
-                                           <span id="val-avg-rating"><?= number_format($prom_t, 1) ?></span> <i class="fa-solid fa-star text-sm md:text-[13px] text-gray-900 pb-[1px]"></i>
+                                           <span id="val-avg-rating"><?= number_format($prom_t, 1) ?></span> <?= icon('star-solid', 'w-4 h-4 text-gray-900 pb-[1px]') ?>
                                         </p>
                                         <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-0.5 tracking-wider">Rating</p>
                                     </div>
@@ -499,7 +499,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                     <?php if ($es_admin && !$es_propio): ?>
                                         <div class="px-5 md:pl-2 md:border-l md:border-gray-100 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
                                             <button onclick="abrirModalMensajeAdmin()" class="px-3 py-1.5 bg-rose-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-rose-600 active:scale-95 transition-all flex items-center gap-1.5">
-                                                <i class="fa-solid fa-shield-halved text-[10px]"></i> Mensaje
+                                                <?= icon('shield-check', 'w-3 h-3') ?> Mensaje
                                             </button>
                                             <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-1 tracking-wider">Modo Admin</p>
                                         </div>
@@ -508,14 +508,14 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                     <?php if ($es_propio): ?>
                                         <div class="px-5 md:pl-2 md:border-l md:border-gray-100 group cursor-help min-w-0 text-center md:text-left flex flex-col items-center md:items-start" title="Personas que han visto tu perfil">
                                             <p class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1.5 transition-all duration-300" id="contenedor-visitas-live">
-                                                <span id="num-visitas-live"><?= $vistas_actuales ?></span> <i class="fa-regular fa-eye text-sm md:text-[13px] text-gray-400"></i>
+                                                <span id="num-visitas-live"><?= $vistas_actuales ?></span> <?= icon('eye', 'w-4 h-4 text-gray-400') ?>
                                             </p>
                                             <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-0.5 tracking-wider">Visitas</p>
                                         </div>
                                     <?php elseif ($vistas_actuales >= 100): ?>
                                         <div class="px-5 md:pl-2 md:border-l md:border-gray-100 cursor-default min-w-0 text-center md:text-left flex flex-col items-center md:items-start" title="Este perfil tiene alta demanda">
                                             <p class="text-xl md:text-lg font-bold tracking-tight text-orange-500 flex items-center gap-1">
-                                                Top <i class="fa-solid fa-fire text-sm md:text-[13px] text-orange-400 pb-[1px]"></i>
+                                                Top <?= icon('fire', 'w-4 h-4 text-orange-400 pb-[1px]') ?>
                                             </p>
                                             <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-0.5 tracking-wider">Demanda</p>
                                         </div>
@@ -525,7 +525,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             
                             <div class="mt-4 md:mt-5 flex justify-center md:justify-start w-full transform translate-y-3 md:translate-y-0">
                                 <p class="text-[12px] md:text-[11px] text-gray-600 font-medium inline-flex items-center gap-2 bg-white md:bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-2 w-fit" title="Tiempo promedio de respuesta">
-                                    <i class="fa-regular fa-clock text-gray-400 text-sm md:text-xs"></i>
+                                    <?= icon('clock', 'w-4 h-4 text-gray-400') ?>
                                     <span>Tiempo de respuesta: <strong class="text-gray-900 font-medium"><?= htmlspecialchars($texto_respuesta) ?></strong></span>
                                 </p>
                             </div>
@@ -543,7 +543,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             
                             <?php if ($es_propio): ?>
                                 <button onclick="toggleEditBio()" class="absolute -top-3 right-0 md:relative md:top-auto md:right-auto bg-[#54A6D8] text-white md:bg-gray-50 md:text-gray-400 md:hover:text-[#54A6D8] transition-all duration-150 p-3 md:p-2 rounded-full border border-transparent md:border-gray-200 active:scale-95" id="btn-edit-bio">
-                                    <i class="fa-solid fa-pen text-sm md:text-xs"></i>
+                                    <?= icon('pencil', 'w-4 h-4') ?>
                                 </button>
                             <?php endif; ?>
                         </div>
