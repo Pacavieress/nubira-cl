@@ -90,7 +90,18 @@ $csrf_token = $_SESSION['csrf_token_editar'];
 
 // Función Anti-Contacto
 function contiene_contacto($texto) {
-    $patrones = ['/\b\d{8,}\b/i', '/@/i', '/(gmail|hotmail|yahoo|outlook|uc\.cl|aiep\.cl)/i', '/(https?:\/\/|www\.)/i', '/(whatsapp|wsp|wa\.me)/i'];
+    $patrones = [
+        '/\b\d{8,}\b/',
+        '/\b(?:\d[\s\-.]?){7}\d/',
+        '/\+56/',
+        '/@/',
+        '/\barroba\b/iu',
+        '/\b(gmail|hotmail|yahoo|outlook|protonmail|live|icloud)\b/i',
+        '/(https?:\/\/|www\.)/i',
+        '/wa\.me|t\.me/i',
+        '/\b(whatsapp|wsp|wpp|telegram|instagram|insta|tiktok|snapchat|discord|facebook)\b/i',
+        '/\b(contact[aá]me|escrí?beme|mi\s+n[uú]mero|fuera\s+de\s+la\s+plataforma)\b/iu',
+    ];
     foreach ($patrones as $p) { if (preg_match($p, $texto)) return true; }
     return false;
 }
@@ -105,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token_recibido = $_POST['csrf_token'] ?? '';
     if (empty($token_recibido) || !hash_equals($_SESSION['csrf_token_editar'] ?? '', $token_recibido)) {
         error_log("Nubira CSRF Alert (editar) - Token inválido. usuario_id={$usuario_id}, servicio_id={$id_servicio}, IP=" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-        $mensaje = "🔒 Sesión expirada. Por favor recarga la página e intenta nuevamente.";
+        $mensaje = "Sesión expirada. Por favor recarga la página e intenta nuevamente.";
         goto fin_post;
     }
     
@@ -120,22 +131,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validación defensiva de longitud en backend
     if (mb_strlen($titulo) > 70 || mb_strlen($descripcion) > 1500) {
-        $mensaje = "❌ El título o descripción exceden el límite permitido.";
+        $mensaje = "El título o descripción exceden el límite permitido.";
         $titulo = '';
     }
 
     if (!$titulo || !$descripcion || !$categoria || !$modalidad) {
-        if (empty($mensaje)) $mensaje = "❌ Faltan campos obligatorios.";
+        if (empty($mensaje)) $mensaje = "Faltan campos obligatorios.";
     } elseif (mb_strlen($descripcion) < 50) {
-        $mensaje = "⚠️ Descripción muy corta (mínimo 50 caracteres).";
+        $mensaje = "Descripción muy corta (mínimo 50 caracteres).";
     } elseif (contiene_contacto($titulo) || contiene_contacto($descripcion)) {
-        $mensaje = "🚫 No incluyas teléfonos ni correos.";
+        $mensaje = "No incluyas teléfonos ni correos.";
     } else {
         $nombreArchivo = $imagen_actual;
         $nuevo_estado_img = $imagen_estado;
 
         // Manejo Imagen — replicado de publicar_servicio.php (3 tamaños + resampling alta calidad)
         if (!empty($_FILES['imagen']['name'])) {
+            if (isset($_FILES['imagen']['error']) && $_FILES['imagen']['error'] === UPLOAD_ERR_INI_SIZE) {
+                $mensaje = "La imagen es demasiado grande. El máximo permitido es 4MB.";
+                goto fin_post;
+            }
+            if ($_FILES['imagen']['size'] > 4 * 1024 * 1024) {
+                $mensaje = "La imagen no puede superar 4MB.";
+                goto fin_post;
+            }
             $file_tmp = $_FILES['imagen']['tmp_name'];
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $file_type = finfo_file($finfo, $file_tmp);
@@ -217,12 +236,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ssssssdssi", $titulo, $preview, $descripcion, $categoria, $modalidad, $ubicacion, $precio, $nombreArchivo, $nuevo_estado_img, $id_servicio);
         
         if ($stmt->execute()) {
-            $mensaje = "✅ Cambios guardados. Pendiente de revisión.";
+            $mensaje = "Cambios guardados. Pendiente de revisión.";
             $exito = true;
             $imagen_actual = $nombreArchivo;
         } else {
             error_log("Nubira Error - Update Servicio: " . $stmt->error);
-            $mensaje = "❌ Error al guardar.";
+            $mensaje = "Error al guardar.";
         }
         $stmt->close();
     }
@@ -251,7 +270,6 @@ if (!function_exists('nav_class')) {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" type="image/webp" href="/img/logo2.webp">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; }
@@ -295,7 +313,7 @@ if (!function_exists('nav_class')) {
         
         <div class="min-w-0 flex-1">
             <span class="inline-block py-0.5 px-2.5 rounded-full bg-blue-50 text-blue-600 text-[10px] md:text-xs font-bold mb-1.5 border border-blue-100">
-                ✏️ Modo Edición
+                Modo Edición
             </span>
             <h1 class="text-xl md:text-2xl font-bold text-gray-900 tracking-tight leading-tight truncate">Editar Servicio</h1>
             <p class="text-gray-500 text-[11px] md:text-sm mt-0.5 font-medium md:font-normal uppercase md:normal-case tracking-wide md:tracking-normal truncate">
@@ -344,29 +362,39 @@ if (!function_exists('nav_class')) {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Categoría</label>
-                            <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 transition outline-none appearance-none cursor-pointer">
-                                <option value="">Selecciona...</option>
-                                <?php 
-                                $cats = ['Clases', 'Tutoría', 'Asesoría', 'Idiomas', 'Otros'];
-                                foreach($cats as $c) {
-                                    $sel = ($categoria === $c) ? 'selected' : '';
-                                    echo "<option value='$c' $sel>$c</option>";
-                                }
-                                ?>
-                            </select>
+                            <div class="relative">
+                                <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
+                                    <option value="">Selecciona...</option>
+                                    <?php
+                                    $cats = ['Clases', 'Tutoría', 'Asesoría', 'Idiomas', 'Otros'];
+                                    foreach($cats as $c) {
+                                        $sel = ($categoria === $c) ? 'selected' : '';
+                                        echo "<option value='$c' $sel>$c</option>";
+                                    }
+                                    ?>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                    <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Modalidad</label>
-                            <select name="modalidad" id="modalidad" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 transition outline-none appearance-none cursor-pointer">
-                                <option value="">Selecciona...</option>
-                                <?php 
-                                $mods = ['Online', 'Presencial', 'Híbrido'];
-                                foreach($mods as $m) {
-                                    $sel = ($modalidad === $m) ? 'selected' : '';
-                                    echo "<option value='$m' $sel>$m</option>";
-                                }
-                                ?>
-                            </select>
+                            <div class="relative">
+                                <select name="modalidad" id="modalidad" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
+                                    <option value="">Selecciona...</option>
+                                    <?php
+                                    $mods = ['Online', 'Presencial', 'Híbrido'];
+                                    foreach($mods as $m) {
+                                        $sel = ($modalidad === $m) ? 'selected' : '';
+                                        echo "<option value='$m' $sel>$m</option>";
+                                    }
+                                    ?>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                    <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -556,8 +584,6 @@ ui.titulo?.addEventListener('input', function() { if(ui.countTitulo) ui.countTit
             const diff = newLength - oldLength;
             const newCursor = Math.max(0, cursorPos + diff);
             this.setSelectionRange(newCursor, newCursor);
-            
-            calcQuality();
         } finally {
             formateando = false;
         }
@@ -636,8 +662,7 @@ ui.imgInput?.addEventListener('change', async function() {
     if (!this.files || this.files.length === 0) return;
     
     const fileOriginal = this.files[0];
-    const sizeBefore = (fileOriginal.size / 1024 / 1024).toFixed(2);
-    
+
     ui.imgTag.src = URL.createObjectURL(fileOriginal);
     ui.imgPreview.classList.remove('hidden');
     
@@ -647,21 +672,16 @@ ui.imgInput?.addEventListener('change', async function() {
     
     try {
         const fileComprimido = await NubiraImageCompressor.compress(fileOriginal);
-        const sizeAfter = (fileComprimido.size / 1024 / 1024).toFixed(2);
-        
+
         const dt = new DataTransfer();
         dt.items.add(fileComprimido);
         this.files = dt.files;
-        
+
         ui.imgTag.src = URL.createObjectURL(fileComprimido);
         ui.imgTag.style.opacity = '1';
         const overlayOff = document.getElementById('compresion-overlay');
         if (overlayOff) overlayOff.style.opacity = '0';
-        
-        console.log(`[Nubira] Imagen comprimida: ${sizeBefore}MB → ${sizeAfter}MB (${Math.round((1 - fileComprimido.size / fileOriginal.size) * 100)}% menos)`);
-        
-        calcQuality();
-        
+
     } catch (err) {
         ui.imgTag.style.opacity = '1';
         const overlayErr = document.getElementById('compresion-overlay');
@@ -678,16 +698,6 @@ ui.imgInput?.addEventListener('change', async function() {
         this.value = '';
         ui.imgPreview.classList.add('hidden');
     }
-});
-
-// Listeners de calidad para los demás campos
-['titulo', 'descripcion'].forEach(id => 
-    document.getElementById(id)?.addEventListener('input', calcQuality)
-);
-
-// Init: calcular calidad al cargar (los datos ya están precargados al editar)
-document.addEventListener("DOMContentLoaded", () => {
-    calcQuality();
 });
 
 // Scroll into view en focus (móvil)
