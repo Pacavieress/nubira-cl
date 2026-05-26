@@ -389,55 +389,23 @@ require_once __DIR__ . '/componentes/sidebar.php';
         <div class="space-y-5 md:space-y-6 min-w-0">
 
             <?php if ($es_propio && ($falta_banco || $perfil_incompleto_local)): ?>
-            <section class="mb-5">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Avisos</h2>
-                    <span class="bg-rose-50 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                        <?= (int)$falta_banco + (int)$falta_foto + (int)$falta_bio ?> PENDIENTES
-                    </span>
+            <div class="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 mb-5">
+                <div class="flex items-center gap-2 min-w-0">
+                    <?= icon('sparkles', 'w-4 h-4 text-[#54A6D8] shrink-0') ?>
+                    <span class="text-sm font-medium text-gray-700">Completa tu perfil para empezar a vender</span>
                 </div>
-
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
                     <?php if ($falta_banco): ?>
-                    <div class="bg-white border border-rose-200 rounded-2xl p-3 hover:bg-rose-50/30 active:bg-rose-50 transition-all duration-150 flex items-center justify-between gap-3 group">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center shrink-0 text-rose-500">
-                                <?= icon('building', 'w-3 h-3') ?>
-                            </div>
-                            <div class="min-w-0">
-                                <h3 class="text-xs font-semibold text-gray-900 truncate">Configura tus pagos</h3>
-                                <p class="text-[10px] text-gray-500 truncate hidden sm:block">Añade tu banco para recibir dinero.</p>
-                            </div>
-                        </div>
-                        <a href="/datos_bancarios" class="shrink-0 px-4 py-1.5 bg-rose-50 text-rose-600 text-[10px] font-semibold uppercase rounded-2xl hover:bg-rose-500 hover:text-white active:bg-rose-600 transition-colors duration-150">
-                            Ir <?= icon('arrow-right', 'w-3 h-3 ml-1') ?>
-                        </a>
-                    </div>
+                        <a href="/datos_bancarios" class="bg-white border border-blue-100 text-[#54A6D8] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Datos bancarios</a>
                     <?php endif; ?>
-
-                    <?php if ($perfil_incompleto_local): ?>
-                    <div class="bg-white border border-orange-200 rounded-2xl p-3 hover:bg-orange-50/30 active:bg-orange-50 transition-all duration-150 flex items-center justify-between gap-3 group">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0 text-orange-500">
-                                <?= icon('sparkles', 'w-3 h-3') ?>
-                            </div>
-                            <div class="min-w-0">
-                                <h3 class="text-xs font-semibold text-gray-900 truncate">Impulsa tu perfil</h3>
-                                <p class="text-[10px] text-gray-500 truncate hidden sm:block">Completa tu info personal.</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-1.5 shrink-0">
-                            <?php if($falta_foto): ?>
-                                <button onclick="document.getElementById('foto-input').click()" class="px-3 py-1.5 border border-gray-200 text-gray-600 text-[10px] font-semibold uppercase rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors duration-150">Foto</button>
-                            <?php endif; ?>
-                            <?php if($falta_bio): ?>
-                                <button onclick="toggleEditBio(); document.getElementById('bio-input')?.focus();" class="px-3 py-1.5 bg-orange-50 text-orange-600 text-[10px] font-semibold uppercase rounded-2xl hover:bg-orange-500 hover:text-white active:bg-orange-600 transition-colors duration-150">Bio</button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    <?php if ($falta_foto): ?>
+                        <button onclick="document.getElementById('foto-input').click()" class="bg-white border border-blue-100 text-[#54A6D8] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Foto</button>
+                    <?php endif; ?>
+                    <?php if ($falta_bio): ?>
+                        <button onclick="toggleEditBio(); document.getElementById('bio-input')?.focus();" class="bg-white border border-blue-100 text-[#54A6D8] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Bio</button>
                     <?php endif; ?>
                 </div>
-            </section>
+            </div>
             <?php endif; ?>
             
             <section class="bg-white rounded-[2rem] border border-gray-100 p-6 md:p-10 relative w-full">
