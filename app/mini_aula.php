@@ -3,6 +3,7 @@ session_start();
 
 // 1. INCLUSIONES Y SEGURIDAD
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/iconos.php';
 
 // Verificación de sesión
@@ -151,7 +152,7 @@ $vendedor_puede_confirmar = ($es_vendedor_real && !empty($contrato['finalizado_c
 $default_tab = $_GET['tab'] ?? 'archivos';
 
 // MOTOR DE VIDEO DAILY.CO
-$daily_api_key = "3b255516c668d48bf47469f7901be45ffc59d03aa69b8b252907610706ba847c";
+$daily_api_key = DAILY_API_KEY;
 $dominio_daily = "https://nubira-cl.daily.co/";
 $hash_seguridad = substr(md5($id_contrato . "nubira_secreto_2026"), 0, 8);
 $nombre_sala_unica = "aula-" . $id_contrato . "-" . $hash_seguridad;
