@@ -392,7 +392,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
             <div class="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div class="flex items-center gap-2 min-w-0">
                     <?= icon('sparkles', 'w-4 h-4 text-[#54A6D8] shrink-0') ?>
-                    <span class="text-sm font-medium text-gray-700">Completa tu perfil para empezar a vender</span>
+                    <span class="text-sm font-medium text-gray-700">Completa tu perfil para generar más confianza</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 shrink-0">
                     <?php if ($falta_banco): ?>
