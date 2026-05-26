@@ -331,7 +331,7 @@ try {
     }
 
     if ($tiene_ofertas_activas && count($lista_ofertas) < 6) {
-        $faltan = 6 - count($lista_ofertas);
+        $faltan = min(3, 6 - count($lista_ofertas));
         $placeholders = implode(',', array_fill(0, count($ids_usados), '?'));
         $types_relleno = str_repeat('i', count($ids_usados)) . 'i';
         
@@ -785,19 +785,9 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                             </div>
                         </a>
                         <?php else: ?>
-                            <?php 
-                                if (isset($row_of['es_falsa_oferta'])) {
-                                    $semilla = (int)$row_of['id'];
-                                    $porcentaje = 0.3 + (($semilla % 5) / 10); 
-                                    $precio_old_fake = round(($row_of['precio'] * $porcentaje), -2);
-                                    if($precio_old_fake >= $row_of['precio']) $precio_old_fake = $row_of['precio'] * 0.5;
-                                } else {
-                                    $precio_old_fake = $row_of['precio_oferta'];
-                                }
-                            ?>
                         <a href="/detalle-servicio/<?= $link_hash_of ?>"
                            onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
-                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full opacity-70 hover:opacity-100 grayscale-[30%] transition-all">
+                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
 
                             <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
                                 <img src="<?= htmlspecialchars($portada_url_of) ?>"
@@ -805,16 +795,12 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                      class="w-full h-full object-cover"
                                      loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" decoding="async"
                                      width="170" height="128">
-
-                                <div class="absolute top-2.5 right-2.5 z-10">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">Agotado</span>
-                                </div>
                             </div>
 
                             <div class="pt-2.5 flex flex-col flex-1 text-left">
-                                <h3 class="font-semibold text-[14px] leading-snug text-gray-500 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
+                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
                                 <div class="text-[13px] mt-auto mb-1.5 leading-none">
-                                    <span class="text-gray-400 font-semibold tracking-tight">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
+                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
