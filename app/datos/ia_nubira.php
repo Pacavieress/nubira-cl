@@ -26,7 +26,8 @@ $text_data = $input['text'] ?? '';
 $image_b64 = $input['image'] ?? null;
 $tono      = $input['tono'] ?? 'default'; // default | academico | vendedor
 
-$API_KEY = 'AIzaSyDMdKaw-D43BPGOjmH-yqxOHUeon0vGPJY';
+require_once __DIR__ . '/../config.php';
+$API_KEY = GEMINI_API_KEY;
 
 // =========================================================================
 // CATÁLOGO DE MATERIAS (sincronizado con tabla `materias`)
