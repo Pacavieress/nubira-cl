@@ -388,14 +388,6 @@ require_once __DIR__ . '/componentes/sidebar.php';
     <div class="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-6 md:gap-8 items-start">
         <div class="space-y-5 md:space-y-6 min-w-0">
 
-            <div class="md:hidden flex items-center justify-between mb-4 mt-1">
-                <button type="button" onclick="navegacionSeguraNubira()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors" aria-label="Volver">
-                    <?= icon('arrow-left', 'w-5 h-5 text-gray-700') ?>
-                </button>
-                <div class="w-10 h-1.5 bg-gray-200 rounded-full"></div>
-                <div class="w-10"></div>
-            </div>
-
             <?php if ($es_propio && ($falta_banco || $perfil_incompleto_local)): ?>
             <section class="mb-5">
                 <div class="flex items-center justify-between mb-3">
@@ -1426,18 +1418,6 @@ setInterval(async () => {
     } catch (e) {}
 }, 15000);
 <?php endif; ?>
-
-// [NUBIRA 2.0] SMART BACK: Previene bucles infinitos con pasarelas de pago
-window.navegacionSeguraNubira = function() {
-    let ref = document.referrer.toLowerCase();
-    if (ref.includes('mercadopago') || ref.includes('pago_error') || ref.includes('contratar_servicio') || ref.includes('iniciar_pago')) {
-        window.location.href = '/vitrina';
-    } else if (window.history.length > 1) {
-        window.history.back();
-    } else {
-        window.location.href = '/vitrina';
-    }
-};
 </script>
 
 </body>
