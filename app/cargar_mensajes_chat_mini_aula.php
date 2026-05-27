@@ -21,18 +21,38 @@ if (!$found) exit('<div class="text-red-500 text-xs p-2">Error: BD no encontrada
 // 2. SEGURIDAD
 if (!isset($_SESSION['usuario_id'])) exit;
 
-$usuario_id = (int)$_SESSION['usuario_id'];
+$usuario_id  = (int)$_SESSION['usuario_id'];
+$es_admin    = (($_SESSION['rol'] ?? '') === 'admin');
 // Aceptamos ID por GET (AJAX) o variable global (Include)
 $id_contrato = (int)($_GET['id'] ?? $GLOBALS['id_contrato'] ?? 0);
 
 if ($id_contrato <= 0) exit;
 
+if (!$es_admin) {
+    $stmt_auth = $conn->prepare(
+        "SELECT id FROM contratos WHERE id = ? AND (comprador_id = ? OR vendedor_id = ?) LIMIT 1"
+    );
+    $stmt_auth->bind_param("iii", $id_contrato, $usuario_id, $usuario_id);
+    $stmt_auth->execute();
+    $permitido = $stmt_auth->get_result()->fetch_assoc();
+    $stmt_auth->close();
+    if (!$permitido) {
+        echo '<div class="p-4 text-xs text-red-400">Sin permiso para ver este chat.</div>';
+        exit;
+    }
+}
+
 // 3. ACTUALIZAR VISTO (Marcar mensajes del otro como leídos)
-$conn->query("UPDATE chat_aula SET visto = 1 WHERE contrato_id = $id_contrato AND remitente_id != $usuario_id AND visto = 0");
+$stmt_visto = $conn->prepare("UPDATE chat_aula SET visto = 1 WHERE contrato_id = ? AND remitente_id != ? AND visto = 0");
+$stmt_visto->bind_param("ii", $id_contrato, $usuario_id);
+$stmt_visto->execute();
+$stmt_visto->close();
 
 // 4. CONSULTA
-$sql = "SELECT * FROM chat_aula WHERE contrato_id = $id_contrato ORDER BY fecha ASC";
-$res = $conn->query($sql);
+$stmt_msgs = $conn->prepare("SELECT * FROM chat_aula WHERE contrato_id = ? ORDER BY fecha ASC");
+$stmt_msgs->bind_param("i", $id_contrato);
+$stmt_msgs->execute();
+$res = $stmt_msgs->get_result();
 
 if ($res->num_rows === 0): ?>
     <div class="flex flex-col items-center justify-center h-48 opacity-50 select-none animate-fade-in">
