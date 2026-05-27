@@ -262,7 +262,7 @@ if (!empty($tickets)) {
     if (file_exists(__DIR__ . '/componentes/sidebar.php')) require_once __DIR__ . '/componentes/sidebar.php'; 
     ?>
 
-    <main class="pt-20 md:pt-24 md:ml-64 px-0 md:px-6 w-full max-w-[1000px] mx-auto">
+    <main class="pt-20 md:pt-24 lg:ml-64 px-0 md:px-6 w-full max-w-[1000px] mx-auto">
         
         <div class="px-4 md:px-0 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>

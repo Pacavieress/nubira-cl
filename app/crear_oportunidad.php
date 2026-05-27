@@ -217,7 +217,7 @@ if (isset($_GET['ok'])) {
 </header>
 
 
-  <main class="pt-20 pb-28 flex-1 md:ml-64">
+  <main class="pt-20 pb-28 flex-1 lg:ml-64">
   <div class="w-full max-w-3xl mx-auto px-4 md:px-12">
       
     <div class="bg-white border border-gray-200 rounded-lg shadow p-6 sm:p-8">

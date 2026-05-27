@@ -241,7 +241,7 @@ if ($chat_seleccionado) {
     require_once __DIR__ . '/componentes/sidebar.php'; 
     ?>
 
-    <main class="pt-20 md:pt-16 pb-20 md:pb-0 md:ml-64 h-full flex overflow-hidden bg-white w-full max-w-[1600px] mx-auto border-x border-gray-100 shadow-sm" id="main-container">
+    <main class="pt-20 md:pt-16 pb-20 md:pb-0 lg:ml-64 h-full flex overflow-hidden bg-white w-full max-w-[1600px] mx-auto border-x border-gray-100 shadow-sm" id="main-container">
        
        <div id="sidebar-panel" class="bg-white border-r border-gray-100 flex flex-col h-full z-10 <?php echo $chat_seleccionado ? 'hidden md:flex' : 'flex w-full md:w-auto'; ?>" style="width: 100%; md:width: 40%; min-width: 340px;">
             <div class="px-5 pt-5 pb-3">

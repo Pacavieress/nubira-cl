@@ -107,7 +107,7 @@ if (file_exists($comps . '/header.php')) require_once $comps . '/header.php';
 if (file_exists($comps . '/sidebar.php')) require_once $comps . '/sidebar.php';
 ?>
 
-<main class="pt-24 pb-32 md:pb-16 md:ml-64 px-4 md:px-8 w-auto min-h-screen">
+<main class="pt-24 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8 w-auto min-h-screen">
     <div class="w-full max-w-[850px] mx-auto">
         
         <div class="mb-6 flex items-center justify-between">

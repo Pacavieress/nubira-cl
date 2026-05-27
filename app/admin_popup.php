@@ -53,7 +53,7 @@ $res->close();
 
   <?php include __DIR__ . '/../app/sidebar.php'; ?>
 
-  <main class="md:ml-64 p-6 mt-20 max-w-3xl mx-auto bg-white rounded-xl shadow space-y-10">
+  <main class="lg:ml-64 p-6 mt-20 max-w-3xl mx-auto bg-white rounded-xl shadow space-y-10">
     <h1 class="text-2xl font-bold text-nubira mb-6 text-center">🪄 Administrar Popups de Vitrina</h1>
 
     <?php if ($guardado): ?>

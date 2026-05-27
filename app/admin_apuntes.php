@@ -151,7 +151,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-20 pb-32 md:pb-16 md:ml-64 px-4 md:px-8 w-auto">
+<main class="pt-20 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8 w-auto">
   <div class="w-full max-w-[1600px] mx-auto space-y-6">
 
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">

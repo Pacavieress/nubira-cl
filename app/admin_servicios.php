@@ -130,7 +130,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-16 pb-32 md:pb-16 md:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
+<main class="pt-16 pb-32 md:pb-16 lg:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
   <div class="max-w-7xl mx-auto space-y-6">
 
     <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">

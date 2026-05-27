@@ -64,7 +64,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-24 pb-32 md:pb-12 md:ml-64 px-4 md:px-8 max-w-[1600px] mx-auto min-h-[85vh] flex items-center justify-center animate-fade-in-up">
+<main class="pt-24 pb-32 md:pb-12 lg:ml-64 px-4 md:px-8 max-w-[1600px] mx-auto min-h-[85vh] flex items-center justify-center animate-fade-in-up">
     
     <div class="bg-white p-8 md:p-10 rounded-3xl border border-red-100 shadow-lg max-w-md w-full text-center relative overflow-hidden">
         

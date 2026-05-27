@@ -340,7 +340,7 @@ if(file_exists($ruta_comp.'/header.php')) require_once $ruta_comp.'/header.php';
 if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php';
 ?>
 
-<main class="pt-20 pb-28 md:pb-20 md:ml-64 px-4 max-w-[1600px] mx-auto md:px-8 min-h-[80vh]">
+<main class="pt-20 pb-28 md:pb-20 lg:ml-64 px-4 max-w-[1600px] mx-auto md:px-8 min-h-[80vh]">
     
     <?php if (empty($q) && empty($mod_filtro)): ?>
         <div class="flex flex-col items-center justify-center py-12 md:py-24 px-4 animate-fade-in-up">

@@ -306,7 +306,7 @@ if (!function_exists('nav_class')) {
   if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '/componentes/sidebar.php'; 
   ?>
 
-  <main class="pt-16 md:pt-20 pb-32 md:pb-12 md:ml-64 px-4 max-w-[1100px] mx-auto md:px-8">
+  <main class="pt-16 md:pt-20 pb-32 md:pb-12 lg:ml-64 px-4 max-w-[1100px] mx-auto md:px-8">
 
     <!-- [NUBIRA 2.0] Header del form: título a la izquierda, X a la derecha (móvil) -->
     <div class="flex items-center justify-between gap-3 mb-6 min-h-[44px]">

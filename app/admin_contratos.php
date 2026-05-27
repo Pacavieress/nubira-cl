@@ -104,7 +104,7 @@ $res = $stmt->get_result();
     if(file_exists(__DIR__ . '/componentes/sidebar.php')) require_once __DIR__ . '/componentes/sidebar.php';
     ?>
 
-    <main class="pt-20 pb-28 md:pb-10 md:ml-64 px-4 max-w-full mx-auto overflow-hidden md:px-10">
+    <main class="pt-20 pb-28 md:pb-10 lg:ml-64 px-4 max-w-full mx-auto overflow-hidden md:px-10">
 
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 max-w-[1600px] mx-auto">
             <div>

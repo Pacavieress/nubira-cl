@@ -170,7 +170,7 @@ $res = $conn->query($sql);
     </style>
 </head>
 
-<body class="bg-gray-50 text-gray-900 antialiased overflow-x-hidden md:ml-64 pt-20 pb-24">
+<body class="bg-gray-50 text-gray-900 antialiased overflow-x-hidden lg:ml-64 pt-20 pb-24">
 
     <div id="toast-container" class="fixed top-24 right-5 z-[100] space-y-3 pointer-events-none"></div>
 
@@ -179,7 +179,7 @@ $res = $conn->query($sql);
         $page_title = "Gestión de Reportes"; 
         require_once __DIR__ . '/componentes/header.php'; 
     } else {
-        echo '<header class="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur border-b z-50 flex items-center px-6 font-bold text-[#54A6D8] md:ml-64">Nubira Admin</header>';
+        echo '<header class="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur border-b z-50 flex items-center px-6 font-bold text-[#54A6D8] lg:ml-64">Nubira Admin</header>';
     }
     
     if(file_exists(__DIR__ . '/componentes/sidebar.php')) require_once __DIR__ . '/componentes/sidebar.php';

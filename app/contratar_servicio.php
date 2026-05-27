@@ -195,7 +195,7 @@ $page_title = "Confirmar Contrato";
 </div>
 <?php if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '/componentes/sidebar.php'; ?>
 
-<main class="pt-4 md:pt-20 pb-32 md:pb-16 md:ml-64 px-4 md:px-8">
+<main class="pt-4 md:pt-20 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8">
     <!-- [NUBIRA 2.0] Topbar Nativo Móvil (Checkout Mode) -->
     <div class="md:hidden flex items-center justify-between mb-6 mt-1 max-w-[1000px] mx-auto">
         <button type="button" 

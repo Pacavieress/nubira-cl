@@ -148,7 +148,7 @@ if (!empty($params)) {
     if(file_exists(__DIR__ . '/componentes/sidebar.php')) require_once __DIR__ . '/componentes/sidebar.php';
     ?>
 
-    <main class="pt-16 pb-32 md:pb-16 md:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
+    <main class="pt-16 pb-32 md:pb-16 lg:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
         
         <form method="POST" id="form-tabla" class="max-w-7xl mx-auto space-y-6">
             <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">

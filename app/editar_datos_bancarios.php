@@ -107,7 +107,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-16 pb-32 md:pb-16 md:ml-64 px-4 md:px-8 w-full animate-fade-in-up">
+<main class="pt-16 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8 w-full animate-fade-in-up">
   <div class="w-full max-w-[800px] mx-auto">
 
     <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

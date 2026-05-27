@@ -445,7 +445,7 @@ if (!empty($thumb_url)) {
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     .overflow-hidden-strict { overflow: hidden !important; }
-    @media (max-width: 767px) {
+    @media (max-width: 1023px) {
         nav.fixed.bottom-0,
         .fixed.bottom-0[id*="nav"] {
             display: none !important;
@@ -467,12 +467,12 @@ require_once $base_path . '/componentes/header.php';
 require_once $base_path . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-20 pb-32 md:pb-16 md:ml-64 px-4 w-auto"
+<main class="pt-20 pb-32 lg:pb-16 lg:ml-64 px-4 w-auto"
       data-track-type="apunte" 
       data-track-id="<?= (int)$id_apunte ?>">
 
   <!-- Topbar móvil: flecha volver + pill centrado -->
-  <div class="md:hidden flex items-center justify-between mb-4 mt-1 max-w-[1100px] mx-auto">
+  <div class="lg:hidden flex items-center justify-between mb-4 mt-1 max-w-[1100px] mx-auto">
       <button type="button"
           onclick="navegacionSeguraNubira()"
           class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all"
@@ -510,7 +510,7 @@ require_once $base_path . '/componentes/sidebar.php';
         <div class="lg:col-span-8 space-y-6">
             
             <!-- HEADER MÓVIL -->
-            <div class="block md:hidden space-y-4 mb-2">
+            <div class="block lg:hidden space-y-4 mb-2">
                 <div>
                     <span class="bg-blue-50 text-[#54A6D8] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2 inline-block">
                         Asignatura: <?= htmlspecialchars($apunte['asignatura'] ?? 'Apunte') ?>
@@ -671,7 +671,7 @@ require_once $base_path . '/componentes/sidebar.php';
             <div class="sticky top-24 space-y-6">
                 
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                    <div class="hidden md:block mb-6 pb-6 border-b border-gray-100">
+                    <div class="hidden lg:block mb-6 pb-6 border-b border-gray-100">
                         <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3 inline-block border border-gray-200">
                             Asignatura: <?= htmlspecialchars($apunte['asignatura'] ?? 'Apunte') ?>
                         </span>
@@ -746,7 +746,7 @@ require_once $base_path . '/componentes/sidebar.php';
                 </div>
 
                 <!-- PUBLICADOR (DESKTOP) -->
-                <div class="hidden md:block bg-gray-50 rounded-2xl p-5 border border-gray-100 space-y-4">
+                <div class="hidden lg:block bg-gray-50 rounded-2xl p-5 border border-gray-100 space-y-4">
                     <a href="/perfil/<?= (int)$apunte['id_alumno'] ?>" class="group flex items-center gap-4 pb-4 w-full transition-colors track-seller">
                         <div class="w-14 h-14 rounded-full border border-gray-200 bg-white overflow-hidden flex-shrink-0 relative">
                             <?php 
@@ -820,7 +820,7 @@ require_once $base_path . '/componentes/sidebar.php';
     <?php endif; ?>
 
   </div>
-  <div class="h-16 md:hidden"></div>
+  <div class="h-16 lg:hidden"></div>
 </main>
 
 <?php 
@@ -918,7 +918,7 @@ require_once $base_path . '/componentes/modal_explora.php';
 
 <?php if (!$es_dueno): ?>
 <div id="barra-apunte-movil"
-     class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+     class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
     <div class="flex items-center justify-between gap-3">
 
         <div class="flex flex-col min-w-0 flex-1">

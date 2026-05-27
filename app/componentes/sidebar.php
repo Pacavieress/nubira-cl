@@ -83,7 +83,7 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
     .sidebar-active-icon { background: rgba(84,166,216,0.1) !important; }
 </style>
 
-<aside class="hidden md:flex md:flex-col fixed top-14 left-0 h-[calc(100%-3.5rem)] w-56 bg-white/95 backdrop-blur-sm border-r border-gray-100/80 z-40 overflow-y-auto sidebar-scroll">
+<aside class="hidden lg:flex lg:flex-col fixed top-14 left-0 h-[calc(100%-3.5rem)] w-56 bg-white/95 backdrop-blur-sm border-r border-gray-100/80 z-40 overflow-y-auto sidebar-scroll">
   <div class="px-4 py-5 flex flex-col h-full">
     
     <nav class="flex flex-col space-y-0.5 flex-1">

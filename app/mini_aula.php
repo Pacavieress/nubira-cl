@@ -271,7 +271,7 @@ if (!$es_pre_clase) {
     <?php require_once __DIR__ . '/componentes/sidebar.php'; ?>
 </aside>
 
-<main id="main-layout" class="pt-16 md:pt-20 md:ml-64 h-[100dvh] w-full flex relative overflow-hidden bg-gray-50 max-w-[1600px] mx-auto transition-all duration-300 ease-in-out">
+<main id="main-layout" class="pt-16 md:pt-20 lg:ml-64 h-[100dvh] w-full flex relative overflow-hidden bg-gray-50 max-w-[1600px] mx-auto transition-all duration-300 ease-in-out">
 
 <?php if ($es_pre_clase): ?>
     <!-- ============================================== -->
@@ -738,13 +738,13 @@ if (!$es_pre_clase) {
         const icon = document.getElementById('icon-toggle-sidebar');
         if (sidebarAbierto) {
             sidebar.classList.remove('-translate-x-full');
-            main.classList.add('md:ml-64');
+            main.classList.add('lg:ml-64');
             btn.classList.add('left-64');
             btn.classList.remove('left-0', 'translate-x-4');
             icon.classList.remove('rotate-180');
         } else {
             sidebar.classList.add('-translate-x-full');
-            main.classList.remove('md:ml-64');
+            main.classList.remove('lg:ml-64');
             btn.classList.remove('left-64');
             btn.classList.add('left-0', 'translate-x-4');
             icon.classList.add('rotate-180');

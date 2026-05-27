@@ -309,7 +309,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-20 pb-32 md:pb-12 md:ml-64 px-0 md:px-8 w-auto max-w-4xl mx-auto space-y-6">
+<main class="pt-20 pb-32 md:pb-12 lg:ml-64 px-0 md:px-8 w-auto max-w-4xl mx-auto space-y-6">
 
     <div class="px-4 md:px-0 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
       <div>

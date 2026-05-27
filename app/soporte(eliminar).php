@@ -291,7 +291,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-16 md:pt-24 md:ml-64 px-0 md:px-8 w-full max-w-4xl mx-auto">
+<main class="pt-16 md:pt-24 lg:ml-64 px-0 md:px-8 w-full max-w-4xl mx-auto">
   <div class="space-y-6 md:mt-6">
 
     <div class="px-4 md:px-0 py-4 mb-2 flex items-start justify-between gap-4">

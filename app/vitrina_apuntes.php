@@ -187,7 +187,7 @@ require_once $app_dir . '/componentes/header.php';
 ?>
 <?php require_once $app_dir . '/componentes/sidebar.php'; ?>
 
-<main class="pt-20 pb-28 md:pb-10 md:ml-64 px-4 max-w-[1600px] mx-auto md:px-8">
+<main class="pt-20 pb-28 md:pb-10 lg:ml-64 px-4 max-w-[1600px] mx-auto md:px-8">
 
     <?php if (count($banners_inicio)): ?>
       <div class="mb-6 md:mb-10 rounded-2xl overflow-hidden border border-gray-200">

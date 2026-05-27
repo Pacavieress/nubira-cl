@@ -112,7 +112,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-24 pb-32 md:pb-12 md:ml-64 px-4 md:px-8 max-w-[1600px] mx-auto min-h-[85vh] flex items-center justify-center animate-fade-in-up relative">
+<main class="pt-24 pb-32 md:pb-12 lg:ml-64 px-4 md:px-8 max-w-[1600px] mx-auto min-h-[85vh] flex items-center justify-center animate-fade-in-up relative">
 
     <?php if ($estado_vista === 'no_existe'): ?>
         <div class="bg-white max-w-md w-full p-8 md:p-10 rounded-3xl shadow-lg text-center border border-slate-100 relative overflow-hidden">

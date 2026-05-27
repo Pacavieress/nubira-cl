@@ -88,7 +88,7 @@ $res = $conn->query("SELECT id,titulo,tipo,organizador,fecha_inicio,fecha_termin
   </aside>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main class="flex-1 w-full md:ml-64 p-2 sm:p-4 md:p-8">
+  <main class="flex-1 w-full lg:ml-64 p-2 sm:p-4 md:p-8">
     <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-2 sm:p-6">
       <h1 class="text-2xl sm:text-3xl font-extrabold text-blue-700 mb-4 sm:mb-6">Gestión de Oportunidades</h1>
 

@@ -185,7 +185,7 @@ function obtener_iniciales($nombre_completo) {
     require_once __DIR__ . '/componentes/sidebar.php'; 
     ?>
 
-    <main class="pt-20 pb-28 md:pb-10 md:ml-64 px-4 max-w-4xl mx-auto min-h-screen">
+    <main class="pt-20 pb-28 md:pb-10 lg:ml-64 px-4 max-w-4xl mx-auto min-h-screen">
         
         <div class="sticky top-16 md:top-0 z-30 bg-white/95 backdrop-blur py-2 mb-4">
             

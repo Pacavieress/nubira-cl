@@ -138,7 +138,7 @@ if(file_exists($app_path . '/componentes/header.php')) include $app_path . '/com
 if(file_exists($app_path . '/componentes/sidebar.php')) include $app_path . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-24 pb-20 md:ml-64 px-6 max-w-[1400px] mx-auto">
+<main class="pt-24 pb-20 lg:ml-64 px-6 max-w-[1400px] mx-auto">
 
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>

@@ -196,7 +196,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-20 pb-28 md:pb-16 md:ml-64 px-4 md:px-8 w-auto">
+<main class="pt-20 pb-28 md:pb-16 lg:ml-64 px-4 md:px-8 w-auto">
   <div class="w-full max-w-[1600px] mx-auto"> 
 
     <div class="mb-6">

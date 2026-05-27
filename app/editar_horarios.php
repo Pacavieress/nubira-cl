@@ -102,7 +102,7 @@ if(file_exists($ruta_comp . '/header.php')) require_once $ruta_comp . '/header.p
 if(file_exists($ruta_comp . '/sidebar.php')) require_once $ruta_comp . '/sidebar.php'; 
 ?>
 
-<main class="pt-24 pb-12 md:ml-64 px-4 max-w-[800px] mx-auto animate-fade-in-up">
+<main class="pt-24 pb-12 lg:ml-64 px-4 max-w-[800px] mx-auto animate-fade-in-up">
     
     <div class="mb-8 flex items-center gap-4">
         <a href="/detalle-servicio/<?= nubira_encriptar_id($servicio_id) ?>" class="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-all">

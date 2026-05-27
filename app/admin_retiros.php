@@ -158,7 +158,7 @@ $stmt->close();
   require_once $app_dir . '/componentes/sidebar.php'; 
   ?>
 
-  <main class="pt-24 pb-28 md:pb-10 md:ml-64 px-4 max-w-[1600px] mx-auto overflow-hidden md:px-8">
+  <main class="pt-24 pb-28 md:pb-10 lg:ml-64 px-4 max-w-[1600px] mx-auto overflow-hidden md:px-8">
 
     <?php if ($mensaje): ?>
       <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl mb-6 shadow-sm animate-fade-in-up">

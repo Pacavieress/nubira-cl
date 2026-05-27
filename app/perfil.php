@@ -384,7 +384,7 @@ require_once __DIR__ . '/componentes/header.php';
 require_once __DIR__ . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-20 pb-28 md:pb-10 md:ml-64 px-4 max-w-[1600px] mx-auto md:px-8">
+<main class="pt-20 pb-28 md:pb-10 lg:ml-64 px-4 max-w-[1600px] mx-auto md:px-8">
     <div class="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-6 md:gap-8 items-start">
         <div class="space-y-5 md:space-y-6 min-w-0">
 

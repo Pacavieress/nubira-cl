@@ -260,7 +260,7 @@ if (file_exists($header_path)) include $header_path;
 if (file_exists($sidebar_path)) include $sidebar_path; 
 ?>
 
-<main class="pt-16 pb-32 md:pb-16 md:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
+<main class="pt-16 pb-32 md:pb-16 lg:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
   <div class="max-w-[1400px] mx-auto space-y-6">
 
     <div class="sticky top-16 bg-gray-50/95 backdrop-blur-md z-30 border-b border-gray-100 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">

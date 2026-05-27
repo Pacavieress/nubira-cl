@@ -138,7 +138,7 @@ $reviews_comprador = ejecutarConsultaSegura($conn, $uid, 'comprador');
     <?php if(file_exists($base_path . '/componentes/header.php')) include $base_path . '/componentes/header.php'; ?>
     <?php if(file_exists($base_path . '/componentes/sidebar.php')) include $base_path . '/componentes/sidebar.php'; ?>
 
-   <main class="pt-16 pb-32 md:pb-16 md:ml-64 mx-auto max-w-[1000px]">
+   <main class="pt-16 pb-32 md:pb-16 lg:ml-64 mx-auto max-w-[1000px]">
         <div class="w-full">
             
             <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

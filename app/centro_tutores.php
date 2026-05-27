@@ -126,7 +126,7 @@ if(file_exists($sidebar_path)) require_once $sidebar_path;
 ?>
 
 <!-- MAIN CONTAINER NUBIRA 2.0 -->
-<main class="pt-20 pb-32 md:pb-12 md:ml-64 mx-auto max-w-[1100px] px-4 md:px-8 min-h-screen flex flex-col gap-5">
+<main class="pt-20 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1100px] px-4 md:px-8 min-h-screen flex flex-col gap-5">
     
     <!-- Hero Section Flat UI -->
     <section class="border-b border-gray-100 pb-5 pt-2 animate-fade-in-up flex flex-col md:flex-row md:items-start justify-between gap-4">

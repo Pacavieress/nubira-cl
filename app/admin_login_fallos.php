@@ -233,7 +233,7 @@ try {
     </header>
     <?php endif; ?>
 
-    <main class="pt-24 pb-28 md:pb-10 md:ml-64 px-4 max-w-[1600px] mx-auto min-h-screen">
+    <main class="pt-24 pb-28 md:pb-10 lg:ml-64 px-4 max-w-[1600px] mx-auto min-h-screen">
         
         <div class="flex items-center justify-between mb-6 px-1">
             <div>

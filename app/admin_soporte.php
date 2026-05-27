@@ -89,7 +89,7 @@ $stmt->close();
     if(file_exists(__DIR__ . '/componentes/sidebar.php')) require_once __DIR__ . '/componentes/sidebar.php';
     ?>
 
-    <main class="pt-20 pb-32 md:pb-16 md:ml-64 px-4 md:px-8 w-auto">
+    <main class="pt-20 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8 w-auto">
         <div class="w-full max-w-[1600px] mx-auto">
             
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

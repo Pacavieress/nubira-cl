@@ -103,7 +103,7 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
             <a href="/vitrina" class="flex items-center">
                 <img src="/img/logo.webp" alt="Nubira" class="h-6 md:h-7 w-auto object-contain"> 
             </a>
-            <div class="hidden md:flex items-center gap-2 text-xs text-gray-500">
+            <div class="hidden lg:flex items-center gap-2 text-xs text-gray-500">
                  <a href="/vitrina" class="hover:text-[#54A6D8] transition-colors duration-200">Inicio</a>
                  <span class="text-gray-300">/</span>
                  <span class="text-gray-900 font-semibold"><?= htmlspecialchars($titulo_seccion) ?></span>
@@ -126,8 +126,8 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
                        autocomplete="off" enterkeyhint="search" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
 
                 <?php if ($mostrar_filtro_modalidad): ?>
-                <div class="hidden md:block h-4 w-px bg-gray-200 shrink-0 mx-1"></div>
-                <div class="hidden md:block relative shrink-0">
+                <div class="hidden lg:block h-4 w-px bg-gray-200 shrink-0 mx-1"></div>
+                <div class="hidden lg:block relative shrink-0">
                     <select name="modalidad" onchange="this.form.submit()" class="appearance-none bg-transparent border-none py-1.5 md:py-2 pl-2 pr-7 text-xs md:text-sm font-semibold text-gray-600 focus:ring-0 cursor-pointer hover:text-[#54A6D8] transition-colors duration-200 outline-none w-auto">
                         <option value="">Modalidad</option>
                         <option value="Presencial" <?= $header_mod==='Presencial'?'selected':'' ?>>Presencial</option>
@@ -146,7 +146,7 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
 
         <div class="flex flex-shrink-0 items-center gap-2 md:gap-4">
             <?php if ($mostrar_botones): ?>
-            <div class="hidden md:flex items-center gap-3">
+            <div class="hidden lg:flex items-center gap-3">
                 <a href="<?= $url_subir_apunte ?>" class="px-4 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-[#54A6D8] text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2">
                     <?= icon('publish-doc', 'w-4 h-4 text-[#54A6D8]') ?> <span>Publicar Apunte</span>
                 </a>
@@ -156,7 +156,7 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
             </div>
             <?php endif; ?>
 
-            <a href="<?= $url_perfil ?>" class="relative hidden md:block group" title="<?= $es_visitante ? 'Invitado - Iniciar Sesión' : 'Mi Perfil' ?>">
+            <a href="<?= $url_perfil ?>" class="relative hidden lg:block group" title="<?= $es_visitante ? 'Invitado - Iniciar Sesión' : 'Mi Perfil' ?>">
                 <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-blue-50 border border-gray-100 flex items-center justify-center text-[#54A6D8] text-[10px] md:text-xs font-semibold overflow-hidden transition-transform duration-200 hover:scale-105">
                     <?php if ($es_visitante): ?>
                         <?= icon('user', 'w-4 h-4 md:w-4 md:h-4') ?>

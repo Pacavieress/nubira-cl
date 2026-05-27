@@ -256,7 +256,7 @@ function nav_class($path, $current_uri) {
     </div>
 </aside>
 
-<main class="pt-24 pb-28 md:pb-12 md:ml-64 max-w-[1100px] mx-auto px-4 sm:px-6 w-full">
+<main class="pt-24 pb-28 md:pb-12 lg:ml-64 max-w-[1100px] mx-auto px-4 sm:px-6 w-full">
 
     <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

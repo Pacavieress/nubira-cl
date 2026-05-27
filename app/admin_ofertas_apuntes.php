@@ -147,7 +147,7 @@ if(file_exists($app_dir . '/componentes/header.php')) require_once $app_dir . '/
 if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-24 pb-32 md:pb-16 md:ml-64 px-4 md:px-8">
+<main class="pt-24 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8">
     <div class="w-full max-w-[1400px] mx-auto">
         
 <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">

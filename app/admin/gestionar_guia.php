@@ -83,7 +83,7 @@ require_once $base_path . '/componentes/header.php';
 require_once $base_path . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-20 pb-32 md:pb-12 md:ml-64 mx-auto max-w-[1200px] px-4 md:px-8 animate-fade-in-up">
+<main class="pt-20 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1200px] px-4 md:px-8 animate-fade-in-up">
     
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>

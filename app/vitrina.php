@@ -714,7 +714,7 @@ require_once __DIR__ . '/componentes/header.php';
     <?php require_once __DIR__ . '/componentes/sidebar.php'; ?>
 
 <main data-track-id="home" data-track-type="vitrina" 
-      class="pt-16 md:pt-20 pb-36 md:pb-0 md:ml-56 max-w-full mx-auto block">
+      class="pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full mx-auto block">
     
     
  <?php if ($tiene_ofertas_activas): ?>

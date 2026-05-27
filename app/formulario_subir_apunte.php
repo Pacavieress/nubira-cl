@@ -372,7 +372,7 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . 
 if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir . '/componentes/nav_bottom.php'; 
 ?>
 
-<main class="pt-16 md:pt-20 pb-20 md:pb-8 md:ml-64 px-4 max-w-[1100px] w-full mx-auto md:px-8 min-h-[calc(100vh-80px)] flex flex-col transition-all duration-300">
+<main class="pt-16 md:pt-20 pb-20 md:pb-8 lg:ml-64 px-4 max-w-[1100px] w-full mx-auto md:px-8 min-h-[calc(100vh-80px)] flex flex-col transition-all duration-300">
 
     <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>

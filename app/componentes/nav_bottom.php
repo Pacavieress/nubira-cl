@@ -140,7 +140,7 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
     @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 </style>
 
-<nav class="nav-native-feel md:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-gray-100/80 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-2.5 px-1" aria-label="Navegación principal">
+<nav class="nav-native-feel lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-gray-100/80 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-2.5 px-1" aria-label="Navegación principal">
   <ul class="grid grid-cols-5 text-[11px] text-center pb-1 items-end relative">
 
     <li>

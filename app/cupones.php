@@ -54,7 +54,7 @@ $servicios_db = $conn->query($query_servicios);
     if(file_exists(__DIR__ . '/componentes/sidebar.php')) require_once __DIR__ . '/componentes/sidebar.php';
     ?>
 
-    <main class="pt-24 pb-28 md:ml-64 px-4 w-full max-w-[1100px] mx-auto">
+    <main class="pt-24 pb-28 lg:ml-64 px-4 w-full max-w-[1100px] mx-auto">
         
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>

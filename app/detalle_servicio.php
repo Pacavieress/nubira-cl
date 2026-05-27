@@ -413,7 +413,7 @@ session_write_close();
     /* [NUBIRA 2.0] Modo "Task" en móvil: detalle enfocado en conversión.
        - Oculta nav_bottom (la X reemplaza la salida)
        - Patrón consistente con publicar_servicio.php */
-    @media (max-width: 767px) {
+    @media (max-width: 1023px) {
         nav.fixed.bottom-0,
         .fixed.bottom-0[id*="nav"] {
             display: none !important;
@@ -436,13 +436,13 @@ session_write_close();
 </div>
 <?php if(file_exists($ruta_comp . '/sidebar.php')) require_once $ruta_comp . '/sidebar.php'; ?>
 
-<main class="pt-4 md:pt-20 pb-28 md:pb-10 md:ml-64 px-4 max-w-full mx-auto overflow-hidden md:px-10" 
+<main class="pt-4 md:pt-20 pb-28 md:pb-10 lg:ml-64 px-4 max-w-full mx-auto overflow-hidden md:px-10" 
       data-track-id="<?= (int)$servicio['id'] ?>" 
       data-track-type="servicio">
 
     <!-- [NUBIRA 2.0] Topbar Nativo Móvil (Reemplaza al Header global) -->
-    <div class="md:hidden flex items-center justify-between mb-4 mt-1 max-w-[1100px] mx-auto">
-       <button type="button" 
+    <div class="lg:hidden flex items-center justify-between mb-4 mt-1 max-w-[1100px] mx-auto">
+       <button type="button"
         onclick="navegacionSeguraNubira()"
         class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all"
         aria-label="Volver">
@@ -763,7 +763,7 @@ $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 
                                     </div>
                                 <?php else: ?>
                                  <!-- [NUBIRA 2.0] Oculto en móvil (usa la barra flotante) -->
-<form id="form-pago-principal" action="/app/contratar_servicio.php" method="GET" class="hidden md:block">
+<form id="form-pago-principal" action="/app/contratar_servicio.php" method="GET" class="hidden lg:block">
     <input type="hidden" name="servicio_id" value="<?= $id ?>">
     <input type="hidden" name="codigo_beca" id="codigo_beca_hidden" value="">
     
@@ -969,7 +969,7 @@ $mostrar_barra_movil = (
 
 <?php if ($mostrar_barra_movil): ?>
 <div id="barra-contratar-movil"
-     class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+     class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
     
     <div class="flex items-center justify-between gap-3">
         

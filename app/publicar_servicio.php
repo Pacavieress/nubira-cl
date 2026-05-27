@@ -281,7 +281,7 @@ require_once $app_dir . '/componentes/header.php';
 require_once $app_dir . '/componentes/sidebar.php'; 
 ?>
 
-<main class="pt-16 md:pt-20 pb-32 md:pb-8 md:ml-64 px-4 max-w-[1100px] w-full mx-auto md:px-8 min-h-[calc(100vh-80px)] flex flex-col transition-all duration-300">
+<main class="pt-16 md:pt-20 pb-32 md:pb-8 lg:ml-64 px-4 max-w-[1100px] w-full mx-auto md:px-8 min-h-[calc(100vh-80px)] flex flex-col transition-all duration-300">
 
   <!-- [NUBIRA 2.0] Header del form: título a la izquierda, X a la derecha (móvil). En escritorio sin X. -->
 <div class="flex items-center justify-between gap-3 mb-6 min-h-[44px]">

@@ -118,7 +118,7 @@ $result = $conn->query($sql);
     if(file_exists(__DIR__ . '/componentes/sidebar.php')) require_once __DIR__ . '/componentes/sidebar.php';
     ?>
 
-    <main class="pt-24 pb-20 md:ml-64 px-6 max-w-6xl mx-auto min-h-screen">
+    <main class="pt-24 pb-20 lg:ml-64 px-6 max-w-6xl mx-auto min-h-screen">
         
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>

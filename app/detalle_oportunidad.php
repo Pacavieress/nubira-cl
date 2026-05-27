@@ -79,7 +79,7 @@ function limitar_texto($txt, $largo = 50) {
 </header>
 
 
-<main id="contenido" class="hidden flex-1 px-2 sm:px-10 py-8 md:ml-64 overflow-x-hidden">
+<main id="contenido" class="hidden flex-1 px-2 sm:px-10 py-8 lg:ml-64 overflow-x-hidden">
   <div class="w-full max-w-6xl mx-auto bg-white rounded-2xl shadow p-10 space-y-8">
 
     
