@@ -196,7 +196,7 @@ ADEMÁS de la descripción, debes inferir 3 campos críticos del documento:
    - 'escolar' si menciona enseñanza media, IV medio, colegio
    - 'universitario' por defecto
 
-3. **SUBTEMA** (opcional): Tema específico dentro de la materia. Máx 60 chars. Si no es obvio, deja vacío.
+3. **SUBTEMA** (opcional): Tema específico dentro de la materia. Máx 60 chars. Si no es obvio, devuelve string vacío exactamente. NO uses 'N/A', 'no aplica', 'ninguno' ni similares.
 
 CONTEXTO TÉCNICO ESPECÍFICO POR MATERIA: Si detectas alguna de las 12 materias del catálogo, usa el vocabulario técnico real de esa disciplina al redactar la descripción. Sé específico, no genérico.
 
@@ -381,6 +381,15 @@ if ($http_code === 200 && $response) {
                 $obj['nivel_academico'] = $nivel_ia;
             }
             
+            // Normalizar categoria
+            $categorias_validas = ['Salud', 'Ingeniería', 'Negocios', 'Humanidades', 'Derecho', 'PAES', 'General'];
+            $categoria_ia = trim($obj['categoria'] ?? 'General');
+            if (!in_array($categoria_ia, $categorias_validas, true)) {
+                $obj['categoria'] = 'General';
+            } else {
+                $obj['categoria'] = $categoria_ia;
+            }
+
             // Limpiar subtema
             $obj['subtema'] = mb_substr(trim($obj['subtema'] ?? ''), 0, 60);
             
@@ -411,7 +420,7 @@ if ($http_code === 200 && $response) {
             // ====================================================
             // SANITIZACIÓN DEFENSIVA: limpia título, descripción y keywords
             // ====================================================
-            $obj['titulo']      = sanitizar_anti_contacto($obj['titulo'] ?? '');
+            $obj['titulo']      = sanitizar_anti_contacto(mb_substr($obj['titulo'] ?? '', 0, 60));
             $obj['descripcion'] = sanitizar_anti_contacto($obj['descripcion'] ?? '');
             $obj['asignatura']  = sanitizar_anti_contacto($obj['asignatura'] ?? '');
             $obj['keywords']    = sanitizar_anti_contacto($obj['keywords'] ?? '');
