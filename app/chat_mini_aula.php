@@ -32,14 +32,15 @@ if (!isset($_SESSION['usuario_id'])) {
     die('<div class="p-4 text-red-500 font-bold">Sesión expirada</div>');
 }
 
-$my_id      = (int)$_SESSION['usuario_id'];
+$my_id       = (int)$_SESSION['usuario_id'];
+$es_admin    = (($_SESSION['rol'] ?? '') === 'admin');
 $id_contrato = (int)($_GET['id'] ?? 0);
 
 if ($id_contrato <= 0) die("Chat no válido.");
 
 // 4. DATOS DEL CONTRATO + USUARIOS
-$sql = "
-    SELECT 
+$sql_base = "
+    SELECT
         c.id, c.estado, c.comprador_id, c.vendedor_id, c.servicio_id,
         s.titulo AS servicio_titulo,
         v.nombre AS nombre_vendedor, v.foto_perfil AS foto_vendedor, v.id AS id_vendedor,
@@ -48,18 +49,24 @@ $sql = "
     JOIN servicios s ON c.servicio_id = s.id
     JOIN alumnos a ON c.comprador_id = a.id
     JOIN alumnos v ON c.vendedor_id = v.id
-    WHERE c.id = ? AND (c.comprador_id = ? OR c.vendedor_id = ?)
-    LIMIT 1
+    WHERE c.id = ?
 ";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("iii", $id_contrato, $my_id, $my_id);
+
+if ($es_admin) {
+    $stmt = $conn->prepare($sql_base . " LIMIT 1");
+    $stmt->bind_param("i", $id_contrato);
+} else {
+    $stmt = $conn->prepare($sql_base . " AND (c.comprador_id = ? OR c.vendedor_id = ?) LIMIT 1");
+    $stmt->bind_param("iii", $id_contrato, $my_id, $my_id);
+}
 $stmt->execute();
 $chat = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$chat) die('<div class="p-4 text-gray-500">Acceso denegado.</div>');
 
-$bloqueado  = in_array($chat['estado'], ['cancelado', 'finalizado', 'disputa']);
+// Admin entra en modo solo-lectura (no puede enviar mensajes como participante)
+$bloqueado  = $es_admin || in_array($chat['estado'], ['cancelado', 'finalizado', 'disputa']);
 $esVendedor = ($chat['id_vendedor'] == $my_id);
 
 // 5. PREPARAR DATOS VISUALES
