@@ -145,14 +145,13 @@ TONO REQUERIDO: ACADÉMICO FORMAL
 - PROHIBIDO: emojis, signos de exclamación, lenguaje coloquial, FOMO.
 ",
     'vendedor' => "
-TONO REQUERIDO: VENDEDOR / FOMO
-- Lenguaje persuasivo, marketing directo, sentido de urgencia.
+TONO REQUERIDO: PERSUASIVO PROFESIONAL
+- Lenguaje persuasivo, marketing directo, foco en el problema del estudiante.
 - Estructura: 3 oraciones máximo 50 palabras.
 - Oración 1: Hook fuerte (un dolor real del alumno en esta materia).
 - Oración 2: Solución concreta con 3 conceptos del documento.
 - Oración 3: Llamado a la acción o beneficio inmediato (sin sacar de la plataforma).
-- PERMITIDO: 1 emoji al inicio (🔥/💡/⚡), palabras como 'salva', 'domina', 'asegura'.
-- PROHIBIDO: signos de exclamación múltiples (!!!), promesas de éxito mágico.
+- PROHIBIDO: emojis, símbolos decorativos, palabras de autoayuda ('salva', 'domina', 'asegura', 'transforma'), signos de exclamación.
 ",
     default => "
 TONO REQUERIDO: PREMIUM EQUILIBRADO (estilo Airbnb)
