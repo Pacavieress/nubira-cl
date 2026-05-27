@@ -120,10 +120,10 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
                     <i class="fa-solid fa-magnifying-glass text-xs md:text-sm"></i>
                 </div>
                 
-                <input type="text" name="q" 
-                       class="w-full py-1.5 md:py-2 pl-2 pr-4 bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-400 text-base md:text-sm cursor-pointer focus:cursor-text outline-none" 
+                <input type="search" name="q"
+                       class="w-full py-1.5 md:py-2 pl-2 pr-4 bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-400 text-base md:text-sm cursor-pointer focus:cursor-text outline-none"
                        placeholder="<?= $mostrar_filtro_modalidad ? '¿Qué buscas?' : 'Buscar apuntes...' ?>"
-                       autocomplete="off" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+                       autocomplete="off" enterkeyhint="search" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
 
                 <?php if ($mostrar_filtro_modalidad): ?>
                 <div class="hidden md:block h-4 w-px bg-gray-200 shrink-0 mx-1"></div>
@@ -139,7 +139,7 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
                     </div>
                 </div>
                 <?php endif; ?>
-                <button type="submit" class="hidden"></button>
+                <button type="submit" class="sr-only"></button>
             </form>
             <?php endif; ?>
         </div>
