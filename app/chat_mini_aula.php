@@ -367,12 +367,8 @@ session_write_close();
             typingLastPing = ahora;
             typingEnviando = true;
 
-            const fd = new FormData();
-            fd.append('id_contrato', idContrato);
-
-            fetch('/app/typing_set_mini_aula.php', { method: 'POST', body: fd, credentials: 'same-origin' })
-                .catch(() => {})
-                .finally(() => { typingEnviando = false; });
+            // TYPING DESACTIVADO — feature pendiente de backend, ver typing_set_mini_aula.php
+            typingEnviando = false;
         }
 
         function mostrarTyping(visible) {
