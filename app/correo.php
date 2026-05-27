@@ -38,17 +38,19 @@ if (session_status() === PHP_SESSION_NONE) {
 define('LOG_FILE', __DIR__ . '/log_correos.txt');
 define('ADMIN_MAIL', 'soporte@nubira.cl');
 
+require_once __DIR__ . '/config.php';
+
 // CONFIGURACIÓN SMTP (Hostinger)
 function getSmtpConfig($tipo = 'noreply') {
     $config = [
         'noreply' => [
             'user' => 'no-reply@nubira.cl',
-            'pass' => 'Kr@tos123456', // OJO: Mover a variables de entorno en producción real
+            'pass' => SMTP_PASS_NOREPLY,
             'name' => 'Nubira'
         ],
         'contacto' => [
             'user' => 'contacto@nubira.cl',
-            'pass' => 'Kr@tos123456',
+            'pass' => SMTP_PASS_CONTACTO,
             'name' => 'Equipo Nubira'
         ]
     ];
