@@ -322,24 +322,8 @@ if (isset($_GET['ajax_metadata']) && isset($_GET['id'])) {
     $stmt->execute();
     $meta_pre = $stmt->get_result()->fetch_assoc();
 
-    // Metadata del aula si existe contrato
-    $stmt2 = $conn->prepare("SELECT contrato_id FROM conversaciones WHERE id = ?");
-    $stmt2->bind_param("i", $chat_id);
-    $stmt2->execute();
-    $row = $stmt2->get_result()->fetch_assoc();
-    $contrato_id = $row['contrato_id'] ?? null;
-
-    $meta_aula = ['total' => 0];
-    if ($contrato_id) {
-        $stmt3 = $conn->prepare("SELECT COUNT(*) AS total FROM mensajes_mini_aula WHERE mini_aula_id = ?");
-        $stmt3->bind_param("i", $contrato_id);
-        $stmt3->execute();
-        $meta_aula = $stmt3->get_result()->fetch_assoc();
-    }
-
     echo json_encode([
         'total_pre' => (int)($meta_pre['total'] ?? 0),
-        'total_aula' => (int)($meta_aula['total'] ?? 0),
         'archivos' => (int)($meta_pre['archivos'] ?? 0),
         'primero' => $meta_pre['primero'] ? date('d/m/Y', strtotime($meta_pre['primero'])) : null,
         'ultimo' => $meta_pre['ultimo'] ? date('d/m H:i', strtotime($meta_pre['ultimo'])) : null,
@@ -379,7 +363,7 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
         $stmt->execute();
         $mensajes = $stmt->get_result();
 
-        $es_historico = ($id_contrato != null);
+        $es_historico = false;
         $hubo_preventa = ($mensajes && $mensajes->num_rows > 0);
 
         if ($mensajes) {
@@ -390,39 +374,7 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
         }
     }
 
-    // Aula Virtual
-    if ($id_contrato) {
-        if ($hubo_preventa) {
-            echo '<div class="flex items-center justify-center my-6">
-                    <div class="bg-gray-200 h-px flex-1"></div>
-                    <span class="px-4 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest bg-gray-50/50 rounded-full">Aula Virtual (Contrato #' . (int)$id_contrato . ')</span>
-                    <div class="bg-gray-200 h-px flex-1"></div>
-                  </div>';
-        }
-
-        $stmt_aula = $conn->prepare("SELECT id, usuario_id as remitente_id, contenido as mensaje, NULL as archivo_nombre, NULL as archivo_ruta, NULL as archivo_tipo, NULL as archivo_peso, fecha_envio as enviado_en FROM mensajes_mini_aula WHERE mini_aula_id = ? ORDER BY fecha_envio ASC");
-        if ($stmt_aula) {
-            $stmt_aula->bind_param("i", $id_contrato);
-            $stmt_aula->execute();
-            $res_aula = $stmt_aula->get_result();
-
-            if (!$hubo_preventa && (!$res_aula || $res_aula->num_rows === 0)) {
-                echo '<div class="flex flex-col items-center justify-center h-full text-center p-8 bg-white m-6 rounded-3xl border-2 border-dashed border-gray-200">
-                        <div class="w-16 h-16 bg-gray-50 rounded-2xl shadow-sm flex items-center justify-center mb-4">
-                            <i class="fa-regular fa-comments text-2xl text-[#54A6D8]/50"></i>
-                        </div>
-                        <p class="text-sm font-bold text-gray-700">Aún no hay mensajes en el aula.</p>
-                      </div>';
-            }
-
-            if ($res_aula) {
-                while ($m_aula = $res_aula->fetch_assoc()) {
-                    $is_blue = ($m_aula['remitente_id'] == $comprador_id);
-                    echo render_mensaje_admin($m_aula, $is_blue, $is_blue ? $avatar_comp : $avatar_vend, false);
-                }
-            }
-        }
-    } elseif (!$hubo_preventa) {
+    if (!$hubo_preventa) {
         echo '<div class="flex flex-col items-center justify-center h-full text-center p-8 bg-white m-6 rounded-3xl border-2 border-dashed border-gray-200">
                 <div class="w-16 h-16 bg-gray-50 rounded-2xl shadow-sm flex items-center justify-center mb-4">
                     <i class="fa-regular fa-comments text-2xl text-[#54A6D8]/50"></i>
@@ -806,7 +758,7 @@ if ($chat_seleccionado) {
                 .then(data => {
                     const bar = $('#metadata-bar');
                     if (!bar) return;
-                    const total = (data.total_pre || 0) + (data.total_aula || 0);
+                    const total = data.total_pre || 0;
                     $('#meta-total').textContent = total;
                     $('#meta-archivos').textContent = data.archivos || 0;
                     if (data.primero) $('#meta-primero').textContent = data.primero;
