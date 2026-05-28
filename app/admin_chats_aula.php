@@ -41,8 +41,8 @@ if (isset($_GET['ajax_search'])) {
     $sql = "SELECT c.id, c.estado, c.fecha_creacion,
                    u1.nombre as n1, u1.foto_perfil as f1, 
                    u2.nombre as n2, u2.foto_perfil as f2, 
-                   (SELECT contenido FROM mensajes_mini_aula WHERE mini_aula_id = c.id ORDER BY id DESC LIMIT 1) as msg_aula,
-                   (SELECT fecha_envio FROM mensajes_mini_aula WHERE mini_aula_id = c.id ORDER BY id DESC LIMIT 1) as fecha_aula
+                   (SELECT mensaje FROM chat_aula WHERE contrato_id = c.id ORDER BY id DESC LIMIT 1) as msg_aula,
+                   (SELECT fecha FROM chat_aula WHERE contrato_id = c.id ORDER BY id DESC LIMIT 1) as fecha_aula
             FROM contratos c
             LEFT JOIN alumnos u1 ON c.comprador_id = u1.id
             LEFT JOIN alumnos u2 ON c.vendedor_id = u2.id
@@ -59,7 +59,7 @@ if (isset($_GET['ajax_search'])) {
         $types .= "ss";
     }
 
-    $sql .= " ORDER BY COALESCE((SELECT MAX(fecha_envio) FROM mensajes_mini_aula WHERE mini_aula_id = c.id), c.fecha_creacion) $orden_sql";
+    $sql .= " ORDER BY COALESCE((SELECT MAX(fecha) FROM chat_aula WHERE contrato_id = c.id), c.fecha_creacion) $orden_sql";
     
     $stmt = $conn->prepare($sql);
     if (!empty($params)) $stmt->bind_param($types, ...$params);
@@ -139,7 +139,7 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
     if(!$info_c) exit;
     $c_id = $info_c['comprador_id'];
 
-    $query = "SELECT usuario_id as remitente_id, contenido as mensaje, fecha_envio as enviado_en FROM mensajes_mini_aula WHERE mini_aula_id = ? ORDER BY fecha_envio ASC";
+    $query = "SELECT remitente_id, mensaje, fecha as enviado_en FROM chat_aula WHERE contrato_id = ? ORDER BY fecha ASC";
     $stmt_m = $conn->prepare($query);
     $stmt_m->bind_param("i", $chat_id);
     $stmt_m->execute();
@@ -178,12 +178,12 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
 // 3. CARGA INICIAL COMPLETA
 // =================================================================================
 $sql_lista = "SELECT c.id, c.estado, c.fecha_creacion, u1.nombre as n1, u1.foto_perfil as f1, u2.nombre as n2, u2.foto_perfil as f2, 
-              (SELECT contenido FROM mensajes_mini_aula WHERE mini_aula_id = c.id ORDER BY id DESC LIMIT 1) as msg_aula, 
-              (SELECT fecha_envio FROM mensajes_mini_aula WHERE mini_aula_id = c.id ORDER BY id DESC LIMIT 1) as fecha_aula
-              FROM contratos c 
-              LEFT JOIN alumnos u1 ON c.comprador_id = u1.id 
-              LEFT JOIN alumnos u2 ON c.vendedor_id = u2.id 
-              ORDER BY COALESCE((SELECT MAX(fecha_envio) FROM mensajes_mini_aula WHERE mini_aula_id = c.id), c.fecha_creacion) $orden_sql";
+              (SELECT mensaje FROM chat_aula WHERE contrato_id = c.id ORDER BY id DESC LIMIT 1) as msg_aula,
+              (SELECT fecha FROM chat_aula WHERE contrato_id = c.id ORDER BY id DESC LIMIT 1) as fecha_aula
+              FROM contratos c
+              LEFT JOIN alumnos u1 ON c.comprador_id = u1.id
+              LEFT JOIN alumnos u2 ON c.vendedor_id = u2.id
+              ORDER BY COALESCE((SELECT MAX(fecha) FROM chat_aula WHERE contrato_id = c.id), c.fecha_creacion) $orden_sql";
 
 $res_listado = $conn->query($sql_lista);
 
@@ -366,10 +366,10 @@ if ($chat_seleccionado) {
 
                     <?php
                     // 2. CARGAR MENSAJES DEL AULA VIRTUAL (Post-pago)
-                    $query_aula = "SELECT usuario_id as remitente_id, contenido as mensaje, fecha_envio as enviado_en 
-                                   FROM mensajes_mini_aula 
-                                   WHERE mini_aula_id = ? 
-                                   ORDER BY fecha_envio ASC";
+                    $query_aula = "SELECT remitente_id, mensaje, fecha as enviado_en
+                                   FROM chat_aula
+                                   WHERE contrato_id = ?
+                                   ORDER BY fecha ASC";
                     $stmt_aula = $conn->prepare($query_aula);
                     $stmt_aula->bind_param("i", $chat_seleccionado);
                     $stmt_aula->execute();
@@ -408,7 +408,7 @@ if ($chat_seleccionado) {
         </div>
     </main>
 
-    <?php require_once __DIR__ . '/componentes/bottom_nav.php'; ?>
+    <?php require_once __DIR__ . '/componentes/nav_bottom.php'; ?>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
