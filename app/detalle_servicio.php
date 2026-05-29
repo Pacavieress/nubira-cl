@@ -1410,5 +1410,76 @@ window.borrarOpinionUI = async function(botonDom, id, tipo) {
 };
 <?php endif; ?>
 </script>
+
+<!-- [NUBIRA TRACKER] Engagement tracking - NO modificar sin revisar track_vista.php -->
+<script>
+(function() {
+    var TIPO = 'servicio';
+    var PUB_ID = <?= (int)($servicio['id'] ?? 0) ?>;
+    if (!PUB_ID) return;
+
+    var SK = 'nubira_sid';
+    var sid = localStorage.getItem(SK);
+    if (!sid || sid.length < 10) {
+        sid = Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem(SK, sid);
+    }
+
+    function getDispositivo() {
+        var w = window.innerWidth;
+        if (w < 768) return 'movil';
+        if (w <= 1024) return 'tablet';
+        return 'desktop';
+    }
+
+    var origen = (document.referrer || '').slice(0, 120);
+    var tiempo = 0;
+    var scrollPct = 0;
+    var leyoCompleto = false;
+
+    function calcScroll() {
+        var h = document.body.scrollHeight - window.innerHeight;
+        if (h <= 0) return 100;
+        return Math.round((window.scrollY + window.innerHeight) / document.body.scrollHeight * 100);
+    }
+
+    document.addEventListener('scroll', function() {
+        var p = calcScroll();
+        if (p > scrollPct) scrollPct = p;
+        if (!leyoCompleto && scrollPct >= 90 && tiempo >= 30) leyoCompleto = true;
+    }, { passive: true });
+
+    setInterval(function() {
+        if (document.visibilityState === 'visible') {
+            tiempo++;
+            if (!leyoCompleto && scrollPct >= 90 && tiempo >= 30) leyoCompleto = true;
+        }
+    }, 1000);
+
+    function payload() {
+        return JSON.stringify({
+            tipo: TIPO,
+            publicacion_id: PUB_ID,
+            session_id: sid,
+            tiempo_segundos: tiempo,
+            scroll_max_pct: scrollPct,
+            leyo_completo: leyoCompleto,
+            dispositivo: getDispositivo(),
+            origen: origen
+        });
+    }
+
+    setInterval(function() {
+        fetch('/app/track_vista.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload() }).catch(function(){});
+    }, 5000);
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            navigator.sendBeacon('/app/track_vista.php', payload());
+        }
+    });
+})();
+</script>
+
 </body>
 </html>
