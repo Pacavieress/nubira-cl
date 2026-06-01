@@ -86,3 +86,42 @@ function url_portada_moderacion(array $row): string {
     // Si está aprobada, devolver la imagen real
     return "/upload/servicios/" . basename($nombre);
 }
+
+if (!function_exists('obtenerMiniaturaApunte')) {
+    function obtenerMiniaturaApunte($id, $portadaBD, $previewBD, $archivoOriginal): string {
+        $docRoot = $_SERVER['DOCUMENT_ROOT'];
+
+        $getVersionedPath = function(string $path) use ($docRoot): string {
+            $fs = $docRoot . $path;
+            return file_exists($fs) ? $path . '?v=' . filemtime($fs) : $path;
+        };
+
+        // 1. Preview WebP por ID
+        $rutaWebP = "/upload/preview/{$id}.webp";
+        if (file_exists($docRoot . $rutaWebP)) return $getVersionedPath($rutaWebP);
+
+        // 2. Legacy previews por ID
+        foreach (['jpg', 'png', 'jpeg'] as $ext) {
+            $rutaLegacy = "/upload/preview/{$id}.{$ext}";
+            if (file_exists($docRoot . $rutaLegacy)) return $getVersionedPath($rutaLegacy);
+        }
+
+        // 3. Portada personalizada
+        if (!empty($portadaBD)) {
+            $p = basename($portadaBD);
+            if (file_exists($docRoot . "/upload/portadas/" . $p)) return $getVersionedPath("/upload/portadas/" . $p);
+            if (file_exists($docRoot . "/upload/preview/"  . $p)) return $getVersionedPath("/upload/preview/"  . $p);
+        }
+
+        // 4. Archivo original si es imagen
+        if (!empty($archivoOriginal)) {
+            $ext = strtolower(pathinfo($archivoOriginal, PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'])) {
+                $rutaOrig = "/upload/apuntes/" . basename($archivoOriginal);
+                if (file_exists($docRoot . $rutaOrig)) return $getVersionedPath($rutaOrig);
+            }
+        }
+
+        return '/img/logo2.webp';
+    }
+}

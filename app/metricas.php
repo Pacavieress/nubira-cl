@@ -34,7 +34,7 @@ if ($stmt) {
     $stmt->close();
 }
 
-$stmt = $conn->prepare("SELECT id, titulo, precio, portada, fecha_subida FROM apuntes WHERE id_alumno = ? AND estado = 'aprobado' AND visible = 1 ORDER BY fecha_subida DESC LIMIT 60");
+$stmt = $conn->prepare("SELECT id, titulo, precio, portada, preview, archivo, fecha_subida FROM apuntes WHERE id_alumno = ? AND estado = 'aprobado' AND visible = 1 ORDER BY fecha_subida DESC LIMIT 60");
 if ($stmt) {
     $stmt->bind_param("i", $uid);
     $stmt->execute();
@@ -115,14 +115,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                 $img_url = portada_servicio($pub['imagen'] ?? null, $pub['categoria'] ?? 'otro');
             }
         } else {
-            if (!empty($pub['portada'])) {
-                $p = basename($pub['portada']);
-                $img_url = file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload/portadas/' . $p)
-                    ? '/upload/portadas/' . $p
-                    : '/upload/preview/default_file.webp';
-            } else {
-                $img_url = '/upload/preview/default_file.webp';
-            }
+            $img_url = obtenerMiniaturaApunte($pub['id'], $pub['portada'] ?? '', $pub['preview'] ?? '', $pub['archivo'] ?? '');
         }
 
         $badge_label = $tipo === 'servicio' ? 'TUTORÍA' : 'APUNTE';

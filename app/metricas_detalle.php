@@ -35,7 +35,7 @@ if ($tipo === 'servicio') {
         $stmt->close();
     }
 } else {
-    $stmt = $conn->prepare("SELECT id, titulo, precio, portada FROM apuntes WHERE id = ? AND id_alumno = ? AND estado = 'aprobado' LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, titulo, precio, portada, preview, archivo FROM apuntes WHERE id = ? AND id_alumno = ? AND estado = 'aprobado' LIMIT 1");
     if ($stmt) {
         $stmt->bind_param("ii", $id, $uid);
         $stmt->execute();
@@ -204,14 +204,7 @@ if ($tipo === 'servicio') {
     $badge_lbl  = 'TUTORÍA';
     $edit_href  = '/app/editar_servicio.php?id=' . $pub['id'];
 } else {
-    if (!empty($pub['portada'])) {
-        $p = basename($pub['portada']);
-        $img_url = file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload/portadas/' . $p)
-            ? '/upload/portadas/' . $p
-            : '/upload/preview/default_file.webp';
-    } else {
-        $img_url = '/upload/preview/default_file.webp';
-    }
+    $img_url = obtenerMiniaturaApunte($pub['id'], $pub['portada'] ?? '', $pub['preview'] ?? '', $pub['archivo'] ?? '');
     $badge_lbl  = 'APUNTE';
     $edit_href  = '/app/editar_apunte.php?id=' . $pub['id'];
 }
