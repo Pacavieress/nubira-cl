@@ -397,7 +397,7 @@ $page_title = "Confirmar Contrato";
                             <?php if($is_oferta): ?>
                                 <div class="mt-3 inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-50 to-orange-100/50 border border-orange-200 px-3 py-2 rounded-lg">
                                     <span class="text-orange-500"><?= icon('fire', 'w-4 h-4') ?></span>
-                                    <span class="text-xs text-orange-700 font-bold">Subsidio Nubira aplicado.</span>
+                                    <span class="text-xs text-orange-700 font-bold">Descuento aplicado.</span>
                                 </div>
                             <?php elseif($montoInicial == 0): ?>
                                 <p class="text-xs text-emerald-600 font-bold mt-2 flex items-center gap-1.5">
