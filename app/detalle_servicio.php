@@ -47,6 +47,8 @@ if (!is_dir($ruta_comp)) $ruta_comp = $_SERVER['DOCUMENT_ROOT'] . '/componentes'
 if (file_exists($ruta_raiz . '/iconos.php')) require_once $ruta_raiz . '/iconos.php';
 else { if (!function_exists('icon')) { function icon($n, $c=''){ return "<i class='fa-solid fa-star $c'></i>"; } } }
 
+require_once $ruta_raiz . '/helpers/ofertas.php';
+
 // 3. Configuración Base & Lazy Registration
 $base_url = "https://nubira.cl"; 
 $default_image = $base_url . "/upload/servicios/default_clases.webp";
@@ -711,7 +713,7 @@ session_write_close();
                       <div class="bg-white rounded-2xl border border-gray-200 p-6">
                         <?php 
 // [INYECCIÓN NUBIRA] Lógica de oferta
-$is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 0); 
+$is_oferta = oferta_vigente($servicio);
 ?>
 <?php if ($tutor_en_clase): ?>
                             <div class="mb-5 bg-orange-50 border border-orange-100 rounded-xl p-3.5 flex items-start gap-3 shadow-sm animate-fade-in-up">
@@ -736,8 +738,20 @@ $is_oferta = ($servicio['is_subvencionado'] == 1 && $servicio['cupos_oferta'] > 
             <span class="text-sm text-gray-400 line-through font-medium">Normal $<?= number_format($servicio['precio'], 0, ',', '.') ?></span>
             <div class="flex items-baseline gap-2">
                   <span class="text-4xl font-black text-gray-900 tracking-tight leading-none">$<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?></span>
-                  <span class="text-[10px] font-semibold bg-gray-100 px-2 py-1 rounded text-gray-700 uppercase tracking-wide border border-gray-200">Subsidio Nubira</span>
+                  <?php $pct_det = (int)round(($servicio['precio'] - $servicio['precio_oferta']) / $servicio['precio'] * 100); ?>
+                  <?php if ($pct_det > 0): ?><span class="bg-green-600 text-white text-xs font-semibold px-1.5 py-0.5 rounded ml-1 align-middle">-<?= $pct_det ?>%</span><?php endif; ?>
             </div>
+            <?php if (!empty($servicio['oferta_termino'])): ?>
+                <?php
+                    $dias = (int)((strtotime($servicio['oferta_termino']) - strtotime(date('Y-m-d'))) / 86400);
+                    if ($dias > 7)      $txt_term = 'Oferta hasta el ' . date('d/m', strtotime($servicio['oferta_termino']));
+                    elseif ($dias >= 2) $txt_term = 'Termina en ' . $dias . ' días';
+                    elseif ($dias == 1) $txt_term = 'Termina mañana';
+                    elseif ($dias == 0) $txt_term = 'Termina hoy';
+                    else                $txt_term = null;
+                ?>
+                <?php if ($txt_term !== null): ?><p class="text-xs text-gray-500 mt-1"><?= $txt_term ?></p><?php endif; ?>
+            <?php endif; ?>
         </div>
     <?php else: ?>
         <div class="flex items-baseline gap-2" id="precio-block">
@@ -982,7 +996,6 @@ $mostrar_barra_movil = (
     <span id="precio-movil-oferta" class="text-xl font-black text-gray-900 tracking-tight leading-none">
         $<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?>
     </span>
-    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wide">Subsidio</span>
 </div>
 <?php else: ?>
 <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-none">Inversión total</span>

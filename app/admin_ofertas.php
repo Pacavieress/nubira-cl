@@ -43,24 +43,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $servicio_id = (int)($_POST['servicio_id'] ?? 0);
 
         if ($_POST['action'] === 'aplicar_oferta') {
-            $precio_oferta = (int)$_POST['precio_oferta'];
-            $cupos = (int)$_POST['cupos'];
-            
-            if ($servicio_id > 0 && $precio_oferta >= 0 && $cupos > 0) {
-                $stmt = $conn->prepare("UPDATE servicios SET precio_oferta = ?, cupos_oferta = ?, is_subvencionado = 1 WHERE id = ?");
-                $stmt->bind_param("iii", $precio_oferta, $cupos, $servicio_id);
+            $tipo           = $_POST['tipo'] ?? 'porcentaje';
+            $cupos          = (int)$_POST['cupos'];
+            $termino_raw    = trim($_POST['oferta_termino'] ?? '');
+            $oferta_termino = null;
+            $precio_oferta  = -1;
+
+            if ($tipo === 'porcentaje') {
+                $pct = (int)($_POST['pct_oferta'] ?? 0);
+                if ($pct > 0 && $pct < 100 && $servicio_id > 0) {
+                    $r = $conn->prepare("SELECT precio FROM servicios WHERE id = ?");
+                    $r->bind_param("i", $servicio_id);
+                    $r->execute();
+                    $row_p = $r->get_result()->fetch_assoc();
+                    $r->close();
+                    if ($row_p && (int)$row_p['precio'] > 0) {
+                        $precio_oferta = (int)round($row_p['precio'] * (1 - $pct / 100));
+                    }
+                }
+            } else {
+                $precio_oferta = (int)($_POST['precio_oferta'] ?? -1);
+            }
+
+            if ($termino_raw !== '') {
+                if ($termino_raw < date('Y-m-d')) {
+                    $mensaje = '<div class="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-bold border border-red-200">La fecha de término no puede ser anterior a hoy.</div>';
+                } else {
+                    $oferta_termino = $termino_raw;
+                }
+            }
+
+            if (empty($mensaje) && $servicio_id > 0 && $precio_oferta >= 0 && $cupos > 0) {
+                $stmt = $conn->prepare("UPDATE servicios SET precio_oferta = ?, cupos_oferta = ?, is_subvencionado = 1, oferta_termino = ? WHERE id = ?");
+                $stmt->bind_param("iisi", $precio_oferta, $cupos, $oferta_termino, $servicio_id);
                 if ($stmt->execute()) {
                     $mensaje = '<div class="bg-green-50 text-green-700 p-4 rounded-xl mb-6 text-sm font-bold border border-green-200 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Oferta inyectada con éxito.</div>';
                 }
                 $stmt->close();
-            } else {
-                $mensaje = '<div class="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-bold border border-red-200">Datos inválidos. Verifica el precio y los cupos.</div>';
+            } elseif (empty($mensaje)) {
+                $mensaje = '<div class="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-bold border border-red-200">Datos inválidos. Verifica el porcentaje o precio y los cupos.</div>';
             }
         } 
         
         elseif ($_POST['action'] === 'quitar_oferta') {
             if ($servicio_id > 0) {
-                $stmt = $conn->prepare("UPDATE servicios SET precio_oferta = NULL, cupos_oferta = 0, is_subvencionado = 0 WHERE id = ?");
+                $stmt = $conn->prepare("UPDATE servicios SET precio_oferta = NULL, cupos_oferta = 0, is_subvencionado = 0, oferta_termino = NULL WHERE id = ?");
                 $stmt->bind_param("i", $servicio_id);
                 if ($stmt->execute()) {
                     $mensaje = '<div class="bg-gray-100 text-gray-700 p-4 rounded-xl mb-6 text-sm font-bold border border-gray-200 flex items-center gap-2"><i class="fa-solid fa-power-off"></i> Oferta desactivada. El servicio volvió a su estado normal.</div>';
@@ -75,14 +102,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 $CSRF = $_SESSION['csrf_token'];
 
-// 3. OBTENER SERVICIOS
-// Traemos los servicios activos. Primero los que tienen oferta, luego los más recientes.
+// 3. ORDENAMIENTO
+$orden_param = $_GET['orden'] ?? 'recientes';
+$orden_map = [
+    'recientes'    => 's.id DESC',
+    'descuento'    => '(s.precio - s.precio_oferta) / s.precio DESC, s.id DESC',
+    'vencer'       => 'CASE WHEN s.oferta_termino IS NULL THEN 1 ELSE 0 END ASC, s.oferta_termino ASC, s.id DESC',
+    'cupos'        => 's.cupos_oferta DESC, s.id DESC',
+    'activas'      => 's.is_subvencionado DESC, s.id DESC',
+    'precio_mayor' => 's.precio DESC',
+    'precio_menor' => 's.precio ASC',
+];
+$orden_sql = $orden_map[$orden_param] ?? $orden_map['recientes'];
+
+// 4. OBTENER SERVICIOS
 $servicios = [];
-$res = $conn->query("SELECT s.id, s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, a.nombre AS tutor_nombre 
-                     FROM servicios s 
-                     JOIN alumnos a ON s.alumno_id = a.id 
-                     WHERE s.estado = 'aprobado' 
-                     ORDER BY s.is_subvencionado DESC, s.id DESC 
+$res = $conn->query("SELECT s.id, s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, a.nombre AS tutor_nombre
+                     FROM servicios s
+                     JOIN alumnos a ON s.alumno_id = a.id
+                     WHERE s.estado = 'aprobado'
+                     ORDER BY {$orden_sql}
                      LIMIT 50");
 if ($res) {
     while ($row = $res->fetch_assoc()) {
@@ -141,6 +180,22 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
 
         <?= $mensaje ?>
 
+        <div class="flex items-center justify-between mb-4">
+            <form method="GET" class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ordenar por</label>
+                <select name="orden" onchange="this.form.submit()"
+                        class="text-sm font-medium text-gray-700 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#54A6D8] bg-white shadow-sm cursor-pointer">
+                    <option value="recientes"    <?= $orden_param === 'recientes'    ? 'selected' : '' ?>>Más recientes</option>
+                    <option value="descuento"    <?= $orden_param === 'descuento'    ? 'selected' : '' ?>>Mayor descuento</option>
+                    <option value="vencer"       <?= $orden_param === 'vencer'       ? 'selected' : '' ?>>Próximas a vencer</option>
+                    <option value="cupos"        <?= $orden_param === 'cupos'        ? 'selected' : '' ?>>Más cupos restantes</option>
+                    <option value="activas"      <?= $orden_param === 'activas'      ? 'selected' : '' ?>>Activas primero</option>
+                    <option value="precio_mayor" <?= $orden_param === 'precio_mayor' ? 'selected' : '' ?>>Precio original mayor</option>
+                    <option value="precio_menor" <?= $orden_param === 'precio_menor' ? 'selected' : '' ?>>Precio original menor</option>
+                </select>
+            </form>
+        </div>
+
         <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm whitespace-nowrap">
@@ -148,27 +203,51 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                         <tr>
                             <th class="px-6 py-4">Servicio y Tutor</th>
                             <th class="px-6 py-4">Tarifa Normal</th>
+                            <th class="px-6 py-4">Descuento</th>
+                            <th class="px-6 py-4">Termina</th>
                             <th class="px-6 py-4">Estado Actual</th>
                             <th class="px-6 py-4 text-right">Panel de Control</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
-                        <?php foreach($servicios as $s): ?>
-                        <tr class="hover:bg-gray-50/50 transition-colors <?= $s['is_subvencionado'] ? 'bg-orange-50/10' : '' ?>">
-                            
+                        <?php foreach($servicios as $s):
+                            $hoy     = date('Y-m-d');
+                            $vencida = ($s['is_subvencionado'] && !empty($s['oferta_termino']) && $s['oferta_termino'] < $hoy);
+                            $pct     = ($s['is_subvencionado'] && !empty($s['precio_oferta']) && $s['precio'] > 0)
+                                       ? (int)round(($s['precio'] - $s['precio_oferta']) / $s['precio'] * 100)
+                                       : null;
+                        ?>
+                        <tr class="hover:bg-gray-50/50 transition-colors <?= ($s['is_subvencionado'] && !$vencida) ? 'bg-orange-50/10' : '' ?>">
+
                             <td class="px-6 py-4">
                                 <p class="font-bold text-gray-900 line-clamp-1 max-w-[300px] whitespace-normal leading-tight">
                                     <?= htmlspecialchars($s['titulo']) ?>
                                 </p>
                                 <p class="text-xs text-gray-500 mt-0.5">Por <?= htmlspecialchars($s['tutor_nombre']) ?></p>
                             </td>
-                            
+
                             <td class="px-6 py-4 font-bold text-gray-600">
                                 $<?= number_format($s['precio'], 0, ',', '.') ?>
                             </td>
-                            
+
+                            <td class="px-6 py-4 font-bold text-gray-700">
+                                <?= $pct !== null ? "-{$pct}%" : '<span class="text-gray-300 font-normal">—</span>' ?>
+                            </td>
+
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                <?php if (!empty($s['oferta_termino'])): ?>
+                                    <?= date('d/m/Y', strtotime($s['oferta_termino'])) ?>
+                                <?php else: ?>
+                                    <span class="text-gray-300">—</span>
+                                <?php endif; ?>
+                            </td>
+
                             <td class="px-6 py-4">
-                                <?php if($s['is_subvencionado'] && $s['cupos_oferta'] > 0): ?>
+                                <?php if ($vencida): ?>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-gray-100 text-gray-400">
+                                        Expirada
+                                    </span>
+                                <?php elseif($s['is_subvencionado'] && $s['cupos_oferta'] > 0): ?>
                                     <div class="inline-flex flex-col gap-1">
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wide bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-sm shadow-orange-200">
                                             <i class="fa-solid fa-bolt"></i> Subvencionado
@@ -185,7 +264,7 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            
+
                             <td class="px-6 py-4 text-right">
                                 <?php if($s['is_subvencionado']): ?>
                                     <form method="POST" class="inline-block" onsubmit="return confirm('¿Seguro que deseas retirar el subsidio y devolver el servicio a su precio normal?');">
@@ -197,24 +276,51 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                                         </button>
                                     </form>
                                 <?php else: ?>
-                                    <form method="POST" class="flex items-center justify-end gap-2">
+                                    <form method="POST" class="flex items-center justify-end gap-2 flex-wrap">
                                         <input type="hidden" name="csrf_token" value="<?= $CSRF ?>">
                                         <input type="hidden" name="action" value="aplicar_oferta">
                                         <input type="hidden" name="servicio_id" value="<?= $s['id'] ?>">
-                                        
-                                        <div class="relative">
+                                        <input type="hidden" name="tipo" id="tipo-<?= $s['id'] ?>" value="porcentaje">
+
+                                        <!-- Toggle % / $ -->
+                                        <div class="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-bold shadow-sm">
+                                            <button type="button" id="btn-pct-<?= $s['id'] ?>"
+                                                    onclick="toggleTipoOferta(<?= $s['id'] ?>, 'porcentaje')"
+                                                    class="px-3 py-2 bg-[#54A6D8] text-white transition-colors">%</button>
+                                            <button type="button" id="btn-precio-<?= $s['id'] ?>"
+                                                    onclick="toggleTipoOferta(<?= $s['id'] ?>, 'precio')"
+                                                    class="px-3 py-2 bg-white text-gray-500 transition-colors">$</button>
+                                        </div>
+
+                                        <!-- Input % (default visible) -->
+                                        <div id="wrap-pct-<?= $s['id'] ?>" class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">%</span>
+                                            <input type="number" name="pct_oferta" id="pct-<?= $s['id'] ?>"
+                                                   placeholder="20" required min="1" max="99"
+                                                   class="w-20 pl-7 pr-3 py-2 text-sm font-bold text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent transition-all shadow-sm"
+                                                   title="Porcentaje de descuento">
+                                        </div>
+
+                                        <!-- Input $ (hidden by default) -->
+                                        <div id="wrap-precio-<?= $s['id'] ?>" class="relative hidden">
                                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">$</span>
-                                            <input type="number" name="precio_oferta" placeholder="0" required min="0" max="<?= $s['precio'] - 1 ?>"
+                                            <input type="number" name="precio_oferta" id="precio-<?= $s['id'] ?>"
+                                                   placeholder="0" min="0" max="<?= $s['precio'] - 1 ?>"
                                                    class="w-24 pl-6 pr-3 py-2 text-sm font-bold text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent transition-all shadow-sm"
                                                    title="Precio subsidiado">
                                         </div>
-                                        
+
+                                        <!-- Cupos -->
                                         <div class="relative">
                                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"><i class="fa-solid fa-users"></i></span>
                                             <input type="number" name="cupos" placeholder="Cupos" required min="1"
                                                    class="w-24 pl-8 pr-3 py-2 text-sm font-bold text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent transition-all shadow-sm"
                                                    title="Cantidad de usos">
                                         </div>
+
+                                        <input type="date" name="oferta_termino" min="<?= $hoy ?>"
+                                               class="py-2 px-3 text-sm text-gray-700 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent transition-all shadow-sm"
+                                               title="Fecha de término (opcional)">
 
                                         <button type="submit" class="bg-gradient-to-r from-sky-400 to-[#54A6D8] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-lg hover:shadow-blue-200 transform hover:scale-[1.02] active:scale-95 transition-all">
                                             Inyectar
@@ -227,7 +333,7 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                         
                         <?php if(empty($servicios)): ?>
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-gray-400 font-medium">
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-400 font-medium">
                                 No hay servicios aprobados en la plataforma aún.
                             </td>
                         </tr>
@@ -274,6 +380,38 @@ if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_d
             modal.onclick = (e) => { if(e.target === modal) shut(); };
         }
     };
+
+    function toggleTipoOferta(id, tipo) {
+        const pctWrap    = document.getElementById('wrap-pct-'    + id);
+        const precioWrap = document.getElementById('wrap-precio-' + id);
+        const tipoInput  = document.getElementById('tipo-'        + id);
+        const pctInput   = document.getElementById('pct-'         + id);
+        const precioInput = document.getElementById('precio-'     + id);
+        const btnPct     = document.getElementById('btn-pct-'     + id);
+        const btnPrecio  = document.getElementById('btn-precio-'  + id);
+
+        tipoInput.value = tipo;
+
+        if (tipo === 'porcentaje') {
+            pctWrap.classList.remove('hidden');
+            precioWrap.classList.add('hidden');
+            pctInput.required = true;
+            precioInput.required = false;
+            btnPct.classList.add('bg-[#54A6D8]', 'text-white');
+            btnPct.classList.remove('bg-white', 'text-gray-500');
+            btnPrecio.classList.remove('bg-[#54A6D8]', 'text-white');
+            btnPrecio.classList.add('bg-white', 'text-gray-500');
+        } else {
+            pctWrap.classList.add('hidden');
+            precioWrap.classList.remove('hidden');
+            pctInput.required = false;
+            precioInput.required = true;
+            btnPct.classList.remove('bg-[#54A6D8]', 'text-white');
+            btnPct.classList.add('bg-white', 'text-gray-500');
+            btnPrecio.classList.add('bg-[#54A6D8]', 'text-white');
+            btnPrecio.classList.remove('bg-white', 'text-gray-500');
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         NubiraModales.setup('btn-publicar', 'modal-quick', 'quick-card', 'quick-close');
