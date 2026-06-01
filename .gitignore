@@ -25,6 +25,9 @@ app/cache_ia/
 # Dependencias (se reinstalan con composer)
 /vendor/
 
+# Backups locales
+backup_*/
+
 # Archivos temporales y de sistema
 *.tmp
 Thumbs.db
