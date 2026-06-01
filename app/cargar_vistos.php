@@ -15,6 +15,7 @@ elseif (file_exists(__DIR__ . '/../conexion.php')) $base_path = __DIR__ . '/..';
 
 if (!file_exists($base_path . '/conexion.php')) exit;
 require_once $base_path . '/conexion.php';
+require_once $base_path . '/helpers/ofertas.php';
 
 if (!isset($_SESSION['usuario_id'])) exit;
 $usuario_id = (int)$_SESSION['usuario_id'];
@@ -63,7 +64,7 @@ if (!empty($ids_servicios)) {
     $ids_in = implode(',', $ids_servicios);
     $res = $conn->query("
       SELECT s.id, s.titulo, s.precio, s.imagen, s.score_nubira, s.fecha_publicacion,
-               s.is_subvencionado, s.precio_oferta, s.cupos_oferta,
+               s.is_subvencionado, s.precio_oferta, s.cupos_oferta, s.oferta_termino,
                a.nombre as tutor_nombre, a.foto_perfil,
                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
@@ -117,11 +118,12 @@ foreach ($items_ordenados as $item):
         }
         
 // --- LÓGICA DE PRECIOS Y OFERTAS (ESTÁNDAR CARD HORIZONTAL NUBIRA 2.0) ---
-        $es_oferta = (isset($row['is_subvencionado']) && $row['is_subvencionado'] == 1 && (int)$row['cupos_oferta'] > 0);
+        $es_oferta = oferta_vigente($row);
         $precio_normal = $row['precio'] ?? 0;
+        $pct_descuento = ($es_oferta && (int)$precio_normal > 0) ? round(((int)$precio_normal - (int)$row['precio_oferta']) / (int)$precio_normal * 100) : 0;
 
         if ($es_oferta) {
-            $precio_html = '<span class="text-[10px] text-gray-400 line-through font-medium mr-1">$' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-gray-700 font-semibold tracking-tight">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span>';
+            $precio_html = '<span class="text-[10px] text-gray-400 line-through font-medium mr-1">$' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-gray-700 font-semibold tracking-tight">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span>' . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '');
         } else {
             if (is_numeric($precio_normal) && $precio_normal > 0) { 
                 $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-700 font-semibold tracking-tight mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>';
@@ -234,8 +236,8 @@ foreach ($items_ordenados as $item):
              loading="lazy" decoding="async" width="170" height="128"
              onerror="this.src='/img/logo2.webp'">
 
-        <!-- Badge nivel (izquierda) - solo servicios sin oferta -->
-        <?php if ($tipo === 's' && !empty($nivel_tutor) && empty($es_oferta)): ?>
+        <!-- Badge nivel (izquierda) -->
+        <?php if ($tipo === 's' && !empty($nivel_tutor)): ?>
         <?php $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? ''; ?>
         <?php if ($nivel_label): ?>
         <div class="absolute top-2.5 left-2.5 z-10">
@@ -244,7 +246,6 @@ foreach ($items_ordenados as $item):
         <?php endif; ?>
         <?php endif; ?>
 
-        <!-- Badge cupos (derecha) -->
         <?php if (isset($es_oferta) && $es_oferta): ?>
         <div class="absolute top-2.5 right-2.5 z-10">
             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">

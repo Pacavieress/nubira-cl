@@ -27,6 +27,7 @@ if (isset($conn)) {
 }
 // =========================================================================
 require_once $app_dir . '/iconos.php';
+require_once __DIR__ . '/helpers/ofertas.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [$app_dir . '/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -184,7 +185,7 @@ if ($is_guest && $device_id_cookie && isset($conn)) {
 $res_servicios = null;
 $titulo_servicios = "Clases particulares destacadas"; // Título por defecto
 try {
-  $sql_servicios = "SELECT s.*, 
+  $sql_servicios = "SELECT s.*, s.oferta_termino,
                       COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                       (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
                       (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
@@ -213,7 +214,7 @@ if ($cat_favorita) {
 // --- [NUBIRA 2.0] CONSULTA: RECIÉN LLEGADOS ---
 $res_nuevos = null;
 try {
-    $sql_nuevos = "SELECT s.*, 
+    $sql_nuevos = "SELECT s.*, s.oferta_termino,
                           COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                           (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                           (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
@@ -311,7 +312,7 @@ $tiene_ofertas_activas = false;
 $ids_usados = [0];
 
 try {
-    $sql_ofertas = "SELECT s.*, 
+    $sql_ofertas = "SELECT s.*, s.oferta_termino,
                            COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                            (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                            (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
@@ -319,7 +320,8 @@ try {
                     INNER JOIN alumnos a ON s.alumno_id = a.id
                     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                     WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1
-                    ORDER BY (s.cupos_oferta > 0) DESC, s.id DESC LIMIT 6";
+                      AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
+                    ORDER BY (s.cupos_oferta > 0) DESC, s.id DESC LIMIT 12";
     $res_ofertas = $conn->query($sql_ofertas);
 
     if ($res_ofertas) {
@@ -741,6 +743,7 @@ require_once __DIR__ . '/componentes/header.php';
                       $portada_set_of = resolver_srcset_servicio($row_of['imagen'] ?? null);
 $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es suficiente
                         $es_activa = ((int)($row_of['cupos_oferta'] ?? 0) > 0 && !isset($row_of['es_falsa_oferta']));
+                        $pct_of = ($es_activa && (int)$row_of['precio'] > 0) ? round(((int)$row_of['precio'] - (int)$row_of['precio_oferta']) / (int)$row_of['precio'] * 100) : 0;
                         // Lógica Nubira 2.0: Estrellas y Tag
                        $rating_val_of = isset($row_of['rating_promedio']) ? (float)$row_of['rating_promedio'] : 0;
                        $total_v_of = isset($row_of['total_votos']) ? (int)$row_of['total_votos'] : 0;
@@ -772,9 +775,10 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
 
                             <div class="pt-2.5 flex flex-col flex-1 text-left">
                                 <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
-                                <div class="text-[14px] mt-auto mb-1.5 leading-none">
+                                <div class="text-[14px] mt-auto mb-1.5 leading-none whitespace-nowrap">
                                     <span class="text-[11px] text-gray-400 line-through font-medium mr-1">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
                                     <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
+                                    <?php if ($pct_of > 0): ?><span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-<?= $pct_of ?>%</span><?php endif; ?>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
@@ -902,12 +906,13 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $foto_tutor_n = !empty($row_n['foto_perfil']) ? '/app/perfil/fotos/' . $row_n['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre_n)."&background=f1f5f9&color=64748b";
                     
 // --- LÓGICA DE PRECIOS Y OFERTAS (NUBIRA 2.0) ---
-                    $es_oferta_n = (isset($row_n['is_subvencionado']) && $row_n['is_subvencionado'] == 1 && (int)$row_n['cupos_oferta'] > 0);
+                    $es_oferta_n = oferta_vigente($row_n);
+                    $pct_n = ($es_oferta_n && (int)($row_n['precio'] ?? 0) > 0) ? round(((int)$row_n['precio'] - (int)$row_n['precio_oferta']) / (int)$row_n['precio'] * 100) : 0;
                     $precio_normal_n = $row_n['precio'] ?? 0;
                     
                     if ($es_oferta_n) {
-                        $precio_html_n = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_n, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row_n['precio_oferta'], 0, ',', '.') . "</span>";
-                        $precio_class_n = "text-gray-900 font-semibold flex items-center";
+                        $precio_html_n = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_n, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row_n['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_n > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_n}%</span>" : "");
+                        $precio_class_n = "text-gray-900 font-semibold";
                     } else if (is_numeric($precio_normal_n) && $precio_normal_n > 0) {
                         $precio_html_n = "$" . number_format($precio_normal_n, 0, ',', '.');
                         $precio_class_n = "text-gray-700 font-semibold";
@@ -1028,12 +1033,13 @@ $portada_url = $portada_set['card'];
                     }
                     
                    // --- LÓGICA DE PRECIOS Y OFERTAS (NUBIRA 2.0) ---
-                    $es_oferta = (isset($row['is_subvencionado']) && $row['is_subvencionado'] == 1 && (int)$row['cupos_oferta'] > 0);
+                    $es_oferta = oferta_vigente($row);
                     $precio_normal = $row['precio'] ?? 0;
+                    $pct_descuento = ($es_oferta && (int)$precio_normal > 0) ? round(((int)$precio_normal - (int)$row['precio_oferta']) / (int)$precio_normal * 100) : 0;
                     
                     if ($es_oferta) {
-                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>";
-                        $precio_class = "text-gray-900 font-semibold flex items-center";
+                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_descuento > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_descuento}%</span>" : "");
+                        $precio_class = "text-gray-900 font-semibold";
                     } else if (is_numeric($precio_normal) && $precio_normal > 0) {
                         $precio_html = "$" . number_format($precio_normal, 0, ',', '.');
                         $precio_class = "text-gray-700 font-semibold";

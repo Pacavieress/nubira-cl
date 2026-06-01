@@ -126,6 +126,7 @@ foreach($rutas as $r) if(file_exists($r)){ require_once $r; break; }
 if(!isset($conn)) die("Error de conexión.");
 
 require_once __DIR__ . '/iconos.php';
+require_once __DIR__ . '/helpers/ofertas.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/../seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -446,15 +447,17 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
 
                         // Lógica de Precios y Ofertas
                         $precio_val = $row['precio'] ?? 0;
-                        $es_oferta  = (isset($row['is_subvencionado']) && $row['is_subvencionado'] == 1 && (int)$row['cupos_oferta'] > 0);
+                        $es_oferta  = oferta_vigente($row);
+                        $pct_descuento = ($es_oferta && (int)$precio_val > 0) ? round(((int)$precio_val - (int)$row['precio_oferta']) / (int)$precio_val * 100) : 0;
                         $precio_html = "";
 
                         if ($es_oferta) {
                             $precio_oferta = (int)$row['precio_oferta'];
-                            $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5">
-                                <span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span>
-                                <span class="text-[14px] text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>
-                            </div>';
+                            $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5">'
+                                . '<span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span>'
+                                . '<span class="text-[14px] text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>'
+                                . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '')
+                                . '</div>';
                         } else {
                             if (is_numeric($precio_val) && $precio_val > 0) {
                                 $precio = "$" . number_format($precio_val, 0, ',', '.');
@@ -513,6 +516,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                                  width="320" height="240"
                                  onerror="this.onerror=null;this.src='/upload/preview/default_file.webp';">
 
+                            <!-- Badge izquierda: tier -->
                             <div class="absolute top-2.5 left-2.5 z-10">
                                 <?php if ($nivel_tutor === 'leyenda'): ?>
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>

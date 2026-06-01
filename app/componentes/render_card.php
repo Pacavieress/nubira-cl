@@ -7,6 +7,9 @@ $rutas = [__DIR__.'/../../conexion.php', __DIR__.'/../conexion.php', $_SERVER['D
 foreach($rutas as $r) if(file_exists($r)){ require_once $r; break; }
 if(!isset($conn)) exit;
 
+$rutas_helper = [__DIR__.'/../../app/helpers/ofertas.php', __DIR__.'/../helpers/ofertas.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/ofertas.php'];
+foreach($rutas_helper as $rh) if(file_exists($rh)){ require_once $rh; break; }
+
 // 2. RECIBIR DATOS
 $id = (int)($_GET['id'] ?? 0);
 $tipo = $_GET['tipo'] ?? 'servicio'; 
@@ -18,7 +21,7 @@ $es_basico = false; // Por defecto no penaliza a apuntes
 // 3. LOGICA DE RENDERIZADO
 if ($tipo === 'servicio') {
     // 1. Agregamos precio_oferta, cupos_oferta e is_subvencionado a la consulta
-    $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.imagen, s.categoria, s.score_nubira,
+    $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, s.imagen, s.categoria, s.score_nubira,
             (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
             (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
             FROM servicios s WHERE s.id=? LIMIT 1";
@@ -35,7 +38,7 @@ if ($tipo === 'servicio') {
     $precio_normal = (int)$row['precio'];
     $precio_oferta = (int)$row['precio_oferta'];
     $cupos_oferta = (int)$row['cupos_oferta'];
-    $es_oferta = (isset($row['is_subvencionado']) && $row['is_subvencionado'] == 1 && $cupos_oferta > 0);
+    $es_oferta = oferta_vigente($row);
     
     // 3. Formateo de precio base (por si no es oferta)
     $precio = ($precio_normal > 0) ? "$".number_format($precio_normal,0,',','.') : "Gratis";
