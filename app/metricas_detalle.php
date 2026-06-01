@@ -138,6 +138,25 @@ if ($stmt) {
     $stmt->close();
 }
 
+// ── Top 5 ubicaciones ─────────────────────────────────────────────────────
+
+$ubicaciones = [];
+$stmt = $conn->prepare("
+    SELECT ciudad, pais, COUNT(*) as visitas
+    FROM vistas_detalle
+    WHERE tipo = ? AND publicacion_id = ?
+      AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      AND pais IS NOT NULL
+    GROUP BY pais, ciudad
+    ORDER BY visitas DESC
+    LIMIT 5");
+if ($stmt) {
+    $stmt->bind_param("si", $tipo, $id);
+    $stmt->execute();
+    $ubicaciones = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function det_format_tiempo(int $s): string {
@@ -326,6 +345,33 @@ require_once $app_dir . '/componentes/sidebar.php';
       </table>
     </div>
     <?php endif; ?>
+
+    <!-- Bloque 5: Ubicación -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Ubicación — últimos 30 días</p>
+      <?php if (empty($ubicaciones)): ?>
+        <p class="text-xs text-gray-400">Sin datos de ubicación todavía.</p>
+      <?php else: ?>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-50">
+            <th class="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide pb-2">Ciudad</th>
+            <th class="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide pb-2">País</th>
+            <th class="text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wide pb-2">Visitas</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          <?php foreach ($ubicaciones as $ub): ?>
+          <tr>
+            <td class="py-2 text-gray-700 text-xs"><?= htmlspecialchars($ub['ciudad'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="py-2 text-gray-500 text-xs"><?= htmlspecialchars($ub['pais']   ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
+            <td class="py-2 text-right font-semibold text-gray-900 text-xs"><?= (int)$ub['visitas'] ?></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+      <?php endif; ?>
+    </div>
 
   </div><!-- /px-4 -->
 </main>

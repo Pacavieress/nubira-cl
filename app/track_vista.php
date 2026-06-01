@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/helpers/geoip.php';
 
 header('Content-Type: application/json');
 
@@ -43,9 +44,26 @@ if ($user_id === 0) $user_id = null;
 $ip_raw = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
 $ip = substr($ip_raw, 0, 45);
 
+// Lookup geo solo en el primer ping de cada sesión
+$pais   = null;
+$ciudad = null;
+$chk = $conn->prepare("SELECT 1 FROM vistas_detalle WHERE session_id = ? AND tipo = ? AND publicacion_id = ? LIMIT 1");
+if ($chk) {
+    $chk->bind_param("ssi", $session_id, $tipo, $publicacion_id);
+    $chk->execute();
+    $chk->store_result();
+    $es_primer_ping = ($chk->num_rows === 0);
+    $chk->close();
+    if ($es_primer_ping) {
+        $geo    = geoip_lookup($ip);
+        $pais   = $geo['pais'];
+        $ciudad = $geo['ciudad'];
+    }
+}
+
 $sql = "INSERT INTO vistas_detalle
-    (tipo, publicacion_id, user_id, session_id, fecha_ultimo_evento, tiempo_segundos, scroll_max_pct, leyo_completo, dispositivo, origen, ip)
-    VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)
+    (tipo, publicacion_id, user_id, session_id, fecha_ultimo_evento, tiempo_segundos, scroll_max_pct, leyo_completo, dispositivo, origen, ip, pais, ciudad)
+    VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
         fecha_ultimo_evento = NOW(),
         tiempo_segundos     = GREATEST(tiempo_segundos, VALUES(tiempo_segundos)),
@@ -60,7 +78,7 @@ if (!$stmt) {
 }
 
 // tipos: tipo=s, pub_id=i, user_id=i, session_id=s, tiempo=i, scroll=i, leyo=i, dispositivo=s, origen=s, ip=s
-$stmt->bind_param('siisiiisss', $tipo, $publicacion_id, $user_id, $session_id, $tiempo, $scroll, $leyo, $dispositivo, $origen, $ip);
+$stmt->bind_param('siisiiisssss', $tipo, $publicacion_id, $user_id, $session_id, $tiempo, $scroll, $leyo, $dispositivo, $origen, $ip, $pais, $ciudad);
 $stmt->execute();
 $stmt->close();
 
