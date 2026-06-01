@@ -710,7 +710,7 @@ session_write_close();
 
             <div class="lg:col-span-4 relative">
                 <div class="sticky top-24 space-y-6">
-                      <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                      <div class="hidden lg:block bg-white rounded-2xl border border-gray-200 p-6">
                         <?php 
 // [INYECCIÓN NUBIRA] Lógica de oferta
 $is_oferta = oferta_vigente($servicio);
@@ -744,7 +744,7 @@ $is_oferta = oferta_vigente($servicio);
             <?php if (!empty($servicio['oferta_termino'])): ?>
                 <?php
                     $dias = (int)((strtotime($servicio['oferta_termino']) - strtotime(date('Y-m-d'))) / 86400);
-                    if ($dias > 7)      $txt_term = 'Oferta hasta el ' . date('d/m', strtotime($servicio['oferta_termino']));
+                    if ($dias > 30)     $txt_term = 'Oferta hasta el ' . date('d/m', strtotime($servicio['oferta_termino']));
                     elseif ($dias >= 2) $txt_term = 'Termina en ' . $dias . ' días';
                     elseif ($dias == 1) $txt_term = 'Termina mañana';
                     elseif ($dias == 0) $txt_term = 'Termina hoy';
@@ -989,14 +989,23 @@ $mostrar_barra_movil = (
         
         <div class="flex flex-col min-w-0 flex-1">
             <?php if ($is_oferta): ?>
-                <span class="text-[10px] text-gray-400 line-through font-medium leading-none">
-                    $<?= number_format($servicio['precio'], 0, ',', '.') ?>
-                </span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] text-gray-400 line-through font-medium leading-none">
+                        $<?= number_format($servicio['precio'], 0, ',', '.') ?>
+                    </span>
+                    <?php if ((int)$servicio['cupos_oferta'] > 0): ?>
+                        <span class="inline-flex items-center text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200 rounded-full px-1.5 py-px leading-none">
+                            Solo <?= (int)$servicio['cupos_oferta'] ?> <?= (int)$servicio['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
                 <div class="flex items-baseline gap-1.5 mt-0.5">
     <span id="precio-movil-oferta" class="text-xl font-black text-gray-900 tracking-tight leading-none">
         $<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?>
     </span>
+    <?php if (isset($pct_det) && $pct_det > 0): ?><span class="bg-green-600 text-white text-[10px] font-semibold px-1 py-px rounded ml-1 leading-none relative -top-0.5">-<?= $pct_det ?>%</span><?php endif; ?>
 </div>
+<?php if (isset($txt_term) && $txt_term !== null): ?><p class="text-xs text-gray-500 leading-none mt-0.5"><?= $txt_term ?></p><?php endif; ?>
 <?php else: ?>
 <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-none">Inversión total</span>
 <span id="precio-movil-main" class="text-xl font-extrabold text-gray-900 tracking-tight leading-none mt-0.5">
