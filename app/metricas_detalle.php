@@ -13,6 +13,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 }
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
+require_once $app_dir . '/helpers/portada_helper.php';
 
 $uid  = (int)$_SESSION['usuario_id'];
 $tipo = $_GET['tipo'] ?? '';
@@ -26,7 +27,7 @@ if (!in_array($tipo, ['servicio', 'apunte'], true) || $id <= 0) {
 
 $pub = null;
 if ($tipo === 'servicio') {
-    $stmt = $conn->prepare("SELECT id, titulo, precio, imagen FROM servicios WHERE id = ? AND alumno_id = ? AND estado = 'aprobado' LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, titulo, precio, imagen, imagen_estado, categoria FROM servicios WHERE id = ? AND alumno_id = ? AND estado = 'aprobado' LIMIT 1");
     if ($stmt) {
         $stmt->bind_param("ii", $id, $uid);
         $stmt->execute();
@@ -195,11 +196,22 @@ function det_sparkline(array $vals): string {
 // ── Imagen y meta ──────────────────────────────────────────────────────────
 
 if ($tipo === 'servicio') {
-    $img_url    = !empty($pub['imagen'])  ? '/upload/servicios/' . basename($pub['imagen'])  : '/img/logo2.webp';
+    if (($pub['imagen_estado'] ?? '') === 'aprobada' && !empty($pub['imagen'])) {
+        $img_url = '/upload/servicios/' . basename($pub['imagen']);
+    } else {
+        $img_url = portada_servicio($pub['imagen'] ?? null, $pub['categoria'] ?? 'otro');
+    }
     $badge_lbl  = 'TUTORÍA';
     $edit_href  = '/app/editar_servicio.php?id=' . $pub['id'];
 } else {
-    $img_url    = !empty($pub['portada']) ? '/upload/portadas/'  . basename($pub['portada']) : '/img/logo2.webp';
+    if (!empty($pub['portada'])) {
+        $p = basename($pub['portada']);
+        $img_url = file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload/portadas/' . $p)
+            ? '/upload/portadas/' . $p
+            : '/upload/preview/default_file.webp';
+    } else {
+        $img_url = '/upload/preview/default_file.webp';
+    }
     $badge_lbl  = 'APUNTE';
     $edit_href  = '/app/editar_apunte.php?id=' . $pub['id'];
 }
