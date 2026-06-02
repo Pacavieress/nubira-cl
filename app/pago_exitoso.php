@@ -49,6 +49,8 @@ try {
 
     // 3. LÓGICA DE BASE DE DATOS
     try {
+        $conn->begin_transaction();
+
         // A) Evitar duplicidad en tabla 'compras'
         $stmt = $conn->prepare("SELECT id FROM compras WHERE payment_id = ? LIMIT 1");
         $stmt->bind_param("s", $payment_id);
@@ -100,6 +102,10 @@ try {
                     $stmtVenta->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
                     $stmtVenta->execute();
                     $stmtVenta->close();
+                } else {
+                    throw new RuntimeException(
+                        "apunte_id=$apunte_id no encontrado al registrar venta para payment_id=$payment_id usuario=$usuario_id"
+                    );
                 }
             } else {
                 $stmtCheck->close();
@@ -112,6 +118,8 @@ try {
                 $stmtRecovery->close();
             }
         }
+
+        $conn->commit();
 
         // ==========================================
         // 4. REDIRECCIÓN CON TRACKER (BRIDGE PAGE)
@@ -175,8 +183,10 @@ try {
         <?php
         exit;
 
-    } catch (Exception $db_e) {
-        die("❌ ERROR REAL BD: " . $db_e->getMessage());
+    } catch (Throwable $db_e) {
+        $conn->rollback();
+        error_log("NUBIRA PAGO APUNTE FALLIDO: payment_id=$payment_id apunte=$apunte_id usuario=$usuario_id error=" . $db_e->getMessage());
+        die("❌ Error al registrar la compra. Contacta soporte indicando tu payment_id: $payment_id");
     }
 
 } catch (Exception $e) {

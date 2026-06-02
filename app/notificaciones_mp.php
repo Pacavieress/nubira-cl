@@ -37,6 +37,96 @@ try {
 
     $contrato_id = (int)$external_ref;
 
+    // ── Detectar si el pago corresponde a un apunte ───────────────────────────
+    if ($status === 'approved' && $contrato_id > 0) {
+        $stmtEs = $conn->prepare("SELECT id FROM apuntes WHERE id = ? LIMIT 1");
+        $stmtEs->bind_param("i", $contrato_id);
+        $stmtEs->execute();
+        $stmtEs->store_result();
+        $es_apunte = ($stmtEs->num_rows > 0);
+        $stmtEs->close();
+
+        if ($es_apunte) {
+            $apunte_id  = $contrato_id;
+            $usuario_id = (int)($payment->metadata->usuario_id ?? 0);
+
+            if ($usuario_id <= 0) {
+                file_put_contents(
+                    __DIR__ . '/mp_webhook.log',
+                    date('c') . " APUNTE SIN USUARIO: payment_id=$payment_id apunte=$apunte_id\n",
+                    FILE_APPEND
+                );
+                exit;
+            }
+
+            $monto_int = (int)$amount;
+            $conn->begin_transaction();
+            try {
+                // Anti-dup compras
+                $chk = $conn->prepare("SELECT id FROM compras WHERE payment_id = ? LIMIT 1");
+                $chk->bind_param("s", $payment_id);
+                $chk->execute();
+                $chk->store_result();
+                if ($chk->num_rows === 0) {
+                    $chk->close();
+                    $servicio_cero = 0;
+                    $estado        = 'pagado';
+                    $ins = $conn->prepare(
+                        "INSERT INTO compras (id_apunte, usuario_id, servicio_id, monto, estado_pago, payment_id, fecha) VALUES (?, ?, ?, ?, ?, ?, NOW())"
+                    );
+                    $ins->bind_param("iiiiss", $apunte_id, $usuario_id, $servicio_cero, $monto_int, $estado, $payment_id);
+                    $ins->execute();
+                    $ins->close();
+                } else {
+                    $chk->close();
+                }
+
+                // Anti-dup ventas_apuntes
+                $chk2 = $conn->prepare("SELECT id FROM ventas_apuntes WHERE apunte_id = ? AND comprador_id = ? LIMIT 1");
+                $chk2->bind_param("ii", $apunte_id, $usuario_id);
+                $chk2->execute();
+                $chk2->store_result();
+                if ($chk2->num_rows === 0) {
+                    $chk2->close();
+                    $stmtA = $conn->prepare("SELECT id_alumno, precio FROM apuntes WHERE id = ? LIMIT 1");
+                    $stmtA->bind_param("i", $apunte_id);
+                    $stmtA->execute();
+                    $apunte_row = $stmtA->get_result()->fetch_assoc();
+                    $stmtA->close();
+                    if ($apunte_row) {
+                        $vendedor_id = (int)$apunte_row['id_alumno'];
+                        $precio      = (int)$apunte_row['precio'];
+                        $pagado      = 1;
+                        $stmtV = $conn->prepare(
+                            "INSERT INTO ventas_apuntes (apunte_id, comprador_id, vendedor_id, precio, pagado_al_vendedor) VALUES (?, ?, ?, ?, ?)"
+                        );
+                        $stmtV->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
+                        $stmtV->execute();
+                        $stmtV->close();
+                    }
+                } else {
+                    $chk2->close();
+                }
+
+                $conn->commit();
+                file_put_contents(
+                    __DIR__ . '/mp_webhook.log',
+                    date('c') . " APUNTE OK: payment_id=$payment_id apunte=$apunte_id comprador=$usuario_id\n",
+                    FILE_APPEND
+                );
+            } catch (Throwable $ea) {
+                $conn->rollback();
+                file_put_contents(
+                    __DIR__ . '/mp_webhook.log',
+                    date('c') . " APUNTE ERR: payment_id=$payment_id apunte=$apunte_id error=" . $ea->getMessage() . "\n",
+                    FILE_APPEND
+                );
+            }
+            exit;
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // 🧾 Registrar en tabla de auditoría
     $payload_json = json_encode($body, JSON_UNESCAPED_UNICODE);
     $stmt = $conn->prepare("
