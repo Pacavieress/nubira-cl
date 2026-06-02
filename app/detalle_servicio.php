@@ -986,7 +986,7 @@ $mostrar_barra_movil = (
      class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
     
     <div class="flex items-center justify-between gap-3">
-        
+
         <div class="flex flex-col min-w-0 flex-1">
             <?php if ($is_oferta): ?>
                 <div class="flex items-center gap-1.5">
@@ -1015,17 +1015,24 @@ $mostrar_barra_movil = (
         </div>
 
         <?php if (!$logueado): ?>
-            <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>" 
+            <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>"
                class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-6 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap">
                 Ingresar
             </a>
         <?php else: ?>
-            <button type="button" 
-                    onclick="document.getElementById('btn-submit-pago')?.click()"
-                    class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-6 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap"
-                    data-track-click="contact:contratar_movil">
-                Contratar ahora
-            </button>
+            <div class="flex gap-2 shrink-0">
+                <a href="/app/iniciar_chat.php?servicio_id=<?= $id ?>"
+                   class="border border-gray-300 bg-white text-gray-700 font-bold rounded-xl px-3 py-3 text-xs text-center whitespace-nowrap active:scale-95 transition-all"
+                   data-track-click="contact:mensaje_movil">
+                    Contactar
+                </a>
+                <button type="button"
+                        onclick="document.getElementById('btn-submit-pago')?.click()"
+                        class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-4 py-3 text-xs shadow-md active:scale-95 transition-all whitespace-nowrap"
+                        data-track-click="contact:contratar_movil">
+                    Contratar
+                </button>
+            </div>
         <?php endif; ?>
     </div>
 </div>
