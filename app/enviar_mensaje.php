@@ -36,32 +36,46 @@ if ($id_ref <= 0 || empty($mensaje)) {
 $mensaje_lower = mb_strtolower($mensaje, 'UTF-8');
 $patrones_bloqueo = [
     // 1. CORREOS ELECTRÓNICOS (Normales y Ofuscados)
-    '/[a-z0-9._%+-]+(?:@|\s+arroba\s+|\[arroba\]|\(arroba\))[a-z0-9.-]+(?:\.|\s+punto\s+|\[punto\])[a-z]{2,}/i',
+    'email'              => '/[a-z0-9._%+-]+(?:@|\s+arroba\s+|\[arroba\]|\(arroba\))[a-z0-9.-]+(?:\.|\s+punto\s+|\[punto\])[a-z]{2,}/i',
 
     // 2. TELÉFONOS (Atrapa +569, 9, espacios, guiones y puntos)
-    '/(?:\+?56\s*9|9)?[\s\-\.]*(?:\d[\s\-\.]*){7,}/',
+    'telefono'           => '/(?:\+?56\s*9|9)?[\s\-\.]*(?:\d[\s\-\.]*){7,}/',
 
     // 3. REDES SOCIALES (Nombres, siglas y variaciones fonéticas)
-    '/\b(wh?a[ts]+s?[aá]pp?|wasap|watsap|whsatap|guatsap|wsp|wa\.me|instagram|insta|ig|face|fb|tiktok|tk|telegram|tg|t\.me|discord|dc|linktree|x\.com|twitter|tw|linkedin|in)\b/i',
+    'redes'              => '/\b(wh?a[ts]+s?[aá]pp?|wasap|watsap|whsatap|guatsap|wsp|wa\.me|instagram|insta|ig|face|fb|tiktok|tk|telegram|tg|t\.me|discord|dc|linktree|x\.com|twitter|tw|linkedin|in)\b/i',
 
     // 4. MÉTODOS DE PAGO Y BANCOS (Evita transferencias directas)
-    '/\b(transferencia|transferir|cuenta rut|cta rut|banco|santander|bci|estado|scotiabank|itau|tenpo|mach|mercadopago|mp|pago rut|datos de mi cuenta|mi rut|rut:)\b/i',
+    'banco'              => '/\b(transferencia|transferir|cuenta rut|cta rut|banco|santander|bci|estado|scotiabank|itau|tenpo|mach|mercadopago|mp|pago rut|datos de mi cuenta|mi rut|rut:)\b/i',
 
     // 5. INTENCIÓN DE CONTACTO Y UBICACIÓN
-    '/\b(contacto|celular|fono|tel[eé]fono|ll[aá]mame|llamada|mi n[uú]mero|correo|email|direcci[oó]n|calle|pasaje|vives en|vivo en|mi casa|junt[eé]monos|reunámonos|zoom|meet|teams|skype)\b/i',
+    'intencion_contacto' => '/\b(contacto|celular|fono|tel[eé]fono|ll[aá]mame|llamada|mi n[uú]mero|correo|email|direcci[oó]n|calle|pasaje|vives en|vivo en|mi casa|junt[eé]monos|reunámonos|zoom|meet|teams|skype)\b/i',
 
     // 6. IDENTIDAD Y BÚSQUEDA (Evita que se busquen por fuera)
-    '/\b(mi nombre es|me llamo|mi apellido|me dicen|puedes decirme|b[úu]scame|encontrarme|encontrame|soy el de|mi perfil|mi cuenta)\b/i',
+    'identidad'          => '/\b(mi nombre es|me llamo|mi apellido|me dicen|puedes decirme|b[úu]scame|encontrarme|encontrame|soy el de|mi perfil|mi cuenta)\b/i',
 
     // 7. ENLACES EXTERNOS
-    '/(http|https|www\.)/i'
+    'urls'               => '/(http|https|www\.)/i'
 ];
 
-foreach ($patrones_bloqueo as $pattern) {
+foreach ($patrones_bloqueo as $categoria => $pattern) {
     if (preg_match($pattern, $mensaje_lower)) {
+        // Registrar intento DLP silenciosamente — no debe romper el flujo si falla
+        try {
+            $stmt_dlp = $conn->prepare(
+                "INSERT INTO dlp_intentos (conversacion_id, remitente_id, categoria, patron_matched, texto_intentado)
+                 VALUES (?, ?, ?, ?, ?)"
+            );
+            if ($stmt_dlp) {
+                $patron_safe = mb_substr($pattern, 0, 200);
+                $stmt_dlp->bind_param("iisss", $id_ref, $my_id, $categoria, $patron_safe, $mensaje);
+                $stmt_dlp->execute();
+                $stmt_dlp->close();
+            }
+        } catch (Exception $e) {}
+
         // Enfoque Nubira 2.0: No damos pistas. Recordamos la regla.
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'error' => "⚠️ Por tu seguridad y la garantía de Nubira, no permitimos compartir identidad, redes ni medios de pago en el chat. Reescribe tu mensaje sin información externa."
         ]);
         exit;

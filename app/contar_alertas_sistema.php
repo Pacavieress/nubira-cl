@@ -186,6 +186,18 @@ try {
                 $res = $conn->query("SELECT COUNT(id) as total FROM login_intentos WHERE exito = 0 AND revisado = 0");
                 if ($res) { $alertas['admin_login_fallos'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
+
+            // 9. Usuarios nuevos sin revisar
+            try {
+                $res = $conn->query("SELECT COUNT(id) AS total FROM alumnos WHERE visible = 1 AND visto_admin = 0");
+                if ($res) { $alertas['admin_usuarios'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
+            // 10. Intentos DLP sin revisar (violaciones de contacto en chat)
+            try {
+                $res = $conn->query("SELECT COUNT(id) AS total FROM dlp_intentos WHERE revisado_admin = 0");
+                if ($res) { $alertas['admin_chats'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
         }
     }
 

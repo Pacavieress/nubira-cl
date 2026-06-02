@@ -16,6 +16,24 @@ if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
     exit;
 }
 
+// AUTO-MIGRACIÓN SILENCIOSA: Tabla dlp_intentos para registro de violaciones DLP
+$check_dlp_table = $conn->query("SHOW TABLES LIKE 'dlp_intentos'");
+if ($check_dlp_table && $check_dlp_table->num_rows === 0) {
+    $conn->query("CREATE TABLE dlp_intentos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        conversacion_id INT NOT NULL,
+        remitente_id INT NOT NULL,
+        categoria VARCHAR(40) NOT NULL,
+        patron_matched VARCHAR(200) NULL,
+        texto_intentado TEXT NOT NULL,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        revisado_admin TINYINT(1) DEFAULT 0,
+        INDEX idx_conv (conversacion_id),
+        INDEX idx_remitente (remitente_id),
+        INDEX idx_revisado (revisado_admin, fecha)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 $orden_param = $_GET['orden'] ?? 'desc';
 $orden_sql = ($orden_param === 'asc') ? 'ASC' : 'DESC';
 $filtros_validos = ['activos', 'cerrados', 'contrato', 'cotizacion', 'inactivos'];
