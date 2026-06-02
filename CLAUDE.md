@@ -2,6 +2,46 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Pendientes 03/06/2026
+
+### Crítico — Deploy a Hostinger por FileZilla
+Subir a /home/u516405553/domains/nubira.cl/public_html/app/:
+- app/admin_chats.php (sistema DLP completo)
+- app/enviar_mensaje.php (registro de intentos)
+- app/contar_alertas_sistema.php (badge admin chats)
+- app/admin_usuarios.php (badge usuarios nuevos)
+
+Verificación post-deploy:
+- Abrir nubira.cl/admin/chats logueado como admin → crea tabla dlp_intentos automáticamente
+- Abrir nubira.cl/admin/usuarios → crea columna visto_admin + marca todos como vistos
+- Confirmar pills nuevos visibles, badge usuarios baja a 0
+- Probar end-to-end DLP en producción (enviar contacto en un chat de prueba)
+
+### Pendiente desde 01/06: deploy 8-10 archivos de OFERTAS
+- app/vitrina.php
+- app/cargar_servicios.php
+- app/busqueda.php
+- app/cargar_vistos.php
+- app/componentes/render_card.php
+- app/componentes/panel_gestion.php
+- app/detalle_servicio.php
+- app/ver_apunte.php
+- app/admin_ofertas.php
+- app/contratar_servicio.php
+
+### Producto (sin urgencia)
+- Conversación con Nubira Producto (Cowork) sobre cómo atraer primeros compradores reales
+- Identificar segmento concreto (USACH / PUC / AIEP / PAES)
+- Plan concierge para cerrar primera transacción manual
+
+### Técnico viejo
+- Git filter-repo 2da pasada (keys viejas en commits antiguos)
+- Resetear el otro PC cuando vuelva a él
+- Copia segura del config.php de producción
+- Cambiar contraseñas SMTP y key Gemini que pasaron por chat
+- Apelar Google
+- Actualizar XAMPP a PHP 8.2 (para poder testear flujo de pago en local)
+
 ## Project Overview
 
 **Nubira** (nubira.cl) is a Chilean educational marketplace where university students buy and sell tutoring services (servicios) and study notes (apuntes). Currency is CLP. Solo founder operates all roles. Future: native iOS/Android app via Flutter (~March 2027), PWA as intermediate step. All code must be API-first ready.
