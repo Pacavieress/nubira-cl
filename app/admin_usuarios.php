@@ -33,6 +33,13 @@ foreach ($auto_migraciones as $tabla => $columnas) {
     }
 }
 
+// Migración especial: visto_admin con UPDATE inicial (solo al crear la columna)
+$check_visto = $conn->query("SHOW COLUMNS FROM `alumnos` LIKE 'visto_admin'");
+if ($check_visto && $check_visto->num_rows === 0) {
+    $conn->query("ALTER TABLE alumnos ADD COLUMN visto_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER fecha_registro");
+    $conn->query("UPDATE alumnos SET visto_admin = 1");
+}
+
 // Fallback Iconos
 if (file_exists($app_dir . '/iconos.php')) {
     require_once $app_dir . '/iconos.php';
@@ -192,6 +199,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // -------------------------------------------------------------------------
 // 3. CONSULTA DE USUARIOS
 // -------------------------------------------------------------------------
+
+// Aplanar badge: marcar como vistos al entrar al panel
+$conn->query("UPDATE alumnos SET visto_admin = 1 WHERE visto_admin = 0");
+
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $limit = 20;
 $offset = ($page - 1) * $limit;

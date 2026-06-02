@@ -36,7 +36,7 @@ if ($check_dlp_table && $check_dlp_table->num_rows === 0) {
 
 $orden_param = $_GET['orden'] ?? 'desc';
 $orden_sql = ($orden_param === 'asc') ? 'ASC' : 'DESC';
-$filtros_validos = ['activos', 'cerrados', 'contrato', 'cotizacion', 'inactivos'];
+$filtros_validos = ['activos', 'cerrados', 'contrato', 'cotizacion', 'inactivos', 'alertas_dlp'];
 $filtro_estado_actual = in_array($_GET['estado'] ?? '', $filtros_validos) ? $_GET['estado'] : 'activos';
 
 // =================================================================================
@@ -163,6 +163,9 @@ function build_listado_query($filtro_estado) {
         case 'cotizacion':
             $where .= " AND c.eliminado = 0 AND c.contrato_id IS NULL ";
             break;
+        case 'alertas_dlp':
+            $where .= " AND c.id IN (SELECT DISTINCT conversacion_id FROM dlp_intentos WHERE revisado_admin = 0) ";
+            break;
         case 'inactivos':
             $where .= " AND c.eliminado = 0 AND COALESCE(c.ultima_interaccion, c.creado_en) < DATE_SUB(NOW(), INTERVAL 7 DAY) ";
             break;
@@ -201,6 +204,14 @@ if (isset($_POST['ajax_accion'])) {
         $stmt->bind_param("i", $chat_id);
         $ok = $stmt->execute();
         echo json_encode(['ok' => $ok, 'msg' => $ok ? 'Chat restaurado' : 'Error al restaurar']);
+        exit;
+    }
+
+    if ($accion === 'marcar_revisado_dlp') {
+        $stmt = $conn->prepare("UPDATE dlp_intentos SET revisado_admin = 1 WHERE conversacion_id = ?");
+        $stmt->bind_param("i", $chat_id);
+        $ok = $stmt->execute();
+        echo json_encode(['success' => $ok]);
         exit;
     }
 
@@ -401,6 +412,64 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
               </div>';
     }
 
+    // Intentos DLP bloqueados para esta conversación
+    $stmt_dlp = $conn->prepare("
+        SELECT d.id, d.categoria, d.texto_intentado, d.fecha, d.revisado_admin,
+               a.nombre AS remitente_nombre
+        FROM dlp_intentos d
+        LEFT JOIN alumnos a ON d.remitente_id = a.id
+        WHERE d.conversacion_id = ?
+        ORDER BY d.fecha ASC
+    ");
+    if ($stmt_dlp) {
+        $stmt_dlp->bind_param("i", $chat_id);
+        $stmt_dlp->execute();
+        $res_dlp = $stmt_dlp->get_result();
+        $dlp_rows = [];
+        while ($row = $res_dlp->fetch_assoc()) {
+            $dlp_rows[] = $row;
+        }
+        if (!empty($dlp_rows)) {
+            $pendientes = array_filter($dlp_rows, fn($r) => !$r['revisado_admin']);
+            $hay_pendientes = !empty($pendientes);
+            $borde = $hay_pendientes ? 'border-red-200' : 'border-gray-200';
+            $fondo_header = $hay_pendientes ? 'bg-red-100/60 border-red-200' : 'bg-gray-100/60 border-gray-200';
+            $texto_titulo = $hay_pendientes ? 'text-red-700' : 'text-gray-500';
+            echo '<div class="mx-2 mb-4 rounded-2xl border ' . $borde . ' overflow-hidden">';
+            echo '<div class="flex items-center justify-between px-4 py-3 border-b ' . $fondo_header . '">';
+            echo '<span class="text-xs font-extrabold uppercase tracking-widest ' . $texto_titulo . '">🚨 Intentos bloqueados <span class="ml-1 font-bold opacity-70">(' . count($dlp_rows) . ')</span></span>';
+            if ($hay_pendientes) {
+                echo '<span class="text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">' . count($pendientes) . ' pendientes</span>';
+            } else {
+                echo '<span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Todos revisados</span>';
+            }
+            echo '</div>';
+            foreach ($dlp_rows as $dlp) {
+                $revisado = (bool)$dlp['revisado_admin'];
+                $fecha_dlp = $dlp['fecha'] ? date('d/m/Y H:i', strtotime($dlp['fecha'])) : '--';
+                $nombre_rem = htmlspecialchars($dlp['remitente_nombre'] ?? 'Desconocido', ENT_QUOTES, 'UTF-8');
+                $texto = htmlspecialchars($dlp['texto_intentado'], ENT_QUOTES, 'UTF-8');
+                $cat = htmlspecialchars($dlp['categoria'], ENT_QUOTES, 'UTF-8');
+                $op = $revisado ? 'opacity-50' : '';
+                echo '<div class="px-4 py-3 border-b border-red-100 last:border-b-0 ' . $op . '">';
+                echo '<div class="flex items-center gap-2 mb-2 flex-wrap">';
+                echo '<span class="text-xs font-bold text-gray-700">' . $nombre_rem . '</span>';
+                echo '<span class="text-[10px] text-gray-400">' . $fecha_dlp . '</span>';
+                echo '<span class="ml-auto text-[10px] font-extrabold uppercase tracking-wide bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">' . $cat . '</span>';
+                if ($revisado) echo '<span class="text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Revisado</span>';
+                echo '</div>';
+                echo '<div class="bg-white border border-red-100 rounded-xl px-3 py-2 text-xs text-gray-700 font-mono leading-relaxed break-all">' . $texto . '</div>';
+                echo '</div>';
+            }
+            if ($hay_pendientes) {
+                echo '<div class="px-4 py-3">';
+                echo '<button class="btn-marcar-dlp w-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm" data-chat-id="' . (int)$chat_id . '">Marcar todos como revisados</button>';
+                echo '</div>';
+            }
+            echo '</div>';
+        }
+    }
+
     echo '<div id="scroll-bottom" class="h-4"></div>';
     exit;
 }
@@ -422,6 +491,9 @@ $cnt_cotizacion = $res_cotizacion ? (int)$res_cotizacion->fetch_assoc()['n'] : 0
 
 $res_inactivos = $conn->query("SELECT COUNT(*) AS n FROM conversaciones WHERE eliminado = 0 AND COALESCE(ultima_interaccion, creado_en) < DATE_SUB(NOW(), INTERVAL 7 DAY)");
 $cnt_inactivos = $res_inactivos ? (int)$res_inactivos->fetch_assoc()['n'] : 0;
+
+$res_alertas_dlp = $conn->query("SELECT COUNT(DISTINCT conversacion_id) AS n FROM dlp_intentos WHERE revisado_admin = 0");
+$cnt_alertas_dlp = $res_alertas_dlp ? (int)$res_alertas_dlp->fetch_assoc()['n'] : 0;
 
 $chat_seleccionado = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $info_chat = null;
@@ -502,12 +574,16 @@ if ($chat_seleccionado) {
                 </div>
             </div>
 
-            <div class="px-5 pb-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-gray-50">
-                <button data-filter="activos" class="filter-pill <?php echo $filtro_estado_actual === 'activos' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Activos <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_activos; ?></span></button>
-                <button data-filter="contrato" class="filter-pill <?php echo $filtro_estado_actual === 'contrato' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Con contrato <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_contrato; ?></span></button>
-                <button data-filter="cotizacion" class="filter-pill <?php echo $filtro_estado_actual === 'cotizacion' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Cotización <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_cotizacion; ?></span></button>
-                <button data-filter="inactivos" class="filter-pill <?php echo $filtro_estado_actual === 'inactivos' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">+7d <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_inactivos; ?></span></button>
-                <button data-filter="cerrados" class="filter-pill <?php echo $filtro_estado_actual === 'cerrados' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Cerrados <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_cerrados; ?></span></button>
+            <div class="relative">
+                <div class="px-5 pb-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-gray-50">
+                    <button data-filter="activos" class="filter-pill <?php echo $filtro_estado_actual === 'activos' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Activos <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_activos; ?></span></button>
+                    <button data-filter="alertas_dlp" class="filter-pill <?php echo $filtro_estado_actual === 'alertas_dlp' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Alertas DLP <?php if ($cnt_alertas_dlp > 0): ?><span class="ml-1 bg-red-500 text-white px-1.5 rounded-full"><?php echo (int)$cnt_alertas_dlp; ?></span><?php else: ?><span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full">0</span><?php endif; ?></button>
+                    <button data-filter="contrato" class="filter-pill <?php echo $filtro_estado_actual === 'contrato' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Con contrato <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_contrato; ?></span></button>
+                    <button data-filter="cotizacion" class="filter-pill <?php echo $filtro_estado_actual === 'cotizacion' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Cotización <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_cotizacion; ?></span></button>
+                    <button data-filter="inactivos" class="filter-pill <?php echo $filtro_estado_actual === 'inactivos' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">+7d <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_inactivos; ?></span></button>
+                    <button data-filter="cerrados" class="filter-pill <?php echo $filtro_estado_actual === 'cerrados' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Cerrados <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_cerrados; ?></span></button>
+                </div>
+                <div class="absolute right-0 top-0 bottom-0 w-12 pointer-events-none z-10" style="background:linear-gradient(to right,transparent,white)"></div>
             </div>
 
             <div class="px-5 py-3 flex justify-between items-center bg-white gap-2 flex-shrink-0 border-b border-gray-50 mb-3">
@@ -890,6 +966,39 @@ if ($chat_seleccionado) {
                     });
             });
         });
+
+        // ==========================================
+        // DLP: marcar revisados (event delegation sobre chatContainer)
+        // ==========================================
+        if (chatContainer) {
+            chatContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.btn-marcar-dlp');
+                if (!btn) return;
+                const chatId = btn.dataset.chatId;
+                btn.disabled = true;
+                btn.textContent = 'Marcando...';
+                const fd = new FormData();
+                fd.append('ajax_accion', 'marcar_revisado_dlp');
+                fd.append('chat_id', chatId);
+                fetch(requestUri, { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('Intentos marcados como revisados', 'ok');
+                            fetchMensajes(true);
+                        } else {
+                            showToast('Error al marcar', 'error');
+                            btn.disabled = false;
+                            btn.textContent = 'Marcar todos como revisados';
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Error de conexión', 'error');
+                        btn.disabled = false;
+                        btn.textContent = 'Marcar todos como revisados';
+                    });
+            });
+        }
 
         // ==========================================
         // RESIZER + persistencia localStorage
