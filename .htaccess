@@ -43,6 +43,8 @@ RewriteRule ^recuperar$               recuperar.php                     [L,QSA]
 RewriteRule ^restablecer$             restablecer.php                   [L,QSA]
 RewriteRule ^procesar-cambio$         procesar_cambio.php               [L,QSA]
 RewriteRule ^enviar_recuperacion$     enviar_recuperacion.php           [L,QSA]
+RewriteRule ^completar_perfil$        app/completar_perfil.php          [L,QSA]
+RewriteRule ^verificacion_rechazada$  app/verificacion_rechazada.php    [L,QSA]
 
 # Dashboard y Perfil
 RewriteRule ^dashboard$               app/dashboard.php                 [L,QSA]

@@ -50,34 +50,34 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
             }
         }
 
-        if ($institucion !== '') {
-            $_SESSION['usuario_id']     = $usuario_auto['id'];
-            $_SESSION['usuario_nombre'] = $usuario_auto['nombre'];
-            $_SESSION['rol']            = $usuario_auto['rol'] ?? 'alumno';
-            $_SESSION['email']          = $usuario_auto['correo'];
-            $_SESSION['dominio']        = $dominio;
-            $_SESSION['institucion']    = $institucion;
-            
-            // --- [NUBIRA 2.0] CACHÉ DE TUTOR Y SUGERENCIAS (AUTO-LOGIN) ---
-            $_SESSION['notif_sugerencia_vista'] = (int)($usuario_auto['notif_sugerencia_vista'] ?? 0);
-            
-            $stmt_tutor = $conn->prepare("SELECT 1 FROM servicios WHERE alumno_id = ? AND estado = 'aprobado' UNION SELECT 1 FROM apuntes WHERE id_alumno = ? AND estado = 'aprobado' LIMIT 1");
-            if ($stmt_tutor) {
-                $stmt_tutor->bind_param("ii", $usuario_auto['id'], $usuario_auto['id']);
-                $stmt_tutor->execute();
-                $stmt_tutor->store_result();
-                $_SESSION['es_tutor_activo'] = ($stmt_tutor->num_rows > 0);
-                $stmt_tutor->close();
-            } else {
-                $_SESSION['es_tutor_activo'] = false;
-            }
-            // --------------------------------------------------------------
-            
-            $stmt_upd = $conn->prepare("UPDATE alumnos SET ultima_sesion = NOW() WHERE id = ?");
-            $stmt_upd->bind_param("i", $usuario_auto['id']);
-            $stmt_upd->execute();
-            $stmt_upd->close();
+        $_SESSION['usuario_id']          = $usuario_auto['id'];
+        $_SESSION['usuario_nombre']      = $usuario_auto['nombre'];
+        $_SESSION['rol']                 = $usuario_auto['rol'] ?? 'alumno';
+        $_SESSION['email']               = $usuario_auto['correo'];
+        $_SESSION['dominio']             = $dominio;
+        $_SESSION['institucion']         = $institucion;
+        $_SESSION['verificacion_estado'] = $usuario_auto['verificacion_estado'] ?? null;
+        $_SESSION['perfil_completo']     = !empty(trim($usuario_auto['bio'] ?? ''));
+
+        // --- [NUBIRA 2.0] CACHÉ DE TUTOR Y SUGERENCIAS (AUTO-LOGIN) ---
+        $_SESSION['notif_sugerencia_vista'] = (int)($usuario_auto['notif_sugerencia_vista'] ?? 0);
+
+        $stmt_tutor = $conn->prepare("SELECT 1 FROM servicios WHERE alumno_id = ? AND estado = 'aprobado' UNION SELECT 1 FROM apuntes WHERE id_alumno = ? AND estado = 'aprobado' LIMIT 1");
+        if ($stmt_tutor) {
+            $stmt_tutor->bind_param("ii", $usuario_auto['id'], $usuario_auto['id']);
+            $stmt_tutor->execute();
+            $stmt_tutor->store_result();
+            $_SESSION['es_tutor_activo'] = ($stmt_tutor->num_rows > 0);
+            $stmt_tutor->close();
+        } else {
+            $_SESSION['es_tutor_activo'] = false;
         }
+        // --------------------------------------------------------------
+
+        $stmt_upd = $conn->prepare("UPDATE alumnos SET ultima_sesion = NOW() WHERE id = ?");
+        $stmt_upd->bind_param("i", $usuario_auto['id']);
+        $stmt_upd->execute();
+        $stmt_upd->close();
     }
     $stmt_auto->close();
 }
@@ -86,11 +86,11 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
 // 2. REDIRECCIÓN SI YA HAY SESIÓN
 // -------------------------------------------------------------------------
 if (isset($_SESSION['usuario_id'])) {
-    if (!empty($redir_destino)) {
-        header("Location: " . $redir_destino);
-        exit;
-    }
-    header("Location: /vitrina");
+    $est = $_SESSION['verificacion_estado'] ?? null;
+    if ($est === 'rechazado') { header("Location: /verificacion_rechazada"); exit; }
+    if ($est === 'pendiente' && !($_SESSION['perfil_completo'] ?? false)) { header("Location: /completar_perfil"); exit; }
+    if (!empty($redir_destino)) { header("Location: " . $redir_destino); exit; }
+    header("Location: " . ($est === 'pendiente' ? '/vitrina?aviso=verificacion_pendiente' : '/vitrina'));
     exit;
 }
 
@@ -177,27 +177,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         setcookie('remember_token', $token, time() + (86400 * 30), "/", "", true, true); // 30 días
                     }
 
-                    // --- REDIRECCIÓN INTELIGENTE (LAZY REGISTRATION) ---
-                    $ruta_final = '/vitrina'; // Ruta por defecto
+                    // --- REDIRECCIÓN POST-LOGIN SEGÚN ESTADO DE VERIFICACIÓN ---
+                    $_SESSION['verificacion_estado'] = $usuario['verificacion_estado'] ?? null;
+                    $_SESSION['perfil_completo']     = !empty(trim($usuario['bio'] ?? ''));
+                    $est = $_SESSION['verificacion_estado'];
 
+                    if ($est === 'rechazado') {
+                        header("Location: /verificacion_rechazada");
+                        exit;
+                    }
+                    if ($est === 'pendiente') {
+                        header("Location: " . ($_SESSION['perfil_completo'] ? '/vitrina?aviso=verificacion_pendiente' : '/completar_perfil'));
+                        exit;
+                    }
+
+                    // Estado 'aprobado' o NULL (usuarios pre-sistema): flujo normal
+                    $ruta_final = '/vitrina';
                     if (!empty($redir_post)) {
                         $ruta_final = filter_var($redir_post, FILTER_SANITIZE_URL);
                     } elseif (!empty($_SESSION['redirigir_despues_login'])) {
                         $ruta_final = $_SESSION['redirigir_despues_login'];
                     }
-
-                    unset($_SESSION['redirigir_despues_login']); // Limpiamos la memoria
-
-                   // Prevenir open redirects (asegurar que no salga del sitio)
+                    unset($_SESSION['redirigir_despues_login']);
                     if (strpos($ruta_final, '/') !== 0 || strpos($ruta_final, '//') === 0) {
                         $ruta_final = '/vitrina';
                     }
-
-                    // INTERCEPCIÓN UX: Si el destino era el perfil genérico, lo mandamos a su URL oficial
                     if ($ruta_final === '/perfil' || $ruta_final === '/perfil/') {
                         $ruta_final = '/perfil/' . $usuario['id'];
                     }
-
                     header("Location: " . $ruta_final);
                     exit;
 
