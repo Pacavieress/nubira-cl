@@ -129,7 +129,7 @@ foreach($rutas_logger as $r) {
                 $guest_hash = substr(md5(session_id()), 0, 8);
                 registrar_actividad($conn, 0, 'VIEW_SERVICIO_GUEST', "Invitado [$guest_hash] vio servicio ID: $id");
             } else {
-                registrar_actividad($conn, $usuario_id, 'view', 'servicio', $id);
+                registrar_actividad($conn, $usuario_id, 'VER_SERVICIO', "Usuario vio servicio ID: $id");
             }
         }
         break; 

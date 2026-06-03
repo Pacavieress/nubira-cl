@@ -28,6 +28,16 @@ if (!isset($conn) || $conn->connect_error) {
     die("Error Crítico [Base de Datos]: No se pudo establecer conexión.");
 }
 
+// AUTO-MIGRACIÓN SILENCIOSA: columnas referrer y utm_source en historial_actividad
+$chk_ref = $conn->query("SHOW COLUMNS FROM historial_actividad LIKE 'referrer'");
+if ($chk_ref && $chk_ref->num_rows === 0) {
+    $conn->query("ALTER TABLE historial_actividad ADD COLUMN referrer VARCHAR(255) NULL DEFAULT NULL");
+}
+$chk_utm = $conn->query("SHOW COLUMNS FROM historial_actividad LIKE 'utm_source'");
+if ($chk_utm && $chk_utm->num_rows === 0) {
+    $conn->query("ALTER TABLE historial_actividad ADD COLUMN utm_source VARCHAR(100) NULL DEFAULT NULL");
+}
+
 // ============================================================
 // ACCIONES POST
 // ============================================================
@@ -194,6 +204,20 @@ if ($ver_usuario_id !== null) {
         $historial = $stmt_h->get_result();
     }
     $total_eventos_detalle = $stats['total_acciones'];
+
+// ============================================================
+// TAB: TOP PÁGINAS
+// ============================================================
+} elseif ($tab_activa === 'paginas') {
+    $res_paginas = $conn->query("SELECT url,
+                    COUNT(*) AS hits,
+                    COUNT(DISTINCT COALESCE(usuario_id, ip_usuario)) AS uniques
+                 FROM historial_actividad
+                 WHERE es_bot = 0 AND fecha > DATE_SUB(NOW(), INTERVAL 14 DAY)
+                 GROUP BY url
+                 ORDER BY hits DESC
+                 LIMIT 50");
+    $total_hits_paginas = $conn->query("SELECT COUNT(*) as total FROM historial_actividad WHERE es_bot = 0 AND fecha > DATE_SUB(NOW(), INTERVAL 14 DAY)")->fetch_assoc()['total'] ?? 1;
 
 // ============================================================
 // TAB: BÚSQUEDAS FALLIDAS
@@ -373,6 +397,9 @@ if (file_exists($sidebar_path)) include $sidebar_path;
         </a>
         <a href="?tab=bots" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-colors <?= $tab_activa === 'bots' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
             <i class="fa-solid fa-robot mr-1.5"></i> Bots / Crawlers
+        </a>
+        <a href="?tab=paginas" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-colors <?= $tab_activa === 'paginas' ? 'border-[#54A6D8] text-[#54A6D8]' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
+            <i class="fa-solid fa-chart-bar mr-1.5"></i> Top Páginas
         </a>
         <a href="?tab=fallidas" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-colors <?= $tab_activa === 'fallidas' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
             <i class="fa-solid fa-search-minus mr-1.5"></i> Búsquedas Fallidas
@@ -592,6 +619,77 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                                         <i class="fa-solid fa-shield-check text-3xl mb-3 text-emerald-400 block"></i>
                                         <p class="font-bold text-gray-600 text-sm">No hay actividad de bots en los últimos 30 días.</p>
                                         <p class="text-xs mt-1 text-gray-400 font-medium">Los nuevos bots se detectarán automáticamente por User-Agent.</p>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    <?php elseif ($tab_activa === 'paginas'): ?>
+        <!-- ===== TAB TOP PÁGINAS ===== -->
+        <section class="animate-fade-in-up">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <div>
+                    <h2 class="text-lg font-extrabold text-gray-900 tracking-tight">Top Páginas</h2>
+                    <p class="text-xs text-gray-500 font-medium">Últimos 14 días · Tráfico real (sin bots) · Top 50</p>
+                </div>
+                <span class="bg-sky-50 text-[#54A6D8] text-[9px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-widest border border-sky-100">
+                    <?= number_format($total_hits_paginas, 0, ',', '.') ?> eventos totales
+                </span>
+            </div>
+
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold tracking-widest border-b border-gray-100 sticky top-0 z-10 backdrop-blur-md">
+                            <tr>
+                                <th scope="col" class="px-6 py-4">URL</th>
+                                <th scope="col" class="px-6 py-4 text-center">Hits</th>
+                                <th scope="col" class="px-6 py-4 text-center">Visitantes únicos</th>
+                                <th scope="col" class="px-6 py-4 text-right">% del total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <?php if (isset($res_paginas) && $res_paginas && $res_paginas->num_rows > 0): ?>
+                                <?php while ($row = $res_paginas->fetch_assoc()):
+                                    $pct = $total_hits_paginas > 0 ? round($row['hits'] / $total_hits_paginas * 100, 1) : 0;
+                                    $url_display = htmlspecialchars($row['url']);
+                                    $url_corta = mb_strimwidth($row['url'], 0, 60, '…');
+                                ?>
+                                <tr class="hover:bg-sky-50/30 transition-colors group align-middle">
+                                    <td class="px-6 py-4 max-w-xs xl:max-w-lg">
+                                        <a href="<?= $url_display ?>" target="_blank" rel="noopener noreferrer"
+                                           class="font-mono text-xs text-[#54A6D8] hover:underline truncate block"
+                                           title="<?= $url_display ?>">
+                                            <?= htmlspecialchars($url_corta) ?>
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="inline-flex items-center justify-center bg-sky-50 text-[#54A6D8] font-black text-xs px-2.5 py-1 rounded-full border border-sky-100">
+                                            <?= number_format($row['hits'], 0, ',', '.') ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-xs font-bold text-gray-600">
+                                        <?= number_format($row['uniques'], 0, ',', '.') ?>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <div class="w-16 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                                <div class="bg-[#54A6D8] h-1.5 rounded-full" style="width: <?= min($pct * 2, 100) ?>%"></div>
+                                            </div>
+                                            <span class="text-xs font-bold text-gray-700 w-10 text-right"><?= $pct ?>%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="4" class="px-6 py-16 text-center bg-white">
+                                        <i class="fa-solid fa-chart-bar text-3xl mb-3 text-gray-300 block"></i>
+                                        <p class="font-bold text-gray-600 text-sm">Sin datos de páginas en los últimos 14 días.</p>
                                     </td>
                                 </tr>
                             <?php endif; ?>
