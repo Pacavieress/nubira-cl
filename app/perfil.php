@@ -169,6 +169,25 @@ $leg_nota       = (float)($perfil_data['calificacion_promedio'] ?? 0);
 $leg_qty        = (int)($perfil_data['cantidad_votos'] ?? 0);
 $inst_display   = (string)($perfil_data['institucion_maestra'] ?? $perfil_data['institucion'] ?? 'Estudiante Universitario');
 $nombre_display = formatearNombrePrivado($nombre_real);
+
+// Subtítulo según tipo de usuario
+$tipo_usuario = $perfil_data['tipo'] ?? null;
+$inst_nombre  = (string)($perfil_data['institucion_maestra'] ?? $perfil_data['institucion'] ?? '');
+
+// Badge de verificación (requiere $inst_nombre ya definida)
+$es_verificado = ($perfil_data['verificacion_estado'] === 'aprobado')
+              || ($perfil_data['verificacion_estado'] === null && !empty($inst_nombre));
+
+if ($tipo_usuario === 'egresado') {
+    $subtitulo_perfil = 'Egresado' . (!empty($inst_nombre) ? ' · ' . $inst_nombre : '');
+} elseif ($tipo_usuario === 'profesor') {
+    $subtitulo_perfil = 'Profesor';
+} elseif ($tipo_usuario === 'particular') {
+    $subtitulo_perfil = 'Tutor Particular';
+} else {
+    // 'estudiante', 'alumno' (legacy), NULL → comportamiento original
+    $subtitulo_perfil = $inst_display;
+}
 $max_score      = (int)($perfil_data['max_score'] ?? 0); // Puntuación de Gamificación
 $vistas_actuales = (int)($perfil_data['vistas_perfil'] ?? 0); // Contador de visitas
 
@@ -434,11 +453,13 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                 <div class="flex flex-col items-center md:items-start w-full">
                                     <div class="flex items-center justify-center md:justify-start gap-2 w-full">
                                         <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 break-words"><?= htmlspecialchars($nombre_display) ?></h1>
+                                        <?php if ($es_verificado): ?>
                                         <span title="Alumno Verificado"><?= icon('check-circle', 'w-5 h-5 text-[#54A6D8] shrink-0') ?></span>
+                                        <?php endif; ?>
                                     </div>
                                     <p class="text-[11px] md:text-xs text-gray-500 flex items-center justify-center md:justify-start gap-1.5 mt-1.5 md:mt-2 leading-snug w-full">
                                         <span class="flex-shrink-0 text-gray-400"><?= icon('building', 'w-4 h-4') ?></span>
-                                        <span class="break-words font-medium uppercase tracking-wider"><?= htmlspecialchars($inst_display) ?></span>
+                                        <span class="break-words font-medium uppercase tracking-wider"><?= htmlspecialchars($subtitulo_perfil) ?></span>
                                     </p>
                                 </div>
 

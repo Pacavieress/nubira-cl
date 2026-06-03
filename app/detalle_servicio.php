@@ -81,8 +81,8 @@ if ($id === 0) {
 
 // 5. Consulta SQL
 $servicio = null;
-$sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil, a.tiempo_respuesta_promedio, COALESCE(dp.institucion, a.institucion) AS institucion_maestra 
-        FROM servicios s 
+$sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil, a.tiempo_respuesta_promedio, a.verificacion_estado, COALESCE(dp.institucion, a.institucion) AS institucion_maestra
+        FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id 
         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio 
         WHERE s.id = ?";
@@ -516,7 +516,7 @@ session_write_close();
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <p class="text-sm font-bold text-gray-900">Publicado por <?= htmlspecialchars($nombrePub) ?></p>
-                                <i class="fa-solid fa-circle-check text-[#54A6D8] text-xs"></i>
+                                <?php if (($servicio['verificacion_estado'] === 'aprobado') || ($servicio['verificacion_estado'] === null && !empty($servicio['institucion_maestra']))): ?><i class="fa-solid fa-circle-check text-[#54A6D8] text-xs"></i><?php endif; ?>
                             </div>
                            <div class="flex items-center gap-1.5 mt-0.5">
             <span class="text-gray-400 text-xs"><i class="fa-solid fa-building-columns"></i></span>

@@ -250,7 +250,7 @@ if ($stmtRec) {
 }
 
 // PUBLICADOR
-$stmtP = $conn->prepare("SELECT nombre, carrera, institucion, foto_perfil FROM alumnos WHERE id = ? LIMIT 1");
+$stmtP = $conn->prepare("SELECT nombre, carrera, institucion, foto_perfil, verificacion_estado FROM alumnos WHERE id = ? LIMIT 1");
 if ($stmtP) {
     $stmtP->bind_param("i", $apunte['id_alumno']);
     $stmtP->execute();
@@ -280,6 +280,8 @@ if (!empty($publicador['nombre'])) {
     }
 }
 $institucionPublicador = ucfirst(strtolower($publicador['institucion'] ?? $apunte['institucion'] ?? ''));
+$publicador_verificado = ($publicador['verificacion_estado'] === 'aprobado')
+    || ($publicador['verificacion_estado'] === null && !empty($publicador['institucion']));
 
 /* ===============================
    VARIABLES IA
@@ -764,7 +766,7 @@ require_once $base_path . '/componentes/sidebar.php';
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-bold text-gray-900 group-hover:text-[#54A6D8] transition-colors flex items-center gap-1">
                                 Publicado por <?= htmlspecialchars($nombreDisplay) ?>
-                                <?= icon('check-circle', 'w-3.5 h-3.5 text-[#54A6D8]') ?>
+                                <?php if ($publicador_verificado ?? false): ?><?= icon('check-circle', 'w-3.5 h-3.5 text-[#54A6D8]') ?><?php endif; ?>
                             </p>
                             <p class="text-xs text-gray-500 flex items-start gap-1 mt-0.5 leading-snug">
                                 <span class="mt-0.5 flex-shrink-0"><?= icon('building', 'w-3 h-3') ?></span>
