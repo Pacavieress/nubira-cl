@@ -137,10 +137,10 @@ if ($ver_usuario_id !== null) {
     $is_guest = ($ver_usuario_id === 0);
 
     if ($is_guest && $filtro_ip) {
-        $stmt_stats = $conn->prepare("SELECT COUNT(id) as total_acciones, MAX(fecha) as max_f, MIN(fecha) as min_f, COUNT(DISTINCT ip_usuario) as total_ips, MAX(es_bot) as fue_bot FROM historial_actividad WHERE (usuario_id IS NULL OR usuario_id = 0) AND ip_usuario = ?");
+        $stmt_stats = $conn->prepare("SELECT COUNT(id) as total_acciones, MAX(fecha) as max_f, MIN(fecha) as min_f, COUNT(DISTINCT ip_usuario) as total_ips, MAX(es_bot) as fue_bot, COUNT(DISTINCT url) as urls_unicas FROM historial_actividad WHERE (usuario_id IS NULL OR usuario_id = 0) AND ip_usuario = ?");
         $stmt_stats->bind_param("s", $filtro_ip);
     } else {
-        $stmt_stats = $conn->prepare("SELECT COUNT(id) as total_acciones, MAX(fecha) as max_f, MIN(fecha) as min_f, COUNT(DISTINCT ip_usuario) as total_ips, MAX(es_bot) as fue_bot FROM historial_actividad WHERE usuario_id = ?");
+        $stmt_stats = $conn->prepare("SELECT COUNT(id) as total_acciones, MAX(fecha) as max_f, MIN(fecha) as min_f, COUNT(DISTINCT ip_usuario) as total_ips, MAX(es_bot) as fue_bot, COUNT(DISTINCT url) as urls_unicas FROM historial_actividad WHERE usuario_id = ?");
         $stmt_stats->bind_param("i", $ver_usuario_id);
     }
     $stmt_stats->execute();
@@ -204,6 +204,58 @@ if ($ver_usuario_id !== null) {
         $historial = $stmt_h->get_result();
     }
     $total_eventos_detalle = $stats['total_acciones'];
+
+    // === BLOQUE RESUMEN: queries adicionales ===
+
+    // 1. Primer referrer / utm_source registrado
+    $primer_referrer = null;
+    $primer_utm = null;
+    if (!$is_guest) {
+        $stmt_ref = $conn->prepare("SELECT referrer, utm_source FROM historial_actividad WHERE usuario_id = ? AND (referrer IS NOT NULL OR utm_source IS NOT NULL) ORDER BY fecha ASC LIMIT 1");
+        $stmt_ref->bind_param("i", $ver_usuario_id);
+        $stmt_ref->execute();
+        $res_ref = $stmt_ref->get_result()->fetch_assoc();
+        if ($res_ref) { $primer_referrer = $res_ref['referrer']; $primer_utm = $res_ref['utm_source']; }
+        $stmt_ref->close();
+    } elseif ($filtro_ip) {
+        $stmt_ref = $conn->prepare("SELECT referrer, utm_source FROM historial_actividad WHERE (usuario_id IS NULL OR usuario_id = 0) AND ip_usuario = ? AND (referrer IS NOT NULL OR utm_source IS NOT NULL) ORDER BY fecha ASC LIMIT 1");
+        $stmt_ref->bind_param("s", $filtro_ip);
+        $stmt_ref->execute();
+        $res_ref = $stmt_ref->get_result()->fetch_assoc();
+        if ($res_ref) { $primer_referrer = $res_ref['referrer']; $primer_utm = $res_ref['utm_source']; }
+        $stmt_ref->close();
+    }
+
+    // 2. Conversión: primer CONTACTO y primer PUBLICAR_APUNTE (solo usuarios registrados)
+    $conv = ['primer_contacto' => null, 'primer_apunte' => null];
+    if (!$is_guest) {
+        $stmt_conv = $conn->prepare("SELECT MIN(CASE WHEN accion = 'CONTACTO' THEN fecha END) as primer_contacto, MIN(CASE WHEN accion = 'PUBLICAR_APUNTE' THEN fecha END) as primer_apunte FROM historial_actividad WHERE usuario_id = ?");
+        $stmt_conv->bind_param("i", $ver_usuario_id);
+        $stmt_conv->execute();
+        $conv = $stmt_conv->get_result()->fetch_assoc() ?? $conv;
+        $stmt_conv->close();
+    }
+
+    // 3. Último user_agent (para detectar dispositivo)
+    $ultimo_ua = null;
+    if (!$is_guest) {
+        $stmt_ua = $conn->prepare("SELECT user_agent FROM historial_actividad WHERE usuario_id = ? AND user_agent IS NOT NULL AND user_agent != '' ORDER BY fecha DESC LIMIT 1");
+        $stmt_ua->bind_param("i", $ver_usuario_id);
+        $stmt_ua->execute();
+        $res_ua = $stmt_ua->get_result()->fetch_assoc();
+        if ($res_ua) $ultimo_ua = $res_ua['user_agent'];
+        $stmt_ua->close();
+    } elseif ($filtro_ip) {
+        $stmt_ua = $conn->prepare("SELECT user_agent FROM historial_actividad WHERE ip_usuario = ? AND user_agent IS NOT NULL AND user_agent != '' ORDER BY fecha DESC LIMIT 1");
+        $stmt_ua->bind_param("s", $filtro_ip);
+        $stmt_ua->execute();
+        $res_ua = $stmt_ua->get_result()->fetch_assoc();
+        if ($res_ua) $ultimo_ua = $res_ua['user_agent'];
+        $stmt_ua->close();
+    }
+
+    // 4. Días desde la primera visita (calculado en PHP)
+    $dias_desde_primera = $stats['min_f'] ? (int)floor((time() - strtotime($stats['min_f'])) / 86400) : 0;
 
 // ============================================================
 // TAB: TOP PÁGINAS
@@ -327,6 +379,27 @@ function nombreBotCorto($ua) {
         if (preg_match($p, $ua)) return $nombre;
     }
     return '🤖 Bot Genérico';
+}
+
+function categorizarReferrer($referrer) {
+    if (empty($referrer)) return ['label' => 'Directo / Desconocido', 'icon' => 'fa-solid fa-link', 'color_text' => 'text-gray-500', 'color_bg' => 'bg-gray-100'];
+    if (preg_match('/google\./i', $referrer))    return ['label' => 'Google',    'icon' => 'fa-brands fa-google',    'color_text' => 'text-blue-600',  'color_bg' => 'bg-blue-50'];
+    if (preg_match('/facebook\.|fb\.com/i', $referrer)) return ['label' => 'Facebook',  'icon' => 'fa-brands fa-facebook',  'color_text' => 'text-blue-700',  'color_bg' => 'bg-blue-50'];
+    if (preg_match('/instagram\./i', $referrer)) return ['label' => 'Instagram', 'icon' => 'fa-brands fa-instagram', 'color_text' => 'text-pink-600',  'color_bg' => 'bg-pink-50'];
+    if (preg_match('/whatsapp\./i', $referrer))  return ['label' => 'WhatsApp',  'icon' => 'fa-brands fa-whatsapp',  'color_text' => 'text-green-600', 'color_bg' => 'bg-green-50'];
+    return ['label' => 'Otro', 'icon' => 'fa-solid fa-arrow-up-right-from-square', 'color_text' => 'text-gray-500', 'color_bg' => 'bg-gray-100'];
+}
+
+function detectarDispositivo($ua) {
+    if (empty($ua)) return ['label' => 'Desconocido', 'icon' => 'fa-solid fa-question'];
+    if (preg_match('/iPhone|iPod/i', $ua))        return ['label' => 'iPhone',         'icon' => 'fa-solid fa-mobile-screen-button'];
+    if (preg_match('/iPad/i', $ua))               return ['label' => 'iPad',           'icon' => 'fa-solid fa-tablet-screen-button'];
+    if (preg_match('/Android.*Mobile/i', $ua))    return ['label' => 'Android Móvil',  'icon' => 'fa-solid fa-mobile-screen-button'];
+    if (preg_match('/Android/i', $ua))            return ['label' => 'Android Tablet', 'icon' => 'fa-solid fa-tablet-screen-button'];
+    if (preg_match('/Windows/i', $ua))            return ['label' => 'Windows',        'icon' => 'fa-solid fa-desktop'];
+    if (preg_match('/Macintosh/i', $ua))          return ['label' => 'Mac',            'icon' => 'fa-solid fa-desktop'];
+    if (preg_match('/Linux/i', $ua))              return ['label' => 'Linux',          'icon' => 'fa-solid fa-desktop'];
+    return ['label' => 'Otro', 'icon' => 'fa-solid fa-desktop'];
 }
 ?>
 
@@ -477,6 +550,130 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                     </div>
                 </div>
             </div>
+
+            <!-- ===== BLOQUE RESUMEN TRAYECTORIA ===== -->
+            <?php
+                $ref_data      = categorizarReferrer($primer_referrer);
+                $dispositivo   = detectarDispositivo($ultimo_ua);
+                $hizo_contacto = !empty($conv['primer_contacto']);
+                $hizo_apunte   = !empty($conv['primer_apunte']);
+                $urls_unicas   = (int)($stats['urls_unicas'] ?? 0);
+            ?>
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 animate-fade-in-up" style="animation-delay: 0.15s;">
+                <div class="flex items-center gap-2 mb-5">
+                    <i class="fa-solid fa-route text-[#54A6D8] text-sm"></i>
+                    <h3 class="font-bold text-gray-900 text-sm uppercase tracking-widest">Resumen de Trayectoria</h3>
+                    <?php if ($hizo_contacto): ?>
+                        <span class="ml-2 inline-flex items-center gap-1 text-[9px] bg-emerald-500 text-white px-2.5 py-1 rounded-full font-black uppercase tracking-widest">
+                            <i class="fa-solid fa-check"></i> Convirtió
+                        </span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                    <!-- Card 1: Origen -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-1.5 mb-3">
+                            <i class="<?= $ref_data['icon'] ?> text-[10px] <?= $ref_data['color_text'] ?>"></i>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Origen</span>
+                        </div>
+                        <p class="text-sm font-bold text-gray-800"><?= htmlspecialchars($ref_data['label']) ?></p>
+                        <?php if (!empty($primer_referrer)): ?>
+                            <p class="text-[10px] font-mono text-gray-400 mt-1 truncate" title="<?= htmlspecialchars($primer_referrer) ?>">
+                                <?= htmlspecialchars(parse_url($primer_referrer, PHP_URL_HOST) ?? $primer_referrer) ?>
+                            </p>
+                        <?php elseif (!empty($primer_utm)): ?>
+                            <p class="text-[10px] font-mono text-gray-400 mt-1 truncate">UTM: <?= htmlspecialchars($primer_utm) ?></p>
+                        <?php else: ?>
+                            <p class="text-[10px] text-gray-400 mt-1">Sin datos de origen</p>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Card 2: Comportamiento -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-1.5 mb-3">
+                            <i class="fa-solid fa-chart-line text-[10px] text-[#54A6D8]"></i>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Comportamiento</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] text-gray-500">Total visitas</span>
+                                <span class="text-xs font-black text-gray-900"><?= number_format($total_eventos_detalle, 0, ',', '.') ?></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] text-gray-500">Págs. únicas</span>
+                                <span class="text-xs font-black text-gray-900"><?= number_format($urls_unicas, 0, ',', '.') ?></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] text-gray-500">Días activo</span>
+                                <span class="text-xs font-black text-gray-900"><?= $dias_desde_primera === 0 ? 'Hoy' : $dias_desde_primera . 'd' ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Conversión -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-1.5 mb-3">
+                            <i class="fa-solid fa-handshake text-[10px] text-purple-500"></i>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Conversión</span>
+                        </div>
+                        <?php if ($is_guest): ?>
+                            <p class="text-[10px] text-gray-400 mt-1">No aplica para visitantes</p>
+                        <?php else: ?>
+                        <div class="space-y-2.5">
+                            <div class="flex items-center gap-2">
+                                <?php if ($hizo_contacto): ?>
+                                    <span class="w-4 h-4 bg-emerald-500 text-white rounded-full flex items-center justify-center shrink-0"><i class="fa-solid fa-check text-[7px]"></i></span>
+                                    <div class="min-w-0">
+                                        <span class="text-[10px] font-bold text-gray-800 block">Contacto</span>
+                                        <span class="text-[9px] font-mono text-gray-400"><?= date('d M, H:i', strtotime($conv['primer_contacto'])) ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="w-4 h-4 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center shrink-0"><i class="fa-solid fa-minus text-[7px]"></i></span>
+                                    <span class="text-[10px] text-gray-400">Sin contacto aún</span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <?php if ($hizo_apunte): ?>
+                                    <span class="w-4 h-4 bg-[#54A6D8] text-white rounded-full flex items-center justify-center shrink-0"><i class="fa-solid fa-check text-[7px]"></i></span>
+                                    <div class="min-w-0">
+                                        <span class="text-[10px] font-bold text-gray-800 block">Publicó Apunte</span>
+                                        <span class="text-[9px] font-mono text-gray-400"><?= date('d M, H:i', strtotime($conv['primer_apunte'])) ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="w-4 h-4 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center shrink-0"><i class="fa-solid fa-minus text-[7px]"></i></span>
+                                    <span class="text-[10px] text-gray-400">Sin apuntes publicados</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Card 4: Dispositivo + fechas -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-1.5 mb-3">
+                            <i class="<?= $dispositivo['icon'] ?> text-[10px] text-amber-500"></i>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Dispositivo</span>
+                        </div>
+                        <p class="text-sm font-bold text-gray-800 mb-3"><?= htmlspecialchars($dispositivo['label']) ?></p>
+                        <?php if ($stats['min_f']): ?>
+                        <div class="space-y-1.5 border-t border-gray-200 pt-2.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] text-gray-400">Primera visita</span>
+                                <span class="text-[9px] font-mono text-gray-600"><?= date('d M Y', strtotime($stats['min_f'])) ?></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] text-gray-400">Última visita</span>
+                                <span class="text-[9px] font-mono text-gray-600"><?= date('d M Y', strtotime($stats['max_f'])) ?></span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
+                </div>
+            </div>
+            <!-- ===== FIN BLOQUE RESUMEN ===== -->
 
             <form method="POST" id="form-acciones">
                 <input type="hidden" name="accion_global" value="eliminar">
