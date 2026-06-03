@@ -5,8 +5,6 @@ require_once(__DIR__ . '/app/correo.php');
 
 $mensaje = '';
 $tipo_alerta = ''; // 'error' o 'success'
-$abrir_modal_institucion = false;
-$abrir_modal_seguridad = false;
 
 // --- NUEVO: Atrapar respuestas del ticket de soporte ---
 if (isset($_GET['ticket'])) {
@@ -30,8 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $carrera = trim($_POST['carrera'] ?? '');
     $ip_actual = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-    // Dominios genéricos prohibidos
-    $dominios_prohibidos = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'live.com'];
     $dominio = substr(strrchr($correo, "@"), 1);
 
     // 1. Validaciones básicas
@@ -45,46 +41,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mensaje = 'La contraseña debe tener al menos 6 caracteres.';
         $tipo_alerta = 'error';
     } else {
+        // 2. Verificar VIP (excepciones manuales del admin)
         $esExcepcion = false;
-        
-        // 2. Verificar Excepciones
         $stmt_exc = $conn->prepare("SELECT id FROM excepciones_email WHERE correo = ? AND activo = 1");
         $stmt_exc->bind_param("s", $correo);
         $stmt_exc->execute();
-        if ($stmt_exc->get_result()->num_rows === 1) { 
-            $esExcepcion = true; 
+        if ($stmt_exc->get_result()->num_rows === 1) {
+            $esExcepcion = true;
         }
         $stmt_exc->close();
 
-        // 3. Lógica de Dominios
-        if (!$esExcepcion) {
-            if (in_array($dominio, $dominios_prohibidos)) {
-                $abrir_modal_seguridad = true;
-                // Log de intento fallido (Rebote)
-                $stmt_rebote = $conn->prepare("INSERT INTO interesados_registro (correo, ip, fecha, invitado) VALUES (?, ?, NOW(), 0)");
-                $stmt_rebote->bind_param("ss", $correo, $ip_actual);
-                $stmt_rebote->execute();
-                $stmt_rebote->close();
-            } else {
-                $stmt_dom = $conn->prepare("SELECT institucion FROM dominios_permitidos WHERE dominio = ?");
-                $stmt_dom->bind_param("s", $dominio);
-                $stmt_dom->execute();
-                $res_dom = $stmt_dom->get_result();
+        // 3. Determinar tipo y verificacion_estado (3 ramas)
+        $tipo_registro = 'particular';
+        $verificacion_registro = 'pendiente';
 
-                if ($res_dom->num_rows !== 1) {
-                    $abrir_modal_institucion = true;
-                    // Log de intento institucional no registrado
-                    $stmt_rebote = $conn->prepare("INSERT INTO interesados_registro (correo, ip, fecha, invitado) VALUES (?, ?, NOW(), 0)");
-                    $stmt_rebote->bind_param("ss", $correo, $ip_actual);
-                    $stmt_rebote->execute();
-                    $stmt_rebote->close();
-                }
-                $stmt_dom->close();
+        if ($esExcepcion) {
+            $verificacion_registro = 'aprobado'; // Rama 2: VIP — admin ya confió en este correo
+        } else {
+            $stmt_dom = $conn->prepare("SELECT institucion FROM dominios_permitidos WHERE dominio = ?");
+            $stmt_dom->bind_param("s", $dominio);
+            $stmt_dom->execute();
+            if ($stmt_dom->get_result()->num_rows === 1) {
+                $tipo_registro = 'estudiante';   // Rama 1: dominio institucional
+                $verificacion_registro = 'aprobado';
             }
+            // else: queda 'particular' + 'pendiente' (Rama 3: no-VIP, no institucional)
+            $stmt_dom->close();
         }
 
-        // 4. Registro final si pasó filtros
-        if (!$abrir_modal_seguridad && !$abrir_modal_institucion && empty($mensaje)) {
+        // 4. Registro final
+        if (empty($mensaje)) {
            // Buscamos el correo incluyendo soft-deleted para distinguir 3 escenarios
 $stmt = $conn->prepare("SELECT id, visible, bloqueado FROM alumnos WHERE correo = ?");
 $stmt->bind_param("s", $correo);
@@ -104,17 +90,18 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
 
     if ($usuario_existente && (int)$usuario_existente['visible'] === 0) {
         // Caso 2: Cuenta soft-deleted → REACTIVAR con los nuevos datos
-        $stmt_react = $conn->prepare("UPDATE alumnos 
-            SET nombre = ?, password = ?, carrera = ?, dominio = ?, token = ?, 
-                confirmado = 0, visible = 1, bloqueado = 0, ultimo_reenvio = NULL
+        $stmt_react = $conn->prepare("UPDATE alumnos
+            SET nombre = ?, password = ?, carrera = ?, dominio = ?, token = ?,
+                confirmado = 0, visible = 1, bloqueado = 0, ultimo_reenvio = NULL,
+                tipo = ?, verificacion_estado = ?
             WHERE id = ?");
-        $stmt_react->bind_param("sssssi", $nombre, $hash, $carrera, $dominio, $token, $usuario_existente['id']);
+        $stmt_react->bind_param("sssssssi", $nombre, $hash, $carrera, $dominio, $token, $tipo_registro, $verificacion_registro, $usuario_existente['id']);
         $ok_db = $stmt_react->execute();
         $stmt_react->close();
     } else {
         // Caso 3: Correo nuevo → INSERT normal
-        $stmt_insert = $conn->prepare("INSERT INTO alumnos (nombre, correo, password, carrera, dominio, confirmado, token) VALUES (?, ?, ?, ?, ?, 0, ?)");
-        $stmt_insert->bind_param("ssssss", $nombre, $correo, $hash, $carrera, $dominio, $token);
+        $stmt_insert = $conn->prepare("INSERT INTO alumnos (nombre, correo, password, carrera, dominio, confirmado, token, tipo, verificacion_estado) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)");
+        $stmt_insert->bind_param("ssssssss", $nombre, $correo, $hash, $carrera, $dominio, $token, $tipo_registro, $verificacion_registro);
         $ok_db = $stmt_insert->execute();
         $stmt_insert->close();
     }
@@ -229,51 +216,11 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
     </div>
   </div>
 
-  <div id="modalSecurity" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] <?= $abrir_modal_seguridad ? '' : 'hidden' ?> p-4 transition-all duration-300">
-    <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-sm relative animate-fade-in text-center border border-gray-100">
-        <div class="w-20 h-20 bg-sky-50 text-[#54A6D8] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-            <i class="fa-solid fa-graduation-cap text-3xl"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-3 tracking-tight leading-tight">Acceso Académico</h2>
-        <p class="text-gray-500 text-sm leading-relaxed mb-8">
-            Por seguridad, Nubira es una red exclusiva. No aceptamos correos genéricos (Gmail, Outlook). Usa tu <b>correo universitario</b>.
-        </p>
-        <button type="button" onclick="closeSecurityModal()" 
-                class="w-full bg-[#54A6D8] hover:bg-[#4592c0] text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg hover:scale-[1.01] transition-all">
-            Entendido
-        </button>
-    </div>
-  </div>
-
-  <div id="modalInstitucion" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] <?= $abrir_modal_institucion ? '' : 'hidden' ?> p-4">
-    <div class="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md relative animate-fade-in border border-gray-100">
-        <h2 class="text-2xl font-bold text-gray-900 mb-2 tracking-tight">¿Tu U no está en Nubira?</h2>
-        <p class="text-gray-500 text-sm mb-6">Solicita la integración de tu dominio institucional.</p>
-        <form action="/app/solicitar_institucion.php" method="POST" class="space-y-4">
-            <input type="text" name="institucion" placeholder="Nombre de la Universidad" required 
-                   class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white outline-none transition-all focus:ring-2 focus:ring-[#54A6D8]">
-            <input type="email" name="email" value="<?= htmlspecialchars($correo ?? '', ENT_QUOTES, 'UTF-8') ?>" readonly 
-                   class="w-full p-4 border border-gray-200 rounded-xl bg-gray-100 text-gray-500 outline-none cursor-not-allowed">
-            <button type="submit" class="w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl shadow-md hover:scale-[1.01] transition-all">Enviar solicitud</button>
-            <button type="button" onclick="document.getElementById('modalInstitucion').classList.add('hidden')" class="w-full text-gray-400 font-medium py-2 text-sm hover:text-gray-600 transition">Cancelar</button>
-        </form>
-        
-    </div>
-  </div>
   
  <script>
-    const modalSecurity = document.getElementById('modalSecurity');
-    const inputCorreo = document.getElementById('inputCorreo');
     const registerForm = document.getElementById('registerForm');
     const btnSubmit = document.getElementById('btnSubmit');
 
-    function closeSecurityModal() {
-        modalSecurity.classList.add('hidden');
-        inputCorreo.value = ''; 
-        inputCorreo.focus();
-    }
-
-    // NUEVO: Feedback de carga para el botón
     registerForm.addEventListener('submit', function() {
         // Cambiamos el texto y el ícono
         btnSubmit.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Preparando tu cuenta...</span>';

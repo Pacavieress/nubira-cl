@@ -2,6 +2,12 @@
 session_start();
 require_once(__DIR__ . '/app/conexion.php');
 
+// Auto-migración: sistema de verificación híbrido
+try { $conn->query("ALTER TABLE alumnos ADD COLUMN verificacion_estado VARCHAR(20) DEFAULT NULL"); } catch (Throwable $e) {}
+try { $conn->query("ALTER TABLE alumnos ADD COLUMN universidad VARCHAR(100) DEFAULT NULL"); } catch (Throwable $e) {}
+try { $conn->query("ALTER TABLE alumnos ADD COLUMN anio_egreso INT DEFAULT NULL"); } catch (Throwable $e) {}
+try { $conn->query("ALTER TABLE alumnos ADD COLUMN anios_experiencia INT DEFAULT NULL"); } catch (Throwable $e) {}
+
 // 0. CAPTURAR REDIRECCIÓN (LAZY REGISTRATION)
 $redir_destino = $_GET['redir'] ?? $_SESSION['redirigir_despues_login'] ?? '';
 
