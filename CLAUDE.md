@@ -1,6 +1,93 @@
+
+## Pendiente CRÍTICO 03/06/2026 - tarde
+
+### Sistema de registro híbrido (Plan B aprobado)
+
+CASO DETONANTE: Paulina (licenciada en matemáticas, profesora PAES) se registró con Gmail. Su perfil muestra "Estudiante Universitario" cuando NO es estudiante.
+
+PLAN APROBADO (NO el minimalista):
+- register.php queda IGUAL
+- Detección post-login: si correo NO institucional Y tipo IS NULL → redirigir a /completar_perfil
+- Nuevo archivo: app/completar_perfil.php con formulario extendido (tipo + carrera/área + bio)
+- Nueva columna: verificacion_estado VARCHAR(20) en alumnos (auto-migración)
+- Restricción: si pendiente/rechazado, NO puede publicar servicios ni apuntes
+- Panel admin con tab "Pendientes" para aprobar/rechazar
+- perfil.php muestra el subtítulo según tipo (Estudiante / Egresado / Profesor / Particular)
+
+ARCHIVOS A TOCAR (~153 líneas, 7 archivos):
+- login.php (~20 líneas): detección post-login
+- app/completar_perfil.php (NUEVO ~80 líneas)
+- editar_datos.php (~15 líneas)
+- perfil.php (~8 líneas)
+- app/admin_usuarios.php (~20 líneas): tab Pendientes
+- app/publicar_servicio.php (~5 líneas): bloqueo si no aprobado
+- app/formulario_subir_apunte.php (~5 líneas): bloqueo si no aprobado
+
+PARCHE INMEDIATO PARA PAULINA (mientras no esté implementado):
+UPDATE alumnos SET tipo = 'profesor', verificacion_estado = 'aprobado' WHERE correo = '<correo_paulina>';
+
+DOMINIOS INSTITUCIONALES: se gestionan en tabla dominios_permitidos. Lista actual via:
+SELECT dominio, institucion FROM dominios_permitidos ORDER BY institucion ASC;
+
+LÓGICA DE DETECCIÓN POST-LOGIN:
+LOGIN EXITOSO
+  └─ ¿dominio en dominios_permitidos? → SÍ → /vitrina (institucional verificado)
+  └─ NO institucional:
+      └─ tipo IS NULL → /completar_perfil
+      └─ verificacion_estado = 'pendiente' → /vitrina con banner
+      └─ verificacion_estado = 'aprobado' → /vitrina normal
+      └─ verificacion_estado = 'rechazado' → página de aviso
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Pendiente: Funcionalidad "Soporte Nubira" (chat admin→usuario)
+
+Plan auditado y aprobado. NO implementar hasta cerrar caso Javiera Vásquez (PUCV).
+
+### Contexto
+Admin necesita enviar mensajes directos a usuarios desde Nubira (sin correo manual). El usuario recibe aviso por correo + ve el hilo en su bandeja de mensajes con badge "Soporte Nubira".
+
+### Ajustes confirmados
+- Nombre unificado: **"Soporte Nubira"** en toda la UI (badge, chat, lista). SMTP puede seguir como "Equipo Nubira".
+- Ocultar usuario fantasma en admin_usuarios.php: `WHERE id != SOPORTE_USER_ID`
+- Filtro "Soporte" en admin_chats.php: opcional, dejar para después
+
+### Pasos de implementación
+**Paso 0 — phpMyAdmin (manual):**
+- INSERT alumnos: `nombre='Soporte Nubira'`, `correo='soporte@nubira.cl'`, `rol='admin'`, `visible=0`, `confirmado=1` → anotar ID como SOPORTE_USER_ID
+- INSERT servicios: `titulo='Soporte Nubira'`, `alumno_id=SOPORTE_USER_ID`, `estado='aprobado'`, `visible=1`, `precio=0` → anotar ID como SOPORTE_SERVICE_ID
+
+**Paso 1 — `app/config.php` (+2 líneas):**
+```php
+define('SOPORTE_USER_ID', <id>);
+define('SOPORTE_SERVICE_ID', <id>);
+```
+
+**Paso 2 — `app/admin_enviar_mensaje.php` (reescritura ~60 líneas):**
+- Buscar/crear conversación con `servicio_id=SOPORTE_SERVICE_ID`, `comprador_id=destino_id`, `vendedor_id=SOPORTE_USER_ID`
+- INSERT en `mensajes` con `remitente_id=SOPORTE_USER_ID` (bypass DLP, inserción directa)
+- UPDATE `conversaciones` SET `ultima_interaccion=NOW()`, `oculto_comprador=0`
+- `enviarCorreoNuevoMensaje()` con `$nombreEmisor='Soporte Nubira'` — enviar siempre (no aplicar condición offline)
+
+**Paso 3 — `app/mis_chats.php` (~15 líneas):**
+- Agregar `(c.servicio_id = SOPORTE_SERVICE_ID) AS es_soporte` al SELECT
+- En render: avatar rose, etiqueta "Soporte", nombre forzado a "Soporte Nubira"
+
+**Paso 4 — `app/chat_previo_contrato.php` (~10 líneas):**
+- `$es_soporte = ((int)$chat['servicio_id'] === SOPORTE_SERVICE_ID)`
+- Ocultar botones "Contratar"/"Ver Aviso" si `$es_soporte`
+- Mostrar nombre "Soporte Nubira" fijo (sin truncar apellido)
+
+**Paso 5 — `app/admin_usuarios.php`:**
+- Agregar `AND id != SOPORTE_USER_ID` en el WHERE del query de listado de usuarios
+
+### Riesgos a recordar
+- Servicio fantasma NUNCA eliminar/ocultar (rompe INNER JOIN en mis_chats y chat_previo_contrato)
+- `notificar_inactividad_chat.php`: agregar `AND c.vendedor_id != SOPORTE_USER_ID` para que el cron no envíe alerts de inactividad al usuario fantasma
+
+---
 
 ## Pendientes 03/06/2026
 
