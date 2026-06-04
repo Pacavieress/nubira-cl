@@ -35,10 +35,14 @@ if ($chat_id <= 0) die("Chat no válido.");
 $sql = "
     SELECT 
         c.*,
-        s.titulo as servicio_titulo, 
+        s.titulo as servicio_titulo,
         s.categoria,
-        s.precio, 
-        s.modalidad, 
+        s.precio,
+        s.precio_oferta,
+        s.is_subvencionado,
+        s.cupos_oferta,
+        s.duracion_minutos,
+        s.modalidad,
         s.imagen as servicio_imagen,
         -- Vendedor
         v.nombre as nombre_vendedor,
@@ -66,6 +70,11 @@ registrar_actividad($conn, $my_id, 'VER_CHAT', 'Chat con servicio ID: ' . (int)$
 
 // 5. PREPARAR DATOS VISUALES
 $esVendedor = ($chat['vendedor_id'] == $my_id);
+
+$modal_precio        = (int)$chat['precio'];
+$modal_es_oferta     = ($chat['is_subvencionado'] == 1 && $chat['cupos_oferta'] > 0);
+$modal_precio_oferta = $modal_es_oferta ? (int)$chat['precio_oferta'] : $modal_precio;
+$modal_duracion      = (int)($chat['duracion_minutos'] ?: 60);
 
 if ($esVendedor) {
     $raw_nombre = $chat['nombre_comprador'];
@@ -183,6 +192,7 @@ require __DIR__ . '/render_mensajes.php';
 $html_mensajes_iniciales = ob_get_clean();
 
 // [NUBIRA 2.0 PERF] Liberar la sesión para que el polling de 3 seg no congele el envío de mensajes
+if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 session_write_close();
 ?>
 
@@ -374,9 +384,9 @@ textarea, input {
                     Contratar
                 </a>
             <?php else: ?>
-                <a href="/detalle-servicio/<?= (int)$chat['servicio_id'] ?>" target="_blank" class="bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold transition">
-                    Ver Aviso
-                </a>
+                <button type="button" id="btn-generar-reserva" class="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95">
+                    Generar Reserva
+                </button>
             <?php endif; ?>
         </div>
     </header>
@@ -1325,5 +1335,159 @@ form.addEventListener('submit', async (e) => {
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !lb.classList.contains('hidden')) cerrar(); });
 })();
 </script>
+
+<?php if ($esVendedor): ?>
+<!-- MODAL: Generar Reserva -->
+<div id="modal-reserva" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+    <div id="modal-reserva-card" class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform translate-y-4 opacity-0 transition-all duration-200">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-50 text-[#54A6D8] rounded-full flex items-center justify-center shrink-0">
+                    <?= icon('calendar', 'w-4 h-4') ?>
+                </div>
+                <h3 class="font-bold text-gray-900 text-[15px]">Generar Reserva</h3>
+            </div>
+            <button type="button" id="btn-cerrar-modal-reserva" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-50 transition-colors">
+                <?= icon('x-mark', 'w-5 h-5') ?>
+            </button>
+        </div>
+
+        <div class="px-5 pt-4 pb-3 bg-gray-50 border-b border-gray-100">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Servicio</p>
+            <p class="text-sm font-bold text-gray-900 truncate"><?= htmlspecialchars($chat['servicio_titulo'], ENT_QUOTES, 'UTF-8') ?></p>
+            <div class="flex items-center gap-6 mt-2">
+                <div>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wide">Duración</p>
+                    <p class="text-sm font-bold text-gray-700"><?= $modal_duracion ?> min</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wide">Precio</p>
+                    <?php if ($modal_es_oferta): ?>
+                        <?php $modal_pct = round((1 - $modal_precio_oferta / $modal_precio) * 100); ?>
+                        <p class="text-sm font-bold">
+                            <span class="line-through text-gray-400 mr-1">$<?= number_format($modal_precio, 0, ',', '.') ?></span>
+                            <span class="text-orange-500">-<?= $modal_pct ?>%</span>
+                            <span class="text-gray-900 ml-1">→ $<?= number_format($modal_precio_oferta, 0, ',', '.') ?></span>
+                        </p>
+                    <?php else: ?>
+                        <p class="text-sm font-bold text-gray-700">$<?= number_format($modal_precio, 0, ',', '.') ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-5">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Fecha</label>
+                    <input type="date" id="reserva-fecha" min="<?= date('Y-m-d') ?>"
+                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:outline-none focus:border-[#54A6D8] focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Hora</label>
+                    <input type="time" id="reserva-hora" min="07:00"
+                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-900 focus:outline-none focus:border-[#54A6D8] focus:bg-white transition">
+                </div>
+            </div>
+            <p class="text-[11px] text-gray-400 mb-4 leading-snug">El estudiante recibirá un enlace de pago válido por 24 horas. El precio no se puede modificar.</p>
+            <div class="flex gap-2">
+                <button type="button" id="btn-cancelar-modal-reserva" class="flex-1 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-enviar-reserva" class="flex-1 py-2.5 text-sm font-bold text-white bg-[#54A6D8] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Generar enlace
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const btnAbrir    = document.getElementById('btn-generar-reserva');
+    const modal       = document.getElementById('modal-reserva');
+    const card        = document.getElementById('modal-reserva-card');
+    const btnCerrar   = document.getElementById('btn-cerrar-modal-reserva');
+    const btnCancelar = document.getElementById('btn-cancelar-modal-reserva');
+    const btnEnviar   = document.getElementById('btn-enviar-reserva');
+    const inputFecha  = document.getElementById('reserva-fecha');
+    const inputHora   = document.getElementById('reserva-hora');
+
+    function abrirModal() {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        void card.offsetWidth;
+        requestAnimationFrame(() => {
+            card.classList.remove('translate-y-4', 'opacity-0');
+            card.classList.add('translate-y-0', 'opacity-100');
+        });
+    }
+
+    function cerrarModal() {
+        card.classList.add('translate-y-4', 'opacity-0');
+        card.classList.remove('translate-y-0', 'opacity-100');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            inputFecha.value = '';
+            inputHora.value  = '';
+        }, 200);
+    }
+
+    btnAbrir.addEventListener('click', abrirModal);
+    btnCerrar.addEventListener('click', cerrarModal);
+    btnCancelar.addEventListener('click', cerrarModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModal(); });
+
+    btnEnviar.addEventListener('click', async () => {
+        const fecha = inputFecha.value;
+        const hora  = inputHora.value;
+
+        if (!fecha) { showToast('Elige una fecha para la reserva.'); return; }
+        if (!hora)  { showToast('Elige una hora para la reserva.'); return; }
+
+        const hh = parseInt(hora.split(':')[0], 10);
+        if (hh < 7) { showToast('Elige una hora válida (desde las 07:00).'); return; }
+
+        btnEnviar.disabled = true;
+        btnEnviar.textContent = 'Generando...';
+
+        const fd = new FormData();
+        fd.append('conversacion_id', '<?= $chat_id ?>');
+        fd.append('fecha', fecha);
+        fd.append('hora', hora);
+        fd.append('csrf_token', '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>');
+
+        try {
+            const res  = await fetch('/app/generar_slot_excepcion.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+            const data = await res.json();
+            if (data.success) {
+                cerrarModal();
+                const tc      = document.getElementById('toast-container');
+                const tcInner = tc.querySelector('div');
+                tcInner.classList.replace('bg-red-500',    'bg-emerald-500');
+                tcInner.classList.replace('border-red-600','border-emerald-600');
+                showToast('Enlace de pago enviado al chat.');
+                setTimeout(() => {
+                    tcInner.classList.replace('bg-emerald-500',    'bg-red-500');
+                    tcInner.classList.replace('border-emerald-600','border-red-600');
+                    hideToast();
+                }, 4000);
+                pollIntervalo = 1000;
+            } else {
+                showToast(data.error || 'No se pudo generar la reserva.');
+            }
+        } catch (e) {
+            showToast('Error de conexión. Intenta nuevamente.');
+        } finally {
+            btnEnviar.disabled = false;
+            btnEnviar.textContent = 'Generar enlace';
+        }
+    });
+})();
+</script>
+<?php endif; ?>
+
 </body>
 </html>
