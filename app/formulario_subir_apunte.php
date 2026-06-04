@@ -50,10 +50,32 @@ $usuario_id = (int)$_SESSION['usuario_id'];
 $anio_default = date('Y');
 $semestre_default = (date('n') <= 7) ? 1 : 2;
 
+// Guard: verificación de cuenta para usuarios no institucionales
+$verificacion_estado_ap = null;
+$stmt_vf = $conn->prepare("SELECT verificacion_estado FROM alumnos WHERE id = ? LIMIT 1");
+if ($stmt_vf) {
+    $stmt_vf->bind_param("i", $usuario_id);
+    $stmt_vf->execute();
+    $stmt_vf->bind_result($verificacion_estado_ap);
+    $stmt_vf->fetch();
+    $stmt_vf->close();
+}
+$puede_publicar_ap = ($verificacion_estado_ap === null || $verificacion_estado_ap === 'aprobado');
+
 // =============================================
 // MODO AJAX: Procesar y responder JSON
 // =============================================
 $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_ajax && !$puede_publicar_ap) {
+    header('Content-Type: application/json');
+    http_response_code(403);
+    $msg = ($verificacion_estado_ap === 'rechazado')
+        ? 'Tu cuenta no fue aprobada para publicar. Escríbenos a contacto@nubira.cl si crees que es un error.'
+        : 'Tu cuenta está en revisión. Una vez aprobada por el equipo de Nubira, podrás publicar.';
+    echo json_encode(['error' => $msg]);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_ajax) {
     header('Content-Type: application/json');
@@ -395,6 +417,31 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
         <button type="button" onclick="document.getElementById('toast').classList.add('hidden')" class="text-sm opacity-60 hover:opacity-100">✕</button>
     </div>
 
+    <?php if (!$puede_publicar_ap): ?>
+      <?php if ($verificacion_estado_ap === 'rechazado'): ?>
+        <div class="bg-white p-10 rounded-2xl shadow-[0_4px_14px_rgba(0,0,0,0.06)] border border-gray-100 text-center max-w-2xl mx-auto mt-8">
+          <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Cuenta no aprobada</h2>
+          <p class="text-gray-500 max-w-md mx-auto text-sm">Tu cuenta no fue aprobada para publicar en Nubira. Si crees que es un error, escríbenos a <a href="mailto:contacto@nubira.cl" class="text-[#54A6D8] font-bold hover:underline">contacto@nubira.cl</a></p>
+          <a href="/explorar" class="inline-block mt-6 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition">Explorar servicios</a>
+        </div>
+      <?php else: ?>
+        <div class="bg-white p-10 rounded-2xl shadow-[0_4px_14px_rgba(0,0,0,0.06)] border border-gray-100 text-center max-w-2xl mx-auto mt-8">
+          <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Cuenta en revisión</h2>
+          <p class="text-gray-500 max-w-md mx-auto text-sm">Tu cuenta está en revisión. Una vez aprobada por el equipo de Nubira, podrás publicar. Te avisaremos por correo.</p>
+          <a href="/explorar" class="inline-block mt-6 px-6 py-3 bg-[#54A6D8] hover:bg-sky-600 text-white font-bold rounded-xl transition shadow-lg shadow-blue-200">Explorar servicios</a>
+        </div>
+      <?php endif; ?>
+    <?php else: ?>
     <form id="form-apunte" class="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm flex-grow mb-6">
      <input type="hidden" name="ia_keywords" id="ia_keywords" value="">
 <input type="hidden" name="ia_used" id="ia_used" value="0">
@@ -597,7 +644,8 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
             </div>
         </div>
     </form>
-    
+    <?php endif; ?>
+
     <!-- Modal Escáner -->
     <div id="modal-escaner" class="fixed inset-0 z-[100] hidden items-end md:items-center justify-center">
         <div id="modal-escaner-bg" class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 cursor-pointer"></div>

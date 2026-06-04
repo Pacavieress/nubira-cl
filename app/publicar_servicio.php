@@ -75,6 +75,16 @@ $stmt->fetch();
 $stmt->close();
 if ($pubs_hoy >= 2) $ya_publico_hoy = true;
 
+// Guard: verificación de cuenta para usuarios no institucionales
+$verificacion_estado_pub = null;
+$stmt_vf = $conn->prepare("SELECT verificacion_estado FROM alumnos WHERE id = ? LIMIT 1");
+$stmt_vf->bind_param("i", $usuario_id);
+$stmt_vf->execute();
+$stmt_vf->bind_result($verificacion_estado_pub);
+$stmt_vf->fetch();
+$stmt_vf->close();
+$puede_publicar = ($verificacion_estado_pub === null || $verificacion_estado_pub === 'aprobado');
+
 // Función Anti-Contacto
 function contiene_contacto($texto) {
     $patrones = [
@@ -104,7 +114,7 @@ function contiene_contacto($texto) {
 }
 
 // PROCESAMIENTO POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy && $puede_publicar) {
     
     // [NUBIRA 2.0] Validación CSRF — primer candado de seguridad
     $token_recibido = $_POST['csrf_token'] ?? '';
@@ -304,7 +314,31 @@ require_once $app_dir . '/componentes/sidebar.php';
     </a>
 </div>
 
-    <?php if ($ya_publico_hoy && !$exito): ?>
+    <?php if (!$puede_publicar): ?>
+      <?php if ($verificacion_estado_pub === 'rechazado'): ?>
+        <div class="bg-white p-10 rounded-2xl shadow-[0_4px_14px_rgba(0,0,0,0.06)] border border-gray-100 text-center max-w-2xl mx-auto mt-8">
+          <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Cuenta no aprobada</h2>
+          <p class="text-gray-500 max-w-md mx-auto text-sm">Tu cuenta no fue aprobada para publicar en Nubira. Si crees que es un error, escríbenos a <a href="mailto:contacto@nubira.cl" class="text-[#54A6D8] font-bold hover:underline">contacto@nubira.cl</a></p>
+          <a href="/explorar" class="inline-block mt-6 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition">Explorar servicios</a>
+        </div>
+      <?php else: ?>
+        <div class="bg-white p-10 rounded-2xl shadow-[0_4px_14px_rgba(0,0,0,0.06)] border border-gray-100 text-center max-w-2xl mx-auto mt-8">
+          <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Cuenta en revisión</h2>
+          <p class="text-gray-500 max-w-md mx-auto text-sm">Tu cuenta está en revisión. Una vez aprobada por el equipo de Nubira, podrás publicar. Te avisaremos por correo.</p>
+          <a href="/explorar" class="inline-block mt-6 px-6 py-3 bg-[#54A6D8] hover:bg-sky-600 text-white font-bold rounded-xl transition shadow-lg shadow-blue-200">Explorar servicios</a>
+        </div>
+      <?php endif; ?>
+    <?php elseif ($ya_publico_hoy && !$exito): ?>
       <div class="bg-white p-10 rounded-2xl shadow-[0_4px_14px_rgba(0,0,0,0.06)] border border-gray-100 text-center max-w-2xl mx-auto mt-8">
          <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#54A6D8]">
             <?= icon('sparkles', 'w-10 h-10') ?>
