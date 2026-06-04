@@ -386,4 +386,36 @@ function enviarCorreoRecordatorioClase($correoDestino, $nombreDestino, $nombreOt
     $cuerpo = plantillaMaestra($tituloEmail, $html, "Ir al Aula", $linkAula);
     return _enviarEmailBase($correoDestino, $asunto, $cuerpo);
 }
+
+// ==========================================================
+// VERIFICACIÓN DE CUENTA (REGISTRO HÍBRIDO)
+// ==========================================================
+
+function enviarCorreoVerificacionAprobada($correo, $nombre) {
+    $html = "
+        <p>Hola <strong>" . htmlspecialchars($nombre) . "</strong>,</p>
+        <p>Revisamos tu información y tu cuenta ha sido <strong style='color:#10B981;'>verificada y aprobada</strong>.</p>
+        <p>Ya puedes publicar servicios y apuntes en Nubira.</p>
+        <p style='font-size:14px; color:#6B7280; margin-top:20px;'>
+            Si tienes preguntas, escríbenos a <a href='mailto:soporte@nubira.cl' style='color:#54A6D8;'>soporte@nubira.cl</a>.
+        </p>
+    ";
+    $cuerpo = plantillaMaestra("¡Tu cuenta fue aprobada!", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
+    return _enviarEmailBase($correo, "Tu cuenta fue aprobada en Nubira", $cuerpo);
+}
+
+function enviarCorreoVerificacionRechazada($correo, $nombre) {
+    $html = "
+        <p>Hola <strong>" . htmlspecialchars($nombre) . "</strong>,</p>
+        <p>Revisamos la información de tu cuenta y por ahora no pudimos completar la verificación.</p>
+        <p>Si crees que esto es un error o tienes documentación que respalde tu perfil, escríbenos directamente a
+           <a href='mailto:soporte@nubira.cl' style='color:#54A6D8;'>soporte@nubira.cl</a> y lo revisamos contigo.
+        </p>
+        <p style='font-size:14px; color:#6B7280; margin-top:20px;'>
+            Puedes seguir usando Nubira para explorar servicios y apuntes mientras tanto.
+        </p>
+    ";
+    $cuerpo = plantillaMaestra("Revisamos tu cuenta en Nubira", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
+    return _enviarEmailBase($correo, "Revisamos tu cuenta en Nubira", $cuerpo);
+}
 ?>

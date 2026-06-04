@@ -186,6 +186,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
         }
 
+        // F) APROBAR VERIFICACIÓN
+        if ($accion === 'aprobar_verificacion') {
+            $stmt_u = $conn->prepare("SELECT nombre, correo FROM alumnos WHERE id = ?");
+            $stmt_u->bind_param("i", $id);
+            $stmt_u->execute();
+            $datos_u = $stmt_u->get_result()->fetch_assoc();
+            $stmt_u->close();
+
+            $stmt_v = $conn->prepare("UPDATE alumnos SET verificacion_estado = 'aprobado' WHERE id = ?");
+            $stmt_v->bind_param("i", $id);
+            $stmt_v->execute();
+            $stmt_v->close();
+
+            if ($datos_u) {
+                require_once $app_dir . '/correo.php';
+                enviarCorreoVerificacionAprobada($datos_u['correo'], $datos_u['nombre']);
+            }
+            $_SESSION['toast'] = "Cuenta aprobada: " . htmlspecialchars($datos_u['nombre'] ?? '');
+        }
+
+        // G) RECHAZAR VERIFICACIÓN
+        if ($accion === 'rechazar_verificacion') {
+            $stmt_u = $conn->prepare("SELECT nombre, correo FROM alumnos WHERE id = ?");
+            $stmt_u->bind_param("i", $id);
+            $stmt_u->execute();
+            $datos_u = $stmt_u->get_result()->fetch_assoc();
+            $stmt_u->close();
+
+            $stmt_v = $conn->prepare("UPDATE alumnos SET verificacion_estado = 'rechazado' WHERE id = ?");
+            $stmt_v->bind_param("i", $id);
+            $stmt_v->execute();
+            $stmt_v->close();
+
+            if ($datos_u) {
+                require_once $app_dir . '/correo.php';
+                enviarCorreoVerificacionRechazada($datos_u['correo'], $datos_u['nombre']);
+            }
+            $_SESSION['toast'] = "Cuenta rechazada: " . htmlspecialchars($datos_u['nombre'] ?? '');
+        }
+
     } catch (Exception $e) {
         $_SESSION['toast'] = "Error: " . $e->getMessage();
     }
@@ -258,6 +298,20 @@ $res = $stmt->get_result();
 
 // Global counter ignorando eliminados lógicamente
 $total_users_global = $conn->query("SELECT COUNT(id) FROM alumnos WHERE visible = 1")->fetch_row()[0];
+
+// Tab activo
+$tab = $_GET['tab'] ?? 'todos';
+
+// Pendientes de verificación (siempre se consultan para el badge del tab)
+$stmt_pend = $conn->prepare(
+    "SELECT id, nombre, correo, tipo, carrera, bio, fecha_registro
+     FROM alumnos
+     WHERE verificacion_estado = 'pendiente' AND visible = 1
+     ORDER BY fecha_registro ASC"
+);
+$stmt_pend->execute();
+$res_pendientes = $stmt_pend->get_result();
+$count_pendientes = $res_pendientes->num_rows;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -296,46 +350,75 @@ require_once $app_dir . '/componentes/sidebar.php';
 <main class="pt-16 pb-32 md:pb-16 lg:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
   <div class="max-w-7xl mx-auto space-y-6">
 
-   <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div class="flex items-center gap-6">
-            <div>
-                <h1 class="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">Usuarios</h1>
-                <p class="text-slate-400 text-xs font-medium mt-0.5">Gestión, bloqueo y auditoría de cuentas.</p>
-            </div>
-            
-            <div class="hidden md:flex items-center gap-3 bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl">
-                <div class="bg-blue-50 p-2 rounded-lg text-[#54A6D8]">
-                    <i class="fa-solid fa-users text-lg"></i>
-                </div>
+   <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 py-4 mb-6 flex flex-col gap-3">
+
+        <!-- Fila 1: título + stats + filtros -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-6">
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Total</p>
-                    <p class="text-xl font-black text-slate-900 leading-none"><?= number_format($total_users_global) ?></p>
+                    <h1 class="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">Usuarios</h1>
+                    <p class="text-slate-400 text-xs font-medium mt-0.5">Gestión, bloqueo y auditoría de cuentas.</p>
                 </div>
-                <div class="h-8 w-px bg-slate-200 mx-2"></div>
-                <a href="/app/live_counter.php" target="_blank" class="text-xs font-bold text-[#54A6D8] active:text-blue-600 transition-colors flex items-center gap-1 uppercase tracking-wide">
-                    <i class="fa-solid fa-expand"></i> Live
-                </a>
-            </div>
-        </div>
-        
-        <form class="flex flex-col md:flex-row gap-2 w-full md:w-auto" method="GET">
-            <div class="relative w-full md:w-auto">
-                <select name="rol" onchange="this.form.submit()" class="w-full md:w-auto bg-slate-50 border border-slate-200 rounded-xl px-4 pr-10 py-2.5 text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white transition-colors cursor-pointer outline-none font-medium">
-                    <option value="">Todos los Roles</option>
-                    <option value="admin" <?= $filtro_rol=='admin'?'selected':'' ?>>Administradores</option>
-                    <option value="alumno" <?= $filtro_rol=='alumno'?'selected':'' ?>>Alumnos</option>
-                </select>
-                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+
+                <div class="hidden md:flex items-center gap-3 bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl">
+                    <div class="bg-blue-50 p-2 rounded-lg text-[#54A6D8]">
+                        <i class="fa-solid fa-users text-lg"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Total</p>
+                        <p class="text-xl font-black text-slate-900 leading-none"><?= number_format($total_users_global) ?></p>
+                    </div>
+                    <div class="h-8 w-px bg-slate-200 mx-2"></div>
+                    <a href="/app/live_counter.php" target="_blank" class="text-xs font-bold text-[#54A6D8] active:text-blue-600 transition-colors flex items-center gap-1 uppercase tracking-wide">
+                        <i class="fa-solid fa-expand"></i> Live
+                    </a>
+                </div>
             </div>
 
-            <div class="relative w-full md:w-64">
-                <input type="text" name="q" value="<?= htmlspecialchars($busqueda) ?>" placeholder="Buscar usuario..." 
-                       class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white transition-colors outline-none font-medium placeholder-slate-400">
-                <button type="submit" class="absolute right-3 top-2.5 text-slate-400 active:text-[#54A6D8]">
-                    <i class="fa-solid fa-search"></i>
-                </button>
-            </div>
-        </form>
+            <form class="flex flex-col md:flex-row gap-2 w-full md:w-auto" method="GET">
+                <?php if ($tab === 'pendientes'): ?>
+                    <input type="hidden" name="tab" value="pendientes">
+                <?php endif; ?>
+                <div class="relative w-full md:w-auto">
+                    <select name="rol" onchange="this.form.submit()" class="w-full md:w-auto bg-slate-50 border border-slate-200 rounded-xl px-4 pr-10 py-2.5 text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white transition-colors cursor-pointer outline-none font-medium">
+                        <option value="">Todos los Roles</option>
+                        <option value="admin" <?= $filtro_rol=='admin'?'selected':'' ?>>Administradores</option>
+                        <option value="alumno" <?= $filtro_rol=='alumno'?'selected':'' ?>>Alumnos</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                </div>
+
+                <div class="relative w-full md:w-64">
+                    <input type="text" name="q" value="<?= htmlspecialchars($busqueda) ?>" placeholder="Buscar usuario..."
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white transition-colors outline-none font-medium placeholder-slate-400">
+                    <button type="submit" class="absolute right-3 top-2.5 text-slate-400 active:text-[#54A6D8]">
+                        <i class="fa-solid fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Fila 2: tabs -->
+        <div class="flex items-center gap-2 pt-1">
+            <?php
+            $q_str = $busqueda ? '&q=' . urlencode($busqueda) : '';
+            $rol_str = $filtro_rol ? '&rol=' . urlencode($filtro_rol) : '';
+            ?>
+            <a href="?tab=todos<?= $q_str . $rol_str ?>"
+               class="<?= $tab === 'todos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200' ?> px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                Todos
+            </a>
+            <a href="?tab=pendientes<?= $q_str . $rol_str ?>"
+               class="<?= $tab === 'pendientes' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200' ?> px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-2">
+                Pendientes de verificación
+                <?php if ($count_pendientes > 0): ?>
+                    <span class="<?= $tab === 'pendientes' ? 'bg-white text-slate-900' : 'bg-red-500 text-white' ?> text-[10px] font-black h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
+                        <?= $count_pendientes ?>
+                    </span>
+                <?php endif; ?>
+            </a>
+        </div>
+
     </div>
 
     <?php if (isset($_SESSION['toast'])): ?>
@@ -347,6 +430,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         <script>setTimeout(()=>document.getElementById('toast').remove(), 3500);</script>
     <?php endif; ?>
 
+    <?php if ($tab === 'todos'): ?>
     <div class="bg-white border border-slate-100 rounded-3xl overflow-hidden min-h-[400px]">
        <div class="overflow-x-auto scrollbar-hide">
          <table class="w-full min-w-[1000px] text-sm text-left">
@@ -542,6 +626,102 @@ require_once $app_dir . '/componentes/sidebar.php';
         </div>
        <?php endif; ?>
     </div>
+    <?php else: ?>
+
+    <!-- TABLA: PENDIENTES DE VERIFICACIÓN -->
+    <div class="bg-white border border-slate-100 rounded-3xl overflow-hidden min-h-[400px]">
+      <?php if ($count_pendientes === 0): ?>
+        <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+          <i class="fa-solid fa-user-check text-4xl mb-3 text-slate-200"></i>
+          <p class="font-medium text-sm">Sin solicitudes pendientes de verificación.</p>
+        </div>
+      <?php else: ?>
+      <div class="overflow-x-auto scrollbar-hide">
+        <table class="w-full min-w-[900px] text-sm text-left">
+          <thead class="text-[11px] text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100">
+            <tr>
+              <th class="px-4 py-4 font-bold text-center w-16">ID</th>
+              <th class="px-4 py-4 font-bold">Usuario</th>
+              <th class="px-4 py-4 font-bold w-28">Tipo declarado</th>
+              <th class="px-4 py-4 font-bold">Carrera / Bio</th>
+              <th class="px-4 py-4 font-bold w-28">Registrado</th>
+              <th class="px-4 py-4 font-bold text-right w-44">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+          <?php while ($p = $res_pendientes->fetch_assoc()): ?>
+            <tr class="hover:bg-slate-50 transition-colors align-middle group">
+
+              <td class="px-4 py-4 text-center text-slate-400 font-mono text-xs">#<?= $p['id'] ?></td>
+
+              <td class="px-4 py-4">
+                <div class="min-w-0">
+                  <p class="font-bold text-slate-900 text-sm truncate max-w-[180px]"><?= htmlspecialchars($p['nombre'] ?? '') ?></p>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <p class="text-xs text-slate-500 font-medium truncate max-w-[160px]"><?= htmlspecialchars($p['correo'] ?? '') ?></p>
+                    <button onclick="copiarTexto('<?= htmlspecialchars($p['correo'] ?? '') ?>')" class="text-slate-300 hover:text-[#54A6D8] transition-colors" title="Copiar correo">
+                      <i class="fa-regular fa-copy text-[10px]"></i>
+                    </button>
+                  </div>
+                </div>
+              </td>
+
+              <td class="px-4 py-4">
+                <?php
+                $tipos = ['estudiante' => 'Estudiante', 'egresado' => 'Egresado', 'profesor' => 'Profesor', 'particular' => 'Particular'];
+                $tipo_label = $tipos[$p['tipo'] ?? ''] ?? ($p['tipo'] ? ucfirst($p['tipo']) : '—');
+                ?>
+                <span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest">
+                  <?= htmlspecialchars($tipo_label) ?>
+                </span>
+              </td>
+
+              <td class="px-4 py-4">
+                <p class="text-xs text-slate-700 font-medium truncate max-w-[200px]">
+                  <?= !empty($p['carrera']) ? htmlspecialchars($p['carrera']) : '<span class="text-slate-300">Sin carrera</span>' ?>
+                </p>
+                <?php if (!empty(trim($p['bio'] ?? ''))): ?>
+                  <p class="text-[11px] text-slate-400 mt-0.5 truncate max-w-[200px]"><?= htmlspecialchars($p['bio']) ?></p>
+                <?php endif; ?>
+              </td>
+
+              <td class="px-4 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">
+                <?= !empty($p['fecha_registro']) ? date('d/m/Y', strtotime($p['fecha_registro'])) : '—' ?>
+                <?php if (!empty($p['fecha_registro'])): ?>
+                  <br><span class="text-[10px] text-slate-400"><?= date('H:i', strtotime($p['fecha_registro'])) ?></span>
+                <?php endif; ?>
+              </td>
+
+              <td class="px-4 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <form method="POST" onsubmit="return confirm('¿Aprobar la cuenta de <?= htmlspecialchars(addslashes($p['nombre'] ?? '')) ?>?\n\nSe le enviará un correo de bienvenida.');" class="inline">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                    <input type="hidden" name="accion" value="aprobar_verificacion">
+                    <input type="hidden" name="id" value="<?= $p['id'] ?>">
+                    <button class="bg-emerald-50 active:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5">
+                      <i class="fa-solid fa-check"></i> Aprobar
+                    </button>
+                  </form>
+                  <form method="POST" onsubmit="return confirm('¿Rechazar la cuenta de <?= htmlspecialchars(addslashes($p['nombre'] ?? '')) ?>?\n\nSe le enviará un correo de aviso.');" class="inline">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                    <input type="hidden" name="accion" value="rechazar_verificacion">
+                    <input type="hidden" name="id" value="<?= $p['id'] ?>">
+                    <button class="bg-red-50 active:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5">
+                      <i class="fa-solid fa-xmark"></i> Rechazar
+                    </button>
+                  </form>
+                </div>
+              </td>
+
+            </tr>
+          <?php endwhile; ?>
+          </tbody>
+        </table>
+      </div>
+      <?php endif; ?>
+    </div>
+
+    <?php endif; ?>
 
   </div>
 </main>

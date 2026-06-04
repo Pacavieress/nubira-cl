@@ -51,7 +51,8 @@ try {
         'admin_reclamos' => 0,
         'admin_solicitudes' => 0,
         'admin_login_fallos' => 0,
-        'admin_accesos' => 0
+        'admin_accesos' => 0,
+        'admin_pendientes_verificacion' => 0
     ];
 
     if ($uid > 0) {
@@ -197,6 +198,12 @@ try {
             try {
                 $res = $conn->query("SELECT COUNT(id) AS total FROM dlp_intentos WHERE revisado_admin = 0");
                 if ($res) { $alertas['admin_chats'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
+            // 11. Usuarios pendientes de verificación (registro híbrido)
+            try {
+                $res = $conn->query("SELECT COUNT(id) AS total FROM alumnos WHERE verificacion_estado = 'pendiente' AND visible = 1");
+                if ($res) { $alertas['admin_pendientes_verificacion'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
         }
     }
