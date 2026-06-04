@@ -58,10 +58,10 @@ if (empty($_SESSION['csrf_token'])) {
 $CSRF = $_SESSION['csrf_token'];
 
 // Obtener datos actuales
-$stmt = $conn->prepare("SELECT nombre, correo, carrera, password FROM alumnos WHERE id = ?");
+$stmt = $conn->prepare("SELECT nombre, correo, carrera, password, tipo, bio, universidad, anio_egreso, anios_experiencia, verificacion_estado FROM alumnos WHERE id = ?");
 $stmt->bind_param("i", $usuario_id);
 $stmt->execute();
-$stmt->bind_result($nombre_actual, $correo_actual, $carrera_actual, $hash_password);
+$stmt->bind_result($nombre_actual, $correo_actual, $carrera_actual, $hash_password, $tipo_actual, $bio_actual, $univ_actual, $anio_eg_actual, $anios_exp_actual, $verif_estado_actual);
 $stmt->fetch();
 $stmt->close();
 
@@ -75,21 +75,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } 
     // 1. Editar Datos
     elseif (isset($_POST['editar_datos'])) {
-        $nuevo_nombre  = trim($_POST['nombre']  ?? '');
-        $nueva_carrera = trim($_POST['carrera'] ?? '');
-        
+        $nuevo_nombre   = trim($_POST['nombre']   ?? '');
+        $nueva_carrera  = trim(strip_tags($_POST['carrera']  ?? ''));
+        $nuevo_tipo     = trim($_POST['tipo']      ?? '');
+        $nueva_bio      = trim(strip_tags($_POST['bio']      ?? ''));
+        $nueva_univ     = trim(strip_tags($_POST['universidad'] ?? ''));
+        $nuevo_anio_eg  = isset($_POST['anio_egreso'])       && $_POST['anio_egreso']       !== '' ? (int)$_POST['anio_egreso']       : null;
+        $nuevo_anios_ex = isset($_POST['anios_experiencia']) && $_POST['anios_experiencia'] !== '' ? (int)$_POST['anios_experiencia'] : null;
+
+        $tipos_validos = ['estudiante', 'egresado', 'profesor', 'particular'];
+
         if ($nuevo_nombre === '' || $nueva_carrera === '') {
-            $mensaje = '❌ Todos los campos son obligatorios.';
+            $mensaje = '❌ El nombre y la carrera o área son obligatorios.';
+        } elseif ($nuevo_tipo !== '' && !in_array($nuevo_tipo, $tipos_validos, true)) {
+            $mensaje = '❌ Tipo de cuenta inválido.';
         } else {
-            $u = $conn->prepare("UPDATE alumnos SET nombre = ?, carrera = ? WHERE id = ?");
-            $u->bind_param("ssi", $nuevo_nombre, $nueva_carrera, $usuario_id);
+            $tipo_guardar = $nuevo_tipo !== '' ? $nuevo_tipo : null;
+            $bio_guardar  = $nueva_bio  !== '' ? $nueva_bio  : null;
+            $univ_guardar = $nueva_univ !== '' ? $nueva_univ : null;
+
+            $u = $conn->prepare("UPDATE alumnos SET nombre=?, carrera=?, tipo=?, bio=?, universidad=?, anio_egreso=?, anios_experiencia=? WHERE id=?");
+            $u->bind_param("sssssiii", $nuevo_nombre, $nueva_carrera, $tipo_guardar, $bio_guardar, $univ_guardar, $nuevo_anio_eg, $nuevo_anios_ex, $usuario_id);
             if ($u->execute()) {
                 $mensaje = '✅ Datos actualizados correctamente.';
                 $exito = true;
-                $nombre_actual = $nuevo_nombre;
-                $carrera_actual = $nueva_carrera;
+                $nombre_actual   = $nuevo_nombre;
+                $carrera_actual  = $nueva_carrera;
+                $tipo_actual     = $tipo_guardar;
+                $bio_actual      = $bio_guardar;
+                $univ_actual     = $univ_guardar;
+                $anio_eg_actual  = $nuevo_anio_eg;
+                $anios_exp_actual = $nuevo_anios_ex;
                 $_SESSION['usuario_nombre'] = $nuevo_nombre;
-                $_SESSION['carrera'] = $nueva_carrera;
+                $_SESSION['carrera']        = $nueva_carrera;
             } else {
                 $mensaje = '❌ Error al actualizar.';
             }
@@ -229,10 +247,54 @@ require_once $app_dir . '/componentes/sidebar.php';
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Carrera</label>
-                    <input type="text" name="carrera" value="<?= htmlspecialchars($carrera_actual) ?>" required
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Carrera / Área</label>
+                    <input type="text" name="carrera" value="<?= htmlspecialchars($carrera_actual ?? '') ?>" required
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Tipo de cuenta</label>
+                <select name="tipo"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none appearance-none cursor-pointer">
+                    <option value="">Sin especificar</option>
+                    <option value="estudiante" <?= ($tipo_actual ?? '') === 'estudiante' ? 'selected' : '' ?>>Estudiante</option>
+                    <option value="egresado"   <?= ($tipo_actual ?? '') === 'egresado'   ? 'selected' : '' ?>>Egresado</option>
+                    <option value="profesor"   <?= ($tipo_actual ?? '') === 'profesor'   ? 'selected' : '' ?>>Profesor</option>
+                    <option value="particular" <?= ($tipo_actual ?? '') === 'particular' ? 'selected' : '' ?>>Tutor Particular</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Universidad / Institución</label>
+                    <input type="text" name="universidad" maxlength="100"
+                           value="<?= htmlspecialchars($univ_actual ?? '') ?>"
+                           placeholder="Ej: USACH, UC, AIEP"
+                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Año de egreso</label>
+                    <input type="number" name="anio_egreso" min="1970" max="2030"
+                           value="<?= htmlspecialchars($anio_eg_actual ?? '') ?>"
+                           placeholder="2020"
+                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Años de experiencia enseñando</label>
+                <input type="number" name="anios_experiencia" min="0" max="50"
+                       value="<?= htmlspecialchars($anios_exp_actual ?? '') ?>"
+                       placeholder="Ej: 3"
+                       class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Bio profesional</label>
+                <textarea name="bio" rows="4" maxlength="800"
+                          placeholder="Cuéntanos tu experiencia y qué enseñas..."
+                          class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none resize-none"><?= htmlspecialchars($bio_actual ?? '') ?></textarea>
             </div>
 
             <div class="flex justify-end pt-2">
