@@ -18,6 +18,7 @@ foreach ($conn_paths as $cp) {
 if (!$conn_loaded) die("Error de sistema.");
 $conn->set_charset("utf8mb4");
 require_once __DIR__ . '/iconos.php';
+require_once __DIR__ . '/logger.php';
 
 // 3. SEGURIDAD
 if (!isset($_SESSION['usuario_id'])) { 
@@ -61,6 +62,7 @@ $stmt->execute();
 $chat = $stmt->get_result()->fetch_assoc();
 
 if (!$chat) { header("Location: /app/bandeja_entrada.php"); exit; }
+registrar_actividad($conn, $my_id, 'VER_CHAT', 'Chat con servicio ID: ' . (int)$chat['servicio_id']);
 
 // 5. PREPARAR DATOS VISUALES
 $esVendedor = ($chat['vendedor_id'] == $my_id);
@@ -382,10 +384,25 @@ textarea, input {
 <main id="chat-container" class="flex-1 overflow-y-auto p-4 pb-8 space-y-3 w-full relative no-scrollbar">
         
         <div class="flex justify-center mb-6 mt-2">
-            <div class="bg-amber-50 text-amber-900 text-[11px] px-4 py-2.5 rounded-xl max-w-[85%] text-center border border-amber-200 leading-snug flex items-start gap-1.5">
-                <?= icon('shield-check', 'w-4 h-4 text-amber-700 shrink-0 mt-px') ?>
-                <span><b>Consejo:</b> Evita compartir datos de contacto antes del pago. Las transacciones fuera de Nubira no tienen garantía.</span>
+            <?php if (!$esVendedor): ?>
+            <div class="bg-amber-50 text-amber-900 text-[11px] px-4 py-3 rounded-xl max-w-[85%] border border-amber-200 leading-snug">
+                <div class="flex items-center gap-1.5 mb-2">
+                    <?= icon('shield-check', 'w-4 h-4 text-amber-700 shrink-0') ?>
+                    <span class="font-bold">¿Cómo contratar?</span>
+                </div>
+                <div class="space-y-1 text-amber-800">
+                    <p>1. Acuerda día, hora y precio aquí</p>
+                    <p>2. Pulsa <b>Contratar</b> arriba ↑</p>
+                    <p>3. Pago en custodia — solo se libera al tutor cuando confirmes la clase</p>
+                </div>
+                <p class="mt-2 font-bold text-amber-900">Solo pagando por Nubira tu dinero queda protegido.</p>
             </div>
+            <?php else: ?>
+            <div class="bg-amber-50 text-amber-900 text-[11px] px-4 py-2.5 rounded-xl max-w-[85%] border border-amber-200 leading-snug flex items-start gap-1.5">
+                <?= icon('shield-check', 'w-4 h-4 text-amber-700 shrink-0 mt-px') ?>
+                <span><b>Cobra de forma segura:</b> Acepta el pago solo por Nubira. Si lo haces por fuera, no tienes garantía si el estudiante no aparece o pide reembolso.</span>
+            </div>
+            <?php endif; ?>
         </div>
         
         <!-- [NUBIRA 2.0] Mensajes pre-renderizados desde PHP — apertura instantánea -->

@@ -60,5 +60,5 @@ if (!function_exists('registrar_actividad')) {
         }
     }
 }
-file_put_contents(__DIR__ . '/_logger_sonda.txt', date('Y-m-d H:i:s') . " | UA=" . ($_SERVER['HTTP_USER_AGENT'] ?? 'NONE') . "\n", FILE_APPEND);
+// file_put_contents(__DIR__ . '/_logger_sonda.txt', date('Y-m-d H:i:s') . " | UA=" . ($_SERVER['HTTP_USER_AGENT'] ?? 'NONE') . "\n", FILE_APPEND);
 ?>
