@@ -113,7 +113,7 @@ if (!is_file($ruta_real) || !is_readable($ruta_real)) {
 // ----------------------------------------------------------------
 $mime  = $row['archivo_tipo'] ?: 'application/octet-stream';
 $nombre = $row['archivo_nombre'] ?: 'archivo';
-$peso  = (int)$row['archivo_peso'];
+$peso  = filesize($ruta_real);
 
 // Whitelist de MIMEs que servimos como inline (resto se fuerza a descargar)
 $inline_seguros = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];

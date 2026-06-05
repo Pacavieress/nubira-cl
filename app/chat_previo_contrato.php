@@ -169,12 +169,12 @@ if ($stmt_leido) {
 // Carga los mensajes directamente en el HTML para apertura instantánea.
 // El polling posterior solo trae deltas.
 // ========================================================================
-$sql_msgs = "SELECT *, enviado_en AS fecha_real, leido AS estado_visto 
-             FROM mensajes 
-             WHERE conversacion_id = ? 
+$sql_msgs = "SELECT *, enviado_en AS fecha_real, leido AS estado_visto
+             FROM mensajes
+             WHERE conversacion_id = ? AND (visible = 1 OR remitente_id = ?)
              ORDER BY enviado_en ASC";
 $stmt_msgs = $conn->prepare($sql_msgs);
-$stmt_msgs->bind_param("i", $chat_id);
+$stmt_msgs->bind_param("ii", $chat_id, $my_id);
 $stmt_msgs->execute();
 $res_msgs = $stmt_msgs->get_result();
 

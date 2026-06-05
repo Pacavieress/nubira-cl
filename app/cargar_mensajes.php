@@ -85,12 +85,17 @@ if ($contexto !== 'aula') {
 header('X-Typing-Otro: ' . $otro_escribiendo);
 
 // 6. RENDERIZAR HTML — Delegamos en el componente render_mensajes.php
-$sql = "SELECT *, {$col_fecha} AS fecha_real, {$col_visto} AS estado_visto 
-        FROM {$tabla} 
-        WHERE {$col_id} = ? 
-        ORDER BY {$col_fecha} ASC";
+$sql = "SELECT *, {$col_fecha} AS fecha_real, {$col_visto} AS estado_visto
+        FROM {$tabla}
+        WHERE {$col_id} = ?"
+    . ($contexto === 'conversacion' ? " AND (visible = 1 OR remitente_id = ?)" : "")
+    . " ORDER BY {$col_fecha} ASC";
 $stmt_msg = $conn->prepare($sql);
-$stmt_msg->bind_param("i", $id_ref);
+if ($contexto === 'conversacion') {
+    $stmt_msg->bind_param("ii", $id_ref, $usuario_id);
+} else {
+    $stmt_msg->bind_param("i", $id_ref);
+}
 $stmt_msg->execute();
 $res = $stmt_msg->get_result();
 

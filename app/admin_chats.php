@@ -34,9 +34,19 @@ if ($check_dlp_table && $check_dlp_table->num_rows === 0) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
+// AUTO-MIGRACIÓN: columna archivo_ruta_original para respaldo antes de censura
+try {
+    $check_col = $conn->query("SHOW COLUMNS FROM mensajes LIKE 'archivo_ruta_original'");
+    if ($check_col && $check_col->num_rows === 0) {
+        $conn->query("ALTER TABLE mensajes ADD COLUMN archivo_ruta_original VARCHAR(500) NULL DEFAULT NULL");
+    }
+} catch (Exception $e) {
+    // Migración opcional — continúa si falla
+}
+
 $orden_param = $_GET['orden'] ?? 'desc';
 $orden_sql = ($orden_param === 'asc') ? 'ASC' : 'DESC';
-$filtros_validos = ['activos', 'cerrados', 'contrato', 'cotizacion', 'inactivos', 'alertas_dlp'];
+$filtros_validos = ['activos', 'cerrados', 'contrato', 'cotizacion', 'inactivos', 'alertas_dlp', 'moderacion'];
 $filtro_estado_actual = in_array($_GET['estado'] ?? '', $filtros_validos) ? $_GET['estado'] : 'activos';
 
 // =================================================================================
@@ -166,6 +176,9 @@ function build_listado_query($filtro_estado) {
         case 'alertas_dlp':
             $where .= " AND c.id IN (SELECT DISTINCT conversacion_id FROM dlp_intentos WHERE revisado_admin = 0) ";
             break;
+        case 'moderacion':
+            $where .= " AND 1=0 ";
+            break;
         case 'inactivos':
             $where .= " AND c.eliminado = 0 AND COALESCE(c.ultima_interaccion, c.creado_en) < DATE_SUB(NOW(), INTERVAL 7 DAY) ";
             break;
@@ -186,7 +199,9 @@ if (isset($_POST['ajax_accion'])) {
     $accion = $_POST['ajax_accion'];
     $chat_id = (int)($_POST['chat_id'] ?? 0);
 
-    if ($chat_id <= 0) {
+    // Acciones de moderación usan msg_id, no chat_id — saltar el guard
+    $acciones_sin_chat_id = ['aprobar_archivo', 'rechazar_archivo'];
+    if ($chat_id <= 0 && !in_array($accion, $acciones_sin_chat_id, true)) {
         echo json_encode(['ok' => false, 'msg' => 'ID inválido']);
         exit;
     }
@@ -212,6 +227,35 @@ if (isset($_POST['ajax_accion'])) {
         $stmt->bind_param("i", $chat_id);
         $ok = $stmt->execute();
         echo json_encode(['success' => $ok]);
+        exit;
+    }
+
+    if ($accion === 'aprobar_archivo') {
+        $msg_id = (int)($_POST['msg_id'] ?? 0);
+        $stmt = $conn->prepare("UPDATE mensajes SET visible = 1 WHERE id = ? AND archivo_ruta IS NOT NULL");
+        $stmt->bind_param("i", $msg_id);
+        $ok = $stmt->execute() && $stmt->affected_rows > 0;
+        echo json_encode(['ok' => $ok]);
+        exit;
+    }
+
+    if ($accion === 'rechazar_archivo') {
+        $msg_id = (int)($_POST['msg_id'] ?? 0);
+        $stmt = $conn->prepare("SELECT archivo_ruta FROM mensajes WHERE id = ? AND visible = 0 AND archivo_ruta IS NOT NULL");
+        $stmt->bind_param("i", $msg_id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($row) {
+            $ruta_fisica = __DIR__ . '/chat_archivos/' . $row['archivo_ruta'];
+            if (file_exists($ruta_fisica)) unlink($ruta_fisica);
+            $stmt2 = $conn->prepare("UPDATE mensajes SET visible = -1, archivo_ruta = NULL WHERE id = ?");
+            $stmt2->bind_param("i", $msg_id);
+            $ok = $stmt2->execute();
+            echo json_encode(['ok' => $ok]);
+        } else {
+            echo json_encode(['ok' => false, 'msg' => 'Mensaje no encontrado']);
+        }
         exit;
     }
 
@@ -495,6 +539,9 @@ $cnt_inactivos = $res_inactivos ? (int)$res_inactivos->fetch_assoc()['n'] : 0;
 $res_alertas_dlp = $conn->query("SELECT COUNT(DISTINCT conversacion_id) AS n FROM dlp_intentos WHERE revisado_admin = 0");
 $cnt_alertas_dlp = $res_alertas_dlp ? (int)$res_alertas_dlp->fetch_assoc()['n'] : 0;
 
+$res_moderacion = $conn->query("SELECT COUNT(*) AS n FROM mensajes WHERE visible = 0 AND archivo_ruta IS NOT NULL");
+$cnt_moderacion = $res_moderacion ? (int)$res_moderacion->fetch_assoc()['n'] : 0;
+
 $chat_seleccionado = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $info_chat = null;
 if ($chat_seleccionado) {
@@ -578,6 +625,7 @@ if ($chat_seleccionado) {
                 <div class="px-5 pb-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-gray-50">
                     <button data-filter="activos" class="filter-pill <?php echo $filtro_estado_actual === 'activos' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Activos <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_activos; ?></span></button>
                     <button data-filter="alertas_dlp" class="filter-pill <?php echo $filtro_estado_actual === 'alertas_dlp' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Alertas DLP <?php if ($cnt_alertas_dlp > 0): ?><span class="ml-1 bg-red-500 text-white px-1.5 rounded-full"><?php echo (int)$cnt_alertas_dlp; ?></span><?php else: ?><span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full">0</span><?php endif; ?></button>
+                    <button data-filter="moderacion" class="filter-pill <?php echo $filtro_estado_actual === 'moderacion' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Moderación <?php if ($cnt_moderacion > 0): ?><span class="ml-1 bg-orange-500 text-white px-1.5 rounded-full"><?php echo (int)$cnt_moderacion; ?></span><?php else: ?><span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full">0</span><?php endif; ?></button>
                     <button data-filter="contrato" class="filter-pill <?php echo $filtro_estado_actual === 'contrato' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Con contrato <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_contrato; ?></span></button>
                     <button data-filter="cotizacion" class="filter-pill <?php echo $filtro_estado_actual === 'cotizacion' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">Cotización <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_cotizacion; ?></span></button>
                     <button data-filter="inactivos" class="filter-pill <?php echo $filtro_estado_actual === 'inactivos' ? 'active' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'; ?> text-xs font-bold px-4 py-2 rounded-full whitespace-nowrap transition-all shadow-sm">+7d <span class="ml-1 opacity-80 bg-black/10 px-1.5 rounded-full"><?php echo (int)$cnt_inactivos; ?></span></button>
@@ -682,6 +730,69 @@ if ($chat_seleccionado) {
                             <p class="text-xs font-bold text-[#54A6D8]">Sincronizando log...</p>
                         </div>
                     </div>
+                </div>
+            <?php elseif ($filtro_estado_actual === 'moderacion'): ?>
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-50/50" id="mod-panel">
+                    <h2 class="text-lg font-extrabold text-gray-900 mb-1 tracking-tight">Moderación de archivos</h2>
+                    <p class="text-xs text-gray-400 font-medium mb-5">Archivos enviados por usuarios pendientes de revisión.</p>
+                    <?php
+                    $stmt_mod = $conn->prepare("
+                        SELECT m.id, m.conversacion_id, m.archivo_ruta, m.archivo_nombre, m.archivo_tipo, m.archivo_peso, m.enviado_en,
+                               a.nombre AS remitente_nombre
+                        FROM mensajes m
+                        JOIN alumnos a ON m.remitente_id = a.id
+                        WHERE m.visible = 0 AND m.archivo_ruta IS NOT NULL
+                        ORDER BY m.enviado_en ASC
+                    ");
+                    $stmt_mod->execute();
+                    $res_mod = $stmt_mod->get_result();
+                    $pending = [];
+                    while ($r = $res_mod->fetch_assoc()) $pending[] = $r;
+                    $stmt_mod->close();
+
+                    if (empty($pending)):
+                    ?>
+                    <div class="flex flex-col items-center justify-center py-16 text-center">
+                        <div class="w-16 h-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-4">
+                            <i class="fa-solid fa-shield-check text-2xl text-emerald-400"></i>
+                        </div>
+                        <p class="text-sm font-bold text-gray-700">Sin archivos pendientes</p>
+                        <p class="text-xs text-gray-400 mt-1">Todo está al día.</p>
+                    </div>
+                    <?php else: ?>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <?php foreach ($pending as $pm):
+                        $es_imagen = strpos($pm['archivo_tipo'] ?? '', 'image/') === 0;
+                        $url_img   = '/app/ver_archivo_chat.php?m=' . (int)$pm['id'];
+                        $nombre_r  = htmlspecialchars($pm['remitente_nombre'] ?? 'Desconocido', ENT_QUOTES, 'UTF-8');
+                        $peso_kb   = round(($pm['archivo_peso'] ?? 0) / 1024);
+                        $fecha_r   = $pm['enviado_en'] ? date('d/m/Y H:i', strtotime($pm['enviado_en'])) : '--';
+                    ?>
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mod-card" data-msg-id="<?php echo (int)$pm['id']; ?>">
+                        <?php if ($es_imagen): ?>
+                        <a href="<?php echo $url_img; ?>" target="_blank" class="block bg-gray-100 overflow-hidden" style="height:180px">
+                            <img src="<?php echo $url_img; ?>" alt="<?php echo htmlspecialchars($pm['archivo_nombre'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" class="w-full h-full object-contain" loading="lazy">
+                        </a>
+                        <?php else: ?>
+                        <div class="flex items-center justify-center bg-gray-50 border-b border-gray-100" style="height:100px">
+                            <i class="fa-solid fa-file text-4xl text-gray-300"></i>
+                        </div>
+                        <?php endif; ?>
+                        <div class="p-4">
+                            <p class="text-xs font-extrabold text-gray-900 truncate"><?php echo $nombre_r; ?></p>
+                            <p class="text-[10px] text-gray-400 font-medium mb-1">Chat #<?php echo (int)$pm['conversacion_id']; ?> · <?php echo $fecha_r; ?> · <?php echo $peso_kb; ?> KB</p>
+                            <div class="flex gap-2 mt-3">
+                                <button class="btn-aprobar flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold py-2 rounded-xl transition-all" data-msg-id="<?php echo (int)$pm['id']; ?>">Aprobar</button>
+                                <?php if ($es_imagen): ?>
+                                <a href="/app/admin_moderar_archivo.php?m=<?php echo (int)$pm['id']; ?>" target="_blank" class="flex-1 bg-amber-400 hover:bg-amber-500 text-white text-xs font-bold py-2 rounded-xl transition-all text-center">Censurar</a>
+                                <?php endif; ?>
+                                <button class="btn-rechazar flex-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 rounded-xl transition-all" data-msg-id="<?php echo (int)$pm['id']; ?>">Rechazar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
                 <div class="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50/50">
@@ -996,6 +1107,55 @@ if ($chat_seleccionado) {
                         showToast('Error de conexión', 'error');
                         btn.disabled = false;
                         btn.textContent = 'Marcar todos como revisados';
+                    });
+            });
+        }
+
+        // ==========================================
+        // MODERACIÓN: aprobar / rechazar archivos
+        // ==========================================
+        const modPanel = document.getElementById('mod-panel');
+        if (modPanel) {
+            modPanel.addEventListener('click', (e) => {
+                const btnAprobar  = e.target.closest('.btn-aprobar');
+                const btnRechazar = e.target.closest('.btn-rechazar');
+                const btn = btnAprobar || btnRechazar;
+                if (!btn) return;
+
+                const msgId = btn.dataset.msgId;
+                const esRechazo = !!btnRechazar;
+
+                if (esRechazo && !confirm('¿Rechazar y eliminar este archivo permanentemente?')) return;
+
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+
+                const fd = new FormData();
+                fd.append('ajax_accion', esRechazo ? 'rechazar_archivo' : 'aprobar_archivo');
+                fd.append('msg_id', msgId);
+
+                fetch(requestUri, { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.ok) {
+                            const card = btn.closest('.mod-card');
+                            if (card) {
+                                card.style.opacity = '0';
+                                card.style.transform = 'scale(0.95)';
+                                card.style.transition = 'all 0.25s';
+                                setTimeout(() => card.remove(), 250);
+                            }
+                            showToast(esRechazo ? 'Archivo rechazado y eliminado' : 'Archivo aprobado', 'ok');
+                        } else {
+                            showToast(data.msg || 'Error al procesar', 'error');
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Error de conexión', 'error');
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
                     });
             });
         }

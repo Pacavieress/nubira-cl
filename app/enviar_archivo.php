@@ -203,22 +203,27 @@ if (empty($nombre_mostrar)) {
 // Ruta relativa que guardamos en BD (no es URL pública, solo referencia interna)
 $ruta_relativa = $conversacion_id . '/' . $nombre_seguro;
 
+// Archivos de no-admin entran en moderación (visible=0)
+$es_admin = ($_SESSION['rol'] ?? '') === 'admin';
+$visible_inicial = $es_admin ? 1 : 0;
+
 $stmt = $conn->prepare("
-    INSERT INTO mensajes 
-        (conversacion_id, remitente_id, mensaje, archivo_nombre, archivo_ruta, archivo_tipo, archivo_peso, enviado_en)
-    VALUES 
-        (?, ?, '', ?, ?, ?, ?, NOW())
+    INSERT INTO mensajes
+        (conversacion_id, remitente_id, mensaje, archivo_nombre, archivo_ruta, archivo_tipo, archivo_peso, visible, enviado_en)
+    VALUES
+        (?, ?, '', ?, ?, ?, ?, ?, NOW())
 ");
 
 $peso_bytes = (int)$archivo['size'];
 $stmt->bind_param(
-    "iisssi",
+    "iisssii",
     $conversacion_id,
     $my_id,
     $nombre_mostrar,
     $ruta_relativa,
     $mime_real,
-    $peso_bytes
+    $peso_bytes,
+    $visible_inicial
 );
 
 if (!$stmt->execute()) {
