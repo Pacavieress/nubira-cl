@@ -463,15 +463,11 @@ $page_title = "Confirmar Contrato";
 
                                 <!-- [NUBIRA 2.0] Botón de Acción Principal -->
                                 <?php if (!$tiene_horarios): ?>
-                                <form id="form-chat-sticky" class="form-chat-sin-horarios" action="/app/iniciar_chat.php" method="POST">
-                                    <input type="hidden" name="servicio_id" value="<?= $servicio_id ?>">
-                                    <input type="hidden" name="mensaje_inicial" value="">
-                                    <button type="submit"
-                                            class="w-full text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 active:scale-[0.98]">
-                                        <i class="fa-regular fa-comments text-sm opacity-80"></i>
-                                        <span>Contactar al tutor</span>
-                                    </button>
-                                </form>
+                                <button type="submit" form="form-chat-sticky"
+                                        class="w-full text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 active:scale-[0.98]">
+                                    <i class="fa-regular fa-comments text-sm opacity-80"></i>
+                                    <span>Contactar al tutor</span>
+                                </button>
                                 <p class="text-[10px] text-gray-400 text-center mt-4 leading-relaxed">
                                     El tutor coordinará contigo el horario por chat.
                                 </p>
@@ -500,6 +496,13 @@ $page_title = "Confirmar Contrato";
 
             </div>
         </form>
+
+        <?php if (!$tiene_horarios): ?>
+        <form id="form-chat-sticky" class="form-chat-sin-horarios" action="/app/iniciar_chat.php" method="POST">
+            <input type="hidden" name="servicio_id" value="<?= $servicio_id ?>">
+            <input type="hidden" name="mensaje_inicial" value="">
+        </form>
+        <?php endif; ?>
 
     </div>
 </main>
