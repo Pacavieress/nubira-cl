@@ -289,14 +289,10 @@ $page_title = "Confirmar Contrato";
             </div>
             <p class="text-sm font-bold text-gray-800 mb-1">Este servicio aún no acepta reservas en línea</p>
             <p class="text-xs text-gray-500 max-w-sm mx-auto mb-4">El tutor está completando su disponibilidad. Puedes contactarlo directamente para coordinar.</p>
-            <form class="form-chat-sin-horarios" action="/app/iniciar_chat.php" method="POST">
-                <input type="hidden" name="servicio_id" value="<?= $servicio_id ?>">
-                <input type="hidden" name="mensaje_inicial" value="">
-                <button type="submit"
-                        class="inline-flex items-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-full transition-all">
-                    <i class="fa-regular fa-comments"></i> Contactar al tutor por chat
-                </button>
-            </form>
+            <button type="submit" form="form-chat-sticky"
+                    class="inline-flex items-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-full transition-all">
+                <i class="fa-regular fa-comments"></i> Contactar al tutor por chat
+            </button>
         </div>
     <?php else: ?>
         <!-- Grilla de días (idéntica a detalle_servicio.php) -->
@@ -467,7 +463,7 @@ $page_title = "Confirmar Contrato";
 
                                 <!-- [NUBIRA 2.0] Botón de Acción Principal -->
                                 <?php if (!$tiene_horarios): ?>
-                                <form class="form-chat-sin-horarios" action="/app/iniciar_chat.php" method="POST">
+                                <form id="form-chat-sticky" class="form-chat-sin-horarios" action="/app/iniciar_chat.php" method="POST">
                                     <input type="hidden" name="servicio_id" value="<?= $servicio_id ?>">
                                     <input type="hidden" name="mensaje_inicial" value="">
                                     <button type="submit"
