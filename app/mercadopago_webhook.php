@@ -4,6 +4,7 @@
  * OBJETIVO: Conciliar pago si el usuario no retornó a la web, aplicar descuento de cupos y liberar fondos.
  */
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/correo.php';
 
 header("Content-Type: application/json");
