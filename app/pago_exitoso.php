@@ -22,7 +22,7 @@ if (!$payment_id) {
     exit;
 }
 
-MercadoPagoConfig::setAccessToken('APP_USR-2544127294491438-051314-46640e022ba544b7f641311738b0f6ab-703767907');
+MercadoPagoConfig::setAccessToken(MP_ACCESS_TOKEN);
 $paymentClient = new PaymentClient();
 
 try {

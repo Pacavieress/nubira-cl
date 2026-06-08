@@ -60,7 +60,7 @@ if ($precio <= 0 || empty($titulo)) {
 }
 
 // 4. CONFIGURACIÓN MERCADOPAGO
-MercadoPagoConfig::setAccessToken('APP_USR-2544127294491438-051314-46640e022ba544b7f641311738b0f6ab-703767907');
+MercadoPagoConfig::setAccessToken(MP_ACCESS_TOKEN);
 
 // URLs DE RETORNO CORREGIDAS (Apunta a la carpeta /app/)
 $baseUrl    = 'https://nubira.cl';

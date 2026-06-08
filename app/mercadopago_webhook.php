@@ -14,8 +14,7 @@ if (!$input) exit('Sin datos');
 $payment_id = $input['data']['id'] ?? null;
 if (!$payment_id) exit('Falta ID');
 
-// Idealmente mover a config.php en el futuro
-$token = 'APP_USR-2544127294491438-051314-46640e022ba544b7f641311738b0f6ab-703767907';
+$token = MP_ACCESS_TOKEN;
 
 // 1. Consulta a la API oficial
 $ch = curl_init("https://api.mercadopago.com/v1/payments/$payment_id");

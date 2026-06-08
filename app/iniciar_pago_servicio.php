@@ -71,8 +71,7 @@ if ($precio_a_pagar == 0.0) {
 }
 
 // 5. CONFIGURAR MERCADOPAGO
-// NOTA: Mover a variable de entorno cuando pasemos a producción total
-MercadoPagoConfig::setAccessToken('APP_USR-2544127294491438-051314-46640e022ba544b7f641311738b0f6ab-703767907');
+MercadoPagoConfig::setAccessToken(MP_ACCESS_TOKEN);
 
 // 6. CREAR PREFERENCIA DE PAGO
 $baseUrl    = 'https://nubira.cl';

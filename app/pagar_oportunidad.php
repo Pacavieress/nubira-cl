@@ -43,8 +43,8 @@ if (empty($titulo)) {
     exit("❌ La oportunidad no tiene título válido.");
 }
 
-// 5. Configurar token MercadoPago usando config.php
-MercadoPagoConfig::setAccessToken('APP_USR-501022499546954-070519-63f2bc5159283be9bc8cf4c022e45670-703767907'); // Pon tu token real o usa variable de config.php
+// 5. Configurar token MercadoPago
+MercadoPagoConfig::setAccessToken(MP_ACCESS_TOKEN_OPORTUNIDADES);
 
 // URLs de retorno
 $successUrl = BASE_URL . "/pago-oportunidad-exitoso?id=" . $id_oportunidad;
