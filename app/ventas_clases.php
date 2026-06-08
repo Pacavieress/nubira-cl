@@ -67,7 +67,7 @@ $stmtS->close();
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Clases Vendidas | Nubira</title>
+  <title>Mis Ganancias | Nubira</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=0" />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" type="image/webp" href="/img/logo2.webp">
@@ -111,7 +111,7 @@ require_once $app_dir . '/componentes/sidebar.php';
     
     <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-200 px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-            <h1 class="text-lg md:text-xl font-extrabold text-slate-900 tracking-tight">Clases Vendidas</h1>
+            <h1 class="text-lg md:text-xl font-extrabold text-slate-900 tracking-tight">Mis Ganancias</h1>
         </div>
         
         <div class="flex items-center gap-2">
@@ -125,6 +125,20 @@ require_once $app_dir . '/componentes/sidebar.php';
             </a>
         </div>
     </div>
+
+   <!-- Info-box: esta vista es de dinero; la agenda vive en Mis Contratos -->
+   <a href="/mis-contratos" class="flex items-center gap-3 mx-4 md:mx-6 mt-3 bg-sky-50 border border-sky-100 rounded-2xl px-4 py-3 hover:bg-sky-100 transition-colors group">
+       <span class="w-9 h-9 rounded-xl bg-white text-[#54A6D8] flex items-center justify-center shrink-0 border border-sky-100">
+           <i class="fa-regular fa-calendar"></i>
+       </span>
+       <div class="flex-1 min-w-0">
+           <p class="text-[13px] font-bold text-slate-800 leading-tight">¿Buscas tus próximas clases?</p>
+           <p class="text-[11px] text-slate-500 leading-tight">Esta vista es solo de dinero. Revisa tu agenda en Mis Contratos.</p>
+       </div>
+       <span class="text-[#54A6D8] text-[11px] font-bold flex items-center gap-1 shrink-0">
+           Ver mi agenda <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+       </span>
+   </a>
 
    <div class="md:px-6 pt-2">
         <?php if (!empty($ventasAgrupadas)): ?>
@@ -459,7 +473,7 @@ function exportarCSV() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "Mis_Clases_Vendidas.csv");
+    link.setAttribute("download", "Mis_Ganancias.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
