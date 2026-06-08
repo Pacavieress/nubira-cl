@@ -110,6 +110,12 @@ if (!$yaProcesado) {
     } catch (Exception $e) {
         file_put_contents(__DIR__ . '/../log_envio.txt', date("Y-m-d H:i:s") . " - ❌ Error insertando retiro: " . $e->getMessage() . "\n", FILE_APPEND);
     }
+
+    // Marcar slot de excepción como pagado (0 filas afectadas en contratos normales)
+    $stmt_slot = $conn->prepare("UPDATE slots_excepcion SET estado = 'pagado' WHERE contrato_id = ?");
+    $stmt_slot->bind_param("i", $id_contrato);
+    $stmt_slot->execute();
+    $stmt_slot->close();
 }
 
 // 5. REGISTRAR EVENTO EN LOG DEL CONTRATO

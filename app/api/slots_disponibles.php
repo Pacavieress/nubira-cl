@@ -125,6 +125,25 @@ while ($r = $res->fetch_assoc()) {
 }
 $stmt->close();
 
+// 7b. Cruzar también con slots de excepción pendientes o pagados (anti-doble booking)
+$stmt_exc = $conn->prepare("
+    SELECT se.fecha_clase, s.duracion_minutos
+    FROM slots_excepcion se
+    JOIN servicios s ON se.servicio_id = s.id
+    WHERE se.tutor_id    = ?
+      AND se.estado      IN ('pendiente', 'pagado')
+      AND se.expira_en   > NOW()
+      AND se.fecha_clase BETWEEN ? AND ?
+");
+$stmt_exc->bind_param("iss", $tutor_id, $ini_dia, $fin_dia);
+$stmt_exc->execute();
+$res_exc = $stmt_exc->get_result();
+while ($r = $res_exc->fetch_assoc()) {
+    $ini = strtotime($r['fecha_clase']);
+    $ocupados[] = ['ini' => $ini, 'fin' => $ini + ((int)$r['duracion_minutos'] * 60)];
+}
+$stmt_exc->close();
+
 // 8. No permitir slots en el pasado del día actual (con buffer 30min)
 $ahora_buffer = time() + (30 * 60);
 
