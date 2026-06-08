@@ -71,19 +71,6 @@ if ($status === 'approved' && $contrato_id > 0) {
             $stmt_cupos->execute();
             $stmt_cupos->close();
 
-            // B) SISTEMA DE RETIROS (Escrow)
-            try {
-                $insert = $conn->prepare("
-                    INSERT INTO retiros (vendedor_id, contrato_id, monto)
-                    SELECT vendedor_id, id, monto FROM contratos WHERE id = ? AND id NOT IN (SELECT contrato_id FROM retiros)
-                ");
-                $insert->bind_param("i", $contrato_id);
-                $insert->execute();
-                $insert->close();
-            } catch (Exception $e) {
-                file_put_contents(__DIR__ . '/../log_envio.txt', date("Y-m-d H:i:s") . " - [WEBHOOK_ERROR] Retiro: " . $e->getMessage() . "\n", FILE_APPEND);
-            }
-
             // C) LOG DEL EVENTO
             $log = $conn->prepare("INSERT INTO contrato_eventos (contrato_id, usuario_id, evento, detalle) VALUES (?, 0, 'PAGO_CONFIRMADO_WEBHOOK', 'Confirmado vía IPN MercadoPago')");
             $log->bind_param("i", $contrato_id);

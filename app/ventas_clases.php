@@ -37,8 +37,8 @@ if (!function_exists('formatearNombrePrivado')) {
 $usuario_id = (int)$_SESSION['usuario_id'];
 
 // CONSULTA DE CONTRATOS (Clases)
-$sqlServ = "SELECT c.id AS id_contrato, s.titulo, s.imagen, al.nombre AS comprador_nombre, al.correo AS comprador_email, 
-                   c.monto, c.fecha_creacion, c.fecha_pago, c.estado, c.calificacion_vendedor
+$sqlServ = "SELECT c.id AS id_contrato, s.titulo, s.imagen, al.nombre AS comprador_nombre, al.correo AS comprador_email,
+                   c.monto, c.monto_subsidio, c.monto_comision, c.fecha_creacion, c.fecha_pago, c.estado, c.calificacion_vendedor
             FROM contratos c
             JOIN servicios s ON s.id = c.servicio_id
             JOIN alumnos al ON al.id = c.comprador_id
@@ -178,6 +178,26 @@ require_once $app_dir . '/componentes/sidebar.php';
 
                                 $rutaImg = !empty($s['imagen']) ? '/upload/servicios/'.basename($s['imagen']) : '/img/portadas/servicios/clases.webp';
                                 $inicial_alumno = strtoupper(substr($s['comprador_nombre'], 0, 1));
+
+                                // Neto que recibe el tutor = lo que paga el alumno + subsidio Nubira - comisión Nubira
+                                $bruto    = (int)$s['monto'];
+                                $subsidio = (int)($s['monto_subsidio'] ?? 0);
+                                $comision = (int)($s['monto_comision'] ?? 0);
+                                $neto     = $bruto + $subsidio - $comision;
+
+                                // Subtexto solo si hay subsidio o comisión que desglosar
+                                $subtexto = '';
+                                if ($subsidio > 0 && $comision > 0) {
+                                    $subtexto = 'Alumno $' . number_format($bruto, 0, ',', '.')
+                                              . ' + Subsidio $' . number_format($subsidio, 0, ',', '.')
+                                              . ' − Comisión $' . number_format($comision, 0, ',', '.');
+                                } elseif ($subsidio > 0) {
+                                    $subtexto = 'Alumno $' . number_format($bruto, 0, ',', '.')
+                                              . ' + Subsidio $' . number_format($subsidio, 0, ',', '.');
+                                } elseif ($comision > 0) {
+                                    $subtexto = 'Bruto $' . number_format($bruto, 0, ',', '.')
+                                              . ' − Comisión $' . number_format($comision, 0, ',', '.');
+                                }
                             ?>
                             
                             <li class="relative group row-item" id="venta-<?= $s['id_contrato'] ?>" data-id="<?= $s['id_contrato'] ?>">
@@ -213,10 +233,17 @@ require_once $app_dir . '/componentes/sidebar.php';
                                     </div>
 
                                     <div class="flex flex-col items-end gap-1.5 shrink-0 pl-2 z-20">
-                                        <span class="font-black text-slate-900 text-[15px] tabular-nums tracking-tight leading-none text-right">
-                                            $<?= number_format($s['monto'], 0, ',', '.') ?>
-                                        </span>
-                                        
+                                        <div class="flex flex-col items-end gap-0.5">
+                                            <span class="font-black text-slate-900 text-[15px] tabular-nums tracking-tight leading-none text-right">
+                                                $<?= number_format($neto, 0, ',', '.') ?>
+                                            </span>
+                                            <?php if ($subtexto !== ''): ?>
+                                            <span class="text-[10px] text-slate-400 font-medium tabular-nums text-right leading-tight">
+                                                <?= $subtexto ?>
+                                            </span>
+                                            <?php endif; ?>
+                                        </div>
+
                                         <div class="flex justify-end" onclick="event.stopPropagation()">
                                             <?php if ($is_en_curso): ?>
                                                 <a href="mailto:<?= htmlspecialchars($s['comprador_email']) ?>" class="inline-flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-bold px-2 py-1 rounded-md transition-colors">
@@ -421,10 +448,12 @@ setupModalNav('btn-explora', 'modal-explora', 'explora-card', 'explora-close');
 // EXPORTAR CSV
 function exportarCSV() {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "ID de Venta,Fecha,Titulo,Comprador,Monto,Estado\n";
-    
-    <?php if ($total_clases > 0): foreach ($ventasAgrupadas as $dia => $clases): foreach ($clases as $c): ?>
-        csvContent += `"${<?= $c['id_contrato'] ?>}","<?= date('Y-m-d', strtotime($c['fecha_creacion'])) ?>","<?= str_replace('"', '""', $c['titulo']) ?>","<?= str_replace('"', '""', formatearNombrePrivado($c['comprador_nombre'])) ?>","<?= (int)$c['monto'] ?>","<?= $c['estado'] ?>"\n`;
+    csvContent += "ID de Venta,Fecha,Titulo,Comprador,Neto,Estado\n";
+
+    <?php if ($total_clases > 0): foreach ($ventasAgrupadas as $dia => $clases): foreach ($clases as $c):
+        $neto_csv = (int)$c['monto'] + (int)($c['monto_subsidio'] ?? 0) - (int)($c['monto_comision'] ?? 0);
+    ?>
+        csvContent += `"${<?= $c['id_contrato'] ?>}","<?= date('Y-m-d', strtotime($c['fecha_creacion'])) ?>","<?= str_replace('"', '""', $c['titulo']) ?>","<?= str_replace('"', '""', formatearNombrePrivado($c['comprador_nombre'])) ?>","<?= $neto_csv ?>","<?= $c['estado'] ?>"\n`;
     <?php endforeach; endforeach; endif; ?>
     
     const encodedUri = encodeURI(csvContent);

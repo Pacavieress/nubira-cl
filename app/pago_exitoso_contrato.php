@@ -94,23 +94,8 @@ if ($contrato['estado'] === 'en_progreso') {
     exit("⚠️ El contrato no puede cambiar de estado (actual: " . htmlspecialchars($contrato['estado']) . ").");
 }
 
-// 4. SISTEMA DE SALDOS/RETIROS (Solo si no fue procesado)
+// 4. MARCAR SLOT DE EXCEPCIÓN (Solo si no fue procesado)
 if (!$yaProcesado) {
-    try {
-        $insert = $conn->prepare("
-            INSERT INTO retiros (vendedor_id, contrato_id, monto)
-            SELECT vendedor_id, id, monto
-            FROM contratos
-            WHERE id = ? 
-              AND id NOT IN (SELECT contrato_id FROM retiros)
-        ");
-        $insert->bind_param("i", $id_contrato);
-        $insert->execute();
-        $insert->close();
-    } catch (Exception $e) {
-        file_put_contents(__DIR__ . '/../log_envio.txt', date("Y-m-d H:i:s") . " - ❌ Error insertando retiro: " . $e->getMessage() . "\n", FILE_APPEND);
-    }
-
     // Marcar slot de excepción como pagado (0 filas afectadas en contratos normales)
     $stmt_slot = $conn->prepare("UPDATE slots_excepcion SET estado = 'pagado' WHERE contrato_id = ?");
     $stmt_slot->bind_param("i", $id_contrato);

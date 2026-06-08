@@ -30,8 +30,7 @@ try {
     $conn->begin_transaction();
 
     $stmt_check = $conn->prepare("SELECT id FROM contratos WHERE id = ? AND vendedor_id = ?");
-    $stmt_retiros = $conn->prepare("DELETE FROM retiros WHERE contrato_id = ?");
-    
+
     // Si hay otras tablas vinculadas (como mensajes), fallará aquí y el catch atrapará el error exacto
     $stmt_contratos = $conn->prepare("DELETE FROM contratos WHERE id = ?");
 
@@ -47,10 +46,6 @@ try {
         $res = $stmt_check->get_result();
 
         if ($res->num_rows > 0) {
-            // Limpiar retiros
-            $stmt_retiros->bind_param("i", $id);
-            $stmt_retiros->execute();
-
             // Eliminar contrato
             $stmt_contratos->bind_param("i", $id);
             $stmt_contratos->execute();

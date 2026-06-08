@@ -41,12 +41,6 @@ if ($id) {
     $conn->begin_transaction();
 
     try {
-        // PASO A: Borrar dependencias en 'retiros'
-        $stmt_retiros = $conn->prepare("DELETE FROM retiros WHERE contrato_id = ?");
-        $stmt_retiros->bind_param("i", $id);
-        $stmt_retiros->execute();
-        $stmt_retiros->close();
-
         // PASO B: Borrar el contrato
         $stmt_contrato = $conn->prepare("DELETE FROM contratos WHERE id = ?");
         $stmt_contrato->bind_param("i", $id);
