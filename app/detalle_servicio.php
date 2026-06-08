@@ -484,13 +484,9 @@ session_write_close();
             <?php endif; ?>
         <?php endif; ?>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-start">
             
             <div class="lg:col-span-8 space-y-8">
-                <div class="rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 aspect-video relative shadow-sm group">
-                    <img src="<?= $web_src ?>" fetchpriority="high" class="w-full h-full object-cover group-hover:scale-[1.02] transition duration-700 track-gallery" onerror="this.src='<?= $default_image ?>';">
-                </div>
-
                 <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                     <div class="flex items-center gap-3 mb-3">
                           <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
@@ -595,6 +591,7 @@ session_write_close();
         </div>
     </div>
 </div>
+                    <?php if ($tiene_horarios): ?>
                     <div class="mt-8 pt-8 border-t border-gray-50">
                         <div class="flex items-center justify-between mb-5">
                             <div class="flex items-center gap-2">
@@ -607,11 +604,7 @@ session_write_close();
     </a>
 <?php endif; ?>
                         </div>
-
-                        
-                        <?php if ($tiene_horarios): 
-    $cantidad_dias = count($dias_disponibles);
-?>
+                        <?php $cantidad_dias = count($dias_disponibles); ?>
     <div class="mb-4 flex items-center gap-2">
         <div class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1">
             <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
@@ -620,23 +613,23 @@ session_write_close();
             </span>
         </div>
     </div>
-    
+
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <?php foreach ($dias_disponibles as $dia => $bloques): 
+        <?php foreach ($dias_disponibles as $dia => $bloques):
             $es_proximo = ($dia === $dia_proximo);
         ?>
             <div class="bg-white border <?= $es_proximo ? 'border-[#54A6D8] shadow-md ring-2 ring-blue-100' : 'border-blue-100 shadow-sm' ?> rounded-xl p-3 hover:shadow-md hover:border-[#54A6D8] transition-all group relative">
-                
+
                 <?php if ($es_proximo): ?>
                     <span class="absolute -top-2 -right-2 bg-[#54A6D8] text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
                         Próximo
                     </span>
                 <?php endif; ?>
-                
+
                 <p class="text-xs font-extrabold <?= $es_proximo ? 'text-[#54A6D8]' : 'text-gray-800' ?> mb-2 group-hover:text-[#54A6D8] transition-colors">
                     <?= $dia ?>
                 </p>
-                
+
                 <div class="flex flex-col gap-1.5">
                     <?php foreach ($bloques as $h): ?>
                         <span class="bg-blue-50 text-[#54A6D8] text-[10px] font-bold px-2 py-1 rounded-md text-center border border-blue-100/50 truncate">
@@ -647,16 +640,22 @@ session_write_close();
             </div>
         <?php endforeach; ?>
     </div>
-<?php else: ?>
-                            <div class="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
-                                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-gray-100 text-gray-300">
-                                    <i class="fa-regular fa-calendar-days text-xl"></i>
-                                </div>
-                                <p class="text-sm font-bold text-gray-700 mb-1">Horario a convenir</p>
-                                <p class="text-xs text-gray-500 max-w-sm mx-auto">Comunícate directamente con <?= htmlspecialchars($nombrePub) ?> para acordar el horario que mejor les acomode a ambos.</p>
-                            </div>
-                        <?php endif; ?>
                     </div>
+                    <?php else: ?>
+                    <div class="mt-8 pt-8 border-t border-gray-50 rounded-2xl">
+                        <div class="border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-regular fa-calendar-days text-gray-300 text-lg shrink-0"></i>
+                                <span class="text-sm text-gray-500">Coordina directo con <span class="font-semibold text-gray-800"><?= htmlspecialchars($nombrePub) ?></span> por chat</span>
+                            </div>
+                            <?php if ($es_propietario): ?>
+                            <a href="/app/editar_horarios.php?id=<?= $id ?>" class="text-[11px] font-bold text-[#54A6D8] hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Agregar horarios
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     </div>
                 
                 <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
@@ -708,8 +707,8 @@ session_write_close();
 
             </div>
 
-            <div class="lg:col-span-4 relative">
-                <div class="sticky top-24 space-y-6">
+            <div class="lg:col-span-4">
+                <div class="sticky top-16 space-y-6">
                       <div class="hidden lg:block bg-white rounded-2xl border border-gray-200 p-6">
                         <?php 
 // [INYECCIÓN NUBIRA] Lógica de oferta

@@ -28,8 +28,9 @@ if (!isset($_SESSION['usuario_id'])) {
     exit; 
 }
 
-$comprador_id = (int)$_SESSION['usuario_id'];
-$servicio_id  = (int)($_GET['servicio_id'] ?? 0);
+$comprador_id    = (int)$_SESSION['usuario_id'];
+$servicio_id     = (int)($_POST['servicio_id'] ?? $_GET['servicio_id'] ?? 0);
+$mensaje_inicial = mb_substr(trim($_POST['mensaje_inicial'] ?? ''), 0, 1000, 'UTF-8');
 
 if ($servicio_id <= 0) {
     header("Location: /vitrina"); // Redirección silenciosa ante manipulación de URL
@@ -78,8 +79,14 @@ $chat_existente = $stmt_check->get_result()->fetch_assoc();
 $stmt_check->close();
 
 if ($chat_existente) {
-    // Escenario A: Ya chatearon antes. Redirigimos al entorno UI/UX correcto instantáneamente.
-    header("Location: /app/chat_previo_contrato.php?id=" . $chat_existente['id']);
+    $chat_id_final = (int)$chat_existente['id'];
+    if (!empty($mensaje_inicial)) {
+        $stmt_msg = $conn->prepare("INSERT INTO mensajes (conversacion_id, remitente_id, mensaje, enviado_en) VALUES (?, ?, ?, NOW())");
+        $stmt_msg->bind_param("iis", $chat_id_final, $comprador_id, $mensaje_inicial);
+        $stmt_msg->execute();
+        $stmt_msg->close();
+    }
+    header("Location: /app/chat_previo_contrato.php?id=" . $chat_id_final);
     exit;
 }
 
@@ -96,7 +103,12 @@ $stmt_insert->bind_param("iii", $servicio_id, $comprador_id, $vendedor_id);
 if ($stmt_insert->execute()) {
     $nuevo_chat_id = $stmt_insert->insert_id;
     $stmt_insert->close();
-    
+    if (!empty($mensaje_inicial)) {
+        $stmt_msg = $conn->prepare("INSERT INTO mensajes (conversacion_id, remitente_id, mensaje, enviado_en) VALUES (?, ?, ?, NOW())");
+        $stmt_msg->bind_param("iis", $nuevo_chat_id, $comprador_id, $mensaje_inicial);
+        $stmt_msg->execute();
+        $stmt_msg->close();
+    }
     // Escenario B: Chat nuevo creado. Redirigimos al entorno UI/UX.
     header("Location: /app/chat_previo_contrato.php?id=" . $nuevo_chat_id);
     exit;

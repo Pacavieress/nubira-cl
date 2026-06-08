@@ -204,6 +204,23 @@ try {
     $slot_fin_ts = $slot_ini_ts + ($duracion_minutos * 60);
     $slot_fin_sql = date('Y-m-d H:i:s', $slot_fin_ts);
 
+    // Verificar que el slot esté dentro del horario publicado del tutor
+    $stmt_hj = $conn->prepare("SELECT horarios_json FROM servicios WHERE id = ? LIMIT 1");
+    $stmt_hj->bind_param("i", $servicio_id);
+    $stmt_hj->execute();
+    $stmt_hj->bind_result($horarios_json_raw);
+    $stmt_hj->fetch();
+    $stmt_hj->close();
+    if (empty($horarios_json_raw)) {
+        throw new Exception("Este servicio no acepta reservas en línea. Coordina con el tutor por chat.");
+    }
+    $horarios_validar = json_decode($horarios_json_raw, true);
+    $dias_es = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    $dia_solicitado = $dias_es[(int)date('w', $slot_ini_ts)];
+    if (empty($horarios_validar[$dia_solicitado])) {
+        throw new Exception("El tutor no tiene disponibilidad publicada para ese día.");
+    }
+
     // ¿Hay reservas que se solapen con este slot? (FOR UPDATE bloquea la fila)
     $stmt_solape = $conn->prepare("
         SELECT id FROM reservas_slots 

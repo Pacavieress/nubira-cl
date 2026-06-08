@@ -289,10 +289,14 @@ $page_title = "Confirmar Contrato";
             </div>
             <p class="text-sm font-bold text-gray-800 mb-1">Este servicio aún no acepta reservas en línea</p>
             <p class="text-xs text-gray-500 max-w-sm mx-auto mb-4">El tutor está completando su disponibilidad. Puedes contactarlo directamente para coordinar.</p>
-            <a href="/app/iniciar_chat.php?servicio_id=<?= $servicio_id ?>" 
-               class="inline-flex items-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-full transition-all">
-                <i class="fa-regular fa-comments"></i> Contactar al tutor por chat
-            </a>
+            <form class="form-chat-sin-horarios" action="/app/iniciar_chat.php" method="POST">
+                <input type="hidden" name="servicio_id" value="<?= $servicio_id ?>">
+                <input type="hidden" name="mensaje_inicial" value="">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-full transition-all">
+                    <i class="fa-regular fa-comments"></i> Contactar al tutor por chat
+                </button>
+            </form>
         </div>
     <?php else: ?>
         <!-- Grilla de días (idéntica a detalle_servicio.php) -->
@@ -461,15 +465,29 @@ $page_title = "Confirmar Contrato";
                                     </div>
                                 <?php endif; ?>
 
-                                <!-- [NUBIRA 2.0] Botón de Acción Principal SIEMPRE Azul Nubira -->
-<button type="submit" id="btn-submit" disabled class="w-full text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-200 transform active:scale-[0.98] flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none">
+                                <!-- [NUBIRA 2.0] Botón de Acción Principal -->
+                                <?php if (!$tiene_horarios): ?>
+                                <form class="form-chat-sin-horarios" action="/app/iniciar_chat.php" method="POST">
+                                    <input type="hidden" name="servicio_id" value="<?= $servicio_id ?>">
+                                    <input type="hidden" name="mensaje_inicial" value="">
+                                    <button type="submit"
+                                            class="w-full text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 active:scale-[0.98]">
+                                        <i class="fa-regular fa-comments text-sm opacity-80"></i>
+                                        <span>Contactar al tutor</span>
+                                    </button>
+                                </form>
+                                <p class="text-[10px] text-gray-400 text-center mt-4 leading-relaxed">
+                                    El tutor coordinará contigo el horario por chat.
+                                </p>
+                                <?php else: ?>
+                                <button type="submit" id="btn-submit" disabled class="w-full text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-200 transform active:scale-[0.98] flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none">
                                     <span><?= $montoFinal == 0 ? 'Canjear Servicio Gratis' : 'Confirmar y Pagar' ?></span>
                                     <i class="fa-solid <?= $montoFinal == 0 ? 'fa-gift' : 'fa-lock' ?> text-sm opacity-80" id="btn-icon"></i>
                                 </button>
-                                
                                 <p class="text-[10px] text-gray-400 text-center mt-4 leading-relaxed">
                                     No se te cobrará nada todavía. Al confirmar, se abrirá un chat seguro. El pago quedará en custodia hasta que recibas el servicio.
                                 </p>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -674,6 +692,14 @@ if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_d
             slotConf.classList.remove('hidden');
         }
     })();
+
+    document.querySelectorAll('.form-chat-sin-horarios').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            var nota = document.querySelector('textarea[name="notas"]');
+            var hidden = form.querySelector('input[name="mensaje_inicial"]');
+            if (nota && hidden) hidden.value = nota.value.trim();
+        });
+    });
 </script>
 
 </body>
