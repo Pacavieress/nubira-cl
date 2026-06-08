@@ -360,10 +360,12 @@ if (!$es_pre_clase) {
                         <?= icon('video', 'w-4 h-4') ?> Reunión
                         <span id="badge-reunion" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse shadow-sm"></span>
                     </button>
+                    <?php if ($es_vendedor_real): ?>
                     <button onclick="switchTab('pizarra')" id="btn-pizarra" class="px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all text-gray-500 hover:bg-gray-100 relative">
                         <i class="fa-solid fa-chalkboard text-xs"></i> Pizarra
                     </button>
                     <div class="w-px h-4 bg-gray-200 mx-1"></div>
+                    <?php endif; ?>
                     <button onclick="toggleChat()" class="px-5 py-2 rounded-full text-xs font-bold text-gray-600 hover:bg-gray-100 relative">
                         Chat
                         <span id="badge-chat" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse shadow-sm"></span>
@@ -459,6 +461,7 @@ if (!$es_pre_clase) {
                 </div>
             </div>
 
+            <?php if ($es_vendedor_real): ?>
             <!-- ============================================ -->
             <!-- [NUBIRA 2.0] PIZARRA INTERACTIVA EXCALIDRAW -->
             <!-- ============================================ -->
@@ -473,8 +476,8 @@ if (!$es_pre_clase) {
                             <p class="text-xs text-gray-400 mt-1">Powered by Excalidraw</p>
                         </div>
                     </div>
-                    <iframe 
-                        id="iframe-pizarra" 
+                    <iframe
+                        id="iframe-pizarra"
                         data-src="<?= htmlspecialchars($url_pizarra) ?>"
                         onload="document.getElementById('skeleton-pizarra').classList.add('hidden')"
                         class="w-full h-full border-0"
@@ -482,6 +485,7 @@ if (!$es_pre_clase) {
                     ></iframe>
                 </div>
             </div>
+            <?php endif; ?>
 
         </div>
 
@@ -511,10 +515,10 @@ if (!$es_pre_clase) {
 
         bA.className = cInactiva;
         bV.className = cInactiva;
-        bP.className = cInactiva;
+        if (bP) bP.className = cInactiva;
 
         vA.classList.add('view-hidden');
-        vP.classList.add('view-hidden');
+        if (vP) vP.classList.add('view-hidden');
         vV.classList.add('view-hidden');
         vV.classList.remove('pip-mode');
 
@@ -532,17 +536,17 @@ if (!$es_pre_clase) {
             bV.className = cActiva;
         } 
         else if (tab === 'pizarra') {
-            vP.classList.remove('view-hidden');
-            bP.className = cActiva;
-            
-            const iframePizarra = document.getElementById('iframe-pizarra');
-            if (!iframePizarra.src || iframePizarra.src === window.location.href) {
-                iframePizarra.src = iframePizarra.getAttribute('data-src');
-            }
-            
-            if (window.enLlamada) {
-                vV.classList.remove('view-hidden');
-                vV.classList.add('pip-mode');
+            if (vP && bP) {
+                vP.classList.remove('view-hidden');
+                bP.className = cActiva;
+                const iframePizarra = document.getElementById('iframe-pizarra');
+                if (iframePizarra && (!iframePizarra.src || iframePizarra.src === window.location.href)) {
+                    iframePizarra.src = iframePizarra.getAttribute('data-src');
+                }
+                if (window.enLlamada) {
+                    vV.classList.remove('view-hidden');
+                    vV.classList.add('pip-mode');
+                }
             }
         }
     }
@@ -610,6 +614,11 @@ if (!$es_pre_clase) {
                 callFrame.on('left-meeting', colgarLlamada);
                 callFrame.on('participant-joined', checkParticipantsTimer);
                 callFrame.on('joined-meeting', checkParticipantsTimer);
+                callFrame.on('track-stopped', function(event) {
+                    if (event.participant && event.participant.screen) {
+                        window.dispatchEvent(new Event('resize'));
+                    }
+                });
             }
             const roomUrl = "<?= $url_sala_oficial ?>";
             callFrame.join({ url: roomUrl })
