@@ -40,6 +40,42 @@ if ($check_visto && $check_visto->num_rows === 0) {
     $conn->query("UPDATE alumnos SET visto_admin = 1");
 }
 
+// Migraciones: suspensión temporal con fecha
+try {
+    $check_col = $conn->query("SHOW COLUMNS FROM `alumnos` LIKE 'suspendido_hasta'");
+    if ($check_col && $check_col->num_rows === 0) {
+        $conn->query("ALTER TABLE alumnos ADD COLUMN suspendido_hasta DATETIME NULL DEFAULT NULL");
+    }
+} catch (Exception $e) {
+    // Migración opcional — continúa si falla
+}
+try {
+    $check_col = $conn->query("SHOW COLUMNS FROM `alumnos` LIKE 'motivo_suspension'");
+    if ($check_col && $check_col->num_rows === 0) {
+        $conn->query("ALTER TABLE alumnos ADD COLUMN motivo_suspension VARCHAR(500) NULL DEFAULT NULL");
+    }
+} catch (Exception $e) {
+    // Migración opcional — continúa si falla
+}
+
+// Migración: tabla auditoria_admin
+try {
+    $conn->query("CREATE TABLE IF NOT EXISTS auditoria_admin (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id INT NOT NULL,
+        accion VARCHAR(50) NOT NULL,
+        usuario_afectado_id INT NOT NULL,
+        motivo VARCHAR(500) NULL,
+        metadata JSON NULL,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_usuario (usuario_afectado_id),
+        INDEX idx_admin (admin_id),
+        INDEX idx_fecha (fecha)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+} catch (Exception $e) {
+    // Migración opcional — continúa si falla
+}
+
 // Fallback Iconos
 if (file_exists($app_dir . '/iconos.php')) {
     require_once $app_dir . '/iconos.php';
@@ -97,6 +133,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("si", $nuevo, $id);
             $stmt->execute();
             $stmt->close();
+            $admin_id = (int)$_SESSION['usuario_id'];
+            $meta_rol = json_encode(['rol_anterior' => $actual, 'rol_nuevo' => $nuevo]);
+            $stmt_aud = $conn->prepare("INSERT INTO auditoria_admin (admin_id, accion, usuario_afectado_id, motivo, metadata) VALUES (?, 'cambiar_rol', ?, NULL, ?)");
+            $stmt_aud->bind_param("iis", $admin_id, $id, $meta_rol);
+            $stmt_aud->execute();
+            $stmt_aud->close();
             $_SESSION['toast'] = "Rol cambiado a " . strtoupper($nuevo);
         }
 
@@ -104,10 +146,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($accion === 'editar_usuario') {
             $nombre = trim($_POST['nombre']);
             $correo = trim($_POST['correo']);
+            $stmt_prev = $conn->prepare("SELECT nombre, correo FROM alumnos WHERE id = ? LIMIT 1");
+            $stmt_prev->bind_param("i", $id);
+            $stmt_prev->execute();
+            $prev_u = $stmt_prev->get_result()->fetch_assoc();
+            $stmt_prev->close();
             $stmt = $conn->prepare("UPDATE alumnos SET nombre = ?, correo = ? WHERE id = ?");
             $stmt->bind_param("ssi", $nombre, $correo, $id);
             $stmt->execute();
             $stmt->close();
+            $admin_id  = (int)$_SESSION['usuario_id'];
+            $meta_edit = json_encode(['nombre_anterior' => $prev_u['nombre'] ?? '', 'correo_anterior' => $prev_u['correo'] ?? '']);
+            $stmt_aud  = $conn->prepare("INSERT INTO auditoria_admin (admin_id, accion, usuario_afectado_id, motivo, metadata) VALUES (?, 'editar_datos', ?, NULL, ?)");
+            $stmt_aud->bind_param("iis", $admin_id, $id, $meta_edit);
+            $stmt_aud->execute();
+            $stmt_aud->close();
             $_SESSION['toast'] = "Datos actualizados correctamente";
         }
 
@@ -136,6 +189,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt3->bind_param("i", $id);
                     $stmt3->execute();
                     $stmt3->close();
+
+                    $admin_id  = (int)$_SESSION['usuario_id'];
+                    $meta_elim = json_encode(['accion' => 'soft_delete']);
+                    $stmt_aud  = $conn->prepare("INSERT INTO auditoria_admin (admin_id, accion, usuario_afectado_id, motivo, metadata) VALUES (?, 'eliminar', ?, NULL, ?)");
+                    $stmt_aud->bind_param("iis", $admin_id, $id, $meta_elim);
+                    $stmt_aud->execute();
+                    $stmt_aud->close();
 
                     $conn->commit();
                     $_SESSION['toast'] = "🗑️ Usuario y contenidos ocultados con éxito.";
@@ -224,6 +284,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 enviarCorreoVerificacionRechazada($datos_u['correo'], $datos_u['nombre']);
             }
             $_SESSION['toast'] = "Cuenta rechazada: " . htmlspecialchars($datos_u['nombre'] ?? '');
+        }
+
+        // H) SUSPENDER USUARIO
+        if ($accion === 'suspender_usuario') {
+            $id_usuario    = (int)($_POST['id_usuario'] ?? 0);
+            $motivo_susp   = trim($_POST['motivo'] ?? '');
+            $duracion_raw  = $_POST['duracion_dias'] ?? '';
+            $duraciones_ok = ['3', '7', '15', '30', 'indefinida'];
+
+            if ($id_usuario <= 0) {
+                $_SESSION['toast'] = "❌ ID de usuario inválido.";
+            } elseif ($id_usuario === (int)$_SESSION['usuario_id']) {
+                $_SESSION['toast'] = "❌ No puedes suspenderte a ti mismo.";
+            } elseif (empty($motivo_susp)) {
+                $_SESSION['toast'] = "❌ El motivo es obligatorio.";
+            } elseif (mb_strlen($motivo_susp) > 500) {
+                $_SESSION['toast'] = "❌ Motivo demasiado largo (máx. 500 caracteres).";
+            } elseif (!in_array($duracion_raw, $duraciones_ok, true)) {
+                $_SESSION['toast'] = "❌ Duración no válida.";
+            } else {
+                $stmt_chk = $conn->prepare("SELECT rol FROM alumnos WHERE id = ? LIMIT 1");
+                $stmt_chk->bind_param("i", $id_usuario);
+                $stmt_chk->execute();
+                $afectado = $stmt_chk->get_result()->fetch_assoc();
+                $stmt_chk->close();
+
+                if (!$afectado) {
+                    $_SESSION['toast'] = "❌ Usuario no encontrado.";
+                } elseif ($afectado['rol'] === 'admin') {
+                    $_SESSION['toast'] = "❌ No puedes suspender a otro administrador.";
+                } else {
+                    $conn->begin_transaction();
+                    try {
+                        if ($duracion_raw === 'indefinida') {
+                            $suspendido_hasta = null;
+                        } else {
+                            $dias = (int)$duracion_raw;
+                            $stmt_f = $conn->prepare("SELECT DATE_ADD(NOW(), INTERVAL ? DAY) AS hasta");
+                            $stmt_f->bind_param("i", $dias);
+                            $stmt_f->execute();
+                            $suspendido_hasta = $stmt_f->get_result()->fetch_assoc()['hasta'];
+                            $stmt_f->close();
+                        }
+                        $stmt_s = $conn->prepare("UPDATE alumnos SET bloqueado = 1, suspendido_hasta = ?, motivo_suspension = ?, remember_token = NULL WHERE id = ?");
+                        $stmt_s->bind_param("ssi", $suspendido_hasta, $motivo_susp, $id_usuario);
+                        $stmt_s->execute();
+                        $stmt_s->close();
+
+                        $admin_id  = (int)$_SESSION['usuario_id'];
+                        $meta_susp = json_encode(['duracion_dias' => $duracion_raw, 'suspendido_hasta' => $suspendido_hasta]);
+                        $stmt_aud  = $conn->prepare("INSERT INTO auditoria_admin (admin_id, accion, usuario_afectado_id, motivo, metadata) VALUES (?, 'suspender', ?, ?, ?)");
+                        $stmt_aud->bind_param("iiss", $admin_id, $id_usuario, $motivo_susp, $meta_susp);
+                        $stmt_aud->execute();
+                        $stmt_aud->close();
+
+                        $conn->commit();
+                        $_SESSION['toast'] = $suspendido_hasta
+                            ? "Usuario suspendido hasta " . date('d/m/Y', strtotime($suspendido_hasta)) . "."
+                            : "Usuario suspendido indefinidamente.";
+                    } catch (Exception $e) {
+                        $conn->rollback();
+                        $_SESSION['toast'] = "❌ Error al suspender: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // I) LEVANTAR SUSPENSIÓN
+        if ($accion === 'levantar_suspension') {
+            $id_usuario = (int)($_POST['id_usuario'] ?? 0);
+            $motivo_lev = trim($_POST['motivo'] ?? '');
+
+            if ($id_usuario <= 0) {
+                $_SESSION['toast'] = "❌ ID de usuario inválido.";
+            } else {
+                $stmt_chk = $conn->prepare("SELECT bloqueado, motivo_suspension, suspendido_hasta FROM alumnos WHERE id = ? LIMIT 1");
+                $stmt_chk->bind_param("i", $id_usuario);
+                $stmt_chk->execute();
+                $afectado = $stmt_chk->get_result()->fetch_assoc();
+                $stmt_chk->close();
+
+                if (!$afectado || !$afectado['bloqueado']) {
+                    $_SESSION['toast'] = "⚠️ El usuario no está suspendido actualmente.";
+                } else {
+                    $conn->begin_transaction();
+                    try {
+                        $stmt_l = $conn->prepare("UPDATE alumnos SET bloqueado = 0, suspendido_hasta = NULL, motivo_suspension = NULL WHERE id = ?");
+                        $stmt_l->bind_param("i", $id_usuario);
+                        $stmt_l->execute();
+                        $stmt_l->close();
+
+                        $admin_id         = (int)$_SESSION['usuario_id'];
+                        $meta_lev         = json_encode(['motivo_anterior' => $afectado['motivo_suspension'], 'suspendido_hasta_anterior' => $afectado['suspendido_hasta']]);
+                        $motivo_lev_param = $motivo_lev !== '' ? $motivo_lev : null;
+                        $stmt_aud         = $conn->prepare("INSERT INTO auditoria_admin (admin_id, accion, usuario_afectado_id, motivo, metadata) VALUES (?, 'levantar_suspension', ?, ?, ?)");
+                        $stmt_aud->bind_param("iiss", $admin_id, $id_usuario, $motivo_lev_param, $meta_lev);
+                        $stmt_aud->execute();
+                        $stmt_aud->close();
+
+                        $conn->commit();
+                        $_SESSION['toast'] = "Suspensión levantada.";
+                    } catch (Exception $e) {
+                        $conn->rollback();
+                        $_SESSION['toast'] = "❌ Error al levantar la suspensión: " . $e->getMessage();
+                    }
+                }
+            }
         }
 
     } catch (Exception $e) {
@@ -447,9 +614,10 @@ require_once $app_dir . '/componentes/sidebar.php';
            </thead>
            <tbody class="divide-y divide-slate-50">
            <?php if ($res && $res->num_rows > 0): ?>
-               <?php while ($u = $res->fetch_assoc()): 
+               <?php while ($u = $res->fetch_assoc()):
                    $bloqueado = $u['bloqueado'] ?? 0;
                    $es_admin_row = $u['rol'] === 'admin';
+                   $suspendido_hasta_row = $u['suspendido_hasta'] ?? null;
                    $bg_row = $bloqueado ? 'bg-red-50/50' : 'hover:bg-slate-50';
                    $link_perfil = "/perfil/" . $u['id'];
                    $es_reciente = (strtotime($u['fecha_registro']) > strtotime('-48 hours'));
@@ -503,7 +671,14 @@ require_once $app_dir . '/componentes/sidebar.php';
 
                    <td class="px-4 py-4">
                        <?php if($bloqueado): ?>
-                           <span class="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest"><i class="fa-solid fa-ban"></i> Banned</span>
+                           <div class="flex flex-col items-start gap-1">
+                               <span class="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest"><i class="fa-solid fa-ban"></i> Suspendido</span>
+                               <?php if ($suspendido_hasta_row): ?>
+                                   <span class="text-[9px] font-medium text-red-400">hasta <?= date('d/m/Y', strtotime($suspendido_hasta_row)) ?></span>
+                               <?php else: ?>
+                                   <span class="text-[9px] font-medium text-red-400">indefinido</span>
+                               <?php endif; ?>
+                           </div>
                        <?php elseif(!empty($u['confirmado'])): ?>
                            <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Activo</span>
                        <?php else: ?>
@@ -576,21 +751,22 @@ require_once $app_dir . '/componentes/sidebar.php';
                             </button>
                          </form>
 
-                         <form method="POST" onsubmit="return confirm('🚨 ¿ESTÁS SEGURO?\n\nEstás a punto de <?= $bloqueado ? 'DESBLOQUEAR' : 'BLOQUEAR' ?> a <?= htmlspecialchars($u['nombre']) ?>.\n\nEsto afectará su acceso a la plataforma.');" class="inline">
-                            <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
-                            <input type="hidden" name="accion" value="toggle_ban">
-                            <input type="hidden" name="id" value="<?= $u['id'] ?>">
-                            <input type="hidden" name="nuevo_estado" value="<?= $bloqueado ? 0 : 1 ?>">
-                            <?php if($bloqueado): ?>
-                                <button class="bg-emerald-50 active:bg-emerald-100 text-emerald-600 p-2 rounded-xl transition-colors text-xs" title="Desbloquear">
+                         <?php if ($bloqueado): ?>
+                            <form method="POST" onsubmit="return confirm('¿Levantar la suspensión de <?= htmlspecialchars(addslashes($u['nombre'] ?? '')) ?>?');" class="inline">
+                                <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                                <input type="hidden" name="accion" value="levantar_suspension">
+                                <input type="hidden" name="id_usuario" value="<?= $u['id'] ?>">
+                                <input type="hidden" name="motivo" value="">
+                                <button class="bg-emerald-50 active:bg-emerald-100 text-emerald-600 p-2 rounded-xl transition-colors text-xs" title="Levantar suspensión">
                                     <i class="fa-solid fa-unlock"></i>
                                 </button>
-                            <?php else: ?>
-                                <button class="bg-amber-50 active:bg-amber-100 text-amber-600 p-2 rounded-xl transition-colors text-xs" title="Bloquear Temporalmente">
-                                    <i class="fa-solid fa-ban"></i>
-                                </button>
-                            <?php endif; ?>
-                         </form>
+                            </form>
+                         <?php elseif (!$es_admin_row): ?>
+                            <button onclick="abrirModalSuspender(<?= (int)$u['id'] ?>, '<?= htmlspecialchars(addslashes($u['nombre'] ?? ''), ENT_QUOTES) ?>')"
+                                    class="bg-amber-50 active:bg-amber-100 text-amber-600 p-2 rounded-xl transition-colors text-xs" title="Suspender usuario">
+                                <i class="fa-solid fa-ban"></i>
+                            </button>
+                         <?php endif; ?>
 
                          <form method="POST" onsubmit="return confirm('☢️ ¿Confirmas el Borrado Lógico de <?= htmlspecialchars($u['nombre']) ?>?\n\nEl usuario será ocultado del sistema (visible = 0) para mantener la integridad de los datos financieros/históricos asociados.');" class="inline">
                             <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
@@ -764,12 +940,68 @@ require_once $app_dir . '/componentes/modal_explora.php';
   </form>
 </div>
 
+<div id="modal-suspender" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex items-center justify-center transition-opacity p-4">
+  <form method="POST" class="bg-white p-6 md:p-8 rounded-3xl w-full max-w-sm relative">
+    <button type="button" onclick="cerrarModalSuspender()" class="absolute top-5 right-5 text-slate-400 active:text-slate-600 w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center transition-colors">
+        <i class="fa-solid fa-xmark text-sm"></i>
+    </button>
+
+    <h3 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+        <i class="fa-solid fa-ban text-red-500"></i> Suspender usuario
+    </h3>
+    <p id="suspender-nombre" class="text-sm text-slate-500 font-medium mb-6"></p>
+
+    <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+    <input type="hidden" name="accion" value="suspender_usuario">
+    <input type="hidden" name="id_usuario" id="suspender-id">
+
+    <div class="space-y-4">
+        <div class="space-y-1.5">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Motivo <span class="text-red-400">*</span></label>
+            <textarea name="motivo" id="suspender-motivo" required maxlength="500" rows="3"
+                placeholder="Ej: Compartir contacto personal con estudiante"
+                class="w-full border border-slate-200 bg-slate-50 px-4 py-3 rounded-2xl text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white outline-none font-medium text-slate-800 transition-colors resize-none"></textarea>
+        </div>
+        <div class="space-y-1.5">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Duración</label>
+            <div class="relative">
+                <select name="duracion_dias" required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 pr-10 py-3.5 text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white transition-colors cursor-pointer outline-none font-medium">
+                    <option value="3">3 días</option>
+                    <option value="7" selected>7 días</option>
+                    <option value="15">15 días</option>
+                    <option value="30">30 días</option>
+                    <option value="indefinida">Indefinida</option>
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
+        <button type="button" onclick="cerrarModalSuspender()" class="px-5 py-3 rounded-2xl text-xs font-bold text-slate-500 active:bg-slate-50 transition-colors">Cancelar</button>
+        <button type="submit" class="bg-red-500 active:bg-red-600 text-white px-6 py-3 rounded-2xl text-xs font-bold transition-colors">Confirmar suspensión</button>
+    </div>
+  </form>
+</div>
+
 <script>
     function abrirModalEditar(user) {
         document.getElementById('edit_id').value = user.id;
         document.getElementById('edit_nombre').value = user.nombre;
         document.getElementById('edit_correo').value = user.correo;
         document.getElementById('modal-editar').classList.remove('hidden');
+    }
+
+    function abrirModalSuspender(id, nombre) {
+        document.getElementById('suspender-id').value = id;
+        document.getElementById('suspender-nombre').textContent = nombre;
+        document.getElementById('suspender-motivo').value = '';
+        document.getElementById('modal-suspender').classList.remove('hidden');
+    }
+
+    function cerrarModalSuspender() {
+        document.getElementById('modal-suspender').classList.add('hidden');
     }
 
     function copiarTexto(texto) {

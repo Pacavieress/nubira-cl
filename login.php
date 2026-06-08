@@ -138,82 +138,107 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // --- LÓGICA DE BLOQUEO Y SOFT DELETE NUBIRA 2.0 ---
                 if ((int)$usuario['visible'] === 0) {
-                    // Si fue eliminado lógicamente (ej. "Cuenta eliminada")
                     $mensaje = "Esta cuenta ha sido eliminada o desactivada.";
-                } elseif ((int)$usuario['bloqueado'] === 1) {
-                    // Si el admin lo bloqueó manualmente
-                    $mensaje = "Tu cuenta está suspendida. Contacta a soporte.";
-                } elseif ((int)$usuario['confirmado'] !== 1) {
-                    $mensaje = "Cuenta no confirmada. Revisa tu correo.";
-                } elseif (password_verify($contrasena, $usuario['password'])) {
-                    
-                    // --- LOGIN EXITOSO ---
-                    $_SESSION['usuario_id'] = $usuario['id'];
-                    $_SESSION['usuario_nombre'] = $usuario['nombre'];
-                    $_SESSION['rol'] = $usuario['rol'] ?? 'alumno';
-                    $_SESSION['email'] = $usuario['correo'];
-                    
-                    // --- [NUBIRA 2.0] CACHÉ DE TUTOR Y SUGERENCIAS (LOGIN NORMAL) ---
-                    $_SESSION['notif_sugerencia_vista'] = (int)($usuario['notif_sugerencia_vista'] ?? 0);
-                    
-                    $stmt_tutor = $conn->prepare("SELECT 1 FROM servicios WHERE alumno_id = ? AND estado = 'aprobado' UNION SELECT 1 FROM apuntes WHERE id_alumno = ? AND estado = 'aprobado' LIMIT 1");
-                    if ($stmt_tutor) {
-                        $stmt_tutor->bind_param("ii", $usuario['id'], $usuario['id']);
-                        $stmt_tutor->execute();
-                        $stmt_tutor->store_result();
-                        $_SESSION['es_tutor_activo'] = ($stmt_tutor->num_rows > 0);
-                        $stmt_tutor->close();
+                }
+
+                if (empty($mensaje) && (int)$usuario['bloqueado'] === 1) {
+                    $susp_hasta = $usuario['suspendido_hasta'] ?? null;
+                    if ($susp_hasta !== null && strtotime($susp_hasta) <= time()) {
+                        // Suspensión vencida: desbloqueo automático
+                        $motivo_prev = $usuario['motivo_suspension'] ?? null;
+                        $stmt_unban  = $conn->prepare("UPDATE alumnos SET bloqueado = 0, suspendido_hasta = NULL, motivo_suspension = NULL WHERE id = ?");
+                        $stmt_unban->bind_param("i", $usuario['id']);
+                        $stmt_unban->execute();
+                        $stmt_unban->close();
+                        $meta_auto = json_encode(['motivo_anterior' => $motivo_prev, 'suspendido_hasta_anterior' => $susp_hasta]);
+                        $uid_zero  = 0;
+                        $stmt_aud  = $conn->prepare("INSERT INTO auditoria_admin (admin_id, accion, usuario_afectado_id, motivo, metadata) VALUES (?, 'desbloqueo_automatico', ?, NULL, ?)");
+                        $stmt_aud->bind_param("iis", $uid_zero, $usuario['id'], $meta_auto);
+                        $stmt_aud->execute();
+                        $stmt_aud->close();
+                        $usuario['bloqueado'] = 0;
                     } else {
-                        $_SESSION['es_tutor_activo'] = false;
+                        $mensaje = $susp_hasta !== null
+                            ? "Tu cuenta está suspendida hasta el " . date('d/m/Y', strtotime($susp_hasta)) . ". Contacta a soporte si crees que es un error."
+                            : "Tu cuenta está suspendida. Contacta a soporte.";
                     }
-                    // ----------------------------------------------------------------
+                }
 
-                    // LÓGICA DE LA COOKIE "RECORDARME"
-                    if (isset($_POST['recordarme']) && $_POST['recordarme'] == '1') {
-                        $token = bin2hex(random_bytes(32));
-                        $stmt_token = $conn->prepare("UPDATE alumnos SET remember_token = ? WHERE id = ?");
-                        $stmt_token->bind_param("si", $token, $usuario['id']);
-                        $stmt_token->execute();
-                        setcookie('remember_token', $token, time() + (86400 * 30), "/", "", true, true); // 30 días
-                    }
+                if (empty($mensaje) && (int)$usuario['confirmado'] !== 1) {
+                    $mensaje = "Cuenta no confirmada. Revisa tu correo.";
+                }
 
-                    // --- REDIRECCIÓN POST-LOGIN SEGÚN ESTADO DE VERIFICACIÓN ---
-                    $_SESSION['verificacion_estado'] = $usuario['verificacion_estado'] ?? null;
-                    $_SESSION['perfil_completo']     = !empty(trim($usuario['bio'] ?? ''));
-                    $est = $_SESSION['verificacion_estado'];
+                if (empty($mensaje)) {
+                    if (password_verify($contrasena, $usuario['password'])) {
 
-                    if ($est === 'rechazado') {
-                        header("Location: /verificacion_rechazada");
-                        exit;
-                    }
-                    if ($est === 'pendiente') {
-                        header("Location: " . ($_SESSION['perfil_completo'] ? '/vitrina?aviso=verificacion_pendiente' : '/completar_perfil'));
-                        exit;
-                    }
+                        // --- LOGIN EXITOSO ---
+                        $_SESSION['usuario_id'] = $usuario['id'];
+                        $_SESSION['usuario_nombre'] = $usuario['nombre'];
+                        $_SESSION['rol'] = $usuario['rol'] ?? 'alumno';
+                        $_SESSION['email'] = $usuario['correo'];
 
-                    // Estado 'aprobado' o NULL (usuarios pre-sistema): flujo normal
-                    $ruta_final = '/vitrina';
-                    if (!empty($redir_post)) {
-                        $ruta_final = filter_var($redir_post, FILTER_SANITIZE_URL);
-                    } elseif (!empty($_SESSION['redirigir_despues_login'])) {
-                        $ruta_final = $_SESSION['redirigir_despues_login'];
-                    }
-                    unset($_SESSION['redirigir_despues_login']);
-                    if (strpos($ruta_final, '/') !== 0 || strpos($ruta_final, '//') === 0) {
+                        // --- [NUBIRA 2.0] CACHÉ DE TUTOR Y SUGERENCIAS (LOGIN NORMAL) ---
+                        $_SESSION['notif_sugerencia_vista'] = (int)($usuario['notif_sugerencia_vista'] ?? 0);
+
+                        $stmt_tutor = $conn->prepare("SELECT 1 FROM servicios WHERE alumno_id = ? AND estado = 'aprobado' UNION SELECT 1 FROM apuntes WHERE id_alumno = ? AND estado = 'aprobado' LIMIT 1");
+                        if ($stmt_tutor) {
+                            $stmt_tutor->bind_param("ii", $usuario['id'], $usuario['id']);
+                            $stmt_tutor->execute();
+                            $stmt_tutor->store_result();
+                            $_SESSION['es_tutor_activo'] = ($stmt_tutor->num_rows > 0);
+                            $stmt_tutor->close();
+                        } else {
+                            $_SESSION['es_tutor_activo'] = false;
+                        }
+                        // ----------------------------------------------------------------
+
+                        // LÓGICA DE LA COOKIE "RECORDARME"
+                        if (isset($_POST['recordarme']) && $_POST['recordarme'] == '1') {
+                            $token = bin2hex(random_bytes(32));
+                            $stmt_token = $conn->prepare("UPDATE alumnos SET remember_token = ? WHERE id = ?");
+                            $stmt_token->bind_param("si", $token, $usuario['id']);
+                            $stmt_token->execute();
+                            setcookie('remember_token', $token, time() + (86400 * 30), "/", "", true, true); // 30 días
+                        }
+
+                        // --- REDIRECCIÓN POST-LOGIN SEGÚN ESTADO DE VERIFICACIÓN ---
+                        $_SESSION['verificacion_estado'] = $usuario['verificacion_estado'] ?? null;
+                        $_SESSION['perfil_completo']     = !empty(trim($usuario['bio'] ?? ''));
+                        $est = $_SESSION['verificacion_estado'];
+
+                        if ($est === 'rechazado') {
+                            header("Location: /verificacion_rechazada");
+                            exit;
+                        }
+                        if ($est === 'pendiente') {
+                            header("Location: " . ($_SESSION['perfil_completo'] ? '/vitrina?aviso=verificacion_pendiente' : '/completar_perfil'));
+                            exit;
+                        }
+
+                        // Estado 'aprobado' o NULL (usuarios pre-sistema): flujo normal
                         $ruta_final = '/vitrina';
-                    }
-                    if ($ruta_final === '/perfil' || $ruta_final === '/perfil/') {
-                        $ruta_final = '/perfil/' . $usuario['id'];
-                    }
-                    header("Location: " . $ruta_final);
-                    exit;
+                        if (!empty($redir_post)) {
+                            $ruta_final = filter_var($redir_post, FILTER_SANITIZE_URL);
+                        } elseif (!empty($_SESSION['redirigir_despues_login'])) {
+                            $ruta_final = $_SESSION['redirigir_despues_login'];
+                        }
+                        unset($_SESSION['redirigir_despues_login']);
+                        if (strpos($ruta_final, '/') !== 0 || strpos($ruta_final, '//') === 0) {
+                            $ruta_final = '/vitrina';
+                        }
+                        if ($ruta_final === '/perfil' || $ruta_final === '/perfil/') {
+                            $ruta_final = '/perfil/' . $usuario['id'];
+                        }
+                        header("Location: " . $ruta_final);
+                        exit;
 
-                } else {
-                    $mensaje = "Contraseña incorrecta.";
-                    // Registrar fallo
-                    $stmt_ins = $conn->prepare("INSERT INTO login_fallos (correo, ip) VALUES (?, ?)");
-                    $stmt_ins->bind_param("ss", $correo, $ip);
-                    $stmt_ins->execute();
+                    } else {
+                        $mensaje = "Contraseña incorrecta.";
+                        // Registrar fallo
+                        $stmt_ins = $conn->prepare("INSERT INTO login_fallos (correo, ip) VALUES (?, ?)");
+                        $stmt_ins->bind_param("ss", $correo, $ip);
+                        $stmt_ins->execute();
+                    }
                 }
             } else {
                 $mensaje = "No existe una cuenta con este correo.";
