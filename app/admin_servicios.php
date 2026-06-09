@@ -12,6 +12,7 @@ if (!file_exists($app_dir . '/conexion.php')) $app_dir = __DIR__;
 
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
+require_once $app_dir . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
 
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
     header('Location: /vitrina'); exit;
@@ -70,10 +71,11 @@ if ($busqueda !== '') {
     $types = "ss";
 }
 
-$sql = "SELECT s.id, s.titulo, s.nombre_oferente, s.categoria, s.imagen, s.estado, s.fecha_publicacion, s.alumno_id, s.motivo_rechazo, s.visible,
-               a.nombre AS nombre_alumno 
+$sql = "SELECT s.id, s.titulo, s.nombre_oferente, s.categoria, s.imagen, s.imagen_banco_id, s.estado, s.fecha_publicacion, s.alumno_id, s.motivo_rechazo, s.visible,
+               a.nombre AS nombre_alumno, bi.archivo AS banco_archivo
         FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
+        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
         $where
         ORDER BY s.id DESC $limit_clause";
 
@@ -177,18 +179,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                
                <td class="px-6 py-4 text-center">
                   <?php
-                     $imgBD = trim($row['imagen'] ?? '');
-                     $rutaPorDefecto = "/upload/servicios/default_clases.webp";
-                     
-                     if (!empty($imgBD) && $imgBD !== 'default.webp') {
-                         $ruta = "/upload/servicios/" . $imgBD;
-                     } else {
-                         $ruta = $rutaPorDefecto;
-                     }
-                     
-                     $ruta_fisica = $_SERVER['DOCUMENT_ROOT'] . $ruta;
-                     $version = file_exists($ruta_fisica) ? filemtime($ruta_fisica) : '1';
-                     $rutaDisplay = $ruta . '?v=' . $version; 
+                     $rutaDisplay = url_portada($row); // [BANCO] banco → legacy → placeholder
                   ?>
                   <div class='relative img-zoomable inline-block group/img bg-slate-100 rounded-xl w-14 h-10 animate-pulse-once' data-id="<?= $row['id'] ?>" data-src="<?= htmlspecialchars($rutaDisplay) ?>">
                     <img src='<?= htmlspecialchars($rutaDisplay) ?>' 

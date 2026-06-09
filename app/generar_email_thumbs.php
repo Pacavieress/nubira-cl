@@ -12,6 +12,7 @@ error_reporting(E_ALL);
 set_time_limit(300);
 
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] path_portada() para origen físico
 
 $force = !empty($_GET['force']); // ?force=1 para regenerar aunque exista
 
@@ -65,9 +66,10 @@ function first_existing(array $candidatas): ?string {
  * 1) SERVICIOS APROBADOS
  * =======================================================*/
 $sql_serv = "
-    SELECT id, imagen
-    FROM servicios
-    WHERE estado = 'aprobado'
+    SELECT s.id, s.imagen, s.imagen_banco_id, bi.archivo AS banco_archivo
+    FROM servicios s
+    LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+    WHERE s.estado = 'aprobado'
 ";
 $res_serv = $conn->query($sql_serv);
 
@@ -87,9 +89,9 @@ if (!$res_serv) {
             $skip++; continue;
         }
 
-        // Candidatas de origen (si no hay imagen válida, usa default)
+        // Candidatas de origen: banco/legacy vía helper (ruta física), luego fallback genérico
         $src = first_existing([
-            $dirServ . $img,
+            path_portada($row),
             __DIR__ . '/../upload/email/email-card-default.jpg'
         ]);
 

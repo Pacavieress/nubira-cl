@@ -16,6 +16,7 @@ elseif (file_exists(__DIR__ . '/../conexion.php')) $base_path = __DIR__ . '/..';
 if (!file_exists($base_path . '/conexion.php')) exit;
 require_once $base_path . '/conexion.php';
 require_once $base_path . '/helpers/ofertas.php';
+require_once $base_path . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
 
 if (!isset($_SESSION['usuario_id'])) exit;
 $usuario_id = (int)$_SESSION['usuario_id'];
@@ -63,13 +64,14 @@ $data_apuntes = [];
 if (!empty($ids_servicios)) {
     $ids_in = implode(',', $ids_servicios);
     $res = $conn->query("
-      SELECT s.id, s.titulo, s.precio, s.imagen, s.score_nubira, s.fecha_publicacion,
+      SELECT s.id, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.score_nubira, s.fecha_publicacion,
                s.is_subvencionado, s.precio_oferta, s.cupos_oferta, s.oferta_termino,
-               a.nombre as tutor_nombre, a.foto_perfil,
+               a.nombre as tutor_nombre, a.foto_perfil, bi.archivo as banco_archivo,
                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
-        FROM servicios s 
+        FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
+        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
         WHERE s.id IN ($ids_in)
     ");
     if($res) while ($r = $res->fetch_assoc()) $data_servicios[$r['id']] = $r;
@@ -104,18 +106,8 @@ foreach ($items_ordenados as $item):
     if ($tipo === 's' && isset($data_servicios[$id])) {
         $row = $data_servicios[$id];
         
-        // [NUBIRA 2.0] Usar thumb 240px (cae al main si el thumb no existe)
-        $img = 'https://nubira.cl/upload/servicios/default_clases.webp';
-        if (!empty($row['imagen'])) {
-            $base = pathinfo(basename($row['imagen']), PATHINFO_FILENAME);
-            $thumb_check = $_SERVER['DOCUMENT_ROOT'] . '/upload/servicios/' . $base . '_thumb.webp';
-            $main_check  = $_SERVER['DOCUMENT_ROOT'] . '/upload/servicios/' . basename($row['imagen']);
-            if (file_exists($thumb_check)) {
-                $img = '/upload/servicios/' . $base . '_thumb.webp';
-            } elseif (file_exists($main_check)) {
-                $img = '/upload/servicios/' . basename($row['imagen']);
-            }
-        }
+        // [BANCO] miniatura (thumb 240px) vía helper; cae a main/placeholder según exista
+        $img = srcset_portada($row)['thumb'];
         
 // --- LÓGICA DE PRECIOS Y OFERTAS (ESTÁNDAR CARD HORIZONTAL NUBIRA 2.0) ---
         $es_oferta = oferta_vigente($row);

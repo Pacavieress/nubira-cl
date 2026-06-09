@@ -14,6 +14,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/helpers/portada_helper.php';
+require_once $app_dir . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
 
 $uid  = (int)$_SESSION['usuario_id'];
 $tipo = $_GET['tipo'] ?? '';
@@ -27,7 +28,7 @@ if (!in_array($tipo, ['servicio', 'apunte'], true) || $id <= 0) {
 
 $pub = null;
 if ($tipo === 'servicio') {
-    $stmt = $conn->prepare("SELECT id, titulo, precio, imagen, imagen_estado, categoria FROM servicios WHERE id = ? AND alumno_id = ? AND estado = 'aprobado' LIMIT 1");
+    $stmt = $conn->prepare("SELECT s.id, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.categoria, bi.archivo AS banco_archivo FROM servicios s LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id WHERE s.id = ? AND s.alumno_id = ? AND s.estado = 'aprobado' LIMIT 1");
     if ($stmt) {
         $stmt->bind_param("ii", $id, $uid);
         $stmt->execute();
@@ -196,11 +197,7 @@ function det_sparkline(array $vals): string {
 // ── Imagen y meta ──────────────────────────────────────────────────────────
 
 if ($tipo === 'servicio') {
-    if (($pub['imagen_estado'] ?? '') === 'aprobada' && !empty($pub['imagen'])) {
-        $img_url = '/upload/servicios/' . basename($pub['imagen']);
-    } else {
-        $img_url = portada_servicio($pub['imagen'] ?? null, $pub['categoria'] ?? 'otro');
-    }
+    $img_url = url_portada($pub); // [BANCO] banco → legacy → placeholder (ignora imagen_estado)
     $badge_lbl  = 'TUTORÍA';
     $edit_href  = '/app/editar_servicio.php?id=' . $pub['id'];
 } else {

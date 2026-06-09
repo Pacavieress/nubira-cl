@@ -10,6 +10,7 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 require_once __DIR__ . '/helpers/usuario_helper.php';
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/helpers/portada_helper.php';
+require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 require_once __DIR__ . '/helpers/ofertas.php';
 
 // [NUBIRA 2.0] Cargar iconos oficiales de la plataforma
@@ -98,10 +99,12 @@ $select_sql = "SELECT s.*,
                       (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
                       (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                       a.foto_perfil,
-                      a.nombre as nombre_tutor
+                      a.nombre as nombre_tutor,
+                      bi.archivo as banco_archivo
                FROM servicios s
                LEFT JOIN alumnos a ON s.alumno_id = a.id
-               LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio";
+               LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+               LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id";
 
 // 2. WHERE CONDICIONALES
 $where_sql = "WHERE " . implode(" AND ", $filtros);
@@ -179,20 +182,8 @@ foreach ($servicios as $i => $row):
     // [NUBIRA SHIELD] Enmascarar ID
     $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
     
-    // 1. DATA PREP PORTADA
-    $nombre_archivo = basename($row['imagen'] ?? '');
-    $ruta_relativa  = '/upload/servicios/' . $nombre_archivo;
-    $ruta_fisica    = $_SERVER['DOCUMENT_ROOT'] . $ruta_relativa;
-    $portada_url    = '';
-
-    if (($row['imagen_estado'] ?? '') === 'aprobada' && !empty($nombre_archivo) && file_exists($ruta_fisica)) {
-        clearstatcache(true, $ruta_fisica);
-        $portada_url = $ruta_relativa . '?v=' . filemtime($ruta_fisica);
-    } else {
-        $portada_url = portada_servicio($row['imagen'] ?? null, $row['categoria'] ?? 'otro');
-        $ruta_fisica_h = $_SERVER['DOCUMENT_ROOT'] . $portada_url;
-        if (file_exists($ruta_fisica_h)) $portada_url .= '?v=' . filemtime($ruta_fisica_h);
-    }
+    // 1. DATA PREP PORTADA (banco → legacy → placeholder, vía helper unificado; ignora imagen_estado)
+    $portada_url = url_portada($row);
 
     $fecha_pub = !empty($row['fecha_publicacion']) ? new DateTime($row['fecha_publicacion']) : $hoy;
     $es_nuevo  = ($hoy->diff($fecha_pub)->days <= 14); 

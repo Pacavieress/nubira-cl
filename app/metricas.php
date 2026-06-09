@@ -14,6 +14,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/helpers/portada_helper.php';
+require_once $app_dir . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
 
 $uid = (int)$_SESSION['usuario_id'];
 
@@ -21,7 +22,7 @@ $uid = (int)$_SESSION['usuario_id'];
 
 $publicaciones = [];
 
-$stmt = $conn->prepare("SELECT id, titulo, precio, imagen, imagen_estado, categoria, fecha_publicacion FROM servicios WHERE alumno_id = ? AND estado = 'aprobado' AND visible = 1 ORDER BY fecha_publicacion DESC LIMIT 60");
+$stmt = $conn->prepare("SELECT s.id, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.categoria, s.fecha_publicacion, bi.archivo AS banco_archivo FROM servicios s LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id WHERE s.alumno_id = ? AND s.estado = 'aprobado' AND s.visible = 1 ORDER BY s.fecha_publicacion DESC LIMIT 60");
 if ($stmt) {
     $stmt->bind_param("i", $uid);
     $stmt->execute();
@@ -109,11 +110,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         $tipo = $pub['tipo'];
 
         if ($tipo === 'servicio') {
-            if (($pub['imagen_estado'] ?? '') === 'aprobada' && !empty($pub['imagen'])) {
-                $img_url = '/upload/servicios/' . basename($pub['imagen']);
-            } else {
-                $img_url = portada_servicio($pub['imagen'] ?? null, $pub['categoria'] ?? 'otro');
-            }
+            $img_url = url_portada($pub); // [BANCO] banco → legacy → placeholder (ignora imagen_estado)
         } else {
             $img_url = obtenerMiniaturaApunte($pub['id'], $pub['portada'] ?? '', $pub['preview'] ?? '', $pub['archivo'] ?? '');
         }

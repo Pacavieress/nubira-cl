@@ -48,6 +48,7 @@ if (file_exists($ruta_raiz . '/iconos.php')) require_once $ruta_raiz . '/iconos.
 else { if (!function_exists('icon')) { function icon($n, $c=''){ return "<i class='fa-solid fa-star $c'></i>"; } } }
 
 require_once $ruta_raiz . '/helpers/ofertas.php';
+require_once $ruta_raiz . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 
 // 3. Configuración Base & Lazy Registration
 $base_url = "https://nubira.cl"; 
@@ -81,10 +82,11 @@ if ($id === 0) {
 
 // 5. Consulta SQL
 $servicio = null;
-$sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil, a.tiempo_respuesta_promedio, a.verificacion_estado, COALESCE(dp.institucion, a.institucion) AS institucion_maestra
+$sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil, a.tiempo_respuesta_promedio, a.verificacion_estado, COALESCE(dp.institucion, a.institucion) AS institucion_maestra, bi.archivo AS banco_archivo
         FROM servicios s
-        LEFT JOIN alumnos a ON s.alumno_id = a.id 
-        LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio 
+        LEFT JOIN alumnos a ON s.alumno_id = a.id
+        LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
         WHERE s.id = ?";
 try {
     $stmt = $conn->prepare($sql);
@@ -254,14 +256,16 @@ if ($stmt_fav = $conn->prepare($sql_fav)) {
 
 // 3. Buscar recomendaciones mezclando: Su categoría favorita + La categoría actual + Algo de frescura
 // Priorizamos lo que le gusta, pero si no hay suficiente, rellenamos con la categoría del servicio actual.
-$sql_recs = "SELECT s.id, s.titulo, s.precio, s.imagen, s.categoria, s.modalidad,
+$sql_recs = "SELECT s.id, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.categoria, s.modalidad,
                     COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                     (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
-                    (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos
+                    (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
+                    bi.archivo as banco_archivo
              FROM servicios s
              LEFT JOIN alumnos a ON s.alumno_id = a.id
              LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-             WHERE s.estado = 'aprobado' AND s.id != ? 
+             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+             WHERE s.estado = 'aprobado' AND s.id != ?
              ORDER BY 
                 CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, 
                 CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, 
@@ -288,21 +292,19 @@ $web_src = $default_image;
 $og_mime = "image/webp"; 
 $og_w = 1200; $og_h = 630; 
 
-if (!empty($servicio['imagen']) && $servicio['imagen'] !== 'default.webp') {
-    $fname = basename($servicio['imagen']);
-    $ruta_fis = $_SERVER['DOCUMENT_ROOT'] . "/upload/servicios/" . $fname;
-    
-    if (file_exists($ruta_fis)) {
-        $version = filemtime($ruta_fis);
-        $web_src = "/upload/servicios/" . $fname . "?v=" . $version;
-        $og_image = $base_url . "/upload/servicios/" . rawurlencode($fname) . "?v=" . $version;
-        
-        $ext = strtolower(pathinfo($fname, PATHINFO_EXTENSION));
-        if ($ext == 'jpg' || $ext == 'jpeg') $og_mime = "image/jpeg"; 
-        elseif ($ext == 'png') $og_mime = "image/png";
-        $d = @getimagesize($ruta_fis); 
-        if ($d) { $og_w = $d[0]; $og_h = $d[1]; }
-    }
+// [BANCO] portada vía helper unificado (banco → legacy → placeholder)
+$portada_rel = url_portada($servicio);
+$portada_fis = path_portada($servicio);
+if ($portada_rel && $portada_fis) {
+    $web_src  = $portada_rel;
+    $og_image = $base_url . $portada_rel;
+
+    $ext = strtolower(pathinfo($portada_fis, PATHINFO_EXTENSION));
+    if ($ext === 'jpg' || $ext === 'jpeg') $og_mime = "image/jpeg";
+    elseif ($ext === 'png') $og_mime = "image/png";
+
+    $d = @getimagesize($portada_fis);
+    if ($d) { $og_w = $d[0]; $og_h = $d[1]; }
 }
 $share_txt = urlencode("¡Mira este servicio en Nubira.cl! " . $servicio['titulo']);
 
@@ -874,8 +876,7 @@ $is_oferta = oferta_vigente($servicio);
 
             <div id="carrusel-recomendados" class="flex gap-4 overflow-x-auto pb-6 px-1 no-scrollbar snap-x snap-proximity scroll-smooth">
     <?php while ($r = $recs->fetch_assoc()): 
-        $ir = $default_image;
-        if(!empty($r['imagen'])) $ir = '/upload/servicios/'.basename($r['imagen']);
+        $ir = url_portada($r); // [BANCO] banco → legacy → placeholder
         
         // Calcular estrellas y votos
         $rating_val = isset($r['rating_promedio']) ? (float)$r['rating_promedio'] : 0;

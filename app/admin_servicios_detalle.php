@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../app/conexion.php';
+require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
 
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
     header('Location: /login');
@@ -9,9 +10,10 @@ if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
 
 $id = intval($_GET['id'] ?? 0);
 
-$stmt = $conn->prepare("SELECT s.*, a.nombre AS nombre_alumno
+$stmt = $conn->prepare("SELECT s.*, a.nombre AS nombre_alumno, bi.archivo AS banco_archivo
                         FROM servicios s
                         LEFT JOIN alumnos a ON s.alumno_id = a.id
+                        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                         WHERE s.id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
@@ -24,15 +26,8 @@ if (!$servicio) {
     exit;
 }
 
-/* --- Imagen lógica --- */
-$imgBD = trim($servicio['imagen'] ?? '');
-$rutaFS = $_SERVER['DOCUMENT_ROOT'] . "/upload/servicios/" . $imgBD;
-
-if ($imgBD !== "" && file_exists($rutaFS)) {
-    $imgURL = "/upload/servicios/" . htmlspecialchars($imgBD);
-} else {
-    $imgURL = "/upload/servicios/default.webp";
-}
+/* --- Imagen lógica (banco → legacy → placeholder, vía helper unificado) --- */
+$imgURL = url_portada($servicio);
 ?>
 <!DOCTYPE html>
 <html lang="es">

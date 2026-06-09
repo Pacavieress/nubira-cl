@@ -28,6 +28,7 @@ if (isset($conn)) {
 // =========================================================================
 require_once $app_dir . '/iconos.php';
 require_once __DIR__ . '/helpers/ofertas.php';
+require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [$app_dir . '/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -190,10 +191,12 @@ try {
                       (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
                       (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                       a.foto_perfil,
-                      a.nombre as nombre_tutor
+                      a.nombre as nombre_tutor,
+                      bi.archivo as banco_archivo
                FROM servicios s
                INNER JOIN alumnos a ON s.alumno_id = a.id
                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+               LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) ";
                
  // [NUBIRA 2.0] Título fijo. La afinidad sigue activa en el ORDER BY (sin frases variables en UI).
@@ -219,11 +222,13 @@ try {
                           (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                           (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                           a.foto_perfil,
-                          a.nombre as nombre_tutor
+                          a.nombre as nombre_tutor,
+                          bi.archivo as banco_archivo
                    FROM servicios s
                    INNER JOIN alumnos a ON s.alumno_id = a.id
                    LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) 
+                   LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL)
                    ORDER BY {$orden_institucion_sql} s.id DESC LIMIT 8";
     $res_nuevos = $conn->query($sql_nuevos);
 } catch (Exception $e) {
@@ -315,10 +320,12 @@ try {
     $sql_ofertas = "SELECT s.*, s.oferta_termino,
                            COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                            (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-                           (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
+                           (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                           bi.archivo as banco_archivo
                     FROM servicios s
                     INNER JOIN alumnos a ON s.alumno_id = a.id
                     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+                    LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                     WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1
                       AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
                     ORDER BY (s.cupos_oferta > 0) DESC, s.id DESC LIMIT 12";
@@ -339,10 +346,12 @@ try {
         
       $sql_relleno = "SELECT s.*, COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-                               (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
-                        FROM servicios s 
+                               (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                               bi.archivo as banco_archivo
+                        FROM servicios s
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+                        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                         WHERE s.estado = 'aprobado' AND s.id NOT IN ($placeholders)
                         ORDER BY s.id ASC LIMIT ?";
         $stmt_relleno = $conn->prepare($sql_relleno);
@@ -444,6 +453,9 @@ if (!function_exists('abreviar_institucion')) {
     }
 }
 
+// [DEUDA FASE E] Resolvers legacy (resolver_portada_servicio / resolver_srcset_servicio):
+// superados por url_portada() / srcset_portada() en helpers/imagen_servicio.php.
+// Ya NO se usan en esta vista; se conservan temporalmente hasta limpiar todos los consumidores.
 if (!function_exists('resolver_portada_servicio')) {
     /**
      * NUBIRA 2.0 — Resolver portada con tamaño responsivo
@@ -740,7 +752,7 @@ require_once __DIR__ . '/componentes/header.php';
                        $idx_of++;
                        $es_lcp_of = ($idx_of <= 2);
                        $link_hash_of = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_of['id']) : (int)$row_of['id'];
-                      $portada_set_of = resolver_srcset_servicio($row_of['imagen'] ?? null);
+                      $portada_set_of = srcset_portada($row_of);
 $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es suficiente
                         $es_activa = ((int)($row_of['cupos_oferta'] ?? 0) > 0 && !isset($row_of['es_falsa_oferta']));
                         $pct_of = ($es_activa && (int)$row_of['precio'] > 0) ? round(((int)$row_of['precio'] - (int)$row_of['precio_oferta']) / (int)$row_of['precio'] * 100) : 0;
@@ -888,7 +900,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                     $idx_n++;
                     $es_lcp_n = ($idx_n <= 2);
                     $link_hash_n = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_n['id']) : (int)$row_n['id'];
-                  $portada_set_n = resolver_srcset_servicio($row_n['imagen'] ?? null);
+                  $portada_set_n = srcset_portada($row_n);
 $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inicial)
                     $rating_val_n = isset($row_n['rating_promedio']) ? (float)$row_n['rating_promedio'] : 0;
                     $total_v_n = isset($row_n['total_votos']) ? (int)$row_n['total_votos'] : 0;
@@ -994,7 +1006,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $esRecomendado = ($es_recomendacion_inmediata && $row['categoria'] === $cat_favorita);
                     $es_lcp_serv = ($idx_serv <= 2); // Primeras 2 cards = prioridad alta
                     $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
-                    $portada_set = resolver_srcset_servicio($row['imagen'] ?? null);
+                    $portada_set = srcset_portada($row);
 $portada_url = $portada_set['card'];
                     
                     $rating_val = isset($row['rating_promedio']) ? (float)$row['rating_promedio'] : 0;

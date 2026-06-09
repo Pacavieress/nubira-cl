@@ -85,6 +85,12 @@ $stmt_vf->fetch();
 $stmt_vf->close();
 $puede_publicar = ($verificacion_estado_pub === null || $verificacion_estado_pub === 'aprobado');
 
+// [BANCO] Imágenes del banco para el carrusel. Se cargan TODAS de una vez (sin AJAX);
+// el JS filtra en cliente según la categoría seleccionada.
+$banco_imagenes = [];
+$res_banco = $conn->query("SELECT id, categoria, archivo, descripcion FROM banco_imagenes WHERE activa = 1 ORDER BY categoria, id");
+if ($res_banco) { while ($b = $res_banco->fetch_assoc()) $banco_imagenes[] = $b; }
+
 // Función Anti-Contacto
 function contiene_contacto($texto) {
     $patrones = [
@@ -144,100 +150,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy && $puede_publicar
     } elseif (contiene_contacto($titulo) || contiene_contacto($descripcion)) {
         $mensaje = "Por seguridad, no incluyas teléfonos ni correos.";
     } else {
-        $nombreArchivo = ''; 
-        $imagen_estado = 'oculta'; 
-        
-        $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
-        $upload_dir = $docRoot . '/upload/servicios/';
-        if (!file_exists($upload_dir)) @mkdir($upload_dir, 0755, true);
-
-        if (!empty($_FILES['imagen']['name'])) {
-            if (isset($_FILES['imagen']['error']) && $_FILES['imagen']['error'] === UPLOAD_ERR_INI_SIZE) {
-                $mensaje = "La imagen es demasiado grande. El máximo permitido es 4MB.";
-                goto fin_post;
-            }
-            if ($_FILES['imagen']['size'] > 4 * 1024 * 1024) {
-                $mensaje = "La imagen no puede superar 4MB.";
-                goto fin_post;
-            }
-            $file_tmp  = $_FILES['imagen']['tmp_name'];
-            $file_type = mime_content_type($file_tmp);
-            
-            if (in_array($file_type, ['image/jpeg', 'image/png', 'image/webp'])) {
-                $file_name    = uniqid('serv_') . '.webp';
-                $upload_path = $upload_dir . $file_name;
-
-                $img = null;
-                if ($file_type === 'image/jpeg') $img = @imagecreatefromjpeg($file_tmp);
-                elseif ($file_type === 'image/png') $img = @imagecreatefrompng($file_tmp);
-                elseif ($file_type === 'image/webp') $img = @imagecreatefromwebp($file_tmp);
-
-                if ($img) {
-                    $w_orig = imagesx($img); 
-                    $h_orig = imagesy($img);
-                    
-                    // Aviso si la imagen original es demasiado chica
-                    if ($w_orig < 800) {
-                        error_log("Nubira UploadInfo - Imagen baja resolución: usuario_id={$usuario_id}, dimensiones={$w_orig}x{$h_orig}");
-                    }
-                    
-                    $base_name = pathinfo($file_name, PATHINFO_FILENAME);
-                    
-                    // Helper de redimensionado con resampling de alta calidad
-                    $generar_tamano = function($img, $w_orig, $h_orig, $max_width, $ruta_destino, $calidad) {
-                        if ($w_orig <= $max_width) {
-                            return imagewebp($img, $ruta_destino, $calidad);
-                        }
-                        
-                        $new_w = $max_width;
-                        $new_h = (int)(($h_orig / $w_orig) * $max_width);
-                        
-                        $resized = imagecreatetruecolor($new_w, $new_h);
-                        imagealphablending($resized, false);
-                        imagesavealpha($resized, true);
-                        
-                        imagecopyresampled(
-                            $resized, $img,
-                            0, 0, 0, 0,
-                            $new_w, $new_h,
-                            $w_orig, $h_orig
-                        );
-                        
-                        $ok = imagewebp($resized, $ruta_destino, $calidad);
-                        imagedestroy($resized);
-                        return $ok;
-                    };
-                    
-                    // Generar 3 tamaños responsivos (Nubira 2.0)
-                    $generar_tamano($img, $w_orig, $h_orig, 400, $upload_dir . $base_name . '_thumb.webp', 82);
-                    $generar_tamano($img, $w_orig, $h_orig, 800, $upload_dir . $base_name . '_card.webp', 85);
-                    $generar_tamano($img, $w_orig, $h_orig, 1600, $upload_path, 85);
-                    
-                    imagedestroy($img);
-                    $nombreArchivo = $file_name;
-                    $imagen_estado = 'visible';
-                }
-            }
+        // [BANCO] Validación estricta: imagen_banco_id debe ser un id ACTIVO del banco
+        // Y pertenecer a la categoría seleccionada (cierra manipulación del formulario).
+        $imagen_banco_id = (int)($_POST['imagen_banco_id'] ?? 0);
+        $banco_valido = false;
+        if ($imagen_banco_id > 0) {
+            $stmt_b = $conn->prepare("SELECT id FROM banco_imagenes WHERE id = ? AND activa = 1 AND categoria = ? LIMIT 1");
+            $stmt_b->bind_param("is", $imagen_banco_id, $categoria);
+            $stmt_b->execute();
+            $stmt_b->store_result();
+            $banco_valido = ($stmt_b->num_rows === 1);
+            $stmt_b->close();
         }
 
-        $sql = "INSERT INTO servicios (alumno_id, institucion, titulo, descripcion, nombre_oferente, categoria, modalidad, ubicacion, precio, correo, imagen, imagen_estado, estado, fecha_publicacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', NOW())";
-        $stmt = $conn->prepare($sql);
-        
-        if ($stmt) {
-            $stmt->bind_param("isssssssdsss", $usuario_id, $institucion, $titulo, $descripcion, $nombre_oferente, $categoria, $modalidad, $ubicacion, $precio, $correo, $nombreArchivo, $imagen_estado);
-            
-            if ($stmt->execute()) {
-                $nuevo_servicio_id = $stmt->insert_id;
-                actualizar_score_servicio($conn, $nuevo_servicio_id);
+        if (!$banco_valido) {
+            $mensaje = "Elige una imagen del banco para tu categoría antes de publicar.";
+        } else {
+            // Servicios nuevos: imagen legacy vacía; el resolver prioriza imagen_banco_id.
+            $imagen_legacy = '';
+            $sql = "INSERT INTO servicios (alumno_id, institucion, titulo, descripcion, nombre_oferente, categoria, modalidad, ubicacion, precio, correo, imagen, imagen_banco_id, estado, fecha_publicacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', NOW())";
+            $stmt = $conn->prepare($sql);
 
-                $mensaje = "¡Excelente! Tu servicio ha sido enviado a revisión.";
-                $exito   = true;
-                $ya_publico_hoy = true;
-            } else {
-                error_log("Nubira Error - Insert Servicio: " . $stmt->error);
-                $mensaje = "Error en base de datos al guardar.";
+            if ($stmt) {
+                $stmt->bind_param("isssssssdssi", $usuario_id, $institucion, $titulo, $descripcion, $nombre_oferente, $categoria, $modalidad, $ubicacion, $precio, $correo, $imagen_legacy, $imagen_banco_id);
+
+                if ($stmt->execute()) {
+                    $nuevo_servicio_id = $stmt->insert_id;
+                    actualizar_score_servicio($conn, $nuevo_servicio_id);
+
+                    $mensaje = "¡Excelente! Tu servicio ha sido enviado a revisión.";
+                    $exito   = true;
+                    $ya_publico_hoy = true;
+                } else {
+                    error_log("Nubira Error - Insert Servicio: " . $stmt->error);
+                    $mensaje = "Error en base de datos al guardar.";
+                }
+                $stmt->close();
             }
-            $stmt->close();
         }
     }
     
@@ -277,6 +226,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy && $puede_publicar
             display: none !important;
         }
     }
+
+    /* [BANCO] Carrusel horizontal estilo iOS: scroll suave, sin barra visible */
+    .banco-scroll { -ms-overflow-style: none; scrollbar-width: none; scroll-behavior: smooth; }
+    .banco-scroll::-webkit-scrollbar { display: none; }
 </style>
 </head>
 
@@ -366,7 +319,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                 </div>
             </div>
 
-            <form id="form-servicio" method="POST" enctype="multipart/form-data" class="space-y-6" autocomplete="off">
+            <form id="form-servicio" method="POST" class="space-y-6" autocomplete="off">
                 
                 <!-- [NUBIRA 2.0] CSRF Token -->
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
@@ -388,11 +341,12 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <div class="relative">
                                 <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
                                     <option value="">Selecciona una opción...</option>
-                                    <option value="Clases">Clases Particulares</option>
-                                    <option value="Tutoría">Tutorías / Ayudantías</option>
-                                    <option value="Asesoría">Asesoría Tesis/Proyectos</option>
-                                    <option value="Idiomas">Idiomas</option>
-                                    <option value="Otros">Otros Servicios</option>
+                                    <?php
+                                    $categorias_canonicas = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lengua','Economía','Diseño','Derecho','Otros'];
+                                    foreach ($categorias_canonicas as $cat_op):
+                                    ?>
+                                        <option value="<?= htmlspecialchars($cat_op) ?>"><?= htmlspecialchars($cat_op) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
                                     <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
@@ -467,34 +421,40 @@ require_once $app_dir . '/componentes/sidebar.php';
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Foto de portada</label>
-                        <div class="relative border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 hover:bg-white hover:border-[#54A6D8] transition-all duration-300 cursor-pointer group" onclick="document.getElementById('imagen').click()">
-                            <input type="file" name="imagen" id="imagen" class="hidden" accept="image/jpeg,image/png,image/webp">
-                            
-                            <div class="flex flex-col items-center justify-center py-10">
-                                <div class="mb-3 text-gray-300 group-hover:text-[#54A6D8] transition-colors transform group-hover:scale-110 duration-300">
-                                    <svg class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                                <p class="mb-1 text-sm font-medium text-gray-700">Haz clic para subir o arrastra</p>
-                                <p class="text-xs text-gray-400">JPG, PNG, WebP (Máx. 4MB)</p>
+                        <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Imagen de portada</label>
+                        <p class="text-xs text-gray-400 mb-3">Elige una imagen profesional de nuestro banco. Se filtran según la categoría que selecciones.</p>
+
+                        <!-- [BANCO] id de la imagen elegida (validado en servidor contra la categoría) -->
+                        <input type="hidden" name="imagen_banco_id" id="imagen_banco_id" value="">
+
+                        <!-- Estado inicial: sin categoría elegida -->
+                        <div id="banco-empty" class="bg-gray-50 border border-dashed border-gray-300 rounded-2xl py-10 text-center">
+                            <div class="text-gray-300 mb-2 flex justify-center">
+                                <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                             </div>
+                            <p class="text-sm font-medium text-gray-500">Elige una categoría primero</p>
                         </div>
-                       <div id="preview" class="mt-4 hidden text-center animate-fade-in-up">
-    <div class="relative inline-block w-full">
-        <img id="previewImg" src="" class="h-64 w-full object-cover rounded-xl shadow-sm border border-gray-200 transition-opacity duration-300">
-        
-        <!-- Overlay de compresión (se muestra automáticamente cuando img tiene opacity 0.5) -->
-        <div id="compresion-overlay" class="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-sm rounded-xl pointer-events-none opacity-0 transition-opacity duration-300">
-            <div class="bg-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-                <div class="animate-spin h-4 w-4 border-2 border-gray-200 border-t-[#54A6D8] rounded-full"></div>
-                <span class="text-xs font-bold text-gray-700">Optimizando imagen...</span>
-            </div>
-        </div>
-    </div>
-    <button type="button" onclick="document.getElementById('imagen').value=''; document.getElementById('preview').classList.add('hidden');" class="text-xs text-red-500 mt-2 hover:underline">Eliminar imagen</button>
-</div>
+
+                        <!-- Carrusel del banco (PHP renderiza TODAS; el JS filtra por categoría) -->
+                        <div id="banco-carrusel" class="hidden">
+                            <div class="flex gap-3 py-1 overflow-x-auto banco-scroll -mx-1 px-1">
+                                <?php foreach ($banco_imagenes as $bi): ?>
+                                    <button type="button"
+                                            class="banco-card group relative flex-shrink-0 w-[140px] h-[100px] rounded-xl overflow-hidden border-[3px] border-transparent transition-all focus:outline-none focus:ring-2 focus:ring-[#54A6D8]"
+                                            data-id="<?= (int)$bi['id'] ?>"
+                                            data-categoria="<?= htmlspecialchars($bi['categoria']) ?>"
+                                            title="<?= htmlspecialchars($bi['descripcion'] ?? '') ?>">
+                                        <img src="/upload/banco/<?= htmlspecialchars($bi['archivo']) ?>" alt="<?= htmlspecialchars($bi['descripcion'] ?? $bi['categoria']) ?>" class="w-full h-full object-cover" loading="lazy">
+                                        <span class="banco-check absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#54A6D8] text-white items-center justify-center hidden shadow">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        </span>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                            <div id="banco-sin-imagenes" class="hidden py-8 text-center text-sm text-gray-400">Aún no hay imágenes para esta categoría.</div>
+                        </div>
+
+                        <p id="banco-error" class="hidden mt-2 text-xs text-red-500 font-bold">Debes elegir una imagen del banco para tu categoría.</p>
                     </div>
                 </div>
 
@@ -592,136 +552,75 @@ const ui = {
     countTitulo: document.getElementById('titulo-count')
 };
 
-// [NUBIRA 2.0] Compresión client-side de imágenes (estilo app nativa)
-// Comprime en el navegador ANTES de subir → upload 5-10x más rápido en 4G chileno.
-// Backend recibe normalmente, no requiere cambios en publicar_servicio.php
-const NubiraImageCompressor = {
-    MAX_WIDTH: 1920,        // Coincide con el "main" 1600 del backend + buffer
-    MAX_HEIGHT: 1920,
-    QUALITY: 0.85,          // 85% JPEG → equilibrio calidad/peso óptimo
-    MAX_INPUT_MB: 20,       // Acepta hasta 20MB de entrada (cámara moderna iPhone)
-    
-    async compress(file) {
-        // Validación de tipo
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-            throw new Error('Formato no soportado. Usa JPG, PNG o WebP.');
-        }
-        
-        // Validación de tamaño máximo de entrada
-        if (file.size > this.MAX_INPUT_MB * 1024 * 1024) {
-            throw new Error(`La imagen es demasiado pesada (máximo ${this.MAX_INPUT_MB}MB).`);
-        }
-        
-        // Cargar imagen en memoria
-        const img = await this._loadImage(file);
-        
-        // Calcular nuevas dimensiones manteniendo proporción
-        let { width, height } = this._calculateSize(img.width, img.height);
-        
-        // Renderizar en canvas con resampling de calidad
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Liberar memoria de la imagen original
-        URL.revokeObjectURL(img.src);
-        
-        // Exportar como Blob JPEG
-        const blob = await new Promise((resolve, reject) => {
-            canvas.toBlob(
-                b => b ? resolve(b) : reject(new Error('No se pudo procesar la imagen.')),
-                'image/jpeg',
-                this.QUALITY
-            );
-        });
-        
-        // Convertir Blob a File (con nombre original pero forzado .jpg)
-        const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-        return new File([blob], newName, { type: 'image/jpeg', lastModified: Date.now() });
-    },
-    
-    _loadImage(file) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            const url = URL.createObjectURL(file);
-            img.onload = () => resolve(img);
-            img.onerror = () => {
-                URL.revokeObjectURL(url);
-                reject(new Error('No se pudo leer la imagen.'));
-            };
-            img.src = url;
-        });
-    },
-    
-    _calculateSize(originalW, originalH) {
-        // Si ya está dentro del límite, no redimensionamos
-        if (originalW <= this.MAX_WIDTH && originalH <= this.MAX_HEIGHT) {
-            return { width: originalW, height: originalH };
-        }
-        
-        // Mantener proporción
-        const ratio = Math.min(this.MAX_WIDTH / originalW, this.MAX_HEIGHT / originalH);
-        return {
-            width: Math.round(originalW * ratio),
-            height: Math.round(originalH * ratio)
-        };
-    }
-};
+// [BANCO] Carrusel de imágenes del banco — reemplaza la subida de archivos.
+// PHP ya renderizó TODAS las tarjetas; aquí filtramos por categoría y gestionamos la selección.
+(function setupBancoCarrusel() {
+    const sel      = document.getElementById('categoria');
+    const carrusel = document.getElementById('banco-carrusel');
+    const empty    = document.getElementById('banco-empty');
+    const sinImgs  = document.getElementById('banco-sin-imagenes');
+    const errorMsg = document.getElementById('banco-error');
+    const hidden   = document.getElementById('imagen_banco_id');
+    const cards    = Array.from(document.querySelectorAll('.banco-card'));
+    if (!sel || !carrusel || !hidden) return;
 
-// [NUBIRA 2.0] Listener del input de imagen con compresión transparente
-ui.imgInput?.addEventListener('change', async function() {
-    if (!this.files || this.files.length === 0) return;
-    
-    const fileOriginal = this.files[0];
-    // Mostrar preview inmediato (con la imagen original, antes de comprimir)
-    // Esto da sensación instantánea aunque la compresión tome 1-2 segundos
-    ui.imgTag.src = URL.createObjectURL(fileOriginal);
-    ui.imgPreview.classList.remove('hidden');
-    
-  // Indicador visual de compresión en curso
-ui.imgTag.style.opacity = '0.5';
-const overlay = document.getElementById('compresion-overlay');
-if (overlay) overlay.style.opacity = '1';
-    
-    try {
-        const fileComprimido = await NubiraImageCompressor.compress(fileOriginal);
-        // Reemplazar el archivo del input por el comprimido
-        // (DataTransfer es la única forma cross-browser de modificar el input file)
-        const dt = new DataTransfer();
-        dt.items.add(fileComprimido);
-        this.files = dt.files;
-        
-        // Actualizar preview con la versión comprimida
-        ui.imgTag.src = URL.createObjectURL(fileComprimido);
-        ui.imgTag.style.opacity = '1';
-const overlayOff = document.getElementById('compresion-overlay');
-if (overlayOff) overlayOff.style.opacity = '0';
-        
-        // Refrescar barra de calidad
-        if (typeof calcQuality === 'function') calcQuality();
-        
-    } catch (err) {
-      ui.imgTag.style.opacity = '1';
-const overlayOff = document.getElementById('compresion-overlay');
-if (overlayOff) overlayOff.style.opacity = '0';
-        console.error('[Nubira] Error compresión:', err);
-        
-        // Mostrar error suave al usuario
-        const errBox = document.createElement('div');
-        errBox.className = 'mt-2 text-xs text-red-500 font-medium bg-red-50 border border-red-200 px-3 py-2 rounded-lg';
-        errBox.textContent = err.message + ' Sube otra imagen.';
-        ui.imgPreview.appendChild(errBox);
-        setTimeout(() => errBox.remove(), 5000);
-        
-        // Resetear el input
-        this.value = '';
-        ui.imgPreview.classList.add('hidden');
+    function limpiar(card) {
+        card.classList.remove('border-[#54A6D8]');
+        card.classList.add('border-transparent');
+        const chk = card.querySelector('.banco-check');
+        chk.classList.add('hidden');
+        chk.classList.remove('flex');
     }
-});
+
+    function seleccionar(card) {
+        cards.forEach(limpiar);
+        card.classList.add('border-[#54A6D8]');
+        card.classList.remove('border-transparent');
+        const chk = card.querySelector('.banco-check');
+        chk.classList.remove('hidden');
+        chk.classList.add('flex');
+        hidden.value = card.dataset.id;
+        if (errorMsg) errorMsg.classList.add('hidden');
+        if (typeof calcQuality === 'function') calcQuality();
+    }
+
+    cards.forEach(card => card.addEventListener('click', () => seleccionar(card)));
+
+    function filtrar() {
+        const cat = sel.value;
+        hidden.value = ''; // al cambiar de categoría se resetea la selección
+        if (!cat) {
+            carrusel.classList.add('hidden');
+            empty.classList.remove('hidden');
+            if (typeof calcQuality === 'function') calcQuality();
+            return;
+        }
+        empty.classList.add('hidden');
+        carrusel.classList.remove('hidden');
+        let visibles = 0;
+        cards.forEach(card => {
+            const match = (card.dataset.categoria === cat);
+            card.classList.toggle('hidden', !match);
+            limpiar(card);
+            if (match) visibles++;
+        });
+        if (sinImgs) sinImgs.classList.toggle('hidden', visibles > 0);
+        if (typeof calcQuality === 'function') calcQuality();
+    }
+
+    sel.addEventListener('change', filtrar);
+    filtrar(); // estado inicial
+
+    // Validación en cliente: no permitir enviar sin imagen del banco
+    document.getElementById('form-servicio')?.addEventListener('submit', function(e) {
+        if (!hidden.value) {
+            e.preventDefault();
+            if (errorMsg) errorMsg.classList.remove('hidden');
+            (empty.classList.contains('hidden') ? carrusel : empty)
+                .scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+})();
 ui.modalidad?.addEventListener('change', function() {
     if (this.value === 'Presencial' || this.value === 'Híbrido') { ui.ubicacionBox.classList.remove('hidden'); ui.ubicacionInput.required = true; } 
     else { ui.ubicacionBox.classList.add('hidden'); ui.ubicacionInput.required = false; ui.ubicacionInput.value = ''; }
@@ -747,7 +646,7 @@ function calcQuality() {
     let score = 0;
     if (ui.titulo?.value.length >= 10) score += 25;
     if (ui.desc?.value.length >= 50) score += 25;
-    if (ui.imgInput?.files.length > 0) score += 30;
+    if (document.getElementById('imagen_banco_id')?.value) score += 30;
     
     const precioVisible = document.getElementById('precio_visible');
     if (precioVisible && precioVisible.value !== '') score += 20;
@@ -796,10 +695,9 @@ function calcQuality() {
 })();
 
 // Listeners de calidad para los demás campos
-['titulo', 'descripcion', 'imagen'].forEach(id => 
+['titulo', 'descripcion'].forEach(id =>
     document.getElementById(id)?.addEventListener('input', calcQuality)
 );
-document.getElementById('imagen')?.addEventListener('change', calcQuality);
 
 // [NUBIRA 2.0] Bloque obsoleto — el nav_bottom ahora se oculta vía CSS en esta vista.
 // No necesitamos manipular el padding en focus/blur. El botón sticky tiene su propio espacio.

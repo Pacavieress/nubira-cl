@@ -10,6 +10,9 @@ if(!isset($conn)) exit;
 $rutas_helper = [__DIR__.'/../../app/helpers/ofertas.php', __DIR__.'/../helpers/ofertas.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/ofertas.php'];
 foreach($rutas_helper as $rh) if(file_exists($rh)){ require_once $rh; break; }
 
+$rutas_img = [__DIR__.'/../helpers/imagen_servicio.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/imagen_servicio.php'];
+foreach($rutas_img as $rim) if(file_exists($rim)){ require_once $rim; break; }
+
 // 2. RECIBIR DATOS
 $id = (int)($_GET['id'] ?? 0);
 $tipo = $_GET['tipo'] ?? 'servicio'; 
@@ -21,10 +24,13 @@ $es_basico = false; // Por defecto no penaliza a apuntes
 // 3. LOGICA DE RENDERIZADO
 if ($tipo === 'servicio') {
     // 1. Agregamos precio_oferta, cupos_oferta e is_subvencionado a la consulta
-    $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, s.imagen, s.categoria, s.score_nubira,
+    $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, s.imagen, s.imagen_banco_id, s.categoria, s.score_nubira,
+            bi.archivo as banco_archivo,
             (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
             (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
-            FROM servicios s WHERE s.id=? LIMIT 1";
+            FROM servicios s
+            LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+            WHERE s.id=? LIMIT 1";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
     $stmt->execute();
@@ -59,11 +65,7 @@ if ($tipo === 'servicio') {
     elseif ($score >= 80) $nivel_tutor = 'pro';
     elseif ($score >= 60) $nivel_tutor = 'top';
 
-    $img = 'https://nubira.cl/upload/servicios/default_clases.webp';
-    if(!empty($row['imagen'])) {
-        $ruta_rel = '/upload/servicios/' . basename($row['imagen']);
-        if(file_exists($_SERVER['DOCUMENT_ROOT'] . $ruta_rel)) $img = $ruta_rel . '?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . $ruta_rel);
-    }
+    $img = url_portada($row); // [BANCO] banco → legacy → placeholder
     
    
     // --- [NUEVO] CREAR PASTILLA DE ESTRELLAS ---

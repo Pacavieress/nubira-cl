@@ -83,16 +83,7 @@ if (!function_exists('resolver_portada_busqueda')) {
         $docRoot = $_SERVER['DOCUMENT_ROOT'];
         
         if ($tipo === 'servicio') {
-            $img = $row['imagen'] ?? '';
-            if (empty($img)) return $default;
-            $key = 'srv_' . basename($img);
-            if (isset($cache[$key])) return $cache[$key];
-            $ruta_rel = "/upload/servicios/" . basename($img);
-            $ruta_fis = $docRoot . $ruta_rel;
-            if (file_exists($ruta_fis)) {
-                return $cache[$key] = $ruta_rel . "?v=" . filemtime($ruta_fis);
-            }
-            return $cache[$key] = $default;
+            return url_portada($row); // [BANCO] banco → legacy → placeholder
         }
         
         if ($tipo === 'apunte') {
@@ -127,6 +118,7 @@ if(!isset($conn)) die("Error de conexión.");
 
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/ofertas.php';
+require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/../seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -274,11 +266,13 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
             a.foto_perfil as tutor_foto,
             COALESCE(dp.institucion, a.institucion) as institucion_maestra,
           (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
-            (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio
-            FROM servicios s 
+            (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
+            bi.archivo as banco_archivo
+            FROM servicios s
             LEFT JOIN alumnos a ON s.alumno_id = a.id
             LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-            WHERE s.estado='aprobado' AND ($where_s) $sql_mod_s 
+            LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+            WHERE s.estado='aprobado' AND ($where_s) $sql_mod_s
             ORDER BY $order_sql_servicios LIMIT 20");
             
     if ($stmtS) {

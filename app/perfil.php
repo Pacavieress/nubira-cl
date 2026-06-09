@@ -16,8 +16,9 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
 // 1. CARGA MAESTRA DE SEGURIDAD
-require_once __DIR__ . '/init_sesion.php'; 
-require_once __DIR__ . '/iconos.php';        
+require_once __DIR__ . '/init_sesion.php';
+require_once __DIR__ . '/iconos.php';
+require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -313,7 +314,7 @@ $qr_ra->close();
 $publicaciones = []; 
 
 // 1. Cargar Servicios (Solo aprobados y NO eliminados lógicamente)
-$qs = $conn->prepare("SELECT *, 'servicio' AS tipo_pub FROM servicios WHERE alumno_id = ? AND estado = 'aprobado' AND COALESCE(visible, 1) = 1 ORDER BY fecha_publicacion DESC LIMIT 30"); 
+$qs = $conn->prepare("SELECT s.*, 'servicio' AS tipo_pub, bi.archivo AS banco_archivo FROM servicios s LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id WHERE s.alumno_id = ? AND s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 ORDER BY s.fecha_publicacion DESC LIMIT 30");
 $qs->bind_param("i", $perfil_id_ver); 
 $qs->execute(); 
 $res_s = $qs->get_result(); 
@@ -758,10 +759,12 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         // Data Prep
                         $titulo = (string)($row['titulo'] ?? ''); 
                         $precio_val = $row['precio'] ?? 0; 
-                        $img = (string)($row['imagen'] ?? ($row['portada'] ?? '')); 
-
-                        $base_url_img = $es_apunte ? "/upload/preview/" : "/upload/servicios/";
-                        $portada_url = !empty($img) ? $base_url_img . $img : $default_pub_img; 
+                        if ($es_apunte) {
+                            $img = (string)($row['portada'] ?? '');
+                            $portada_url = !empty($img) ? "/upload/preview/" . $img : $default_pub_img;
+                        } else {
+                            $portada_url = url_portada($row); // [BANCO] banco → legacy → placeholder
+                        }
 
                         $enlace_detalle = $es_apunte ? "/apunte/" . $link_hash : "/detalle-servicio/" . $link_hash;
                         

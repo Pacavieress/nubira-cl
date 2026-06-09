@@ -17,6 +17,9 @@ if(!isset($conn)) exit;
 $rutas_iconos = [__DIR__.'/iconos.php', __DIR__.'/../iconos.php', $_SERVER['DOCUMENT_ROOT'].'/app/iconos.php'];
 foreach($rutas_iconos as $ri) if(file_exists($ri)){ require_once $ri; break; }
 
+$rutas_img = [__DIR__.'/helpers/imagen_servicio.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/imagen_servicio.php'];
+foreach($rutas_img as $rim) if(file_exists($rim)){ require_once $rim; break; }
+
 // 1. CONFIGURACIÓN DE SECCIÓN
 $titulo = "Selección Premium";
 $default_img = 'https://nubira.cl/upload/servicios/default_clases.webp';
@@ -27,10 +30,12 @@ $sql = "SELECT s.*,
         a.foto_perfil as tutor_foto,
         COALESCE(dp.institucion, a.institucion) as institucion_maestra,
         COALESCE(stats.rating_promedio, 0) as rating_promedio,
-        COALESCE(stats.total_votos, 0) as total_votos
+        COALESCE(stats.total_votos, 0) as total_votos,
+        bi.archivo as banco_archivo
         FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
         LEFT JOIN (
             SELECT servicio_id, AVG(calificacion_comprador) as rating_promedio, COUNT(*) as total_votos
             FROM contratos WHERE calificacion_comprador > 0 GROUP BY servicio_id
@@ -100,14 +105,8 @@ if (!function_exists('render_rating_html')) {
             // [NUBIRA SHIELD] Enmascarar ID
             $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
 
-            // 1. Imagen del servicio
-            $img_url = $default_img;
-            if (!empty($row['imagen'])) {
-                $ruta_rel = '/upload/servicios/' . basename($row['imagen']);
-                if (file_exists($_SERVER['DOCUMENT_ROOT'] . $ruta_rel)) {
-                    $img_url = $ruta_rel . '?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . $ruta_rel);
-                }
-            }
+            // 1. Imagen del servicio (banco → legacy → placeholder, vía helper unificado)
+            $img_url = url_portada($row);
 
             // 2. Lógica de Tutor
             $nombre_completo = !empty($row['tutor_nombre']) ? $row['tutor_nombre'] : 'Profesor';

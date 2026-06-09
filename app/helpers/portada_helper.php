@@ -9,6 +9,8 @@
  * 2) Si no, usar portada automática por categoría (en /img/portadas/servicios/).
  * 3) Si no hay match, usar default.webp.
  */
+// [DEUDA FASE E] Sin llamadores tras el banco de imágenes (FASE D). Superada por
+// url_portada() / srcset_portada() en helpers/imagen_servicio.php. Conservar hasta limpieza final.
 function portada_servicio(?string $archivo, string $categoria = 'otro'): string {
     $categoria = normalizar_categoria($categoria);
 

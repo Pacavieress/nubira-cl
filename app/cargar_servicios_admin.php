@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'conexion.php';
+require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
 
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
     http_response_code(403);
@@ -40,9 +41,10 @@ if ($filtro_categoria !== '') {
 
 $where = $filtros ? "WHERE " . implode(" AND ", $filtros) : "";
 
-$sql = "SELECT s.*, a.nombre AS nombre_alumno
+$sql = "SELECT s.*, a.nombre AS nombre_alumno, bi.archivo AS banco_archivo
         FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
+        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
         $where
         ORDER BY s.id DESC
         LIMIT ? OFFSET ?";
@@ -71,7 +73,7 @@ foreach ($servicios as $row):
 
   <td class="px-3 py-2 text-center">
     <?php
-    $ruta = !empty($row['imagen']) ? "/upload/servicios/" . htmlspecialchars($row['imagen']) : "/upload/servicios/default.webp";
+    $ruta = htmlspecialchars(url_portada($row)); // [BANCO] banco → legacy → placeholder
     echo "<img src='{$ruta}' alt='imagen' class='w-20 h-14 object-cover rounded border'>";
     ?>
   </td>

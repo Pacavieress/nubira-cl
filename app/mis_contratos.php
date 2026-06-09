@@ -15,6 +15,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 }
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
+require_once $app_dir . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
 
 // 2. DATOS DE SESIÓN
 $uid            = (int)$_SESSION['usuario_id'];
@@ -31,10 +32,11 @@ $display_carrera = $_SESSION['carrera'] ?? 'Estudiante';
 $stmt = $conn->prepare("
   SELECT c.id, c.estado, c.monto, c.fecha_creacion, c.fecha_estimada,
          r.fecha_clase, r.duracion_minutos,
-         s.titulo AS servicio_titulo, s.imagen, s.categoria,
+         s.titulo AS servicio_titulo, s.imagen, s.imagen_banco_id, s.categoria, bi.archivo AS banco_archivo,
          v.nombre AS vendedor_nombre
   FROM contratos c
   JOIN servicios s ON c.servicio_id = s.id
+  LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
   JOIN alumnos v  ON c.vendedor_id = v.id
   LEFT JOIN reservas_slots r ON r.contrato_id = c.id
   WHERE c.comprador_id = ?
@@ -48,10 +50,11 @@ $res_compras = $stmt->get_result();
 $stmt = $conn->prepare("
   SELECT c.id, c.estado, c.monto, c.fecha_creacion, c.fecha_estimada,
          r.fecha_clase, r.duracion_minutos,
-         s.titulo AS servicio_titulo, s.imagen, s.categoria,
+         s.titulo AS servicio_titulo, s.imagen, s.imagen_banco_id, s.categoria, bi.archivo AS banco_archivo,
          a.nombre AS comprador_nombre
   FROM contratos c
   JOIN servicios s ON c.servicio_id = s.id
+  LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
   JOIN alumnos a  ON c.comprador_id = a.id
   LEFT JOIN reservas_slots r ON r.contrato_id = c.id
   WHERE c.vendedor_id = ?
@@ -228,7 +231,7 @@ $_ventas  = contar_activas($res_ventas);
 // =========================================================================
 function render_card_contrato($row, $tipo_vista) {
     $est = get_estilo_estado($row['estado']);
-    $img = !empty($row['imagen']) ? "/upload/servicios/".basename($row['imagen']) : null;
+    $img = url_portada($row); // [BANCO] siempre devuelve URL (placeholder si no hay imagen)
     
     $fecha_clase   = $row['fecha_clase'] ?? null;
     $fecha_amigable = formatear_fecha_clase($fecha_clase);
