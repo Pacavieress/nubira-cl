@@ -90,6 +90,7 @@ $es_admin = ($_SESSION['rol'] === 'admin');
     <li><a href="/admin/agregar-banco" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Gestionar Bancos</a></li>
     <li><a href="/admin/retiros" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Gestionar Retiros</a></li>
     <li><a href="/admin/banners" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Gestionar Publicidad</a></li>
+    <li><a href="/admin/banco-imagenes" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Banco de Imágenes</a></li>
   </ul>
 </li>
 <!-- Soporte y Feedback -->
