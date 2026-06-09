@@ -547,7 +547,7 @@ session_write_close();
 
                    <div class="mt-6">
                         <h3 class="font-bold text-gray-900 mb-3">Sobre este servicio</h3>
-                        <div class="text-gray-600 text-sm whitespace-normal font-normal leading-relaxed">
+                        <div class="text-gray-600 text-sm whitespace-normal font-normal leading-relaxed" style="overflow-wrap:anywhere; word-break:break-word;">
                             <?php
                                 $desc_raw = trim($servicio['descripcion'] ?? '');
                                 $desc_raw = html_entity_decode($desc_raw, ENT_QUOTES, 'UTF-8');
