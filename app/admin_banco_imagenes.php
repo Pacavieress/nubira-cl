@@ -120,8 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['alerta_error'] = "Debes seleccionar una imagen válida.";
             header("Location: /admin/banco-imagenes"); exit;
         }
-        if ($_FILES['imagen']['size'] > 4 * 1024 * 1024) {
-            $_SESSION['alerta_error'] = "La imagen no puede superar 4MB.";
+        if ($_FILES['imagen']['size'] > 15 * 1024 * 1024) {
+            $_SESSION['alerta_error'] = "La imagen no puede superar 15MB.";
             header("Location: /admin/banco-imagenes"); exit;
         }
 
@@ -200,12 +200,7 @@ $mensaje_ok = $mensaje_error = '';
 if (!empty($_SESSION['alerta_ok']))    { $mensaje_ok    = $_SESSION['alerta_ok'];    unset($_SESSION['alerta_ok']); }
 if (!empty($_SESSION['alerta_error'])) { $mensaje_error = $_SESSION['alerta_error']; unset($_SESSION['alerta_error']); }
 
-$current_uri = $_SERVER['REQUEST_URI'];
-function nav_class_banco($path, $current_uri) {
-    return strpos($current_uri, $path) !== false
-        ? 'text-[#54A6D8] font-bold bg-sky-50'
-        : 'text-gray-600 hover:text-[#54A6D8] hover:bg-gray-50';
-}
+$app_dir = __DIR__; // para incluir los componentes compartidos (header/sidebar/nav_bottom)
 
 // Resuelve la miniatura del banco (thumb → main) con cache-busting
 function thumb_banco(string $archivo, string $dir_fs, string $dir_web): string {
@@ -227,36 +222,13 @@ function thumb_banco(string $archivo, string $dir_fs, string $dir_web): string {
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased">
 
-<header class="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 z-50 flex items-center justify-between px-4 md:px-8">
-    <div class="flex items-center gap-3">
-        <a href="/vitrina" class="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-400 to-[#54A6D8] bg-clip-text text-transparent">Nubira.cl</a>
-        <span class="hidden md:inline text-gray-300 text-xl font-light">/</span>
-        <span class="hidden md:inline text-gray-600 font-medium tracking-tight">Banco de Imágenes</span>
-    </div>
-    <a href="/admin/panel" class="text-sm font-semibold text-gray-500 hover:text-[#54A6D8] transition-colors">← Panel Admin</a>
-</header>
+<?php
+require_once $app_dir . '/componentes/header.php';
+require_once $app_dir . '/componentes/sidebar.php';
+?>
 
-<aside class="hidden md:flex fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-100 flex-col z-40">
-    <div class="p-6 overflow-y-auto h-full">
-        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 block">Administración</span>
-        <nav class="flex flex-col space-y-1">
-            <a href="/admin/panel" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= nav_class_banco('/admin/panel', $current_uri) ?>">
-                <?= icon('home') ?> <span class="font-medium">Panel</span>
-            </a>
-            <a href="/admin/servicios" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= nav_class_banco('/admin/servicios', $current_uri) ?>">
-                <?= icon('briefcase') ?> <span class="font-medium">Servicios</span>
-            </a>
-            <a href="/admin/banners" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= nav_class_banco('/admin/banners', $current_uri) ?>">
-                <?= icon('image') ?> <span class="font-medium">Banners</span>
-            </a>
-            <a href="/admin/banco-imagenes" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= nav_class_banco('/admin/banco-imagenes', $current_uri) ?>">
-                <?= icon('image') ?> <span class="font-medium">Banco de Imágenes</span>
-            </a>
-        </nav>
-    </div>
-</aside>
-
-<main class="pt-24 pb-28 md:pb-12 lg:ml-64 max-w-[1200px] mx-auto px-4 sm:px-6 w-full">
+<main class="pt-16 pb-32 md:pb-16 lg:ml-64 px-4 md:px-6 w-full md:w-[calc(100%-16rem)]">
+  <div class="max-w-7xl mx-auto space-y-6">
 
     <div class="mb-8">
         <h1 class="text-3xl font-bold tracking-tight text-gray-900">Banco de Imágenes</h1>
@@ -301,7 +273,7 @@ function thumb_banco(string $archivo, string $dir_fs, string $dir_web): string {
                 <div class="md:col-span-2 bg-sky-50/50 border border-dashed border-sky-200 rounded-2xl p-6 text-center hover:bg-sky-50 transition-all group">
                     <label class="cursor-pointer block">
                         <span class="block text-sky-600 mb-2 font-semibold">Sube una imagen</span>
-                        <span class="text-xs text-gray-500 block mb-4">JPG, PNG o WebP · mín. 800px de ancho · máx. 4MB · se generan 3 tamaños WebP</span>
+                        <span class="text-xs text-gray-500 block mb-4">JPG, PNG o WebP · mín. 800px de ancho · máx. 15MB · se generan 3 tamaños WebP</span>
                         <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp" required class="hidden" onchange="previewBanco(event)">
                         <div class="inline-flex items-center justify-center px-6 py-2 bg-white border border-sky-200 rounded-xl text-sky-700 text-sm font-semibold shadow-sm group-hover:shadow transition-all">Seleccionar archivo</div>
                     </label>
@@ -372,7 +344,10 @@ function thumb_banco(string $archivo, string $dir_fs, string $dir_web): string {
         </section>
     <?php endforeach; ?>
 
+  </div>
 </main>
+
+<?php require_once $app_dir . '/componentes/nav_bottom.php'; ?>
 
 <script>
 function previewBanco(e) {
