@@ -64,7 +64,7 @@ $data_apuntes = [];
 if (!empty($ids_servicios)) {
     $ids_in = implode(',', $ids_servicios);
     $res = $conn->query("
-      SELECT s.id, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.score_nubira, s.fecha_publicacion,
+      SELECT s.id, s.titulo, s.categoria, s.precio, s.imagen, s.imagen_banco_id, s.score_nubira, s.fecha_publicacion,
                s.is_subvencionado, s.precio_oferta, s.cupos_oferta, s.oferta_termino,
                a.nombre as tutor_nombre, a.foto_perfil, bi.archivo as banco_archivo,
                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -210,6 +210,13 @@ foreach ($items_ordenados as $item):
     }
     $foto_tutor = !empty($row['foto_perfil']) ? '/app/perfil/fotos/' . $row['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b";
 
+    // [OVERLAY NUBIRA] avatar tutor + categoría sobre la portada (solo servicios)
+    $tutor_nombre_ov = $row['tutor_nombre'] ?? '';
+    $foto_field_ov   = $row['foto_perfil'] ?? '';
+    $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
+    $categoria_overlay = $row['categoria'] ?? 'Otros';
+    $texto_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : 'Clase de ' . $categoria_overlay;
+
     // Versionamiento de imagen para cache
     if (strpos($img, '/upload/') !== false) {
         $ruta_fisica_img = $_SERVER['DOCUMENT_ROOT'] . explode('?', $img)[0];
@@ -228,11 +235,18 @@ foreach ($items_ordenados as $item):
              loading="lazy" decoding="async" width="170" height="128"
              onerror="this.src='/img/logo2.webp'">
 
-        <!-- Badge nivel (izquierda) -->
-        <?php if ($tipo === 's' && !empty($nivel_tutor)): ?>
+        <?php if ($tipo === 's'): ?>
+        <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría -->
+        <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0) 70%);"></div>
+        <img src="<?= htmlspecialchars($foto_tutor_ov) ?>" alt="<?= htmlspecialchars($tutor_nombre_ov) ?>" class="absolute top-2.5 left-2.5 z-10 w-10 h-10 rounded-full object-cover border-2 border-white" style="box-shadow:0 2px 4px rgba(0,0,0,0.3);" loading="lazy">
+        <div class="absolute left-3 z-10 pr-2 font-bold text-white text-base md:text-lg leading-tight line-clamp-2" style="top:50%; transform:translateY(-50%); max-width:70%; text-shadow:0 1px 3px rgba(0,0,0,0.6);"><?= htmlspecialchars($texto_overlay) ?></div>
+        <?php endif; ?>
+
+        <!-- Badge nivel (derecha) - oculto en ofertas para no chocar con el badge de cupos -->
+        <?php if ($tipo === 's' && !empty($nivel_tutor) && empty($es_oferta)): ?>
         <?php $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? ''; ?>
         <?php if ($nivel_label): ?>
-        <div class="absolute top-2.5 left-2.5 z-10">
+        <div class="absolute top-2.5 right-2.5 z-10">
             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
         </div>
         <?php endif; ?>

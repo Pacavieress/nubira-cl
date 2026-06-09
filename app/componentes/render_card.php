@@ -25,11 +25,13 @@ $es_basico = false; // Por defecto no penaliza a apuntes
 if ($tipo === 'servicio') {
     // 1. Agregamos precio_oferta, cupos_oferta e is_subvencionado a la consulta
     $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, s.imagen, s.imagen_banco_id, s.categoria, s.score_nubira,
+            a.foto_perfil AS tutor_foto, a.nombre AS tutor_nombre,
             bi.archivo as banco_archivo,
             (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
             (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
             FROM servicios s
             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+            LEFT JOIN alumnos a ON s.alumno_id = a.id
             WHERE s.id=? LIMIT 1";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
@@ -66,8 +68,15 @@ if ($tipo === 'servicio') {
     elseif ($score >= 60) $nivel_tutor = 'top';
 
     $img = url_portada($row); // [BANCO] banco → legacy → placeholder
-    
-   
+
+    // --- [OVERLAY NUBIRA] avatar del tutor + texto de categoría sobre la portada ---
+    $tutor_nombre = $row['tutor_nombre'] ?? '';
+    $foto_tutor = !empty($row['tutor_foto'])
+        ? '/app/perfil/fotos/' . $row['tutor_foto']
+        : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre) . '&background=54A6D8&color=fff&size=128&bold=true';
+    $categoria_overlay = $row['categoria'] ?? 'Otros';
+    $texto_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : 'Clase de ' . $categoria_overlay;
+
     // --- [NUEVO] CREAR PASTILLA DE ESTRELLAS ---
     if ($total_v > 0) {
         $html_stars = '<div class="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
@@ -110,9 +119,22 @@ if ($tipo === 'servicio') {
              class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
              loading="lazy" decoding="async" width="240" height="180">
 
-        <!-- Badge nivel (izquierda) - solo servicios -->
+        <?php if ($tipo === 'servicio'): ?>
+        <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría (solo servicios) -->
+        <div class="absolute inset-0 z-[5] pointer-events-none"
+             style="background:linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0) 70%);"></div>
+        <img src="<?= htmlspecialchars($foto_tutor) ?>" alt="<?= htmlspecialchars($tutor_nombre) ?>"
+             class="absolute top-2.5 left-2.5 z-10 w-10 h-10 rounded-full object-cover border-2 border-white"
+             style="box-shadow:0 2px 4px rgba(0,0,0,0.3);" loading="lazy">
+        <div class="absolute left-3 z-10 pr-2 font-bold text-white text-base md:text-lg leading-tight line-clamp-2"
+             style="top:50%; transform:translateY(-50%); max-width:70%; text-shadow:0 1px 3px rgba(0,0,0,0.6);">
+            <?= htmlspecialchars($texto_overlay) ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Badge nivel (derecha) - solo servicios -->
         <?php if ($tipo === 'servicio' && !empty($nivel_tutor) && empty($es_oferta)): ?>
-        <div class="absolute top-2.5 left-2.5 z-10">
+        <div class="absolute top-2.5 right-2.5 z-10">
             <?php
               $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? '';
             ?>

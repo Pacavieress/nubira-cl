@@ -129,6 +129,11 @@ Verificación post-deploy:
 - Apelar Google
 - Actualizar XAMPP a PHP 8.2 (para poder testear flujo de pago en local)
 
+## Deploy banco de imágenes - notas críticas
+- Al ejecutar CREATE TABLE banco_imagenes en producción (Hostinger phpMyAdmin), USAR COLLATE utf8mb4_unicode_ci en la columna categoria (NO utf8mb4_general_ci como quedó en local).
+- Después de subir imágenes IA al banco en producción, ejecutar el UPDATE general que asigna imagen_banco_id a todos los servicios por categoría.
+- El UPDATE necesita COLLATE explícito si las tablas tienen collations distintas.
+
 ## Project Overview
 
 **Nubira** (nubira.cl) is a Chilean educational marketplace where university students buy and sell tutoring services (servicios) and study notes (apuntes). Currency is CLP. Solo founder operates all roles. Future: native iOS/Android app via Flutter (~March 2027), PWA as intermediate step. All code must be API-first ready.
