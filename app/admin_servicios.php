@@ -241,6 +241,9 @@ require_once $app_dir . '/componentes/sidebar.php';
                        </button>
                      <?php endif; ?>
 
+                     <a href="/admin/editar-servicio/<?= $row['id'] ?>" class="bg-violet-50 active:bg-violet-100 text-violet-600 p-2 rounded-xl transition-colors text-xs" title="Editar título / categoría / imagen">
+                         <i class="fa-solid fa-pen-to-square"></i>
+                     </a>
                      <a href="/detalle-servicio/<?= $row['id'] ?>" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
                          <i class="fa-solid fa-arrow-up-right-from-square"></i>
                      </a>
