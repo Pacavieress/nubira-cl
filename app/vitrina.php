@@ -769,7 +769,8 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                        $foto_field_ov   = $row_of['foto_perfil'] ?? '';
                        $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
                        $categoria_overlay = $row_of['categoria'] ?? 'Otros';
-                       $texto_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : 'Clase de ' . $categoria_overlay;
+                       $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                       $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
                     ?>
                         <?php if($es_activa): ?>
                         <a href="/detalle-servicio/<?= $link_hash_of ?>"
@@ -787,9 +788,17 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                      width="170" height="128">
 
                                 <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría -->
-                                <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0) 70%);"></div>
-                                <img src="<?= htmlspecialchars($foto_tutor_ov) ?>" alt="<?= htmlspecialchars($tutor_nombre_ov) ?>" class="absolute top-2.5 left-2.5 z-10 w-10 h-10 rounded-full object-cover border-2 border-white" style="box-shadow:0 2px 4px rgba(0,0,0,0.3);" loading="lazy">
-                                <div class="absolute left-3 z-10 pr-2 font-bold text-white text-base md:text-lg leading-tight line-clamp-2" style="top:50%; transform:translateY(-50%); max-width:70%; text-shadow:0 1px 3px rgba(0,0,0,0.6);"><?= htmlspecialchars($texto_overlay) ?></div>
+                                <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
+                                <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
+                                    <?php if (!empty($prefijo_overlay)): ?>
+                                    <div class="text-white text-xs md:text-sm font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
+                                        <?= htmlspecialchars($prefijo_overlay) ?>
+                                    </div>
+                                    <?php endif; ?>
+                                    <div class="text-white text-base md:text-lg font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
+                                        <?= htmlspecialchars($nombre_categoria_overlay) ?>
+                                    </div>
+                                </div>
 
                                 <div class="absolute top-2.5 right-2.5 z-10">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
@@ -826,9 +835,17 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                      width="170" height="128">
 
                                 <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría -->
-                                <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0) 70%);"></div>
-                                <img src="<?= htmlspecialchars($foto_tutor_ov) ?>" alt="<?= htmlspecialchars($tutor_nombre_ov) ?>" class="absolute top-2.5 left-2.5 z-10 w-10 h-10 rounded-full object-cover border-2 border-white" style="box-shadow:0 2px 4px rgba(0,0,0,0.3);" loading="lazy">
-                                <div class="absolute left-3 z-10 pr-2 font-bold text-white text-base md:text-lg leading-tight line-clamp-2" style="top:50%; transform:translateY(-50%); max-width:70%; text-shadow:0 1px 3px rgba(0,0,0,0.6);"><?= htmlspecialchars($texto_overlay) ?></div>
+                                <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
+                                <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
+                                    <?php if (!empty($prefijo_overlay)): ?>
+                                    <div class="text-white text-xs md:text-sm font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
+                                        <?= htmlspecialchars($prefijo_overlay) ?>
+                                    </div>
+                                    <?php endif; ?>
+                                    <div class="text-white text-base md:text-lg font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
+                                        <?= htmlspecialchars($nombre_categoria_overlay) ?>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="pt-2.5 flex flex-col flex-1 text-left">
@@ -940,7 +957,8 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $foto_field_ov   = $row_n['foto_perfil'] ?? '';
                     $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
                     $categoria_overlay = $row_n['categoria'] ?? 'Otros';
-                    $texto_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : 'Clase de ' . $categoria_overlay;
+                    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                    $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
 // --- LÓGICA DE PRECIOS Y OFERTAS (NUBIRA 2.0) ---
                     $es_oferta_n = oferta_vigente($row_n);
@@ -980,9 +998,17 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
      onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
 
                        <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría -->
-                       <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0) 70%);"></div>
-                       <img src="<?= htmlspecialchars($foto_tutor_ov) ?>" alt="<?= htmlspecialchars($tutor_nombre_ov) ?>" class="absolute top-2.5 left-2.5 z-10 w-10 h-10 rounded-full object-cover border-2 border-white" style="box-shadow:0 2px 4px rgba(0,0,0,0.3);" loading="lazy">
-                       <div class="absolute left-3 z-10 pr-2 font-bold text-white text-base md:text-lg leading-tight line-clamp-2" style="top:50%; transform:translateY(-50%); max-width:70%; text-shadow:0 1px 3px rgba(0,0,0,0.6);"><?= htmlspecialchars($texto_overlay) ?></div>
+                       <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
+                       <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
+                           <?php if (!empty($prefijo_overlay)): ?>
+                           <div class="text-white text-xs md:text-sm font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
+                               <?= htmlspecialchars($prefijo_overlay) ?>
+                           </div>
+                           <?php endif; ?>
+                           <div class="text-white text-base md:text-lg font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
+                               <?= htmlspecialchars($nombre_categoria_overlay) ?>
+                           </div>
+                       </div>
 
                        <!-- Badge cupos (derecha) -->
                        <?php if ($es_oferta_n): ?>
@@ -1074,7 +1100,8 @@ $portada_url = $portada_set['card'];
                     $foto_field_ov   = $row['foto_perfil'] ?? '';
                     $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
                     $categoria_overlay = $row['categoria'] ?? 'Otros';
-                    $texto_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : 'Clase de ' . $categoria_overlay;
+                    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                    $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
                     $es_nuevo = false;
                     if (!empty($row['fecha_publicacion']) && $row['fecha_publicacion'] !== '0000-00-00 00:00:00' && $row['fecha_publicacion'] !== '0000-00-00') {
@@ -1124,9 +1151,17 @@ $portada_url = $portada_set['card'];
      onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
 
                        <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría -->
-                       <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0) 70%);"></div>
-                       <img src="<?= htmlspecialchars($foto_tutor_ov) ?>" alt="<?= htmlspecialchars($tutor_nombre_ov) ?>" class="absolute top-2.5 left-2.5 z-10 w-10 h-10 rounded-full object-cover border-2 border-white" style="box-shadow:0 2px 4px rgba(0,0,0,0.3);" loading="lazy">
-                       <div class="absolute left-3 z-10 pr-2 font-bold text-white text-base md:text-lg leading-tight line-clamp-2" style="top:50%; transform:translateY(-50%); max-width:70%; text-shadow:0 1px 3px rgba(0,0,0,0.6);"><?= htmlspecialchars($texto_overlay) ?></div>
+                       <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
+                       <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
+                           <?php if (!empty($prefijo_overlay)): ?>
+                           <div class="text-white text-xs md:text-sm font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
+                               <?= htmlspecialchars($prefijo_overlay) ?>
+                           </div>
+                           <?php endif; ?>
+                           <div class="text-white text-base md:text-lg font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
+                               <?= htmlspecialchars($nombre_categoria_overlay) ?>
+                           </div>
+                       </div>
 
                        <!-- Badge nivel (derecha) - oculto en ofertas para no chocar con el badge de cupos -->
                        <?php if (empty($es_oferta)): ?>

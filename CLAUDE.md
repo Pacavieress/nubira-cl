@@ -122,6 +122,7 @@ Verificación post-deploy:
 - Plan concierge para cerrar primera transacción manual
 
 ### Técnico viejo
+- BUG conocido panel admin banco_imagenes: subir imagen nueva crea registro adicional en lugar de reemplazar. Workaround manual: tras subir/cambiar imagen del banco en producción, ejecutar el UPDATE general que reasigna imagen_banco_id a la imagen activa más reciente por categoría (con COLLATE utf8mb4_unicode_ci si las tablas tienen collations distintas). Refactor pendiente: agregar botón 'Reemplazar' explícito al panel admin que sobrescriba el registro existente.
 - Git filter-repo 2da pasada (keys viejas en commits antiguos)
 - Resetear el otro PC cuando vuelva a él
 - Copia segura del config.php de producción

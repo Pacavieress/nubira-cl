@@ -378,9 +378,9 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <div class="mb-6">
                         <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Título del anuncio</label>
                         <div class="relative">
-                            <input type="text" name="titulo" id="titulo" required maxlength="70" placeholder="Ej: Clases de Cálculo / Asesoría de Tesis"
+                            <input type="text" name="titulo" id="titulo" required maxlength="50" placeholder="Ej: Clases de Cálculo / Asesoría de Tesis"
                                    class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 transition outline-none">
-                            <div class="text-right text-xs text-gray-400 mt-1 absolute right-0 -bottom-5"><span id="titulo-count">0</span>/70</div>
+                            <div class="text-right text-xs mt-1 absolute right-0 -bottom-5"><span id="titulo-msg" class="mr-2"></span><span id="titulo-count" class="text-gray-500">0</span>/50</div>
                         </div>
                     </div>
 
@@ -639,7 +639,24 @@ ui.desc?.addEventListener('input', function() {
     if(isBad) ui.btnSubmit.classList.add('opacity-50'); else ui.btnSubmit.classList.remove('opacity-50');
     if(ui.countDesc) ui.countDesc.textContent = this.value.length;
 });
-ui.titulo?.addEventListener('input', function() { if(ui.countTitulo) ui.countTitulo.textContent = this.value.length; });
+ui.titulo?.addEventListener('input', function() {
+    var len = this.value.length;
+    var msg = document.getElementById('titulo-msg');
+    if (ui.countTitulo) {
+        ui.countTitulo.textContent = len;
+        ui.countTitulo.classList.remove('text-green-600','text-amber-600','text-gray-500');
+        if (len === 0) {
+            ui.countTitulo.classList.add('text-gray-500');
+            if (msg) { msg.textContent = ''; msg.className = 'mr-2'; }
+        } else if (len <= 40) {
+            ui.countTitulo.classList.add('text-green-600');
+            if (msg) { msg.textContent = '✓ Se verá completo'; msg.className = 'mr-2 text-green-600'; }
+        } else {
+            ui.countTitulo.classList.add('text-amber-600');
+            if (msg) { msg.textContent = 'Puede recortarse en móvil'; msg.className = 'mr-2 text-amber-600'; }
+        }
+    }
+});
 
 // --- CÁLCULO DE CALIDAD (definido aquí para que setupPrecioFormat pueda llamarlo) ---
 function calcQuality() {

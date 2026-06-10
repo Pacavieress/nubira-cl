@@ -75,7 +75,8 @@ if ($tipo === 'servicio') {
         ? '/app/perfil/fotos/' . $row['tutor_foto']
         : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre) . '&background=54A6D8&color=fff&size=128&bold=true';
     $categoria_overlay = $row['categoria'] ?? 'Otros';
-    $texto_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : 'Clase de ' . $categoria_overlay;
+    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+    $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
     // --- [NUEVO] CREAR PASTILLA DE ESTRELLAS ---
     if ($total_v > 0) {
@@ -122,13 +123,16 @@ if ($tipo === 'servicio') {
         <?php if ($tipo === 'servicio'): ?>
         <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría (solo servicios) -->
         <div class="absolute inset-0 z-[5] pointer-events-none"
-             style="background:linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0) 70%);"></div>
-        <img src="<?= htmlspecialchars($foto_tutor) ?>" alt="<?= htmlspecialchars($tutor_nombre) ?>"
-             class="absolute top-2.5 left-2.5 z-10 w-10 h-10 rounded-full object-cover border-2 border-white"
-             style="box-shadow:0 2px 4px rgba(0,0,0,0.3);" loading="lazy">
-        <div class="absolute left-3 z-10 pr-2 font-bold text-white text-base md:text-lg leading-tight line-clamp-2"
-             style="top:50%; transform:translateY(-50%); max-width:70%; text-shadow:0 1px 3px rgba(0,0,0,0.6);">
-            <?= htmlspecialchars($texto_overlay) ?>
+             style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
+        <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
+            <?php if (!empty($prefijo_overlay)): ?>
+            <div class="text-white text-[10px] md:text-xs font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
+                <?= htmlspecialchars($prefijo_overlay) ?>
+            </div>
+            <?php endif; ?>
+            <div class="text-white text-sm md:text-base font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
+                <?= htmlspecialchars($nombre_categoria_overlay) ?>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -139,7 +143,7 @@ if ($tipo === 'servicio') {
               $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? '';
             ?>
             <?php if ($nivel_label): ?>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -147,7 +151,7 @@ if ($tipo === 'servicio') {
         <!-- Badge cupos (derecha) -->
         <?php if (!empty($es_oferta)): ?>
         <div class="absolute top-2.5 right-2.5 z-10">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                 <?= (int)$cupos_oferta ?> <?= (int)$cupos_oferta === 1 ? 'cupo' : 'cupos' ?>
             </span>
         </div>
