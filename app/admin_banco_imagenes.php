@@ -17,7 +17,7 @@ if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
 }
 
 /* ----------------- CONSTANTES ----------------- */
-$CATEGORIAS = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lengua','Economía','Diseño','Derecho','Otros'];
+$CATEGORIAS = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lenguaje','Economía','Diseño','Derecho','Asesoría','Otros'];
 $DIR_FS  = $_SERVER['DOCUMENT_ROOT'] . '/upload/banco/';
 $DIR_WEB = '/upload/banco/';
 $PLACEHOLDER = 'placeholder.webp'; // compartido por todas las categorías: NUNCA borrar el archivo físico
@@ -170,13 +170,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $archivo = $base . '.webp';
-        $st = $conn->prepare("INSERT INTO banco_imagenes (categoria, archivo, descripcion, activa) VALUES (?, ?, ?, 1)");
-        $st->bind_param("sss", $categoria, $archivo, $descripcion);
-        $st->execute();
-        $st->close();
 
-        $_SESSION['alerta_ok'] = "Imagen subida al banco ($categoria).";
-        header("Location: /admin/banco-imagenes"); exit;
+        $conn->begin_transaction();
+
+        try {
+            // 1. INSERT imagen nueva
+            $st = $conn->prepare("INSERT INTO banco_imagenes (categoria, archivo, descripcion, activa) VALUES (?, ?, ?, 1)");
+            $st->bind_param("sss", $categoria, $archivo, $descripcion);
+            $st->execute();
+            $nuevo_id = $conn->insert_id;
+            $st->close();
+
+            // 2. PASO A — desactivar imágenes anteriores de la MISMA categoría
+            $st_a = $conn->prepare("UPDATE banco_imagenes SET activa = 0 WHERE categoria = ? AND id != ?");
+            $st_a->bind_param("si", $categoria, $nuevo_id);
+            $st_a->execute();
+            $st_a->close();
+
+            // 3. PASO B — reasignar servicios de la categoría a la nueva imagen
+            $st_b = $conn->prepare("UPDATE servicios SET imagen_banco_id = ? WHERE categoria COLLATE utf8mb4_unicode_ci = ?");
+            $st_b->bind_param("is", $nuevo_id, $categoria);
+            $st_b->execute();
+            $st_b->close();
+
+            $conn->commit();
+            $_SESSION['alerta_ok'] = "Imagen subida al banco ($categoria). Reemplazó la anterior y se asignó a todos los servicios de la categoría.";
+        } catch (Throwable $e) {
+            $conn->rollback();
+            $_SESSION['alerta_error'] = "Error al actualizar el banco: " . $e->getMessage();
+        }
+
+        header("Location: /admin/banco-imagenes");
+        exit;
     }
 
     // Acción desconocida
