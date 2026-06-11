@@ -269,8 +269,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
        style="background-image: url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=2070&auto=format&fit=crop');">
        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
        <div class="absolute bottom-12 left-12 text-white pr-12 z-10">
-           <h2 class="text-4xl font-extrabold mb-3 leading-tight tracking-tight">Conecta con<br>tu universidad.</h2>
-           <p class="text-lg opacity-90 font-medium">Compra apuntes, vende servicios y encuentra oportunidades en tu campus.</p>
+           <h2 class="text-4xl font-extrabold mb-3 leading-tight tracking-tight">Conecta con tu<br>comunidad académica.</h2>
+           <p class="text-lg opacity-90 font-medium">Tu próxima oportunidad de aprendizaje.</p>
        </div>
   </div>
 
@@ -300,12 +300,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <div>
-                <label for="correo" class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">Correo institucional</label>
+                <label for="correo" class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">Correo electrónico</label>
                 <div class="relative">
                     <i class="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input type="email" name="correo" id="correo" autocomplete="email" required
                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#54A6D8] outline-none transition-all font-medium placeholder-gray-400 text-[16px]"
-                           placeholder="ejemplo@institucion.cl">
+                           placeholder="tucorreo@ejemplo.com">
                 </div>
             </div>
 

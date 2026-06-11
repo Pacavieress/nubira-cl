@@ -41,6 +41,24 @@ if (!isset($_SESSION['usuario_id']) && !empty($_COOKIE['remember_token'])) {
 $usuario_id = $_SESSION['usuario_id'] ?? null;
 $es_visitante = ($usuario_id === null);
 
+// 2.5. ONBOARDING "Cómo funciona Nubira" (carga perezosa + caché de sesión)
+$debe_ver_onboarding = false;
+if (!$es_visitante) {
+    if (!isset($_SESSION['onboarding_visto'])) {
+        $stmt_onb = $conn->prepare("SELECT onboarding_visto FROM alumnos WHERE id = ? LIMIT 1");
+        if ($stmt_onb) {
+            $stmt_onb->bind_param("i", $usuario_id);
+            $stmt_onb->execute();
+            $stmt_onb->bind_result($onb_flag);
+            $stmt_onb->fetch();
+            $stmt_onb->close();
+            $_SESSION['onboarding_visto'] = (int)($onb_flag ?? 0);
+        }
+    }
+    $debe_ver_onboarding = empty($_SESSION['onboarding_visto']);
+}
+// Visitante: $debe_ver_onboarding queda false; el frontend decide vía localStorage.
+
 // 3. CANDADO DE SEGURIDAD (Función Crítica)
 // Esta función se pondrá al inicio de CADA archivo privado.
 if (!function_exists('proteger_ruta')) {

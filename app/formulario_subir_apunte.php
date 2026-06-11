@@ -60,7 +60,7 @@ if ($stmt_vf) {
     $stmt_vf->fetch();
     $stmt_vf->close();
 }
-$puede_publicar_ap = ($verificacion_estado_ap === null || $verificacion_estado_ap === 'aprobado');
+$puede_publicar_ap = ($verificacion_estado_ap === 'aprobado');
 
 // =============================================
 // MODO AJAX: Procesar y responder JSON

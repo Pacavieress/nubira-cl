@@ -25,13 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = trim($_POST['nombre'] ?? '');
     $correo = strtolower(trim($_POST['correo'] ?? ''));
     $contrasena = $_POST['contrasena'] ?? '';
-    $carrera = trim($_POST['carrera'] ?? '');
+    $carrera = ''; // Campo eliminado del registro; se completa en /completar_perfil
     $ip_actual = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
     $dominio = substr(strrchr($correo, "@"), 1);
 
     // 1. Validaciones básicas
-    if (!$nombre || !$correo || !$contrasena || !$carrera) {
+    if (!$nombre || !$correo || !$contrasena) {
         $mensaje = 'Por favor, completa todos los campos.';
         $tipo_alerta = 'error';
     } elseif (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
@@ -147,8 +147,8 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
        style="background-image: url('https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1986&auto=format&fit=crop');">
        <div class="absolute inset-0 bg-gradient-to-t from-[#54A6D8]/90 via-blue-900/40 to-transparent"></div>
        <div class="absolute bottom-16 left-12 text-white pr-12 z-10">
-           <h2 class="text-4xl font-bold mb-4 tracking-tight leading-tight">Únete a la comunidad<br>universitaria.</h2>
-           <p class="text-lg opacity-90 font-medium">Acceso exclusivo con tu correo institucional.</p>
+           <h2 class="text-4xl font-bold mb-4 tracking-tight leading-tight">Únete a Nubira.</h2>
+           <p class="text-lg opacity-90 font-medium">Compra clases, vende apuntes y conecta con tutores universitarios.</p>
        </div>
   </div>
 
@@ -162,7 +162,7 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
         </div>
 
         <h1 class="text-3xl font-bold text-gray-900 mb-2 tracking-tight">Crea tu cuenta</h1>
-        <p class="text-gray-500 mb-6 text-sm">Regístrate con tu correo de la universidad.</p>
+        <p class="text-gray-500 mb-6 text-sm">Crea tu cuenta en segundos</p>
 
         <?php if ($mensaje): ?>
             <div class="mb-6 p-4 rounded-xl text-sm flex gap-3 items-start border <?= $tipo_alerta === 'error' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-green-50 text-green-700 border-green-100' ?>">
@@ -180,12 +180,12 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">Correo Institucional</label>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">Correo electrónico</label>
                 <input type="email" name="correo" id="inputCorreo" required value="<?= htmlspecialchars($correo ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#54A6D8] outline-none transition-all placeholder-gray-400" 
-                       placeholder="usuario@institucion.cl">
+                       class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#54A6D8] outline-none transition-all placeholder-gray-400"
+                       placeholder="tucorreo@ejemplo.com">
                 <p class="text-[11px] text-gray-400 mt-2 font-medium flex items-center gap-1">
-                    <i class="fa-solid fa-lock text-[10px]"></i> Solo correos universitarios (.cl / .edu)
+                    <i class="fa-solid fa-lock text-[10px]"></i> Te enviaremos un correo de confirmación
                 </p>
             </div>
 
@@ -194,13 +194,6 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
                 <input type="password" name="contrasena" required minlength="6"
                        class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#54A6D8] outline-none transition-all placeholder-gray-400" 
                        placeholder="••••••••">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">Carrera</label>
-                <input type="text" name="carrera" required value="<?= htmlspecialchars($carrera ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-[#54A6D8] outline-none transition-all placeholder-gray-400" 
-                       placeholder="Ej: Ingeniería Comercial">
             </div>
 
             <button type="submit" id="btnSubmit"
