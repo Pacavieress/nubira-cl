@@ -82,6 +82,7 @@ RewriteRule ^inicio$                  /explorar                         [R=301,L
 RewriteRule ^sobre-nosotros$          sobre-nosotros.php                [L,QSA]
 RewriteRule ^privacidad$              privacidad.php                    [L,QSA]
 RewriteRule ^terminos$                terminos.php                      [L,QSA]
+RewriteRule ^sitemap\.xml$            app/sitemap.php                   [L]
 # RewriteRule ^soporte$                 app/soporte.php                   [L,QSA]
 RewriteRule ^soporte$    app/reclamos_sugerencias.php      [L,QSA]
 

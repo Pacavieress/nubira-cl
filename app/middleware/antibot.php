@@ -17,7 +17,7 @@ function check_nubira_shield($conn) {
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     
     // 2. Bots buenos permitidos (Indexadores)
-    $good_bots = ['Googlebot', 'Bingbot', 'Slurp', 'DuckDuckBot', 'Baiduspider'];
+    $good_bots = ['Googlebot', 'Bingbot', 'Slurp', 'DuckDuckBot', 'Baiduspider', 'Google-InspectionTool'];
     foreach ($good_bots as $bot) {
         if (stripos($user_agent, $bot) !== false) {
             return true; // Permitir indexación SEO

@@ -11,6 +11,7 @@ app/conexion.php
 # Logs
 *.log
 *.txt
+!robots.txt
 app/log_correos.txt
 app/logs/
 logs/
