@@ -95,7 +95,8 @@ $materias_clave = [
     'algebra' => 'Matemáticas', 'álgebra' => 'Matemáticas',
     'física' => 'Física', 'fisica' => 'Física',
     'química' => 'Química', 'quimica' => 'Química',
-    'lenguaje' => 'Lenguaje', 'comunicación' => 'Lenguaje', 'literatura' => 'Lenguaje'
+    'lenguaje' => 'Lenguaje', 'comunicación' => 'Lenguaje', 'literatura' => 'Lenguaje',
+    'asesoría' => 'Asesoría', 'consultoría' => 'Asesoría'
 ];
 
 foreach ($materias_clave as $palabra => $categoria_real) {

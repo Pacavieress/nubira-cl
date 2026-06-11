@@ -796,10 +796,11 @@ $is_oferta = oferta_vigente($servicio);
 </form>
 
 <!-- [NUBIRA 2.0] Enrutador Inteligente SSOT (Reemplazó al form-contactar viejo) -->
-<a href="/app/iniciar_chat.php?servicio_id=<?= $id ?>" 
-   class="block mt-3 w-full bg-white text-[#54A6D8] border-2 border-[#54A6D8] font-bold rounded-xl text-sm px-5 py-3 text-center hover:bg-blue-50 transition-all shadow-sm active:scale-95"
+<a href="/app/iniciar_chat.php?servicio_id=<?= $id ?>"
+   class="mt-3 w-full bg-white text-[#54A6D8] border-2 border-[#54A6D8] font-bold rounded-xl text-sm px-5 py-3 hover:bg-blue-50 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
    data-track-click="contact:mensaje">
-   Contactar al tutor
+   <?= icon('chat-outline', 'w-5 h-5') ?>
+   <span>Iniciar chat</span>
 </a>
 
 <div class="mt-4 border-t border-gray-100 pt-4">
@@ -1022,9 +1023,10 @@ $mostrar_barra_movil = (
         <?php else: ?>
             <div class="flex gap-2 shrink-0">
                 <a href="/app/iniciar_chat.php?servicio_id=<?= $id ?>"
-                   class="border border-gray-300 bg-white text-gray-700 font-bold rounded-xl px-3 py-3 text-xs text-center whitespace-nowrap active:scale-95 transition-all"
+                   class="border border-[#54A6D8] bg-white text-[#54A6D8] font-bold rounded-xl px-3 py-3 text-xs whitespace-nowrap active:scale-95 transition-all flex items-center justify-center gap-1.5"
                    data-track-click="contact:mensaje_movil">
-                    Contactar
+                   <?= icon('chat-outline', 'w-4 h-4') ?>
+                   <span>Iniciar chat</span>
                 </a>
                 <button type="button"
                         onclick="document.getElementById('btn-submit-pago')?.click()"
