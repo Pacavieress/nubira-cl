@@ -127,8 +127,8 @@ if (!function_exists('nav_class')) {
 }
 
 // Variables SEO Dinámicas
-$seo_title = "Explorar Apuntes Universitarios | Nubira.cl";
-$seo_desc = "Encuentra y descarga los mejores resúmenes, guías y material de estudio creados por universitarios. Eleva tus notas con Nubira.cl.";
+$seo_title = "Apuntes universitarios y resúmenes Chile | Nubira";
+$seo_desc = "Descarga apuntes y resúmenes de estudiantes chilenos verificados. PAES, cálculo, química, derecho y más. Material filtrado por universidad y ramo.";
 
 if ($qs_nivel === 'paes') {
     $seo_title = "Apuntes PAES | Preparación admisión universitaria | Nubira.cl";
@@ -161,6 +161,7 @@ if (!empty($qs_q)) {
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" type="image/webp" href="/img/logo2.webp">
+  <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #ffffff; }

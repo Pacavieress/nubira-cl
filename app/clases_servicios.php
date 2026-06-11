@@ -157,8 +157,8 @@ if (!function_exists('nav_class')) {
 }
 
 // Variables SEO Dinámicas
-$seo_title = "Explorar Clases y Servicios | Nubira.cl";
-$seo_desc = "Encuentra clases particulares, ayudantías y servicios universitarios en Nubira.cl. Conecta con estudiantes de tu universidad y mejora tu rendimiento académico.";
+$seo_title = "Clases particulares y tutorías online Chile | Nubira";
+$seo_desc = "Tutores universitarios chilenos verificados. Clases particulares en matemáticas, química, programación, idiomas. Pago protegido con Garantía Nubira.";
 if (!empty($qs_q)) {
     $seo_title = "Resultados para '" . htmlspecialchars($qs_q) . "' | Servicios Nubira";
     $seo_desc = "Explora los mejores servicios y clases particulares sobre " . htmlspecialchars($qs_q) . " en Nubira.cl.";
@@ -185,6 +185,7 @@ session_write_close();
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" type="image/webp" href="/img/logo2.webp">
+  <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #ffffff; }

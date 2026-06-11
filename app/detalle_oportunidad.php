@@ -34,7 +34,13 @@ function limitar_texto($txt, $largo = 50) {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Detalle: <?= limitar_texto($o['titulo'], 60) ?></title>
+  <?php
+    require_once __DIR__ . '/helpers/seo.php';
+    $op_title = $o['titulo'] . ' | Oportunidades Nubira';
+    $op_desc  = mb_strimwidth(trim(strip_tags($o['descripcion'] ?? '')), 0, 155, '...', 'UTF-8');
+    echo nubira_seo_meta($op_title, $op_desc);
+  ?>
+  <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>

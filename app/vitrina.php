@@ -600,10 +600,11 @@ try {
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <title>Inicio | Nubira</title>
+    <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_seo_meta('Explorar tutorías y apuntes universitarios | Nubira Chile', 'Encuentra tutorías online y apuntes de universidades chilenas. Clases particulares con pago protegido. PUC, U. de Chile, USACH, UNAB y más en Nubira.'); ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" type="image/webp" href="/img/logo2.webp">
+    <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag('/explorar'); ?>
     <!-- [NUBIRA 2.0] Preconnect al CDN de imágenes por defecto -->
 <link rel="preconnect" href="https://nubira.cl" crossorigin>
 
