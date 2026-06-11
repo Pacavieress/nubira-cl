@@ -130,10 +130,68 @@ Verificación post-deploy:
 - Apelar Google
 - Actualizar XAMPP a PHP 8.2 (para poder testear flujo de pago en local)
 
+## Mejoras de UX/Growth pendientes
+
+## Secciones de descubrimiento estilo Airbnb (idea pendiente)
+
+Implementar carruseles contextuales en vitrina.php similar a 'Alojamientos en X' de Airbnb. La arquitectura actual ya lo permite (cada carrusel es una query SQL + render_card).
+
+Ideas iniciales en orden de prioridad:
+1. 'Tutores top esta semana' (más contratos cerrados últimos 7 días)
+2. 'Empieza mañana' (servicios con próximo cupo dentro de 48h)
+3. 'Bajo $10.000' (servicios económicos)
+4. 'Para tu PAES' (filtro por keyword en titulo/descripcion)
+5. 'Materias críticas primer año' (Cálculo, Álgebra, Química)
+6. 'Tutores que responden en menos de 1 hora' (requiere métrica de respuesta)
+
+Requisitos previos:
+- Recategorización de los 55 servicios completada
+- 12 imágenes IA del banco completas
+- Definir métricas de comportamiento del tutor (tiempo respuesta promedio)
+
+Implementación: cada carrusel = nueva query SQL en vitrina.php + componente render_card existente. Sin trabajo nuevo de diseño.
+
+## Estrategia SEO Nubira (pendiente)
+
+## Estrategia SEO para vencer competencia (Superprof, Studocu, Wuolah)
+
+### Mes 1 - SEO técnico
+- Schema.org markup en cada servicio (tipo: Service + Person + Review)
+- Sitemap.xml dinámico generado desde la BD
+- robots.txt: permitir /, bloquear /app/, /admin/
+- Meta tags dinámicos por servicio: title, description, Open Graph, Twitter Cards
+- Lighthouse 90+ móvil
+
+### Mes 2 - Contenido (blog en /blog)
+- 2 artículos/semana enfocados en long-tail Chile:
+  - 'Cómo prepararse para PAES Matemática 2026'
+  - 'Mejores tutores de Cálculo en USACH'
+  - 'Ramos críticos primer año de Ingeniería Chile'
+  - 'Cuánto cuesta una clase particular en Santiago 2026'
+- Cada artículo apunta a servicios reales de Nubira (links internos)
+
+### Mes 3 - Autoridad (backlinks)
+- Contactar 10 centros de alumnos de universidades chilenas
+- Inscripción en Google My Business
+- Tutores comparten perfil en LinkedIn
+
+### Diferenciador clave
+Contenido chileno específico que la competencia internacional no puede hacer:
+- PAES, universidades chilenas, ramos específicos
+- Pesos chilenos, modalidad híbrida
+- Comisión transparente
+- Pago protegido en CLP
+
 ## Deploy banco de imágenes - notas críticas
 - Al ejecutar CREATE TABLE banco_imagenes en producción (Hostinger phpMyAdmin), USAR COLLATE utf8mb4_unicode_ci en la columna categoria (NO utf8mb4_general_ci como quedó en local).
 - Después de subir imágenes IA al banco en producción, ejecutar el UPDATE general que asigna imagen_banco_id a todos los servicios por categoría.
 - El UPDATE necesita COLLATE explícito si las tablas tienen collations distintas.
+
+## Onboarding 'Cómo funciona Nubira' (decisión técnica)
+
+Slides hardcodeados en componente PHP. Cuando se valide que el onboarding funciona y se necesite iterar copy/imágenes sin deploy, migrar a tabla onboarding_slides editable desde nuevo panel admin (patrón similar a avisos_campanas pero sin fan-out a usuarios).
+
+Validación clave: ¿cuántos usuarios COMPLETAN los 5 slides vs cuántos saltan en slide 1? Medir con la columna onboarding_visto + opcionalmente un onboarding_slide_max si se quiere granularidad.
 
 ## Project Overview
 
