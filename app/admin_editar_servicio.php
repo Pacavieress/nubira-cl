@@ -19,7 +19,7 @@ if (empty($_SESSION['csrf_token_admin_editar'])) {
 }
 $csrf_token = $_SESSION['csrf_token_admin_editar'];
 
-$categorias_canonicas = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lengua','Economía','Diseño','Derecho','Otros'];
+$categorias_canonicas = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lenguaje','Economía','Diseño','Derecho','Asesoría','Otros'];
 
 // Cargar servicio
 $id_servicio = isset($_GET['id']) ? (int)$_GET['id'] : 0;

@@ -75,7 +75,7 @@ if ($tipo === 'servicio') {
         ? '/app/perfil/fotos/' . $row['tutor_foto']
         : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre) . '&background=54A6D8&color=fff&size=128&bold=true';
     $categoria_overlay = $row['categoria'] ?? 'Otros';
-    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
     $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
     // --- [NUEVO] CREAR PASTILLA DE ESTRELLAS ---

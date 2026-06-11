@@ -83,7 +83,7 @@ $stmt_vf->execute();
 $stmt_vf->bind_result($verificacion_estado_pub);
 $stmt_vf->fetch();
 $stmt_vf->close();
-$puede_publicar = ($verificacion_estado_pub === null || $verificacion_estado_pub === 'aprobado');
+$puede_publicar = ($verificacion_estado_pub === 'aprobado');
 
 // [BANCO] Imágenes del banco para el carrusel. Se cargan TODAS de una vez (sin AJAX);
 // el JS filtra en cliente según la categoría seleccionada.
@@ -342,7 +342,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                                 <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
                                     <option value="">Selecciona una opción...</option>
                                     <?php
-                                    $categorias_canonicas = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lengua','Economía','Diseño','Derecho','Otros'];
+                                    $categorias_canonicas = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lenguaje','Economía','Diseño','Derecho','Asesoría','Otros'];
                                     foreach ($categorias_canonicas as $cat_op):
                                     ?>
                                         <option value="<?= htmlspecialchars($cat_op) ?>"><?= htmlspecialchars($cat_op) ?></option>

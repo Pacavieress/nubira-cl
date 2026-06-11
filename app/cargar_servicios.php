@@ -187,7 +187,7 @@ foreach ($servicios as $i => $row):
 
     // [OVERLAY NUBIRA] categoría sobre la portada
     $categoria_overlay = $row['categoria'] ?? 'Otros';
-    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
     $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
     $fecha_pub = !empty($row['fecha_publicacion']) ? new DateTime($row['fecha_publicacion']) : $hoy;

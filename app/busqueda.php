@@ -497,7 +497,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
 
                         // [OVERLAY NUBIRA] categoría sobre la portada
                         $categoria_overlay = $row['categoria'] ?? 'Otros';
-                        $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                        $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
                         $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
                     ?>
                     

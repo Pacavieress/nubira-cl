@@ -215,7 +215,7 @@ foreach ($items_ordenados as $item):
     $foto_field_ov   = $row['foto_perfil'] ?? '';
     $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
     $categoria_overlay = $row['categoria'] ?? 'Otros';
-    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
     $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
     // Versionamiento de imagen para cache

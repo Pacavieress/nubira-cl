@@ -321,7 +321,7 @@ if (!function_exists('nav_class')) {
                                 <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
                                     <option value="">Selecciona...</option>
                                     <?php
-                                    $cats = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lengua','Economía','Diseño','Derecho','Otros'];
+                                    $cats = ['Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lenguaje','Economía','Diseño','Derecho','Asesoría','Otros'];
                                     // Si la categoría actual no está entre las canónicas (caso raro), la agregamos para no perderla.
                                     if ($categoria !== '' && !in_array($categoria, $cats, true)) $cats[] = $categoria;
                                     foreach($cats as $c) {

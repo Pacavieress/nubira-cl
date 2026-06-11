@@ -831,7 +831,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             
                             <?php if (!$es_apunte):
                                 $categoria_overlay = $row['categoria'] ?? 'Otros';
-                                $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                                $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
                                 $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
                             ?>
                             <!-- [OVERLAY NUBIRA] gradient + categoría (solo servicios) -->
