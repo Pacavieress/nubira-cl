@@ -117,7 +117,7 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
                   class="w-full flex items-center bg-gray-50 border border-gray-100 rounded-full focus-within:border-[#54A6D8] focus-within:bg-white transition-colors duration-200 overflow-hidden relative z-10 outline-none">
                 
                 <div class="pl-3 text-gray-400 shrink-0 pointer-events-none">
-                    <i class="fa-solid fa-magnifying-glass text-xs md:text-sm"></i>
+                    <?= icon('search', 'w-3.5 h-3.5 md:w-4 md:h-4') ?>
                 </div>
                 
                 <input type="search" name="q"
@@ -135,7 +135,7 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
                         <option value="Híbrido" <?= $header_mod==='Híbrido'?'selected':'' ?>>Híbrido</option>
                     </select>
                     <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">
-                        <i class="fa-solid fa-chevron-down"></i>
+                        <?= icon('chevron-down', 'w-2.5 h-2.5') ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -155,6 +155,14 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
                 </a>
             </div>
             <?php endif; ?>
+
+            <button type="button"
+                    id="btn-abrir-onboarding"
+                    class="flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-full text-[#54A6D8] hover:bg-blue-50 transition text-sm font-medium"
+                    title="¿Cómo funciona?">
+                <?= icon('info-circle', 'w-5 h-5') ?>
+                <span>Tutorial</span>
+            </button>
 
             <a href="<?= $url_perfil ?>" class="relative hidden lg:block group" title="<?= $es_visitante ? 'Invitado - Iniciar Sesión' : 'Mi Perfil' ?>">
                 <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-blue-50 border border-gray-100 flex items-center justify-center text-[#54A6D8] text-[10px] md:text-xs font-semibold overflow-hidden transition-transform duration-200 hover:scale-105">
@@ -362,10 +370,10 @@ $stmt_aviso = $conn->prepare("
     
     <?php if (count($imagenes_aviso) > 1): ?>
     <button onclick="cambiarSlide(-1)" class="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-md items-center justify-center text-gray-700 transition-all">
-        <i class="fa-solid fa-chevron-left text-xs"></i>
+        <?= icon('chevron-left', 'w-4 h-4') ?>
     </button>
     <button onclick="cambiarSlide(1)" class="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-md items-center justify-center text-gray-700 transition-all">
-        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <?= icon('chevron-right', 'w-4 h-4') ?>
     </button>
     
     <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -480,3 +488,10 @@ async function marcarAvisoLeido(idAviso) {
 }
 </script>
 <?php endif; ?>
+
+<?php
+// Modal global "Cómo funciona Nubira" (botón Tutorial del topbar).
+// Va FUERA del <nav>, como hermano flotante, disponible en toda página que incluya el header.
+// El auto-abrir solo ocurre en /explorar (script en vitrina.php).
+require_once __DIR__ . '/onboarding_modal.php';
+?>

@@ -64,8 +64,27 @@ if ($is_guest) {
     $_SESSION['redirigir_despues_login'] = $_SERVER['REQUEST_URI'];
 }
 
+// B.2 ONBOARDING "Cómo funciona Nubira" (carga perezosa + caché de sesión)
+// Debe ir ANTES de session_write_close() porque escribe en $_SESSION.
+$debe_ver_onboarding = false;
+if (!$is_guest) {
+    $uid_onb = (int)$_SESSION['usuario_id'];
+    if (!isset($_SESSION['onboarding_visto'])) {
+        $stmt_onb = $conn->prepare("SELECT onboarding_visto FROM alumnos WHERE id = ? LIMIT 1");
+        if ($stmt_onb) {
+            $stmt_onb->bind_param("i", $uid_onb);
+            $stmt_onb->execute();
+            $stmt_onb->bind_result($onb_flag);
+            $stmt_onb->fetch();
+            $stmt_onb->close();
+            $_SESSION['onboarding_visto'] = (int)($onb_flag ?? 0);
+        }
+    }
+    $debe_ver_onboarding = empty($_SESSION['onboarding_visto']);
+}
+
 // OPTIMIZACIÓN DE VELOCIDAD
-session_write_close(); 
+session_write_close();
 
 // [SENSOR NUBIRA] REGISTRO DE ACTIVIDAD TOTAL
 if (file_exists($app_dir . '/logger.php')) {
@@ -769,7 +788,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                        $foto_field_ov   = $row_of['foto_perfil'] ?? '';
                        $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
                        $categoria_overlay = $row_of['categoria'] ?? 'Otros';
-                       $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                       $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
                        $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
                     ?>
                         <?php if($es_activa): ?>
@@ -957,7 +976,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $foto_field_ov   = $row_n['foto_perfil'] ?? '';
                     $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
                     $categoria_overlay = $row_n['categoria'] ?? 'Otros';
-                    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
                     $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
 // --- LÓGICA DE PRECIOS Y OFERTAS (NUBIRA 2.0) ---
@@ -1100,7 +1119,7 @@ $portada_url = $portada_set['card'];
                     $foto_field_ov   = $row['foto_perfil'] ?? '';
                     $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
                     $categoria_overlay = $row['categoria'] ?? 'Otros';
-                    $prefijo_overlay = ($categoria_overlay === 'Otros') ? '' : 'Clase de';
+                    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
                     $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
                     $es_nuevo = false;
@@ -1636,10 +1655,23 @@ $portada_url = $portada_set['card'];
 
 
 <?php 
-require_once __DIR__ . '/componentes/nav_bottom.php'; 
-require_once __DIR__ . '/componentes/modal_publicar.php'; 
-require_once __DIR__ . '/componentes/modal_explora.php'; 
+require_once __DIR__ . '/componentes/nav_bottom.php';
+require_once __DIR__ . '/componentes/modal_publicar.php';
+require_once __DIR__ . '/componentes/modal_explora.php';
 ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const esVisitante = <?= $is_guest ? 'true' : 'false' ?>;
+    const debeVer     = <?= !empty($debe_ver_onboarding) ? 'true' : 'false' ?>;
+    const mostrar = esVisitante
+        ? (localStorage.getItem('nubira_onboarding_visto') !== '1')
+        : debeVer;
+    if (mostrar && typeof window.abrirOnboarding === 'function') {
+        setTimeout(() => window.abrirOnboarding(), 1500);
+    }
+});
+</script>
 
 <script>
   // [NUBIRA 2.0] Facebook Pixel diferido a idle callback
