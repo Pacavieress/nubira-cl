@@ -333,6 +333,7 @@ Google Gemini 2.0 Flash via `app/datos/ia_nubira.php`. Cached in `app/cache_ia/`
 - `CURLOPT_SSL_VERIFYPEER = false` in production
 - `$es_admin = true` hardcoded in `contar_alertas_sistema.php`
 - Auto-migrations on every page load in `admin_usuarios.php`
+- `app/config.php` has 2 blank lines BEFORE the `<?php` tag (lines 1-2) → emits output before PHP starts; latent "headers already sent" risk. Fix in a later iteration (strip the leading blank lines).
 
 ## Key Patterns
 - PRG (Post-Redirect-Get) enforced

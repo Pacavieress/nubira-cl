@@ -1,7 +1,7 @@
 # Credenciales y configuración sensible
 .env
 env
-app/config.php
+# app/config.php
 app/conexion.php
 
 # Base de datos local
