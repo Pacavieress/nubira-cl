@@ -520,7 +520,32 @@ require_once __DIR__ . '/componentes/sidebar.php';
                     <div class="hidden md:block w-full h-px bg-gray-100 my-1"></div>
                     <div class="block md:hidden w-16 h-1 bg-gray-100 rounded-full mx-auto my-2"></div>
 
-                    <div class="w-full relative px-2 md:px-0"> 
+                    <?php
+                    $stats_perfil = [];
+                    if (!empty($perfil_data['universidad'])) {
+                        $stats_perfil[] = ['label' => 'Institución', 'value' => htmlspecialchars($perfil_data['universidad'])];
+                    }
+                    if (!empty($perfil_data['anio_egreso']) && $perfil_data['anio_egreso'] > 1970) {
+                        $stats_perfil[] = ['label' => 'Año de egreso', 'value' => (int)$perfil_data['anio_egreso']];
+                    }
+                    if (!empty($perfil_data['anios_experiencia']) && $perfil_data['anios_experiencia'] > 0) {
+                        $stats_perfil[] = ['label' => 'Experiencia', 'value' => (int)$perfil_data['anios_experiencia'] . ' años'];
+                    }
+                    ?>
+                    <?php if (!empty($stats_perfil)): ?>
+                    <div class="border-b border-gray-100 pb-3 mb-4 px-2 md:px-0">
+                      <div class="flex flex-wrap gap-x-8 gap-y-3">
+                        <?php foreach ($stats_perfil as $stat): ?>
+                          <div class="text-center md:text-left">
+                            <div class="text-sm md:text-base font-bold tracking-tight text-gray-900"><?= $stat['value'] ?></div>
+                            <div class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap tracking-wider mt-0.5"><?= $stat['label'] ?></div>
+                          </div>
+                        <?php endforeach; ?>
+                      </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="w-full relative px-2 md:px-0">
                         
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-[11px] font-medium uppercase tracking-widest text-gray-400">Biografía</h2>
