@@ -127,6 +127,9 @@ RewriteRule ^guardar-servicio$        app/guardar_servicio.php          [L,QSA]
 # === RUTA LIMPIA PARA SERVICIOS ===
 RewriteRule ^servicios/?$                  app/clases_servicios.php          [L,QSA]
 
+# === LANDINGS SEO POR CATEGORÍA (pSEO Fase 1) ===
+RewriteRule ^clases/([a-z]+)/?$            app/landing_categoria.php?tipo=clases&cat=$1   [L,QSA]
+
 # (Redirecciones SEO por si alguien usa los links viejos)
 RewriteRule ^explorar-clases-servicos/?$   /servicios                        [R=301,L]
 RewriteRule ^clases-servicios/?$           /servicios                        [R=301,L]

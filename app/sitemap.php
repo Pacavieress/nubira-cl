@@ -6,6 +6,7 @@
 // TODO: si la BD crece, cachear 6h (file-based, patrón app/cache_ia/).
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/seguridad_url.php';
+require_once __DIR__ . '/helpers/seo.php';   // nubira_categorias_seo() para sección E
 header('Content-Type: application/xml; charset=utf-8');
 
 $BASE = 'https://nubira.cl';
@@ -64,7 +65,8 @@ while ($r && $row = $r->fetch_assoc()) {
 $sql = "SELECT ap.id, ap.fecha_subida
         FROM apuntes ap
         JOIN alumnos al ON al.id = ap.id_alumno
-        WHERE ap.visible = 1
+        WHERE ap.publico = 1
+          AND ap.visible = 1
           AND al.visible = 1";
 $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
@@ -81,6 +83,24 @@ $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
     echo url_xml($BASE . '/detalle-oportunidad/' . (int)$row['id'],
                  w3c($row['fecha_publicacion']), 'weekly', '0.5');
+}
+
+// E. Landings de categoría (clases) — solo las que tienen >=3 servicios públicos
+foreach (nubira_categorias_seo() as $slug => $nombre) {
+    $st = $conn->prepare("SELECT COUNT(*) n FROM servicios s
+                          JOIN alumnos a ON a.id = s.alumno_id
+                          WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
+                            AND s.visible = 1
+                            AND COALESCE(a.visible, 1) = 1
+                            AND s.categoria = ?");
+    if (!$st) continue;
+    $st->bind_param("s", $nombre);
+    $st->execute();
+    $n = (int)($st->get_result()->fetch_assoc()['n']);
+    $st->close();
+    if ($n >= 3) {
+        echo url_xml($BASE . '/clases/' . $slug, w3c(null), 'weekly', '0.8');
+    }
 }
 
 echo '</urlset>' . "\n";
