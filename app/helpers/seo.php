@@ -33,4 +33,22 @@ if (!function_exists('nubira_canonical')) {
              . '<meta property="og:title" content="' . $t . '" />' . "\n  "
              . '<meta property="og:description" content="' . $d . '" />';
     }
+
+    /** Mapa slug => nombre canónico de categoría para landings SEO (sin "Otros"). */
+    function nubira_categorias_seo(): array {
+        return [
+            'matematicas'  => 'Matemáticas',
+            'quimica'      => 'Química',
+            'fisica'       => 'Física',
+            'biologia'     => 'Biología',
+            'programacion' => 'Programación',
+            'idiomas'      => 'Idiomas',
+            'historia'     => 'Historia',
+            'lenguaje'     => 'Lenguaje',
+            'economia'     => 'Economía',
+            'diseno'       => 'Diseño',
+            'derecho'      => 'Derecho',
+            'asesoria'     => 'Asesoría',
+        ];
+    }
 }

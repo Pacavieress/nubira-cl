@@ -4,9 +4,12 @@ env
 app/config.php
 app/conexion.php
 
-# Base de datos local (dumps y data de MySQL)
-/db/
-/sql/*.sql
+# Base de datos local
+# /sql/ = dumps con datos personales -> nunca trackear
+# /db/  = ignorada salvo /db/migrations/ (las migraciones SI se trackean)
+/sql/
+/db/*
+!/db/migrations/
 
 # Logs
 *.log
