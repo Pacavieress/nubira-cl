@@ -51,28 +51,7 @@ if($res) while($r = $res->fetch_assoc()) $items[] = $r;
 if (empty($items)) exit;
 
 // 3. FUNCIONES HELPER (Idénticas a vitrina.php)
-if (!function_exists('abreviar_institucion')) {
-    function abreviar_institucion(string $inst_raw, int $max_len = 22): string {
-        if (empty($inst_raw)) return '';
-        $inst_clean = $inst_raw;
-        $dicc = [
-            'Universidad Andr'=>'UNAB', 'Universidad Nac'=>'UNAB',
-            'Pontificia Universidad Cat'=>'PUC', 'Universidad de Santiago'=>'USACH',
-            'Universidad de Concepci'=>'UdeC', 'Universidad T'=>'USM',
-            'Federico Santa Mar'=>'USM', 'Adolfo Ib'=>'UAI',
-            'Universidad de Chile'=>'U. de Chile', 'Universidad'=>'U.',
-            'Instituto Profesional'=>'IP', 'Centro de Formación Técnica'=>'CFT'
-        ];
-        foreach($dicc as $k=>$v) { 
-            if(stripos($inst_clean, $k)!==false){ 
-                if(strlen($v)<=6) $inst_clean=$v; 
-                else $inst_clean=str_ireplace($k,$v,$inst_clean); 
-                break; 
-            } 
-        }
-        return htmlspecialchars(mb_strimwidth($inst_clean, 0, $max_len, '...'));
-    }
-}
+require_once __DIR__ . '/helpers/institucion.php';
 
 if (!function_exists('render_rating_html')) {
     function render_rating_html(float $rating_val, int $total_votos, string $fallback_label = 'Nuevo'): string {
@@ -150,7 +129,7 @@ if (!function_exists('render_rating_html')) {
             elseif (strpos($mod,'presencial')!==false) $icon_mod = '<i class="fa-solid fa-user-group text-[10px]"></i>';
             
             $html_stars = render_rating_html($rating_val, $total_v);
-            $inst_text = abreviar_institucion($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
+            $inst_text = institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
         ?>
 
         <a href="/detalle-servicio/<?= $link_hash ?>" 

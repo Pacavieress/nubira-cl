@@ -33,6 +33,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 }
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
+require_once $app_dir . '/helpers/institucion.php'; // institucion_tutor()
 
 // 2. DATOS DE USUARIO Y SERVICIO
 $usuario_id = (int)$_SESSION['usuario_id'];
@@ -421,7 +422,7 @@ $page_title = "Confirmar Contrato";
                                 <div>
                                     <p class="text-[10px] font-bold text-[#54A6D8] uppercase tracking-wide mb-1">Contratando a</p>
                                     <h4 class="font-bold text-gray-900 leading-tight mb-1 line-clamp-2"><?= $vendedor_display ?></h4>
-                                    <p class="text-xs text-gray-500 truncate"><?= htmlspecialchars($serv['institucion'] ?? 'Estudiante', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-xs text-gray-500 truncate"><?= htmlspecialchars(institucion_tutor($serv['institucion'] ?? '', false), ENT_QUOTES, 'UTF-8') ?></p>
                                 </div>
                             </div>
 

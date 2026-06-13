@@ -12,6 +12,7 @@ require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/helpers/portada_helper.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 require_once __DIR__ . '/helpers/ofertas.php';
+require_once __DIR__ . '/helpers/institucion.php'; // abreviar_institucion() / institucion_tutor()
 
 // [NUBIRA 2.0] Cargar iconos oficiales de la plataforma
 $rutas_iconos = [__DIR__.'/iconos.php', __DIR__.'/../iconos.php', $_SERVER['DOCUMENT_ROOT'].'/app/iconos.php', $_SERVER['DOCUMENT_ROOT'].'/iconos.php'];
@@ -262,31 +263,7 @@ foreach ($servicios as $i => $row):
     }
 
     // --- HTML INSTITUCIÓN (Izquierda) ---
-    $inst_text = '';
-    if (!$hide_inst) {
-        $inst_raw = $row['institucion_maestra'] ?? ($row['institucion'] ?? '');
-        if (!empty($inst_raw)) {
-            $inst_clean = $inst_raw;
-            $dicc = [
-                'Economía y Negocios' => 'FEN U. Chile', 'ECONOMíA Y NEGOCIOS' => 'FEN U. Chile',
-                'Servicio Local de Educ' => 'SLEP', 'SERVICIO LOCAL DE EDUC' => 'SLEP',
-                'Santísima Concepci' => 'UCSC', 'SANTíSIMA CONCEPCI' => 'UCSC', 'Santisima Concepci' => 'UCSC',
-                'Konrad Lorenz' => 'Konrad Lorenz', 'Universidad Andr' => 'UNAB', 'Universidad Nac' => 'UNAB',
-                'Pontificia Universidad Cat' => 'PUC', 'Universidad de Santiago' => 'USACH',
-                'Universidad de Concepci' => 'UdeC', 'Universidad T' => 'USM', 
-                'Federico Santa Mar' => 'USM', 'Adolfo Ib' => 'UAI', 'Universidad de Chile' => 'U. de Chile', 
-                'Universidad del B' => 'UBB', 'Bío Bío' => 'UBB', 'Bio Bio' => 'UBB',
-                'Universidad' => 'U.', 'Instituto Profesional' => 'IP', 'Centro de Formación Técnica' => 'CFT'
-            ];
-            foreach($dicc as $parcial => $corto) {
-                if (stripos($inst_clean, $parcial) !== false) {
-                    if (strlen($corto) <= 6) $inst_clean = $corto; else $inst_clean = str_ireplace($parcial, $corto, $inst_clean);
-                    break; 
-                }
-            }
-            $inst_text = htmlspecialchars(mb_strimwidth($inst_clean, 0, 22, '...'));
-        }
-    }
+    $inst_text = $hide_inst ? '' : institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
 ?>
 
 <a href="/detalle-servicio/<?= $link_hash ?>"
