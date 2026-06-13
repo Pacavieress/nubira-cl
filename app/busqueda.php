@@ -515,33 +515,30 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                                  width="320" height="240"
                                  onerror="this.onerror=null;this.src='/upload/preview/default_file.webp';">
 
-                            <!-- [OVERLAY NUBIRA] gradient + categoría -->
-                            <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
-                            <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
-                                <?php if (!empty($prefijo_overlay)): ?>
-                                <div class="text-white text-xs md:text-sm font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
-                                    <?= htmlspecialchars($prefijo_overlay) ?>
-                                </div>
-                                <?php endif; ?>
-                                <div class="text-white text-base md:text-lg font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
-                                    <?= htmlspecialchars($nombre_categoria_overlay) ?>
-                                </div>
-                            </div>
+                            <!-- [OVERLAY NUBIRA] gradient + categoría + tutor (partial) -->
+                            <?php
+                              $ov_prefijo   = $prefijo_overlay;
+                              $ov_categoria = $nombre_categoria_overlay;
+                              $ov_foto      = $foto_tutor;
+                              $ov_nombre    = $tutor_nombre;
+                              $ov_size      = 'lg';
+                              include __DIR__ . '/componentes/overlay_card_servicio.php';
+                            ?>
 
-                            <!-- Badge izquierda: tier -->
-                            <div class="absolute top-2.5 left-2.5 z-10">
+                            <!-- Badge derecha: tier (oculto en ofertas; ahí manda cupos) -->
+                            <?php if (!$es_oferta): ?>
+                            <div class="absolute top-2.5 right-2.5 z-10">
                                 <?php if ($nivel_tutor === 'leyenda'): ?>
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
                                 <?php elseif ($nivel_tutor === 'elite'): ?>
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
                                 <?php elseif ($nivel_tutor === 'pro'): ?>
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
                                 <?php elseif ($nivel_tutor === 'top'): ?>
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
-                                <?php elseif ($es_nuevo): ?>
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Nuevo</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
                                 <?php endif; ?>
                             </div>
+                            <?php endif; ?>
                             <?php if ($es_oferta): ?>
                             <div class="absolute top-2.5 right-2.5 z-10">
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">

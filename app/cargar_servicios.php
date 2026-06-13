@@ -308,20 +308,20 @@ foreach ($servicios as $i => $row):
   include __DIR__ . '/componentes/overlay_card_servicio.php';
   ?>
 
-  <!-- Badge izquierda: tier -->
-  <div class="absolute top-2.5 left-2.5 z-10">
+  <!-- Badge derecha: tier (oculto en ofertas; ahí manda cupos) -->
+  <?php if (!$es_oferta): ?>
+  <div class="absolute top-2.5 right-2.5 z-10">
     <?php if ($nivel_tutor === 'leyenda'): ?>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
     <?php elseif ($nivel_tutor === 'elite'): ?>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
     <?php elseif ($nivel_tutor === 'pro'): ?>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
     <?php elseif ($nivel_tutor === 'top'): ?>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
-    <?php elseif ($es_nuevo): ?>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Nuevo</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
     <?php endif; ?>
   </div>
+  <?php endif; ?>
 
   <!-- Badge cupos (derecha) -->
   <?php if ($es_oferta): ?>

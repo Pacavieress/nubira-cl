@@ -1179,13 +1179,13 @@ $portada_url = $portada_set['card'];
                        <?php if (empty($es_oferta)): ?>
                        <div class="absolute top-2.5 right-2.5 z-10">
                             <?php if ($nivel_tutor === 'leyenda'): ?>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
                             <?php elseif ($nivel_tutor === 'elite'): ?>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
                             <?php elseif ($nivel_tutor === 'pro'): ?>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
                             <?php elseif ($nivel_tutor === 'top'): ?>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
                             <?php endif; ?>
                        </div>
                        <?php endif; ?>
@@ -1404,10 +1404,6 @@ $portada_url = $portada_set['card'];
                             <?php if ($es_promo_activa): ?>
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                                     Quedan <?= $descargas_restantes ?>
-                                </span>
-                            <?php elseif ($es_nuevo_ap): ?>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">
-                                    Nuevo
                                 </span>
                             <?php endif; ?>
                         </div>
