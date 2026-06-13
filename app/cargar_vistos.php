@@ -208,7 +208,7 @@ foreach ($items_ordenados as $item):
             $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
         }
     }
-    $foto_tutor = !empty($row['foto_perfil']) ? '/app/perfil/fotos/' . $row['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b";
+    $foto_tutor = !empty($row['foto_perfil']) ? '/app/perfil/fotos/' . $row['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b&size=128";
 
     // [OVERLAY NUBIRA] avatar tutor + categoría sobre la portada (solo servicios)
     $tutor_nombre_ov = $row['tutor_nombre'] ?? '';
@@ -237,18 +237,14 @@ foreach ($items_ordenados as $item):
              onerror="this.src='/img/logo2.webp'">
 
         <?php if ($tipo === 's'): ?>
-        <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría -->
-        <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
-        <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
-            <?php if (!empty($prefijo_overlay)): ?>
-            <div class="text-white text-[10px] md:text-xs font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
-                <?= htmlspecialchars($prefijo_overlay) ?>
-            </div>
-            <?php endif; ?>
-            <div class="text-white text-sm md:text-base font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
-                <?= htmlspecialchars($nombre_categoria_overlay) ?>
-            </div>
-        </div>
+        <?php
+        $ov_prefijo   = $prefijo_overlay;
+        $ov_categoria = $nombre_categoria_overlay;
+        $ov_foto      = $foto_tutor;
+        $ov_nombre    = $tutor_nombre;
+        $ov_size      = 'sm';
+        include __DIR__ . '/componentes/overlay_card_servicio.php';
+        ?>
         <?php endif; ?>
 
         <!-- Badge nivel (derecha) - oculto en ofertas para no chocar con el badge de cupos -->

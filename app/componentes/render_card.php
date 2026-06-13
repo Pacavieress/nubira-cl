@@ -70,7 +70,15 @@ if ($tipo === 'servicio') {
     $img = url_portada($row); // [BANCO] banco → legacy → placeholder
 
     // --- [OVERLAY NUBIRA] avatar del tutor + texto de categoría sobre la portada ---
-    $tutor_nombre = $row['tutor_nombre'] ?? '';
+    $nombre_completo = !empty($row['tutor_nombre']) ? $row['tutor_nombre'] : 'Profesor';
+    $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
+    $tutor_nombre = "Profesor";
+    if (!empty($partes_nombre[0])) {
+        $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
+        if (count($partes_nombre) >= 2) {
+            $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
+        }
+    }
     $foto_tutor = !empty($row['tutor_foto'])
         ? '/app/perfil/fotos/' . $row['tutor_foto']
         : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre) . '&background=54A6D8&color=fff&size=128&bold=true';
@@ -121,19 +129,14 @@ if ($tipo === 'servicio') {
              loading="lazy" decoding="async" width="240" height="180">
 
         <?php if ($tipo === 'servicio'): ?>
-        <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría (solo servicios) -->
-        <div class="absolute inset-0 z-[5] pointer-events-none"
-             style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
-        <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
-            <?php if (!empty($prefijo_overlay)): ?>
-            <div class="text-white text-[10px] md:text-xs font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
-                <?= htmlspecialchars($prefijo_overlay) ?>
-            </div>
-            <?php endif; ?>
-            <div class="text-white text-sm md:text-base font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
-                <?= htmlspecialchars($nombre_categoria_overlay) ?>
-            </div>
-        </div>
+        <?php
+        $ov_prefijo   = $prefijo_overlay;
+        $ov_categoria = $nombre_categoria_overlay;
+        $ov_foto      = $foto_tutor;
+        $ov_nombre    = $tutor_nombre;
+        $ov_size      = 'sm';
+        include __DIR__ . '/overlay_card_servicio.php';
+        ?>
         <?php endif; ?>
 
         <!-- Badge nivel (derecha) - solo servicios -->
