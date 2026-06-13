@@ -166,29 +166,7 @@ if (!empty($servicio['nombre_alumno'])) {
  * 
  * @return array ['texto' => string, 'tono' => 'verde'|'azul'|'naranjo'|'gris']
  */
-function formatearTiempoRespuestaNubira($minutos) {
-    // Tutor nuevo o sin métrica suficiente (< 5 respuestas)
-    if ($minutos === null) {
-        return ['texto' => 'Tutor nuevo', 'tono' => 'gris'];
-    }
-
-    $minutos = (int)$minutos;
-
-    if ($minutos < 15) {
-        return ['texto' => 'En minutos', 'tono' => 'verde'];
-    }
-    if ($minutos < 60) {
-        return ['texto' => 'En menos de 1 hora', 'tono' => 'verde'];
-    }
-    if ($minutos < 180) {
-        return ['texto' => 'En pocas horas', 'tono' => 'azul'];
-    }
-    if ($minutos < 720) {
-        return ['texto' => 'En el día', 'tono' => 'azul'];
-    }
-    // 720+ minutos = más de 12h
-    return ['texto' => 'En 1 día', 'tono' => 'naranjo'];
-}
+require_once __DIR__ . '/helpers/tiempo_respuesta.php';
 
 $tiempo_data = formatearTiempoRespuestaNubira(
     $servicio['tiempo_respuesta_promedio'] !== null 

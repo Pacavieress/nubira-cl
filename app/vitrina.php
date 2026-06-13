@@ -254,6 +254,43 @@ WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL)
     error_log("Error cargando recientes vitrina: " . $e->getMessage());
 }
 
+// --- [NUBIRA] TUTORES QUE RESPONDEN RÁPIDO (<60 min) ---
+$res_rapidos   = null;
+$count_rapidos = 0;
+try {
+    // Gate: tutores DISTINTOS que cumplen (debe ser >= 6 para mostrar la sección)
+    $rg = $conn->query("SELECT COUNT(DISTINCT a.id) AS n
+                        FROM alumnos a
+                        WHERE a.tiempo_respuesta_promedio IS NOT NULL
+                          AND a.tiempo_respuesta_promedio < 60
+                          AND EXISTS (SELECT 1 FROM servicios s
+                                      WHERE s.alumno_id = a.id AND s.estado = 'aprobado' AND s.visible = 1)");
+    $count_rapidos = $rg ? (int)$rg->fetch_assoc()['n'] : 0;
+
+    if ($count_rapidos >= 6) {
+        $sql_rapidos = "SELECT s.*, s.oferta_termino,
+                               COALESCE(dp.institucion, a.institucion) as institucion_maestra,
+                               (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
+                               (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                               a.foto_perfil,
+                               a.nombre as nombre_tutor,
+                               a.tiempo_respuesta_promedio,
+                               bi.archivo as banco_archivo
+                        FROM servicios s
+                        INNER JOIN alumnos a ON s.alumno_id = a.id
+                        LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+                        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+                        WHERE s.estado = 'aprobado' AND s.visible = 1
+                          AND a.tiempo_respuesta_promedio IS NOT NULL
+                          AND a.tiempo_respuesta_promedio < 60
+                        ORDER BY a.tiempo_respuesta_promedio ASC, s.id DESC
+                        LIMIT 12";
+        $res_rapidos = $conn->query($sql_rapidos);
+    }
+} catch (Exception $e) {
+    error_log("Error cargando tutores rápidos vitrina: " . $e->getMessage());
+}
+
 // --- [OPT-1] APUNTES: Estándar Nubira 2.0 ---
 $res_apuntes = null;
 
@@ -691,6 +728,7 @@ try {
 /* el navegador puede arrancar el scroll en 0 ignorando el padding-left visual. */
 /* Solución: scroll-padding-inline-start fuerza el respiro al inicio del scroll. */
 #carrusel-ia,
+#sec-rapidos,
 #sec-recientes,
 #sec-nuevos,
 #sec-servicios,
@@ -702,6 +740,7 @@ try {
 }
 @media (min-width: 768px) {
     #carrusel-ia,
+    #sec-rapidos,
     #sec-recientes,
     #sec-nuevos,
     #sec-servicios,
@@ -939,6 +978,100 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
     </section>
 <?php endif; ?>
         
+<?php if ($res_rapidos && $res_rapidos->num_rows > 0): ?>
+<section class="mb-3 md:mb-5 relative animate-fade-in-up">
+ <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+    <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Responden en menos de 1 hora</h2>
+</div>
+    <div class="relative group">
+        <button onclick="scrollCarrusel('sec-rapidos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+<div id="sec-rapidos" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
+                <?php $idx_r = 0; while ($row_r = $res_rapidos->fetch_assoc()):
+                    $idx_r++;
+                    $es_lcp_r = ($idx_r <= 2);
+                    $link_hash_r = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_r['id']) : (int)$row_r['id'];
+                    $portada_set_r = srcset_portada($row_r);
+                    $portada_url_r = $portada_set_r['card'];
+                    $rating_val_r = isset($row_r['rating_promedio']) ? (float)$row_r['rating_promedio'] : 0;
+                    $total_v_r = isset($row_r['total_votos']) ? (int)$row_r['total_votos'] : 0;
+                    $nombre_completo_r = !empty($row_r['nombre_tutor']) ? $row_r['nombre_tutor'] : 'Profesor';
+                    $partes_r = array_values(array_filter(explode(' ', trim((string)$nombre_completo_r))));
+                    $tutor_nombre_r = "Profesor";
+                    if (!empty($partes_r[0])) {
+                        $tutor_nombre_r = ucwords(strtolower($partes_r[0]));
+                        if (count($partes_r) >= 2) {
+                            $tutor_nombre_r .= ' ' . strtoupper(substr($partes_r[count($partes_r)-1], 0, 1)) . '.';
+                        }
+                    }
+                    $foto_tutor_r = !empty($row_r['foto_perfil']) ? '/app/perfil/fotos/' . $row_r['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre_r)."&background=f1f5f9&color=64748b&size=128";
+                    $categoria_overlay = $row_r['categoria'] ?? 'Otros';
+                    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
+                    $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
+                    $es_oferta_r = oferta_vigente($row_r);
+                    $pct_r = ($es_oferta_r && (int)($row_r['precio'] ?? 0) > 0) ? round(((int)$row_r['precio'] - (int)$row_r['precio_oferta']) / (int)$row_r['precio'] * 100) : 0;
+                    $precio_normal_r = $row_r['precio'] ?? 0;
+                    if ($es_oferta_r) {
+                        $precio_html_r = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_r, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row_r['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_r > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_r}%</span>" : "");
+                        $precio_class_r = "text-gray-900 font-semibold";
+                    } else if (is_numeric($precio_normal_r) && $precio_normal_r > 0) {
+                        $precio_html_r = "$" . number_format($precio_normal_r, 0, ',', '.');
+                        $precio_class_r = "text-gray-700 font-semibold";
+                    } else {
+                        $precio_html_r = "Gratis";
+                        $precio_class_r = "text-gray-700 font-semibold";
+                    }
+                    $html_stars_r = render_rating_html($rating_val_r, $total_v_r);
+                    $inst_text_r = abreviar_institucion($row_r['institucion_maestra'] ?? ($row_r['institucion'] ?? ''));
+                ?>
+                <a href="/detalle-servicio/<?= $link_hash_r ?>" onclick="registrarClick(<?= (int)$row_r['id'] ?>, 'servicio')"
+                   class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                        <img src="<?= htmlspecialchars($portada_url_r) ?>"
+     srcset="<?= htmlspecialchars($portada_set_r['thumb']) ?> 240w,
+             <?= htmlspecialchars($portada_set_r['card']) ?> 480w,
+             <?= htmlspecialchars($portada_set_r['main']) ?> 1200w"
+     sizes="(max-width: 640px) 220px, 240px"
+     alt="<?= htmlspecialchars($row_r['titulo']) ?>"
+     class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+     loading="<?= $es_lcp_r ? 'eager' : 'lazy' ?>"
+     decoding="async"
+     <?= $es_lcp_r ? 'fetchpriority="high"' : '' ?>
+     width="240" height="180"
+     onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
+                       <?php
+                       $ov_prefijo   = $prefijo_overlay;
+                       $ov_categoria = $nombre_categoria_overlay;
+                       $ov_foto      = $foto_tutor_r;
+                       $ov_nombre    = $tutor_nombre_r;
+                       $ov_size      = 'lg';
+                       include __DIR__ . '/componentes/overlay_card_servicio.php';
+                       ?>
+                       <?php if ($es_oferta_r): ?>
+                       <div class="absolute top-2.5 right-2.5 z-10">
+                           <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                               <?= (int)$row_r['cupos_oferta'] ?> <?= (int)$row_r['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                           </span>
+                       </div>
+                       <?php endif; ?>
+                    </div>
+                    <div class="pt-2.5 flex flex-col flex-1 text-left">
+                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_r['titulo']) ?></h3>
+                    <div class="text-[14px] <?= $precio_class_r ?> mt-auto mb-1.5 leading-none"><?= $precio_html_r ?></div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
+                                <?php if(!empty($inst_text_r)): ?><span class="truncate"><?= $inst_text_r ?></span><?php endif; ?>
+                            </div>
+                            <div class="shrink-0 flex items-center gap-1"><?= $html_stars_r ?></div>
+                        </div>
+                    </div>
+                </a>
+                <?php endwhile; ?>
+        </div>
+        <button onclick="scrollCarrusel('sec-rapidos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
     <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Tutorías nuevas</h2>

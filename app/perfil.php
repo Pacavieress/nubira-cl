@@ -273,23 +273,19 @@ $prom_a  = $c_nota;
 // =========================================================================
 // [NUBIRA 2.0] TRUST SIGNAL: TIEMPO DE RESPUESTA
 // =========================================================================
-function formatearTiempoRespuesta($minutos) {
-    if ($minutos === null) return "Por evaluar";
-    if ($minutos <= 15) return "Menos de 15 min";
-    if ($minutos <= 60) return "Menos de 1 hora";
-    if ($minutos <= 120) return "Aprox. 1 a 2 horas";
-    if ($minutos <= 240) return "Aprox. 3 a 4 horas";
-    if ($minutos <= 720) return "Menos de 12 horas"; 
-    if ($minutos <= 1440) return "En el transcurso del día";
-    return "1 día o más";
+require_once __DIR__ . '/helpers/tiempo_respuesta.php';
+// Fuente unificada (igual que detalle-servicio y sec-rapidos): alumnos.tiempo_respuesta_promedio
+$tiempo_resp_min = (isset($perfil_data['tiempo_respuesta_promedio']) && $perfil_data['tiempo_respuesta_promedio'] !== null)
+    ? (int)$perfil_data['tiempo_respuesta_promedio'] : null;
+if ($tiempo_resp_min !== null) {
+    $tiempo_resp_data = formatearTiempoRespuestaNubira($tiempo_resp_min);
+} elseif ($total_v_qty > 0) {
+    // Sin métrica de tiempo pero con reseñas como tutor → ocultar (no decir "nuevo")
+    $tiempo_resp_data = null;
+} else {
+    // 0 reseñas como tutor → marcar como tutor nuevo
+    $tiempo_resp_data = ['texto' => 'Tutor nuevo', 'tono' => 'gris'];
 }
-
-$stmt_avg = $conn->prepare("SELECT AVG(primera_respuesta_minutos) as prom FROM conversaciones WHERE vendedor_id = ? AND primera_respuesta_minutos IS NOT NULL");
-$stmt_avg->bind_param("i", $perfil_id_ver);
-$stmt_avg->execute();
-$res_avg = $stmt_avg->get_result()->fetch_assoc();
-$texto_respuesta = formatearTiempoRespuesta($res_avg['prom'] ? (int)$res_avg['prom'] : null);
-$stmt_avg->close();
 // =========================================================================
 
 // Obtener Reseñas Tutor
@@ -507,12 +503,18 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                 </div>
                             </div>
                             
+                            <?php if ($tiempo_resp_data !== null): ?>
                             <div class="mt-4 md:mt-5 flex justify-center md:justify-start w-full transform translate-y-3 md:translate-y-0">
-                                <p class="text-[12px] md:text-[11px] text-gray-600 font-medium inline-flex items-center gap-2 bg-white md:bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-2 w-fit" title="Tiempo promedio de respuesta">
+                                <p class="text-[12px] md:text-[11px] text-gray-600 font-medium inline-flex items-center gap-2 bg-white md:bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-2 w-fit" title="<?= $tiempo_resp_data['tono'] === 'gris' ? 'Tutor nuevo, aún sin métricas de respuesta' : 'Tiempo promedio de respuesta' ?>">
                                     <?= icon('clock', 'w-4 h-4 text-gray-400') ?>
-                                    <span>Tiempo de respuesta: <strong class="text-gray-900 font-medium"><?= htmlspecialchars($texto_respuesta) ?></strong></span>
+                                    <?php if ($tiempo_resp_data['tono'] === 'gris'): ?>
+                                        <span><strong class="text-gray-900 font-medium"><?= htmlspecialchars($tiempo_resp_data['texto']) ?></strong></span>
+                                    <?php else: ?>
+                                        <span>Responde <strong class="text-gray-900 font-medium"><?= htmlspecialchars($tiempo_resp_data['texto']) ?></strong></span>
+                                    <?php endif; ?>
                                 </p>
                             </div>
+                            <?php endif; ?>
 
                         </div>
                     </div> 
