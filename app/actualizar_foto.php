@@ -46,7 +46,7 @@ $upload_dir   = __DIR__ . '/perfil/fotos/';
 $nuevo_nombre = 'u' . $usuario_id . '_' . uniqid() . '.webp'; // Siempre .webp
 $destino      = $upload_dir . $nuevo_nombre;
 $tamano_final = 400; // 400x400 píxeles
-$calidad      = 80;  // 0 a 100 (80 es muy bueno)
+$calidad      = 92;  // 0 a 100 (92 = punto óptimo calidad/peso; >92 crece mucho sin mejora visible)
 
 // Crear carpeta si no existe
 if (!is_dir($upload_dir)) {
