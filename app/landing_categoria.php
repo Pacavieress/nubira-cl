@@ -130,7 +130,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
     <span class="text-gray-800 font-medium"><?= htmlspecialchars($categoria) ?></span>
   </nav>
 
-  <header class="mb-6">
+  <header class="mb-4">
     <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
     <p class="text-sm md:text-base text-gray-600 mt-2 max-w-3xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
     <?php if ($total > 0): ?>
@@ -139,7 +139,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
   </header>
 
   <?php if ($total > 0): ?>
-    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 w-full">
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full">
       <?php foreach ($filas as $fila): ?>
         <?= render_card_servicio_grid($fila, ['hide_inst' => false, 'compacto' => false]) ?>
       <?php endforeach; ?>

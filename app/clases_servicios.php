@@ -226,7 +226,7 @@ require_once __DIR__ . '/componentes/header.php';
       </div>
     <?php endif; ?>
     
-      <div class="mb-6">
+      <div class="mb-4">
         <?php if ($qs_orden === 'nuevos'): ?>
             <h1 class="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">Recién publicados ✨</h1>
             <p class="text-sm text-gray-500 mt-1">Explora los últimos servicios y tutorías subidos a la plataforma.</p>
@@ -239,7 +239,7 @@ require_once __DIR__ . '/componentes/header.php';
       </div>
 
     <div id="contenedor-servicios" 
-         class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 w-full min-h-[400px]"
+         class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full min-h-[400px]"
          data-src="<?= htmlspecialchars($initial_src, ENT_QUOTES) ?>">
          
          <?php for($i=0;$i<8;$i++): ?>

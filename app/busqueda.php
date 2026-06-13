@@ -503,7 +503,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                     
                     <a href="/detalle-servicio/<?= $link_hash_srv ?>"
                        onclick="if(typeof registrarClick === 'function') registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
-                       class="block rounded-xl flex flex-col mb-4 transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
+                       class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
                           <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-gray-200">
                             <img src="<?= htmlspecialchars((string)$img_url) ?>"
@@ -608,7 +608,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                     
                     <a href="/apunte/<?= $link_hash_ap ?>"
                        onclick="if(typeof registrarClick === 'function') registrarClick(<?= (int)$a['id'] ?>, 'apunte')"
-                       class="block rounded-xl flex flex-col mb-4 transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full">
+                       class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full">
 
                         <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-gray-200">
                             <img src="<?= htmlspecialchars((string)$img_ap) ?>"
