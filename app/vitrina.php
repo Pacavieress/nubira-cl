@@ -471,45 +471,7 @@ if (!function_exists('nav_class')) {
     }
 }
 
-if (!function_exists('abreviar_institucion')) {
-    function abreviar_institucion(string $inst_raw, int $max_len = 22): string {
-        if (empty($inst_raw)) return '';
-        $inst_clean = $inst_raw;
-       $dicc = [
-            // 1. Intercepción Temprana: Casos ultra específicos y extensos
-            'Economía y Negocios' => 'FEN U. Chile',
-            'ECONOMíA Y NEGOCIOS' => 'FEN U. Chile',
-            'Servicio Local de Educ' => 'SLEP',
-            'SERVICIO LOCAL DE EDUC' => 'SLEP',
-            'Santísima Concepci' => 'UCSC',
-            'SANTíSIMA CONCEPCI' => 'UCSC',
-            'Santisima Concepci' => 'UCSC',
-            'Konrad Lorenz' => 'Konrad Lorenz',
-            
-            // 2. Acrónimos de Universidades
-            'Universidad Andr' => 'UNAB', 'Universidad Nac' => 'UNAB',
-            'Pontificia Universidad Cat' => 'PUC', 'Universidad de Santiago' => 'USACH',
-            'Universidad de Concepci' => 'UdeC', 'Universidad T' => 'USM', 
-            'Federico Santa Mar' => 'USM', 'Adolfo Ib' => 'UAI',
-            'Universidad de Chile' => 'U. de Chile', 
-            'Universidad del B' => 'UBB', 'Bío Bío' => 'UBB', 'Bio Bio' => 'UBB',
-            
-            // 3. Comodines Genéricos (Siempre al final)
-            'Instituto Profesional' => 'IP', 'Centro de Formación Técnica' => 'CFT'
-        ];
-        foreach($dicc as $k=>$v) {
-            if(stripos($inst_clean, $k)!==false){
-                if(strlen($v)<=6) $inst_clean=$v;
-                else $inst_clean=str_ireplace($k,$v,$inst_clean);
-                break;
-            }
-        }
-        if (stripos($inst_clean, 'universidad ') === 0) {
-            $inst_clean = 'U. ' . substr($inst_clean, 12);
-        }
-        return htmlspecialchars(mb_strimwidth($inst_clean, 0, $max_len, '...'));
-    }
-}
+require_once __DIR__ . '/helpers/institucion.php';
 
 // [DEUDA FASE E] Resolvers legacy (resolver_portada_servicio / resolver_srcset_servicio):
 // superados por url_portada() / srcset_portada() en helpers/imagen_servicio.php.
@@ -1021,7 +983,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                         $precio_class_r = "text-gray-700 font-semibold";
                     }
                     $html_stars_r = render_rating_html($rating_val_r, $total_v_r);
-                    $inst_text_r = abreviar_institucion($row_r['institucion_maestra'] ?? ($row_r['institucion'] ?? ''));
+                    $inst_text_r = institucion_tutor($row_r['institucion_maestra'] ?? ($row_r['institucion'] ?? ''));
                 ?>
                 <a href="/detalle-servicio/<?= $link_hash_r ?>" onclick="registrarClick(<?= (int)$row_r['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
@@ -1058,7 +1020,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                         <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_r['titulo']) ?></h3>
                     <div class="text-[14px] <?= $precio_class_r ?> mt-auto mb-1.5 leading-none"><?= $precio_html_r ?></div>
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_r)): ?><span class="truncate"><?= $inst_text_r ?></span><?php endif; ?>
                             </div>
                             <div class="shrink-0 flex items-center gap-1"><?= $html_stars_r ?></div>
@@ -1130,7 +1092,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     }
                     
                     $html_stars_n = render_rating_html($rating_val_n, $total_v_n);
-                    $inst_text_n = abreviar_institucion($row_n['institucion_maestra'] ?? ($row_n['institucion'] ?? ''));
+                    $inst_text_n = institucion_tutor($row_n['institucion_maestra'] ?? ($row_n['institucion'] ?? ''));
                 ?>
                 
                 <a href="/detalle-servicio/<?= $link_hash_n ?>" onclick="registrarClick(<?= (int)$row_n['id'] ?>, 'servicio')" 
@@ -1174,7 +1136,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     <div class="text-[14px] <?= $precio_class_n ?> mt-auto mb-1.5 leading-none"><?= $precio_html_n ?></div>
                         
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_n)): ?><span class="truncate"><?= $inst_text_n ?></span><?php endif; ?>
                             </div>
                             <div class="shrink-0 flex items-center gap-1"><?= $html_stars_n ?></div>
@@ -1279,7 +1241,7 @@ $portada_url = $portada_set['card'];
                     elseif (strpos($mod,'presencial')!==false) $icon_mod = '<i class="fa-solid fa-user-group text-[10px]"></i>';
                     
                     $html_stars = render_rating_html($rating_val, $total_v);
-                    $inst_text = abreviar_institucion($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
+                    $inst_text = institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
                 ?>
                 
                 <a href="/detalle-servicio/<?= $link_hash ?>" onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')" 
@@ -1338,7 +1300,7 @@ $portada_url = $portada_set['card'];
                       <div class="text-[14px] <?= $precio_class ?> mt-auto mb-1.5 leading-none"><?= $precio_html ?></div>
                         
                         <div class="flex items-center justify-between">
-    <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
+    <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
         <?php if(!empty($inst_text)): ?><span class="truncate"><?= $inst_text ?></span><?php endif; ?>
     </div>
     <div class="shrink-0 flex items-center gap-1"><?= $html_stars ?></div>
@@ -1442,7 +1404,7 @@ $portada_url = $portada_set['card'];
                         <div class="text-[14px] <?= $precio_class_apn ?> mt-auto mb-1.5 leading-none"><?= $precio_apn ?></div>
                         
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_apn)): ?><span class="truncate"><?= $inst_text_apn ?></span><?php endif; ?>
                             </div>
                             <?php if ($ventas_totales_apn > 0): ?>
@@ -1549,7 +1511,7 @@ $portada_url = $portada_set['card'];
                         <div class="text-[14px] <?= $precio_class_ap ?> mt-auto mb-1.5 leading-none"><?= $precio_ap ?></div>
                         
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
                             </div>
                             <div class="shrink-0 flex items-center">
@@ -1652,7 +1614,7 @@ $portada_url = $portada_set['card'];
                     <div class="text-[14px] <?= $precio_class_p ?> mt-auto mb-1.5 leading-none"><?= $precio_p ?></div>
                     
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5 text-[10px] text-gray-500 truncate max-w-[65%]">
+                        <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
                             <?php if(!empty($inst_p)): ?><?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?><span class="truncate"><?= $inst_p ?></span><?php endif; ?>
                         </div>
                         <?php if ($ventas_p > 0): ?>

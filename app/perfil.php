@@ -19,6 +19,7 @@ header("Pragma: no-cache");
 require_once __DIR__ . '/init_sesion.php';
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
+require_once __DIR__ . '/helpers/institucion.php';     // institucion_tutor()
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -168,7 +169,7 @@ $bio_actual     = (string)($perfil_data['bio'] ?? '');
 $foto_field     = (string)($perfil_data['foto_perfil'] ?? ''); 
 $leg_nota       = (float)($perfil_data['calificacion_promedio'] ?? 0);
 $leg_qty        = (int)($perfil_data['cantidad_votos'] ?? 0);
-$inst_display   = (string)($perfil_data['institucion_maestra'] ?? $perfil_data['institucion'] ?? 'Estudiante Universitario');
+$inst_display   = institucion_tutor($perfil_data['institucion_maestra'] ?? $perfil_data['institucion'] ?? '', false);
 $nombre_display = formatearNombrePrivado($nombre_real);
 
 // Subtítulo según tipo de usuario
@@ -427,9 +428,9 @@ require_once __DIR__ . '/componentes/sidebar.php';
             <section class="bg-white rounded-[2rem] border border-gray-100 p-6 md:p-10 relative w-full">
                 <div class="flex flex-col gap-6 md:gap-8">
                     
-                    <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start w-full">
-                        
-                        <div class="shrink-0 relative group w-36 h-36 md:w-36 md:h-36 mx-auto md:mx-0">
+                    <div class="flex flex-row gap-3 md:gap-8 items-start w-full lg:pr-64">
+
+                        <div class="shrink-0 relative group w-[104px] h-[104px] md:w-36 md:h-36 md:mx-0">
                             <img id="img-perfil-visual" src="<?= $foto_url ?>" decoding="async" class="w-full h-full rounded-full object-cover border border-gray-200 transition-opacity duration-300 bg-white">
                             <?php if ($es_propio): ?>
                                 <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 backdrop-blur-[2px]">
@@ -447,64 +448,23 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             
                             <div class="flex flex-col xl:flex-row xl:justify-between xl:items-start gap-6 w-full">
                                 
-                                <div class="flex flex-col items-center md:items-start w-full">
-                                    <div class="flex items-center justify-center md:justify-start gap-2 w-full">
+                                <div class="flex flex-col items-start w-full">
+                                    <div class="flex items-center justify-start gap-2 w-full">
                                         <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 break-words"><?= htmlspecialchars($nombre_display) ?></h1>
                                         <?php if ($es_verificado): ?>
                                         <span title="Alumno Verificado"><?= icon('check-circle', 'w-5 h-5 text-[#54A6D8] shrink-0') ?></span>
                                         <?php endif; ?>
                                     </div>
-                                    <p class="text-[11px] md:text-xs text-gray-500 flex items-center justify-center md:justify-start gap-1.5 mt-1.5 md:mt-2 leading-snug w-full">
+                                    <p class="text-[11px] md:text-xs text-gray-500 flex items-center justify-start gap-1.5 mt-1.5 md:mt-2 leading-snug w-full">
                                         <span class="flex-shrink-0 text-gray-400"><?= icon('building', 'w-4 h-4') ?></span>
                                         <span class="break-words font-medium uppercase tracking-wider"><?= htmlspecialchars($subtitulo_perfil) ?></span>
                                     </p>
                                 </div>
 
-                                <div class="flex flex-row justify-center md:justify-end items-center shrink-0 -mt-4 md:mt-0 divide-x divide-gray-200 md:divide-none">
-                                    
-                                    <div class="px-5 md:pl-0 md:pr-2 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
-                                        <p id="val-total-reviews" data-leg-qty="<?= $leg_qty ?>" data-leg-nota="<?= $leg_nota ?>" class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center justify-center md:justify-start">
-    <?= (int)($total_v_qty + $total_a) ?>
-</p>
-                                        <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-0.5 tracking-wider">Reseñas</p>
-                                    </div>
-
-                                    <div class="px-5 md:px-2 md:border-l md:border-gray-100 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
-                                        <p class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1">
-                                           <span id="val-avg-rating"><?= number_format($prom_t, 1) ?></span> <?= icon('star-solid', 'w-4 h-4 text-gray-900 pb-[1px]') ?>
-                                        </p>
-                                        <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-0.5 tracking-wider">Rating</p>
-                                    </div>
-
-                                    <?php if ($es_admin && !$es_propio): ?>
-                                        <div class="px-5 md:pl-2 md:border-l md:border-gray-100 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
-                                            <button onclick="abrirModalMensajeAdmin()" class="px-3 py-1.5 bg-rose-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-rose-600 active:scale-95 transition-all flex items-center gap-1.5">
-                                                <?= icon('shield-check', 'w-3 h-3') ?> Mensaje
-                                            </button>
-                                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-1 tracking-wider">Modo Admin</p>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <?php if ($es_propio): ?>
-                                        <div class="px-5 md:pl-2 md:border-l md:border-gray-100 group cursor-help min-w-0 text-center md:text-left flex flex-col items-center md:items-start" title="Personas que han visto tu perfil">
-                                            <p class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1.5 transition-all duration-300" id="contenedor-visitas-live">
-                                                <span id="num-visitas-live"><?= $vistas_actuales ?></span> <?= icon('eye', 'w-4 h-4 text-gray-400') ?>
-                                            </p>
-                                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-0.5 tracking-wider">Visitas</p>
-                                        </div>
-                                    <?php elseif ($vistas_actuales >= 100): ?>
-                                        <div class="px-5 md:pl-2 md:border-l md:border-gray-100 cursor-default min-w-0 text-center md:text-left flex flex-col items-center md:items-start" title="Este perfil tiene alta demanda">
-                                            <p class="text-xl md:text-lg font-bold tracking-tight text-gray-700 flex items-center gap-1">
-                                                Top <?= icon('fire', 'w-4 h-4 text-gray-500 pb-[1px]') ?>
-                                            </p>
-                                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mt-0.5 tracking-wider">Demanda</p>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
                             </div>
-                            
+
                             <?php if ($tiempo_resp_data !== null): ?>
-                            <div class="mt-4 md:mt-5 flex justify-center md:justify-start w-full transform translate-y-3 md:translate-y-0">
+                            <div class="mt-4 md:mt-5 flex justify-start w-full">
                                 <p class="text-[12px] md:text-[11px] text-gray-600 font-medium inline-flex items-center gap-2 bg-white md:bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-2 w-fit" title="<?= $tiempo_resp_data['tono'] === 'gris' ? 'Tutor nuevo, aún sin métricas de respuesta' : 'Tiempo promedio de respuesta' ?>">
                                     <?= icon('clock', 'w-4 h-4 text-gray-400') ?>
                                     <?php if ($tiempo_resp_data['tono'] === 'gris'): ?>
@@ -536,16 +496,53 @@ require_once __DIR__ . '/componentes/sidebar.php';
                     ?>
                     <?php if (!empty($stats_perfil)): ?>
                     <div class="border-b border-gray-100 pb-3 mb-4 px-2 md:px-0">
-                      <div class="flex flex-wrap gap-x-8 gap-y-3">
+                      <div class="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:gap-x-8 md:gap-y-3">
                         <?php foreach ($stats_perfil as $stat): ?>
                           <div class="text-center md:text-left">
+                            <div class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap tracking-wider mb-0.5"><?= $stat['label'] ?></div>
                             <div class="text-sm md:text-base font-bold tracking-tight text-gray-900"><?= $stat['value'] ?></div>
-                            <div class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap tracking-wider mt-0.5"><?= $stat['label'] ?></div>
                           </div>
                         <?php endforeach; ?>
                       </div>
                     </div>
                     <?php endif; ?>
+
+                    <!-- Stats reseñas/rating: debajo de académicas en móvil; arriba-derecha en desktop (lg+) -->
+                    <div class="flex flex-row justify-start lg:justify-end items-center divide-x divide-gray-200 md:divide-none mt-1 lg:mt-0 lg:absolute lg:top-10 lg:right-10">
+                        <div class="px-3 md:pl-0 md:pr-2 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
+                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mb-0.5 tracking-wider">Reseñas</p>
+                            <p id="val-total-reviews" data-leg-qty="<?= $leg_qty ?>" data-leg-nota="<?= $leg_nota ?>" class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center justify-center md:justify-start"><?= (int)($total_v_qty + $total_a) ?></p>
+                        </div>
+                        <div class="px-3 md:px-2 md:border-l md:border-gray-100 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
+                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mb-0.5 tracking-wider">Rating</p>
+                            <p class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1">
+                                <span id="val-avg-rating"><?= number_format($prom_t, 1) ?></span> <?= icon('star-solid', 'w-4 h-4 text-gray-900 pb-[1px]') ?>
+                            </p>
+                        </div>
+                        <?php if ($es_admin && !$es_propio): ?>
+                        <div class="px-3 md:pl-2 md:border-l md:border-gray-100 min-w-0 text-center md:text-left flex flex-col items-center md:items-start">
+                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mb-1 tracking-wider">Modo Admin</p>
+                            <button onclick="abrirModalMensajeAdmin()" class="px-3 py-1.5 bg-rose-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-rose-600 active:scale-95 transition-all flex items-center gap-1.5">
+                                <?= icon('shield-check', 'w-3 h-3') ?> Mensaje
+                            </button>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($es_propio): ?>
+                        <div class="px-3 md:pl-2 md:border-l md:border-gray-100 group cursor-help min-w-0 text-center md:text-left flex flex-col items-center md:items-start" title="Personas que han visto tu perfil">
+                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mb-0.5 tracking-wider">Visitas</p>
+                            <p class="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1.5 transition-all duration-300" id="contenedor-visitas-live">
+                                <span id="num-visitas-live"><?= $vistas_actuales ?></span> <?= icon('eye', 'w-4 h-4 text-gray-400') ?>
+                            </p>
+                        </div>
+                        <?php elseif ($vistas_actuales >= 100): ?>
+                        <div class="px-3 md:pl-2 md:border-l md:border-gray-100 cursor-default min-w-0 text-center md:text-left flex flex-col items-center md:items-start" title="Este perfil tiene alta demanda">
+                            <p class="text-[10px] uppercase font-semibold text-gray-400 whitespace-nowrap mb-0.5 tracking-wider">Demanda</p>
+                            <p class="text-xl md:text-lg font-bold tracking-tight text-gray-700 flex items-center gap-1">
+                                Top <?= icon('fire', 'w-4 h-4 text-gray-500 pb-[1px]') ?>
+                            </p>
+                        </div>
+                        <?php endif; ?>
+                    </div>
 
                     <div class="w-full relative px-2 md:px-0">
                         

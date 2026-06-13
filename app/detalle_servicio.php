@@ -49,6 +49,7 @@ else { if (!function_exists('icon')) { function icon($n, $c=''){ return "<i clas
 
 require_once $ruta_raiz . '/helpers/ofertas.php';
 require_once $ruta_raiz . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
+require_once $ruta_raiz . '/helpers/institucion.php';     // institucion_tutor()
 
 // 3. Configuración Base & Lazy Registration
 $base_url = "https://nubira.cl"; 
@@ -496,7 +497,7 @@ session_write_close();
                             </div>
                            <div class="flex items-center gap-1.5 mt-0.5">
             <span class="text-gray-400 text-xs"><i class="fa-solid fa-building-columns"></i></span>
-            <p class="text-xs text-gray-500 uppercase font-medium"><?= htmlspecialchars($servicio['institucion_maestra'] ?? 'Estudiante') ?></p>
+            <p class="text-xs text-gray-500 uppercase font-medium"><?= htmlspecialchars(institucion_tutor($servicio['institucion_maestra'] ?? '', false)) ?></p>
         </div>
         
      <div class="mt-1.5">
