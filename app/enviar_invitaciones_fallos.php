@@ -34,8 +34,8 @@ if (!defined('LOG_PATH')) {
     define('LOG_PATH', __DIR__ . '/log_correos.txt');
 }
 
-// Tanda: 5 para prueba. Subir para corrida completa.
-$LIMITE = 5;
+// Tanda: 30 por corrida para control. Quedan ~93 prospectos.
+$LIMITE = 30;
 
 function logCampania($linea) {
     file_put_contents(LOG_PATH, date('Y-m-d H:i:s') . ' - ' . $linea . "\n", FILE_APPEND);
@@ -102,6 +102,9 @@ $sql = "
       AND email NOT LIKE '%@nubira.cl'      -- excluye internos
       AND email NOT IN (                     -- excluye dados de baja (List-Unsubscribe)
             SELECT LOWER(TRIM(correo)) FROM unsubscribed
+      )
+      AND email NOT IN (                     -- excluye ya-enviados (cubre login_fallos sin columna invitado)
+            SELECT LOWER(TRIM(correo)) FROM interesados_registro WHERE invitado = 1
       )
       AND NOT EXISTS (                       -- excluye ya-registrados (case-insensitive)
             SELECT 1 FROM alumnos a
