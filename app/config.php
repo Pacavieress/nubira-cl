@@ -35,6 +35,10 @@ define('EMAIL_FROM', 'no-reply@nubira.cl');
 define('EMAIL_NAME', 'Nubira');
 define('EMAIL_SUPPORT', 'soporte@nubira.cl');
 
+// Secret para tokens de baja de correos (List-Unsubscribe).
+// Debe coincidir con app/unsubscribe.php y los scripts de campaña.
+define('UNSUB_SECRET', getenv('UNSUB_SECRET') ?: '');
+
 // =========================
 // CONFIGURACIÓN EXTRA
 // =========================
