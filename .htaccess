@@ -26,6 +26,8 @@ RewriteCond %{REQUEST_FILENAME} !-d
 ####################################
 RewriteRule ^s/([a-zA-Z0-9_-]+)$ app/detalle_servicio.php?token_seguro=$1 [L,QSA]
 RewriteRule ^a/([a-zA-Z0-9\-\_=]+)$ app/ver_apunte.php?token_seguro=$1 [L,QSA]
+# Link corto de compartir (servicios) → redirige a detalle-servicio
+RewriteRule ^r/([a-zA-Z0-9]+)$ app/redirigir_corto.php?codigo=$1 [L,QSA]
 
 # Adjuntos de chat (URL bonita: /archivo-chat/646)
 RewriteRule ^archivo-chat/([0-9]+)/?$ app/ver_archivo_chat.php?m=$1 [L,QSA]

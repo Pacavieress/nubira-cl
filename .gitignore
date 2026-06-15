@@ -15,6 +15,8 @@ app/conexion.php
 *.log
 *.txt
 !robots.txt
+# Excepción: licencia de fuentes embebidas (OFL exige incluirla)
+!app/assets/fonts/OFL.txt
 app/log_correos.txt
 app/logs/
 logs/
