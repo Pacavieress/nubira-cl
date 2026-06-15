@@ -6,6 +6,9 @@ require_once(__DIR__ . '/app/correo.php');
 $mensaje = '';
 $tipo_alerta = ''; // 'error' o 'success'
 
+// Prefill del correo desde el link de campaña (/register?email=...)
+$correo = strtolower(trim($_GET['email'] ?? ''));
+
 // --- NUEVO: Atrapar respuestas del ticket de soporte ---
 if (isset($_GET['ticket'])) {
     if ($_GET['ticket'] === 'exito') {
