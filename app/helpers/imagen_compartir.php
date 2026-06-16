@@ -116,8 +116,9 @@ if (!function_exists('nb_dibujar_avatar')) {
             $ty = $cy + (abs($bb[7] - $bb[1]) / 2);
             imagettftext($img, $sz, 0, (int)$tx, (int)$ty, $cBlanco, $fontBold, $ini);
         } else {
-            // Fondo blanco bajo la foto (por si tiene alpha) + foto circular
-            imagefilledellipse($img, $cx, $cy, $diam, $diam, $cBlanco);
+            // Foto circular directa sobre el anillo. Sin círculo blanco de fondo:
+            // ese relleno asomaba como un halo blanco de ~1px entre el anillo y la foto
+            // (antialiasing del ellipse vs. corte duro de la máscara circular).
             $raw = @file_get_contents(path_foto_tutor($s));
             $src = $raw !== false ? @imagecreatefromstring($raw) : false;
             if ($src) {
