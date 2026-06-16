@@ -825,6 +825,9 @@ $is_oferta = oferta_vigente($servicio);
                             <button id="btn-copiar-enlace" data-url="<?= htmlspecialchars($url_servicio_masked) ?>" class="w-11 h-11 bg-gray-50 text-gray-500 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-600 hover:text-white hover:border-gray-600 transition-all duration-300" title="Copiar Enlace" data-track-click="share:copy">
                                 <i class="fas fa-link text-lg" id="copy-icon"></i>
                             </button>
+                            <button type="button" id="btn-compartir-imagen" class="w-11 h-11 bg-gray-50 text-[#54A6D8] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#54A6D8] hover:text-white hover:border-[#54A6D8] transition-all duration-300" title="Compartir como imagen" data-track-click="share:imagen">
+                                <?= icon('paper-airplane', 'w-5 h-5') ?>
+                            </button>
                         </div>
                     </div>
 
@@ -1053,6 +1056,7 @@ if (!$footer_encontrado):
 if(file_exists($ruta_comp . '/nav_bottom.php')) require_once $ruta_comp . '/nav_bottom.php'; 
 if(file_exists($ruta_comp . '/modal_publicar.php')) require_once $ruta_comp . '/modal_publicar.php';
 if(file_exists($ruta_comp . '/modal_explora.php')) require_once $ruta_comp . '/modal_explora.php';
+if(file_exists($ruta_comp . '/modal_compartir_servicio.php')) require_once $ruta_comp . '/modal_compartir_servicio.php';
 ?>
 
 <script src="/assets/js/behavior_tracker.js"></script>

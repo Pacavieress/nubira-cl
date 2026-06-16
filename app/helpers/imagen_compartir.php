@@ -4,6 +4,11 @@
 require_once __DIR__ . '/foto_tutor.php';
 require_once __DIR__ . '/nombre_publico.php';
 
+// Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
+// AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
+// visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v1');
+
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
 }
@@ -338,7 +343,7 @@ if (!function_exists('nb_generar_imagen_history')) {
 
 if (!function_exists('nb_fingerprint_servicio')) {
     function nb_fingerprint_servicio(array $s): string {
-        $base = ($s['id'] ?? '') . '|' . ($s['titulo'] ?? '') . '|' . ($s['precio'] ?? '')
+        $base = NB_IMG_VERSION . '|' . ($s['id'] ?? '') . '|' . ($s['titulo'] ?? '') . '|' . ($s['precio'] ?? '')
               . '|' . ($s['precio_oferta'] ?? '') . '|' . ($s['foto_perfil'] ?? '')
               . '|' . ($s['categoria'] ?? '') . '|' . ($s['institucion_maestra'] ?? '');
         return substr(md5($base), 0, 10);
