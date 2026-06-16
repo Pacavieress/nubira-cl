@@ -1752,7 +1752,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ? (localStorage.getItem('nubira_onboarding_visto') !== '1')
         : debeVer;
     if (mostrar && typeof window.abrirOnboarding === 'function') {
-        setTimeout(() => window.abrirOnboarding(), 1500);
+        // Auto-show deshabilitado el 16-jun por bajísima conversión post-TikTok. Mantener solo apertura manual via botón Tutorial.
+        // setTimeout(() => window.abrirOnboarding(), 1500);
     }
 });
 </script>
