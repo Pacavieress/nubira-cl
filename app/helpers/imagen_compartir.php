@@ -7,7 +7,7 @@ require_once __DIR__ . '/nombre_publico.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v1');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v2');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -330,10 +330,6 @@ if (!function_exists('nb_generar_imagen_history')) {
 
         // Nubira.cl FUERA del marco interno, abajo-izquierda DENTRO de la card
         nb_texto_izquierda($img, $fBold, 28, $cAzul, 'Nubira.cl', $cardX1 + 50, $cardY2 - 60);
-
-        // CTA inferior: una sola línea
-        $urlCorta = (string)($s['_url_corta'] ?? 'nubira.cl');
-        nb_texto_centrado($img, $fBold, 38, $cAzul, 'Entra a ' . $urlCorta, $W, 1755);
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
