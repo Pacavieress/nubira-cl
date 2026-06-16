@@ -423,23 +423,7 @@ session_write_close();
       data-track-id="<?= (int)$servicio['id'] ?>" 
       data-track-type="servicio">
 
-    <!-- [NUBIRA 2.0] Topbar Nativo Móvil (Reemplaza al Header global) -->
-    <div class="lg:hidden flex items-center justify-between mb-4 mt-1 max-w-[1100px] mx-auto">
-       <button type="button"
-        onclick="navegacionSeguraNubira()"
-        class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all"
-        aria-label="Volver">
-    <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
-</button>
-        
-        <!-- Indicador visual de "Hoja/Sheet" estilo iOS -->
-        <div class="w-10 h-1.5 bg-gray-200 rounded-full"></div>
-        
-        <!-- Espaciador invisible para mantener el centrado perfecto -->
-        <div class="w-10 h-10"></div>
-    </div>
-
-    <div class="max-w-[1100px] mx-auto"> 
+    <div class="max-w-[1100px] mx-auto">
 
         <?php if ($es_propietario): ?>
             <?php if ($servicio['estado'] === 'pendiente'): ?>
@@ -469,16 +453,28 @@ session_write_close();
             
             <div class="lg:col-span-8 space-y-8">
                 <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center gap-3 mb-3">
+                    <!-- Topbar dentro de la card (solo móvil): Volver + Categoría + Compartir -->
+                    <div class="lg:hidden flex items-center justify-between gap-2 mb-4">
+                        <button type="button" onclick="navegacionSeguraNubira()"
+                                class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all" aria-label="Volver">
+                            <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+                        </button>
+                        <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
+                        <button type="button"
+                                class="js-abrir-sheet-compartir w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200/60 shadow-sm active:scale-95 transition-all" aria-label="Compartir" data-track-click="share:abrir_sheet">
+                            <?= icon('share-outline', 'w-5 h-5') ?>
+                        </button>
+                    </div>
+                    <div class="hidden lg:flex items-center justify-between gap-3 mb-3">
+                      <div class="flex items-center gap-3">
                           <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
-                        <div class="flex items-center gap-1.5 text-sm text-gray-500">
-                             <i class="fa-solid fa-star text-gray-700 text-xs"></i>
-<span id="val-promedio" class="font-bold text-gray-900"><?= $promedio > 0 ? $promedio : 'Nuevo' ?></span>
-<?php if($tot_votos > 0): ?>
-    <span id="val-bullet" class="text-gray-300">•</span>
-    <span id="val-votos-txt" class="text-gray-500"><?= $tot_votos ?> reseña<?= $tot_votos != 1 ? 's' : '' ?></span>
-<?php endif; ?>
-                        </div>
+                      </div>
+                      <!-- ✈️ Compartir (desktop): abre el bottom sheet -->
+                      <button type="button"
+                              class="js-abrir-sheet-compartir hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200 text-sm font-bold transition-all shrink-0"
+                              aria-label="Compartir" data-track-click="share:abrir_sheet">
+                          <?= icon('paper-airplane','w-4 h-4') ?> Compartir
+                      </button>
                     </div>
 
                     <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight mb-6 tracking-tight"><?= $page_title ?></h1>
@@ -517,6 +513,13 @@ session_write_close();
             <span class="<?= $c['texto'] ?> font-bold"><?= htmlspecialchars($texto_valor) ?></span>
         <?php else: ?>
             Responde <span class="<?= $c['texto'] ?> font-bold"><?= htmlspecialchars($texto_valor) ?></span>
+        <?php endif; ?>
+        <span class="text-gray-300">·</span>
+        <i class="fa-solid fa-star text-gray-700 text-[10px]"></i>
+        <span id="val-promedio" class="font-bold text-gray-900"><?= $promedio > 0 ? $promedio : 'Nuevo' ?></span>
+        <?php if($tot_votos > 0): ?>
+            <span id="val-bullet" class="text-gray-300">·</span>
+            <span id="val-votos-txt" class="text-gray-500"><?= $tot_votos ?> reseña<?= $tot_votos != 1 ? 's' : '' ?></span>
         <?php endif; ?>
     </p>
 </div>
@@ -810,26 +813,6 @@ $is_oferta = oferta_vigente($servicio);
                         </div>
                     </div>
                     
-                  <div class="mt-4 pt-4 border-t border-gray-100/60">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-3">Compartir servicio</p>
-                        <div class="flex flex-wrap justify-center gap-3">
-                            <a href="https://api.whatsapp.com/send?text=<?= $share_txt ?>%20<?= urlencode($url_servicio_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#25D366] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#25D366] hover:text-white hover:border-[#25D366] transition-all duration-300" title="Compartir en WhatsApp" data-track-click="share:whatsapp">
-                                <i class="fab fa-whatsapp text-lg"></i>
-                            </a>
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($url_servicio_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#1877F2] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-all duration-300" title="Compartir en Facebook" data-track-click="share:facebook">
-                                <i class="fab fa-facebook-f text-lg"></i>
-                            </a>
-                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode($url_servicio_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#0A66C2] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#0A66C2] hover:text-white hover:border-[#0A66C2] transition-all duration-300" title="Compartir en LinkedIn" data-track-click="share:linkedin">
-                                <i class="fab fa-linkedin-in text-lg"></i>
-                            </a>
-                            <button id="btn-copiar-enlace" data-url="<?= htmlspecialchars($url_servicio_masked) ?>" class="w-11 h-11 bg-gray-50 text-gray-500 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-600 hover:text-white hover:border-gray-600 transition-all duration-300" title="Copiar Enlace" data-track-click="share:copy">
-                                <i class="fas fa-link text-lg" id="copy-icon"></i>
-                            </button>
-                            <button type="button" id="btn-compartir-imagen" class="w-11 h-11 bg-gray-50 text-[#54A6D8] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#54A6D8] hover:text-white hover:border-[#54A6D8] transition-all duration-300" title="Compartir como imagen" data-track-click="share:imagen">
-                                <?= icon('paper-airplane', 'w-5 h-5') ?>
-                            </button>
-                        </div>
-                    </div>
 
                     <div class="mt-8 bg-slate-50 border border-slate-100 rounded-2xl p-5 flex gap-4 items-start shadow-sm">
                         <div class="w-10 h-10 rounded-full bg-blue-100 text-[#54A6D8] flex items-center justify-center shrink-0">
@@ -1056,6 +1039,7 @@ if (!$footer_encontrado):
 if(file_exists($ruta_comp . '/nav_bottom.php')) require_once $ruta_comp . '/nav_bottom.php'; 
 if(file_exists($ruta_comp . '/modal_publicar.php')) require_once $ruta_comp . '/modal_publicar.php';
 if(file_exists($ruta_comp . '/modal_explora.php')) require_once $ruta_comp . '/modal_explora.php';
+if(file_exists($ruta_comp . '/sheet_compartir_servicio.php'))  require_once $ruta_comp . '/sheet_compartir_servicio.php';
 if(file_exists($ruta_comp . '/modal_compartir_servicio.php')) require_once $ruta_comp . '/modal_compartir_servicio.php';
 ?>
 
