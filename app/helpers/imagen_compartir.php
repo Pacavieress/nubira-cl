@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v7');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v8');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -246,12 +246,12 @@ if (!function_exists('nb_generar_imagen_post')) {
         $cBlanco = imagecolorallocate($img, 255, 255, 255);
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
-        // Avatar
-        $diam = 280; $fotoTop = 175;
+        // Avatar — fotoTop=80: ring arranca en y=76 (≥60 zona segura).
+        $diam = 280; $fotoTop = 80;
         nb_dibujar_avatar($img, $s, (int)($W / 2), $fotoTop, $diam, $cAcento, $cBlanco, $fBold);
 
         // Nombre tutor
-        $yNombre = $fotoTop + $diam + 75;
+        $yNombre = $fotoTop + $diam + 75;  // = 435
         $nombre = nb_truncar_una_linea($fBold, 38, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $W - 120);
         nb_texto_centrado($img, $fBold, 38, $cTxt, $nombre, $W, $yNombre);
 
@@ -265,21 +265,38 @@ if (!function_exists('nb_generar_imagen_post')) {
         $prom  = (float)($s['rating_prom'] ?? 0);
         $votos = (int)($s['rating_votos'] ?? 0);
         $cat = mb_strtoupper(trim((string)($s['categoria'] ?? '')), 'UTF-8');
-        $yCat = $yNombre + 120;
+        $yCat = $yNombre + 120;  // = 555
         nb_dibujar_cat_rating_centrado($img, $cat, $fBold, $fSemi, 28, $prom, $votos, $W, $yCat, $cAcento);
 
-        // Título (wrap 2 líneas)
-        $yTit = $yCat + 70;
-        $lineas = nb_wrap_texto($fSemi, 32, (string)($s['titulo'] ?? ''), $W - 160, 2);
-        foreach ($lineas as $i => $ln) nb_texto_centrado($img, $fSemi, 32, $cTxt, $ln, $W, $yTit + $i * 48);
+        // Título: word-wrap con límite de 40 caracteres por línea, máx 2 líneas.
+        // Si una línea excede el ancho en píxeles igual se trunca con …
+        $yTit = $yCat + 70;  // = 625
+        $tituloSrc = trim((string)($s['titulo'] ?? ''));
+        $palabras  = preg_split('/\s+/u', $tituloSrc);
+        $lineas    = [];  $linea = '';
+        foreach ($palabras as $p) {
+            $prueba = $linea === '' ? $p : "$linea $p";
+            if (mb_strlen($prueba, 'UTF-8') <= 40) {
+                $linea = $prueba;
+            } else {
+                if ($linea !== '') $lineas[] = $linea;
+                $linea = $p;
+                if (count($lineas) >= 2) { $linea = ''; break; }
+            }
+        }
+        if ($linea !== '' && count($lineas) < 2) $lineas[] = $linea;
+        $lineas = array_slice($lineas, 0, 2);
+        foreach ($lineas as $i => $ln) {
+            $ln = nb_truncar_una_linea($fSemi, 32, $ln, $W - 160);
+            nb_texto_centrado($img, $fSemi, 32, $cTxt, $ln, $W, $yTit + $i * 48);
+        }
 
         // Precio (sin "desde", "CLP" más pequeño)
         $yPrecio = $yTit + count($lineas) * 48 + 80;
         nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, 52, 36, $W, $yPrecio, $cTxt);
 
-        // Marca derecha (azul, Inter-Bold 28). y=920 para entrar en la zona segura
-        // del grid 4:5 del perfil de Instagram (corta los ~108px sup/inf; útil 108–972).
-        // Borde derecho en W-120 → 120px de margen visual (evita crops en grid / móviles viejos).
+        // Marca derecha — y=920, borde derecho W-120=960 (margen 120px).
+        // Con el layout nuevo precio llega a máx ~801 (2 líneas título), gap a 920 = 119px ✓.
         nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - 120, 920);
 
         $ok = imagejpeg($img, $output_path, 90);
