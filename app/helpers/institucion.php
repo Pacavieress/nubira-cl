@@ -13,6 +13,7 @@ if (!function_exists('abreviar_institucion')) {
             'Santísima Concepci' => 'UCSC', 'SANTíSIMA CONCEPCI' => 'UCSC', 'Santisima Concepci' => 'UCSC',
             'Konrad Lorenz' => 'Konrad Lorenz',
             'Universidad Andr' => 'UNAB', 'Universidad Nac' => 'UNAB',
+            'Católica de Valpara' => 'PUCV', 'CATóLICA DE VALPARA' => 'PUCV', 'Catolica de Valpara' => 'PUCV',
             'Pontificia Universidad Cat' => 'PUC', 'Universidad de Santiago' => 'USACH',
             'Universidad de Concepci' => 'UdeC', 'Universidad T' => 'USM',
             'Federico Santa Mar' => 'USM', 'Adolfo Ib' => 'UAI', 'Universidad de Chile' => 'U. de Chile',

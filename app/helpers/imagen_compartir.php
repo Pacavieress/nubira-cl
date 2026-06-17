@@ -3,11 +3,12 @@
 // Paso 2: solo POST, sin cache, sin endpoint. Fondo #F0F6FA + acento #54A6D8.
 require_once __DIR__ . '/foto_tutor.php';
 require_once __DIR__ . '/nombre_publico.php';
+require_once __DIR__ . '/institucion.php';
 
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v2');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v7');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -76,6 +77,28 @@ if (!function_exists('nb_formato_precio')) {
     }
 }
 
+if (!function_exists('nb_dibujar_precio_centrado')) {
+    // Precio POST centrado: "$20.000" grande (Bold $szBig) + " CLP" chico (SemiBold $szCLP).
+    // Sin "desde". Si no hay precio → "Gratis" (Bold $szBig).
+    function nb_dibujar_precio_centrado($img, array $s, string $fBold, string $fSemi, float $szBig, float $szCLP, int $W, int $yBase, int $cTxt): void {
+        $of = (float)($s['precio_oferta'] ?? 0);
+        $pr = (float)($s['precio'] ?? 0);
+        $val = $of > 0 ? $of : $pr;
+        if ($val <= 0) {
+            nb_texto_centrado($img, $fBold, $szBig, $cTxt, 'Gratis', $W, $yBase);
+            return;
+        }
+        $mainTxt = '$' . number_format($val, 0, ',', '.');
+        $sufTxt  = ' CLP';
+        $mainW = nb_ancho_texto($fBold, $szBig, $mainTxt);
+        $sufW  = nb_ancho_texto($fSemi, $szCLP, $sufTxt);
+        $total = $mainW + $sufW;
+        $x = (int)(($W - $total) / 2);
+        imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $mainTxt);
+        imagettftext($img, $szCLP, 0, $x + $mainW, $yBase, $cTxt, $fSemi, $sufTxt);
+    }
+}
+
 if (!function_exists('nb_recorte_circular')) {
     // Devuelve una imagen $diam x $diam con la foto recortada en círculo (alpha).
     function nb_recorte_circular($src, int $diam) {
@@ -101,6 +124,76 @@ if (!function_exists('nb_recorte_circular')) {
         }
         imagedestroy($tmp);
         return $dst;
+    }
+}
+
+if (!function_exists('nb_estrella')) {
+    // Dibuja una estrella de 5 puntas rellena, centrada en ($cx,$cy), radio exterior $R.
+    function nb_estrella($img, int $cx, int $cy, int $R, int $color): void {
+        $rIn = $R * 0.382; // razón pentagrama estándar
+        $pts = [];
+        for ($i = 0; $i < 10; $i++) {
+            $ang = -M_PI / 2 + $i * M_PI / 5;  // arranca en la punta superior
+            $rad = ($i % 2 === 0) ? $R : $rIn;
+            $pts[] = (int)round($cx + $rad * cos($ang));
+            $pts[] = (int)round($cy + $rad * sin($ang));
+        }
+        // PHP 8: imagefilledpolygon admite firma sin num_points
+        imagefilledpolygon($img, $pts, $color);
+    }
+}
+
+if (!function_exists('nb_cat_rating_render')) {
+    // Núcleo de la línea "CATEGORIA  ·  ★ 5,0 (1)" / "CATEGORIA  ·  ★ Nuevo".
+    // Estrella + texto del rating en NEGRO #1a1a1a (ambos estados). Separador "·" gris #D1D5DB.
+    // Con reseñas → Inter-Bold; "Nuevo" → Inter-SemiBold. $cat ya viene en MAYÚSCULAS (puede ser '').
+    // Dibuja a partir de $x (baseline $yBase) y devuelve el ancho total. Si $soloMedir → no dibuja.
+    function nb_cat_rating_render($img, string $cat, string $fBold, string $fSemi, float $size, float $prom, int $votos, int $x, int $yBase, int $cAcento, bool $soloMedir = false): int {
+        $hayRes = $prom > 0;
+        $fRate  = $hayRes ? $fBold : $fSemi;
+        $rTxt   = $hayRes ? (number_format($prom, 1, ',', '.') . ' (' . $votos . ')') : 'Nuevo';
+        $sep    = '·';
+
+        // Escala estrella/gaps proporcional al tamaño de fuente (POST 28 → 15px; HISTORY 32 → ~17px)
+        $starR = (int)round($size * 0.54);
+        $gStar = (int)round($size * 0.46);
+        $gSep  = (int)round($size * 0.78);
+
+        $catW  = $cat !== '' ? nb_ancho_texto($fBold, $size, $cat) : 0;
+        $sepW  = $cat !== '' ? nb_ancho_texto($fBold, $size, $sep) : 0;
+        $rateW = nb_ancho_texto($fRate, $size, $rTxt);
+        $total = ($cat !== '' ? $catW + $gSep + $sepW + $gSep : 0) + ($starR * 2 + $gStar + $rateW);
+
+        if ($soloMedir) return $total;
+
+        $cSep   = imagecolorallocate($img, 209, 213, 219); // #D1D5DB
+        $cNegro = imagecolorallocate($img, 26, 26, 26);    // #1a1a1a
+        if ($cat !== '') {
+            imagettftext($img, $size, 0, $x, $yBase, $cAcento, $fBold, $cat);
+            $x += $catW + $gSep;
+            imagettftext($img, $size, 0, $x, $yBase, $cSep, $fBold, $sep);
+            $x += $sepW + $gSep;
+        }
+        $cyStar = $yBase - (int)($size * 0.35);
+        nb_estrella($img, $x + $starR, $cyStar, $starR, $cNegro);
+        imagettftext($img, $size, 0, $x + $starR * 2 + $gStar, $yBase, $cNegro, $fRate, $rTxt);
+        return $total;
+    }
+}
+
+if (!function_exists('nb_dibujar_cat_rating_centrado')) {
+    // Línea categoría · ★ rating centrada horizontalmente en ancho $W (POST).
+    function nb_dibujar_cat_rating_centrado($img, string $cat, string $fBold, string $fSemi, float $size, float $prom, int $votos, int $W, int $yBase, int $cAcento): void {
+        $total = nb_cat_rating_render($img, $cat, $fBold, $fSemi, $size, $prom, $votos, 0, $yBase, $cAcento, true);
+        $x = (int)(($W - $total) / 2);
+        nb_cat_rating_render($img, $cat, $fBold, $fSemi, $size, $prom, $votos, $x, $yBase, $cAcento, false);
+    }
+}
+
+if (!function_exists('nb_dibujar_cat_rating_izquierda')) {
+    // Línea categoría · ★ rating alineada a la izquierda desde $x (HISTORY).
+    function nb_dibujar_cat_rating_izquierda($img, string $cat, string $fBold, string $fSemi, float $size, float $prom, int $votos, int $x, int $yBase, int $cAcento): void {
+        nb_cat_rating_render($img, $cat, $fBold, $fSemi, $size, $prom, $votos, $x, $yBase, $cAcento, false);
     }
 }
 
@@ -153,9 +246,6 @@ if (!function_exists('nb_generar_imagen_post')) {
         $cBlanco = imagecolorallocate($img, 255, 255, 255);
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
-        // Logo top
-        nb_texto_centrado($img, $fBold, 40, $cAcento, 'nubira.cl', $W, 95);
-
         // Avatar
         $diam = 280; $fotoTop = 175;
         nb_dibujar_avatar($img, $s, (int)($W / 2), $fotoTop, $diam, $cAcento, $cBlanco, $fBold);
@@ -165,28 +255,32 @@ if (!function_exists('nb_generar_imagen_post')) {
         $nombre = nb_truncar_una_linea($fBold, 38, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $W - 120);
         nb_texto_centrado($img, $fBold, 38, $cTxt, $nombre, $W, $yNombre);
 
-        // Institución
-        $inst = mb_strtoupper(trim((string)($s['institucion_maestra'] ?? $s['institucion'] ?? '')), 'UTF-8');
-        if ($inst === '') $inst = 'Tutor Particular';
+        // Institución (abreviada con el diccionario de la plataforma)
+        $instRaw = trim((string)($s['institucion_maestra'] ?? $s['institucion'] ?? ''));
+        $inst = $instRaw !== '' ? mb_strtoupper(html_entity_decode(abreviar_institucion($instRaw, 22)), 'UTF-8') : 'TUTOR PARTICULAR';
         $inst = nb_truncar_una_linea($fReg, 24, $inst, $W - 160);
         nb_texto_centrado($img, $fReg, 24, $cTxt2, $inst, $W, $yNombre + 44);
 
-        // Badge categoría (MAYÚSCULAS, sin emoji)
+        // Línea categoría · ★ rating (MAYÚSCULAS + estrella negra)
+        $prom  = (float)($s['rating_prom'] ?? 0);
+        $votos = (int)($s['rating_votos'] ?? 0);
         $cat = mb_strtoupper(trim((string)($s['categoria'] ?? '')), 'UTF-8');
-        $yCat = $yNombre + 130;
-        if ($cat !== '') nb_texto_centrado($img, $fBold, 28, $cAcento, $cat, $W, $yCat);
+        $yCat = $yNombre + 120;
+        nb_dibujar_cat_rating_centrado($img, $cat, $fBold, $fSemi, 28, $prom, $votos, $W, $yCat, $cAcento);
 
         // Título (wrap 2 líneas)
         $yTit = $yCat + 70;
         $lineas = nb_wrap_texto($fSemi, 32, (string)($s['titulo'] ?? ''), $W - 160, 2);
         foreach ($lineas as $i => $ln) nb_texto_centrado($img, $fSemi, 32, $cTxt, $ln, $W, $yTit + $i * 48);
 
-        // Precio
+        // Precio (sin "desde", "CLP" más pequeño)
         $yPrecio = $yTit + count($lineas) * 48 + 80;
-        nb_texto_centrado($img, $fBold, 44, $cTxt, nb_formato_precio($s), $W, $yPrecio);
+        nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, 52, 36, $W, $yPrecio, $cTxt);
 
-        // Footer
-        nb_texto_centrado($img, $fReg, 20, $cTxt2, 'nubira.cl', $W, $H - 55);
+        // Marca derecha (azul, Inter-Bold 28). y=920 para entrar en la zona segura
+        // del grid 4:5 del perfil de Instagram (corta los ~108px sup/inf; útil 108–972).
+        // Borde derecho en W-120 → 120px de margen visual (evita crops en grid / móviles viejos).
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - 120, 920);
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
@@ -234,11 +328,13 @@ if (!function_exists('nb_texto_derecha')) {
     }
 }
 
-// Precio del HISTORY: si hay oferta → badge OFERTA + oferta grande + original tachado; si no → "desde $X".
+// Precio del HISTORY: si hay oferta → badge OFERTA + oferta grande + original tachado; si no → "$X".
+// Sin "desde". "CLP" siempre en tamaño menor (Inter-SemiBold) que el monto.
 if (!function_exists('nb_precio_history')) {
-    function nb_precio_history($img, array $s, int $x, int $yBase, string $fBold, string $fReg, int $cTxt, int $cTxt2, int $cAzul, int $cBlanco): void {
+    function nb_precio_history($img, array $s, int $x, int $yBase, string $fBold, string $fSemi, string $fReg, int $cTxt, int $cTxt2, int $cAzul, int $cBlanco): void {
         $of = (float)($s['precio_oferta'] ?? 0);
         $pr = (float)($s['precio'] ?? 0);
+        $szBig = 52; $szCLP = 36;
 
         if ($of > 0) {
             // Badge OFERTA (pill azul + texto blanco) encima del precio
@@ -249,10 +345,12 @@ if (!function_exists('nb_precio_history')) {
             nb_rect_redondeado($img, $bx1, $by1, $bx2, $by2, 14, $cVerde);
             imagettftext($img, 22, 0, $bx1 + 18, $by1 + 31, $cBlanco, $fBold, $badge);
 
-            // Precio oferta grande (negro)
-            $ofText = '$' . number_format($of, 0, ',', '.') . ' CLP';
-            imagettftext($img, 52, 0, $x, $yBase, $cTxt, $fBold, $ofText);
-            $wOf = nb_ancho_texto($fBold, 52, $ofText);
+            // Precio oferta grande (negro) + " CLP" más pequeño
+            $ofMain = '$' . number_format($of, 0, ',', '.');
+            imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $ofMain);
+            $wMain = nb_ancho_texto($fBold, $szBig, $ofMain);
+            imagettftext($img, $szCLP, 0, $x + $wMain, $yBase, $cTxt, $fSemi, ' CLP');
+            $wOf = $wMain + nb_ancho_texto($fSemi, $szCLP, ' CLP');
 
             // Precio original tachado (gris) al lado
             $origText = '$' . number_format($pr, 0, ',', '.');
@@ -263,9 +361,14 @@ if (!function_exists('nb_precio_history')) {
             imagesetthickness($img, 3);
             imageline($img, $xo, $yo - 9, $xo + $wo, $yo - 9, $cTxt2);
             imagesetthickness($img, 1);
+        } elseif ($pr > 0) {
+            // "$X" grande + " CLP" pequeño (sin "desde")
+            $main = '$' . number_format($pr, 0, ',', '.');
+            imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $main);
+            $wMain = nb_ancho_texto($fBold, $szBig, $main);
+            imagettftext($img, $szCLP, 0, $x + $wMain, $yBase, $cTxt, $fSemi, ' CLP');
         } else {
-            $txt = $pr > 0 ? ('desde $' . number_format($pr, 0, ',', '.') . ' CLP') : 'Gratis';
-            imagettftext($img, 52, 0, $x, $yBase, $cTxt, $fBold, $txt);
+            imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, 'Gratis');
         }
     }
 }
@@ -311,22 +414,24 @@ if (!function_exists('nb_generar_imagen_history')) {
         $nombre = nb_truncar_una_linea($fBold, 44, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $maxTxt);
         nb_texto_izquierda($img, $fBold, 44, $cTxt, $nombre, $padL, 850);
 
-        // Institución (left)
-        $inst = mb_strtoupper(trim((string)($s['institucion_maestra'] ?? $s['institucion'] ?? '')), 'UTF-8');
-        if ($inst === '') $inst = 'Tutor Particular';
+        // Institución (left, abreviada con el diccionario de la plataforma)
+        $instRaw = trim((string)($s['institucion_maestra'] ?? $s['institucion'] ?? ''));
+        $inst = $instRaw !== '' ? mb_strtoupper(html_entity_decode(abreviar_institucion($instRaw, 22)), 'UTF-8') : 'TUTOR PARTICULAR';
         $inst = nb_truncar_una_linea($fReg, 28, $inst, $maxTxt);
         nb_texto_izquierda($img, $fReg, 28, $cTxt2, $inst, $padL, 905);
 
-        // Categoría (left)
+        // Categoría · ★ rating (left) — estrella negra, mismo estilo que POST (escalado a 32)
+        $prom  = (float)($s['rating_prom'] ?? 0);
+        $votos = (int)($s['rating_votos'] ?? 0);
         $cat = mb_strtoupper(trim((string)($s['categoria'] ?? '')), 'UTF-8');
-        if ($cat !== '') nb_texto_izquierda($img, $fBold, 32, $cAzul, $cat, $padL, 1000);
+        nb_dibujar_cat_rating_izquierda($img, $cat, $fBold, $fSemi, 32, $prom, $votos, $padL, 1000, $cAzul);
 
         // Título 1 línea (left)
         $titulo = nb_truncar_una_linea($fSemi, 36, (string)($s['titulo'] ?? ''), $maxTxt);
         nb_texto_izquierda($img, $fSemi, 36, $cTxt, $titulo, $padL, 1075);
 
         // Precio condicional (oferta tachada o "desde") — badge con respiración
-        nb_precio_history($img, $s, $padL, 1230, $fBold, $fReg, $cTxt, $cTxt2, $cAzul, $cBlanco);
+        nb_precio_history($img, $s, $padL, 1230, $fBold, $fSemi, $fReg, $cTxt, $cTxt2, $cAzul, $cBlanco);
 
         // Nubira.cl FUERA del marco interno, abajo-izquierda DENTRO de la card
         nb_texto_izquierda($img, $fBold, 28, $cAzul, 'Nubira.cl', $cardX1 + 50, $cardY2 - 60);
@@ -341,7 +446,8 @@ if (!function_exists('nb_fingerprint_servicio')) {
     function nb_fingerprint_servicio(array $s): string {
         $base = NB_IMG_VERSION . '|' . ($s['id'] ?? '') . '|' . ($s['titulo'] ?? '') . '|' . ($s['precio'] ?? '')
               . '|' . ($s['precio_oferta'] ?? '') . '|' . ($s['foto_perfil'] ?? '')
-              . '|' . ($s['categoria'] ?? '') . '|' . ($s['institucion_maestra'] ?? '');
+              . '|' . ($s['categoria'] ?? '') . '|' . ($s['institucion_maestra'] ?? '')
+              . '|' . ($s['rating_prom'] ?? '') . '|' . ($s['rating_votos'] ?? '');
         return substr(md5($base), 0, 10);
     }
 }
@@ -354,7 +460,13 @@ if (!function_exists('nb_obtener_imagen_compartir')) {
         if (!isset($conn) || !($conn instanceof mysqli) || $servicio_id <= 0) return '';
 
         $sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil,
-                       COALESCE(dp.institucion, a.institucion) AS institucion_maestra
+                       COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
+                       COALESCE((SELECT ROUND(AVG(v.calificacion),1) FROM valoraciones v
+                                 WHERE v.servicio_id = s.id AND v.calificacion > 0
+                                   AND v.rol_evaluado = 'vendedor'), 0) AS rating_prom,
+                       (SELECT COUNT(*) FROM valoraciones v
+                        WHERE v.servicio_id = s.id AND v.calificacion > 0
+                          AND v.rol_evaluado = 'vendedor') AS rating_votos
                 FROM servicios s
                 LEFT JOIN alumnos a ON s.alumno_id = a.id
                 LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
