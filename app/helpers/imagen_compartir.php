@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v8');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v11');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -78,24 +78,61 @@ if (!function_exists('nb_formato_precio')) {
 }
 
 if (!function_exists('nb_dibujar_precio_centrado')) {
-    // Precio POST centrado: "$20.000" grande (Bold $szBig) + " CLP" chico (SemiBold $szCLP).
-    // Sin "desde". Si no hay precio → "Gratis" (Bold $szBig).
-    function nb_dibujar_precio_centrado($img, array $s, string $fBold, string $fSemi, float $szBig, float $szCLP, int $W, int $yBase, int $cTxt): void {
+    // Precio POST centrado.
+    // Con oferta: badge OFERTA verde centrado (yBase-115) + oferta grande + original tachado.
+    // Sin oferta: precio normal + CLP chico. Sin precio: "Gratis".
+    function nb_dibujar_precio_centrado($img, array $s, string $fBold, string $fSemi, string $fReg, float $szBig, float $szCLP, int $W, int $yBase, int $cTxt, int $cTxt2): void {
         $of = (float)($s['precio_oferta'] ?? 0);
         $pr = (float)($s['precio'] ?? 0);
-        $val = $of > 0 ? $of : $pr;
-        if ($val <= 0) {
+
+        if ($of <= 0 && $pr <= 0) {
             nb_texto_centrado($img, $fBold, $szBig, $cTxt, 'Gratis', $W, $yBase);
             return;
         }
-        $mainTxt = '$' . number_format($val, 0, ',', '.');
-        $sufTxt  = ' CLP';
-        $mainW = nb_ancho_texto($fBold, $szBig, $mainTxt);
-        $sufW  = nb_ancho_texto($fSemi, $szCLP, $sufTxt);
-        $total = $mainW + $sufW;
-        $x = (int)(($W - $total) / 2);
-        imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $mainTxt);
-        imagettftext($img, $szCLP, 0, $x + $mainW, $yBase, $cTxt, $fSemi, $sufTxt);
+
+        if ($of > 0) {
+            // Badge OFERTA verde centrado, 115px encima del baseline del precio
+            $badge   = 'OFERTA';
+            $bw      = nb_ancho_texto($fBold, 22, $badge);
+            $bx1     = (int)(($W - $bw - 36) / 2);
+            $by1     = $yBase - 115;
+            $cVerde  = imagecolorallocate($img, 22, 163, 74);
+            $cBlanco = imagecolorallocate($img, 255, 255, 255);
+            nb_rect_redondeado($img, $bx1, $by1, $bx1 + $bw + 36, $by1 + 44, 14, $cVerde);
+            imagettftext($img, 22, 0, $bx1 + 18, $by1 + 31, $cBlanco, $fBold, $badge);
+
+            // Bloque precio: "$10.800 CLP $18.000" (tachado) centrado en $W
+            $szOrig  = 28;
+            $ofTxt   = '$' . number_format($of, 0, ',', '.');
+            $clpTxt  = ' CLP';
+            $origTxt = ' $' . number_format($pr, 0, ',', '.');
+
+            $wOf   = nb_ancho_texto($fBold, $szBig, $ofTxt);
+            $wCLP  = nb_ancho_texto($fSemi, $szCLP, $clpTxt);
+            $wOrig = nb_ancho_texto($fReg,  $szOrig, $origTxt);
+            $x = (int)(($W - $wOf - $wCLP - $wOrig) / 2);
+
+            imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $ofTxt);
+            $x += $wOf;
+            imagettftext($img, $szCLP, 0, $x, $yBase, $cTxt, $fSemi, $clpTxt);
+            $x += $wCLP;
+            // Precio original: subir para alinear visualmente con la línea base del precio grande
+            $yo = $yBase - (int)(($szBig - $szOrig) * 0.45);
+            imagettftext($img, $szOrig, 0, $x, $yo, $cTxt2, $fReg, $origTxt);
+            // Tachado horizontal centrado en la altura del cap
+            $lineY = $yo - (int)($szOrig * 0.3);
+            imagesetthickness($img, 3);
+            imageline($img, $x, $lineY, $x + $wOrig, $lineY, $cTxt2);
+            imagesetthickness($img, 1);
+        } else {
+            // Sin oferta: precio normal + CLP chico
+            $mainTxt = '$' . number_format($pr, 0, ',', '.');
+            $wMain = nb_ancho_texto($fBold, $szBig, $mainTxt);
+            $wCLP  = nb_ancho_texto($fSemi, $szCLP, ' CLP');
+            $x = (int)(($W - $wMain - $wCLP) / 2);
+            imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $mainTxt);
+            imagettftext($img, $szCLP, 0, $x + $wMain, $yBase, $cTxt, $fSemi, ' CLP');
+        }
     }
 }
 
@@ -276,7 +313,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         $lineas    = [];  $linea = '';
         foreach ($palabras as $p) {
             $prueba = $linea === '' ? $p : "$linea $p";
-            if (mb_strlen($prueba, 'UTF-8') <= 40) {
+            if (mb_strlen($prueba, 'UTF-8') <= 32) {
                 $linea = $prueba;
             } else {
                 if ($linea !== '') $lineas[] = $linea;
@@ -291,13 +328,13 @@ if (!function_exists('nb_generar_imagen_post')) {
             nb_texto_centrado($img, $fSemi, 32, $cTxt, $ln, $W, $yTit + $i * 48);
         }
 
-        // Precio (sin "desde", "CLP" más pequeño)
-        $yPrecio = $yTit + count($lineas) * 48 + 80;
-        nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, 52, 36, $W, $yPrecio, $cTxt);
+        // Precio — con oferta se agrega badge encima; aumentar gap para que no solape el título
+        $hayOferta = (float)($s['precio_oferta'] ?? 0) > 0;
+        $yPrecio = $yTit + count($lineas) * 48 + ($hayOferta ? 140 : 80);
+        nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 52, 36, $W, $yPrecio, $cTxt, $cTxt2);
 
-        // Marca derecha — y=920, borde derecho W-120=960 (margen 120px).
-        // Con el layout nuevo precio llega a máx ~801 (2 líneas título), gap a 920 = 119px ✓.
-        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - 120, 920);
+        // Marca centrada-derecha — y=920, borde derecho en W*0.75=810.
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', (int)($W * 0.75), 920);
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
