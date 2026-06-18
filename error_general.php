@@ -69,9 +69,9 @@ switch ($codigo) {
     <meta charset="UTF-8">
     <title>Error <?= $codigo ?> | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <?php require_once __DIR__ . '/app/componentes/head_common.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
     <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap'); body{font-family:'Inter',sans-serif;}</style>
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">

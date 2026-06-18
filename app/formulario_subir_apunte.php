@@ -292,8 +292,8 @@ $stmt->bind_param("siissisisiisssss", $titulo, $semestre, $anio, $descripcion, $
     <meta charset="UTF-8">
     <title>Publicar Apunte | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 

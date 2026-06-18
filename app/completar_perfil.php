@@ -69,8 +69,8 @@ $tipo_form = $_POST['tipo'] ?? $tipo_actual ?? '';
   <meta charset="UTF-8">
   <title>Completar Perfil | Nubira</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }

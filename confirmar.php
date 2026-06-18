@@ -83,8 +83,8 @@ $conn->close();
     <meta charset="UTF-8">
     <title>Confirmar cuenta | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php require_once __DIR__ . '/app/componentes/head_common.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <meta http-equiv="refresh" content="5;url=/login">
     <style>

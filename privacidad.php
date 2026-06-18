@@ -19,9 +19,9 @@ $ocultar_botones_publicar = true;
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?php require_once __DIR__ . '/app/componentes/head_common.php'; ?>
   <?php require_once __DIR__ . '/app/helpers/seo.php'; echo nubira_seo_meta('Política de Privacidad | Nubira', 'Cómo Nubira recopila, usa y protege tus datos personales. Cumplimiento de normativa chilena de protección de datos.'); ?>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
   <?php require_once __DIR__ . '/app/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
