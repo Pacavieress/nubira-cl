@@ -1,8 +1,5 @@
 <?php
 session_start();
-var_dump($_SESSION); // Así ves si el rol/tipo es 'admin'
-var_dump($_POST);    // Así ves qué datos llegan del form
-
 require_once __DIR__ . '/conexion.php';
 
 /* ✅ Solo permitir POST (evita toggles por GET) */

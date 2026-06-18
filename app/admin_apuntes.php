@@ -12,6 +12,7 @@ if (!file_exists($app_dir . '/conexion.php')) $app_dir = __DIR__;
 
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
+require_once $app_dir . '/seguridad_url.php';
 
 // Validación Admin
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
@@ -248,10 +249,15 @@ require_once $app_dir . '/componentes/sidebar.php';
                    
                    <?php if ($estado === 'pendiente'): ?>
                         <div class="acciones-estado flex gap-2 items-center">
-                          <a href="/app/ver_pdf_apunte.php?id=<?= $id_apunte ?>" target="_blank" 
-                             class="bg-blue-50 text-[#54A6D8] hover:bg-blue-100 px-3 py-2 rounded-lg font-bold text-xs transition flex items-center gap-1.5 shadow-sm hover:scale-[1.02]" 
+                          <a href="/app/ver_pdf_apunte.php?id=<?= $id_apunte ?>" target="_blank"
+                             class="bg-blue-50 text-[#54A6D8] hover:bg-blue-100 px-3 py-2 rounded-lg font-bold text-xs transition flex items-center gap-1.5 shadow-sm hover:scale-[1.02]"
                              title="Revisar documento">
                                <i class="fa-solid fa-magnifying-glass"></i> Revisar
+                           </a>
+                           <a href="/apunte/<?= nubira_encriptar_id($id_apunte) ?>" target="_blank"
+                              class="bg-gray-50 text-gray-500 hover:bg-gray-100 px-3 py-2 rounded-lg font-bold text-xs transition flex items-center gap-1.5 shadow-sm hover:scale-[1.02]"
+                              title="Ver apunte tal como lo ve el comprador">
+                               <?= icon('eye', 'w-4 h-4') ?> Ver pub.
                            </a>
 
                            <div id="decisiones-desktop-<?= $id_apunte ?>" class="flex items-center gap-2">
@@ -334,9 +340,13 @@ require_once $app_dir . '/componentes/sidebar.php';
                  <div class="flex gap-2 justify-end border-t border-gray-50 pt-3 actions-wrapper-mobile">
                     <?php if ($estado === 'pendiente'): ?>
                         <div class="acciones-estado-mobile flex flex-col gap-2 w-full">
-                           <a href="/app/ver_pdf_apunte.php?id=<?= $id_apunte ?>" target="_blank" 
+                           <a href="/app/ver_pdf_apunte.php?id=<?= $id_apunte ?>" target="_blank"
                               class="bg-blue-50 text-[#54A6D8] border border-blue-100 px-3 py-2.5 rounded-xl text-xs font-bold w-full text-center flex justify-center items-center gap-2 shadow-sm active:scale-95 transition-transform">
                                 <i class="fa-solid fa-magnifying-glass"></i> Leer Documento Completo
+                            </a>
+                            <a href="/apunte/<?= nubira_encriptar_id($id_apunte) ?>" target="_blank"
+                               class="bg-gray-50 text-gray-500 border border-gray-200 px-3 py-2.5 rounded-xl text-xs font-bold w-full text-center flex justify-center items-center gap-2 shadow-sm active:scale-95 transition-transform">
+                                <?= icon('eye', 'w-4 h-4') ?> Ver publicación
                             </a>
 
                             <div id="decisiones-mobile-<?= $id_apunte ?>" class="flex gap-2 w-full">
