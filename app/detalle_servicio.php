@@ -346,8 +346,7 @@ session_write_close();
     <meta charset="UTF-8">
     <title><?= $page_title ?> | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <link rel="canonical" href="<?= $url_canonical ?>" />
     
     <meta property="fb:app_id" content="966242223397117" />
@@ -380,7 +379,6 @@ session_write_close();
     <noscript>
       <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=949858788026352&ev=PageView&noscript=1" />
     </noscript>
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     

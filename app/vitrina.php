@@ -601,8 +601,7 @@ try {
     <meta charset="UTF-8" />
     <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_seo_meta('Explorar tutorías y apuntes universitarios | Nubira Chile', 'Encuentra tutorías online y apuntes de universidades chilenas. Clases particulares con pago protegido. PUC, U. de Chile, USACH, UNAB y más en Nubira.'); ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag('/explorar'); ?>
     <!-- [NUBIRA 2.0] Preconnect al CDN de imágenes por defecto -->
 <link rel="preconnect" href="https://nubira.cl" crossorigin>
@@ -617,6 +616,7 @@ try {
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "ae684576-e9b6-491e-a7e0-e2033e423ea4",
+      serviceWorkerPath: "/sw.js",
     });
     
     // Enlazar este navegador con el usuario de Nubira
@@ -624,14 +624,6 @@ try {
   });
 </script>
     <?php endif; ?>
-
-    <!-- [NUBIRA 2.0] FEEL APP NATIVA (iOS + Android PWA) -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Nubira">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="format-detection" content="telephone=no">
-    <link rel="apple-touch-icon" href="/img/logo2.webp">
 
     <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">

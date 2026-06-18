@@ -99,8 +99,7 @@ $intro = $parrafo_intro ?: "Próximamente más información sobre $categoria en 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#ffffff" />
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <?php
     echo nubira_seo_meta($seo_title, $seo_desc) . "\n  ";
     echo nubira_canonical_tag("/$tipo/$slug") . "\n  ";

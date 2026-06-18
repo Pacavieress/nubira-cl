@@ -372,7 +372,8 @@ if (!empty($thumb_url)) {
   <meta charset="UTF-8">
   <title><?= $titulo ?> | Nubira</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
+
   <link rel="canonical" href="<?= $url_canonical ?>" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Nubira.cl" /> 
@@ -386,7 +387,6 @@ if (!empty($thumb_url)) {
   <meta property="og:url" content="<?= $url_apunte_masked ?>" />
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
 
   <!-- [OPT-3] ViewerJS: solo si tiene acceso completo y es imagen -->
   <?php if ($acceso_completo && $isImage): ?>
