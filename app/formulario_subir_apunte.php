@@ -137,11 +137,11 @@ if ($subtema === '') $subtema = null;
         }
 
         $ext = strtolower(pathinfo($_FILES['archivo']['name'], PATHINFO_EXTENSION));
-        $imgs = ['jpg','jpeg','png','webp','bmp','gif'];
-        $docs = ['pdf','doc','docx','ppt','pptx','xls','xlsx','txt'];
-        
+        $imgs = ['jpg','jpeg','png','webp'];
+        $docs = ['pdf'];
+
         if (!in_array($ext, array_merge($imgs, $docs))) {
-            echo json_encode(['error' => 'Formato no permitido: .' . $ext]); exit;
+            echo json_encode(['error' => 'Solo se aceptan archivos PDF o imágenes (.jpg, .jpeg, .png, .webp)']); exit;
         }
 
         $filename_original = time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
@@ -296,7 +296,6 @@ $stmt->bind_param("siissisisiisssss", $titulo, $semestre, $anio, $descripcion, $
     <link rel="icon" type="image/webp" href="/img/logo2.webp">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -477,7 +476,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
         </div>
         
         <p class="text-sm font-bold text-gray-800 leading-none mt-2">Sube tu apunte</p>
-        <p class="text-[11px] text-gray-400 mt-1">PDF, Word o Fotos</p>
+        <p class="text-[11px] text-gray-400 mt-1">PDF o imágenes</p>
     </div>
 </label>
 
@@ -505,7 +504,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                     </div>
                 </div>
 
-                <input type="file" name="archivo" id="archivo" class="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp">
+                <input type="file" name="archivo" id="archivo" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp">
                 <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment">
                 
                 <div id="selector-portada-container" class="mt-4 hidden animate-[fadeIn_0.3s]">
@@ -837,13 +836,20 @@ async function compressImage(file, maxWidth = 2000, quality = 0.8) {
 // MOTOR DE ANÁLISIS IA (igual que antes)
 // =============================================
 async function analizarArchivo(file, tono = 'default') {
+    // Validar extensión antes de comprimir o llamar a la IA
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+        showToast(`Solo se aceptan PDF o imágenes (.jpg, .jpeg, .png, .webp). El archivo ".${ext}" no es compatible.`, false);
+        document.getElementById('archivo').value = '';
+        return;
+    }
+
     const isFile = file instanceof File;
     if(isFile) currentFile = file;
     window.tonoActual = tono;
 
     // Comprimir si es imagen
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (['jpg','jpeg','png','webp','bmp'].includes(ext)) {
+    if (['jpg','jpeg','png','webp'].includes(ext)) {
         document.getElementById('previewStatus').innerText = 'Comprimiendo imagen...';
         processedFile = await compressImage(file);
     } else {
@@ -869,17 +875,12 @@ async function analizarArchivo(file, tono = 'default') {
     let payload = { filename: isFile ? file.name : "Archivo Manual", text: "", image: null, tono: tono };
 
         if (isFile) {
-            if (['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(ext)) {
+            if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
                 setStatus("ESCANEANDO IMAGEN...");
                 payload.image = await fileToBase64(file);
             } else if (ext === 'pdf') {
                 setStatus("LEYENDO PDF...");
                 payload.text = await extractPdfText(file);
-            } else if (ext === 'docx') {
-                setStatus("LEYENDO WORD...");
-                payload.text = await extractDocxText(file);
-            } else if (ext === 'txt') {
-                payload.text = await file.text();
             }
         }
 
@@ -988,12 +989,6 @@ async function extractPdfText(file) {
         }
         return text;
     } catch(e) { console.error("Error PDF:", e); return ""; }
-}
-
-async function extractDocxText(file) {
-    if(typeof mammoth === 'undefined') return "";
-    try { const ab = await file.arrayBuffer(); return (await mammoth.extractRawText({arrayBuffer: ab})).value; }
-    catch(e) { return ""; }
 }
 
 function typeWriter(txt, el, i=0) {

@@ -114,7 +114,7 @@ function obtener_ruta_miniatura($id, $portadaBD, $archivo) {
     if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
         if (file_exists($root . "/upload/apuntes/" . $archivo)) return "/upload/apuntes/" . $archivo;
     }
-    
+
     return "/img/logo2.webp";
 }
 ?>

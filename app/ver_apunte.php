@@ -106,7 +106,7 @@ function miniatura_apunte($id, $portadaBD, $archivoOriginal) {
             if (file_exists($docRoot . $pathOrig)) return $getVersionedPath($pathOrig);
         }
     }
-    
+
     return "/img/logo2.webp";
 }
 
