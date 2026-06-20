@@ -35,7 +35,7 @@ $servicios_db = $conn->query($query_servicios);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <title>Bóveda de Becas | Nubira Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     

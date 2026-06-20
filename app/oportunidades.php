@@ -42,9 +42,9 @@ $initial_src = '/app/cargar_oportunidades.php?' . http_build_query($initial_para
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_seo_meta('Oportunidades para estudiantes universitarios | Nubira Chile', 'Becas, prácticas, ayudantías y oportunidades laborales para universitarios chilenos. Publicadas por estudiantes, para estudiantes.'); ?>
   <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag(); ?>
-  <meta name="theme-color" content="#54A6D8" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root{ --nubira:#54A6D8; }

@@ -137,8 +137,8 @@ try {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+            <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
             <title>Procesando Pago | Nubira</title>
-            <link rel="icon" type="image/webp" href="/img/logo2.webp">
             
             <script>
               !function(f,b,e,v,n,t,s)

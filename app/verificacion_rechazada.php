@@ -8,8 +8,8 @@ require_once __DIR__ . '/conexion.php';
   <meta charset="UTF-8">
   <title>Cuenta no aprobada | Nubira</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center">

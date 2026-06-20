@@ -8,6 +8,7 @@ $id_servicio = intval($_GET['id_servicio'] ?? 0);
     <meta charset="UTF-8">
     <title>Error en el pago | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-red-50 min-h-screen flex items-center justify-center">

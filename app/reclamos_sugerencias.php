@@ -254,8 +254,8 @@ foreach ($tickets as $t) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <title><?= $page_title ?> | Nubira</title>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>

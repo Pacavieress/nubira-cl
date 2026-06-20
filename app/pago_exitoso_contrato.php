@@ -157,7 +157,8 @@ if (!$yaProcesado) {
     <meta charset="utf-8">
     <title>Pago exitoso | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
+
     <?php if (!$yaProcesado): ?>
     <script>
       !function(f,b,e,v,n,t,s)
@@ -189,7 +190,6 @@ if (!$yaProcesado) {
     </script>
     <?php endif; ?>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');

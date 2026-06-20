@@ -198,7 +198,7 @@ if (!$es_pre_clase) {
     <meta charset="UTF-8">
     <title>Aula #<?= $contrato['id'] ?> | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>

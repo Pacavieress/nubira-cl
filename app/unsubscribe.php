@@ -50,10 +50,10 @@ $titulo = $valido ? "Te diste de baja" : "Enlace no válido";
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <meta name="robots" content="noindex, nofollow">
   <title><?= $titulo ?> | Nubira</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; }

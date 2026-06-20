@@ -32,7 +32,6 @@ function pagina_error(string $titulo, string $cuerpo, string $url_btn = '/vitrin
         <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>' . $t . ' | Nubira</title>
         <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="icon" type="image/webp" href="/img/logo2.webp">
     </head>
     <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4" style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">
         <div class="bg-white rounded-3xl border border-gray-100 shadow-lg max-w-sm w-full p-8 text-center">
@@ -336,9 +335,9 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <title>Reserva propuesta | Nubira</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
 </head>
 <body class="bg-gray-50 min-h-screen flex items-start justify-center pt-10 pb-16 px-4 antialiased"
       style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">

@@ -173,7 +173,8 @@ session_write_close();
   <meta charset="UTF-8" />
   <title><?= $seo_title ?></title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
+
   <meta name="description" content="<?= $seo_desc ?>" />
   <meta name="keywords" content="clases particulares, servicios universitarios, tutorías, ayudantías, estudiantes, universidad, nubira, chile" />
   <meta property="og:title" content="<?= $seo_title ?>" />
@@ -184,7 +185,6 @@ session_write_close();
   <meta name="robots" content="index, follow" />
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
   <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');

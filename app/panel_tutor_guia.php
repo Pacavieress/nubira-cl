@@ -72,9 +72,8 @@ if ($check_table && $check_table->num_rows > 0) {
     <meta charset="UTF-8">
     <title>Guía del Tutor | Nubira</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=0" />
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="icon" type="image/webp" href="/img/logo2.webp">
-    
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { nubira: '#54A6D8' } } } }
