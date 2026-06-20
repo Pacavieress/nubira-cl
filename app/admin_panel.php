@@ -105,7 +105,9 @@ $es_admin = ($_SESSION['rol'] === 'admin');
     </svg>
   </button>
   <ul id="admin-soporte" class="ml-8 mt-1 space-y-1 hidden list-none">
+    <?php /* TODO: tabla soporte pendiente, activar cuando se cree
     <li><a href="/admin/soporte" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Solicitudes Soporte</a></li>
+    */ ?>
     <li><a href="/admin/reclamos" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Gestionar Reclamos</a></li>
   </ul>
 </li>

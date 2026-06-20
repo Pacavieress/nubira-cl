@@ -422,6 +422,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                    <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Popup Home</h3>
               </a>
 
+              <?php /* TODO: tabla soporte pendiente, activar cuando se cree
               <a href="/admin/soporte" class="dash-card bg-white p-4 rounded-2xl border border-purple-100 relative hover:border-purple-300">
                    <div class="flex justify-between items-start mb-2">
                        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm"><?= dash_icon('support') ?></div>
@@ -429,6 +430,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                    </div>
                    <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Soporte</h3>
               </a>
+              */ ?>
 
               <a href="/admin/reclamos" class="dash-card bg-white p-4 rounded-2xl border border-purple-100 relative hover:border-purple-300">
                    <div class="flex justify-between items-start mb-2">
