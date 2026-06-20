@@ -51,8 +51,8 @@ sort($bancos_unicos);
   <meta charset="UTF-8">
   <title>Admin - Cuentas Bancarias | Nubira</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+  <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" type="image/webp" href="/img/logo2.webp">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; }

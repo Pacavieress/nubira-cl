@@ -107,6 +107,7 @@ function labelTipo(string $tipo): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<?php require_once __DIR__ . '/componentes/head_common.php'; ?>
 <title>Recordatorios automáticos - Nubira</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>

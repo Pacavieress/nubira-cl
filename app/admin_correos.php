@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reenviar_linea'])) {
     <meta charset="UTF-8">
     <title>Admin - Gestión de Correos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <style>
         .log-ok    { color: #22c55e; font-weight: 500; }

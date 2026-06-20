@@ -53,6 +53,7 @@ foreach ($log_data as $line) {
     <meta charset="UTF-8">
     <title>Logs de Envío de Correos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <meta http-equiv="refresh" content="10">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <style>
