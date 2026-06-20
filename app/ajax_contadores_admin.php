@@ -49,7 +49,7 @@ if ($rol === 'admin') {
         'retiros'            => 0,
 
         // 🔹 Soporte pendiente
-        'soporte'            => contar($conn, "SELECT COUNT(*) AS total FROM soporte WHERE estado = 'pendiente'"),
+        'soporte'            => contar($conn, "SELECT COUNT(*) AS total FROM reclamos_sugerencias WHERE estado = 'pendiente'"),
 
         // 🔹 Reclamos pendientes
         'reclamos'           => contar($conn, "SELECT COUNT(*) AS total FROM reclamos WHERE estado = 'pendiente'"),
@@ -79,7 +79,7 @@ else {
         'mis_ventas'    => contar($conn, "SELECT COUNT(*) AS total FROM ventas_apuntes WHERE estado = 'pendiente' AND id_vendedor = $usuario_id"),
 
         // Soporte con respuesta no leída
-        'soporte_user'  => contar($conn, "SELECT COUNT(*) AS total FROM soporte WHERE estado = 'resuelto' AND leido_usuario = 0 AND usuario_id = $usuario_id"),
+        'soporte_user'  => contar($conn, "SELECT COUNT(*) AS total FROM reclamos_sugerencias WHERE revisado_usuario = 0 AND usuario_id = $usuario_id"),
 
         // Reclamos resueltos no leídos
         'reclamos_user' => contar($conn, "SELECT COUNT(*) AS total FROM reclamos WHERE estado = 'resuelto' AND leido_usuario = 0 AND usuario_id = $usuario_id")

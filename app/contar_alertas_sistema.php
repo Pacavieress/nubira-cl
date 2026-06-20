@@ -91,7 +91,7 @@ try {
         } catch (Exception $e) {}
 
         try {
-            $sql = "SELECT COUNT(id) as total FROM soporte WHERE usuario_id = $uid AND revisado_usuario = 0 AND respuesta IS NOT NULL";
+            $sql = "SELECT COUNT(id) as total FROM reclamos_sugerencias WHERE usuario_id = $uid AND revisado_usuario = 0";
             $res = $conn->query($sql);
             if ($res) { $alertas['soporte'] = (int)$res->fetch_assoc()['total']; }
         } catch (Exception $e) {}
@@ -158,7 +158,7 @@ try {
 
             // 4. Soporte sin responder
             try {
-                $res = $conn->query("SELECT COUNT(id) as total FROM soporte WHERE respuesta IS NULL OR respuesta = ''");
+                $res = $conn->query("SELECT COUNT(id) as total FROM reclamos_sugerencias WHERE estado = 'pendiente'");
                 if ($res) { $alertas['admin_soporte'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
 
