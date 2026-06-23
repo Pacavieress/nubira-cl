@@ -99,9 +99,22 @@ $cmp_caption =
   if(close) close.onclick = shut;
   modal.onclick = (e)=>{ if(e.target===modal) shut(); };
 
-  // Descargas (anchors con data-cmp-act="post"|"history"): trackear y dejar fluir la descarga
+  // Descargas: en browser normal deja fluir el <a download>; en standalone intercepta y usa share nativo
+  const esStandalone = !!navigator.standalone || matchMedia('(display-mode: standalone)').matches;
   document.querySelectorAll('#modal-compartir [data-cmp-act]').forEach((a)=>{
-    a.addEventListener('click', ()=> trackShare(a.dataset.cmpAct));
+    a.addEventListener('click', async (e)=>{
+      trackShare(a.dataset.cmpAct);
+      if (!esStandalone) return;
+      e.preventDefault();
+      try {
+        const resp = await fetch(a.href);
+        const blob = await resp.blob();
+        const file = new File([blob], a.download || 'nubira.jpg', {type:'image/jpeg'});
+        if (navigator.canShare && navigator.canShare({files:[file]})) {
+          await navigator.share({ files:[file], text: CAPTION });
+        }
+      } catch(e){}
+    });
   });
 
   const btnCopiar = document.getElementById('cmp-copiar');

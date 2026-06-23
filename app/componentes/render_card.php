@@ -141,20 +141,20 @@ if ($tipo === 'servicio') {
 
         <!-- Badge nivel (derecha) - solo servicios -->
         <?php if ($tipo === 'servicio' && !empty($nivel_tutor) && empty($es_oferta)): ?>
-        <div class="absolute top-2.5 right-2.5 z-10">
+        <div class="absolute top-1 right-1 z-10">
             <?php
               $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? '';
             ?>
             <?php if ($nivel_label): ?>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
+            <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
             <?php endif; ?>
         </div>
         <?php endif; ?>
 
         <!-- Badge cupos (derecha) -->
         <?php if (!empty($es_oferta)): ?>
-        <div class="absolute top-2.5 right-2.5 z-10">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+        <div class="absolute top-1 right-1 z-10">
+            <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                 <?= (int)$cupos_oferta ?> <?= (int)$cupos_oferta === 1 ? 'cupo' : 'cupos' ?>
             </span>
         </div>

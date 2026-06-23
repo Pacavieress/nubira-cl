@@ -251,15 +251,15 @@ foreach ($items_ordenados as $item):
         <?php if ($tipo === 's' && !empty($nivel_tutor) && empty($es_oferta)): ?>
         <?php $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? ''; ?>
         <?php if ($nivel_label): ?>
-        <div class="absolute top-2.5 right-2.5 z-10">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
+        <div class="absolute top-1 right-1 z-10">
+            <span class="inline-flex items-center px-1 py-0 md:px-2 md:py-0.5 rounded-full text-[8px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
         </div>
         <?php endif; ?>
         <?php endif; ?>
 
         <?php if (isset($es_oferta) && $es_oferta): ?>
-        <div class="absolute top-2.5 right-2.5 z-10">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+        <div class="absolute top-1 right-1 z-10">
+            <span class="inline-flex items-center px-1 py-0 md:px-2 md:py-0.5 rounded-full text-[8px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                 <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
             </span>
         </div>

@@ -137,23 +137,23 @@ if (!function_exists('render_card_servicio_grid')) {
 
   <!-- Badge derecha: tier (oculto en ofertas; ahí manda cupos) -->
   <?php if (!$es_oferta): ?>
-  <div class="absolute top-2.5 right-2.5 z-10">
+  <div class="absolute top-1 right-1 z-10">
     <?php if ($nivel_tutor === 'leyenda'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+        <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
     <?php elseif ($nivel_tutor === 'elite'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+        <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
     <?php elseif ($nivel_tutor === 'pro'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+        <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
     <?php elseif ($nivel_tutor === 'top'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+        <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
     <?php endif; ?>
   </div>
   <?php endif; ?>
 
   <!-- Badge cupos (derecha) -->
   <?php if ($es_oferta): ?>
-  <div class="absolute top-2.5 right-2.5 z-10">
-    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+  <div class="absolute top-1 right-1 z-10">
+    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
         <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
     </span>
   </div>

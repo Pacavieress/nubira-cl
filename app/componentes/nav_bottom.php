@@ -138,9 +138,21 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
     /* Pop nativo estilo iOS */
     .badge-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+    /* PWA standalone: bajar íconos acercándolos al home indicator */
+    @media (display-mode: standalone) {
+        .nav-native-feel {
+            padding-top: 0.5rem !important;
+            padding-bottom: max(22px, calc(env(safe-area-inset-bottom) - 12px)) !important;
+        }
+        .nav-native-feel li:not(:nth-child(3)) .w-6 {
+            width: 1.75rem !important;
+            height: 1.75rem !important;
+        }
+    }
 </style>
 
-<nav class="nav-native-feel lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-gray-100/80 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-2.5 px-1" aria-label="Navegación principal">
+<nav class="nav-native-feel lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-gray-100/80 pb-[env(safe-area-inset-bottom)] pt-2 px-1" aria-label="Navegación principal">
   <ul class="grid grid-cols-5 text-[11px] text-center pb-1 items-end relative">
 
     <li>

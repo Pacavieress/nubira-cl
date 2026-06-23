@@ -202,6 +202,7 @@ if ($is_guest && $device_id_cookie && isset($conn)) {
 // =========================================================================
 // =========================================================================
 // C. CONSULTAS OPTIMIZADAS (AHORA IMPULSADAS POR AFINIDAD)
+$seed = (int)floor(time() / 1800); // Cambia cada 30 min — rota orden de carruseles
 $res_servicios = null;
 $titulo_servicios = "Clases particulares destacadas"; // Título por defecto
 try {
@@ -219,16 +220,16 @@ try {
                WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) ";
                
  // [NUBIRA 2.0] Título fijo. La afinidad sigue activa en el ORDER BY (sin frases variables en UI).
-$titulo_servicios = "Tutorías populares";
+$titulo_servicios = "Tutorías recomendadas";
 
 if ($cat_favorita) {
-    $sql_servicios .= "ORDER BY CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, s.score_nubira DESC LIMIT 8";
+    $sql_servicios .= "ORDER BY CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 8";
     $stmt_serv = $conn->prepare($sql_servicios);
     $stmt_serv->bind_param("s", $cat_favorita);
     $stmt_serv->execute();
     $res_servicios = $stmt_serv->get_result();
 } else {
-    $sql_servicios .= "ORDER BY {$orden_institucion_sql} s.score_nubira DESC, s.total_votos DESC, s.rating_promedio DESC LIMIT 8";
+    $sql_servicios .= "ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 8";
     $res_servicios = $conn->query($sql_servicios);
 }
 } catch (Exception $e) {}
@@ -283,7 +284,7 @@ try {
                         WHERE s.estado = 'aprobado' AND s.visible = 1
                           AND a.tiempo_respuesta_promedio IS NOT NULL
                           AND a.tiempo_respuesta_promedio < 60
-                        ORDER BY a.tiempo_respuesta_promedio ASC, s.id DESC
+                        ORDER BY a.tiempo_respuesta_promedio ASC, RAND($seed)
                         LIMIT 12";
         $res_rapidos = $conn->query($sql_rapidos);
     }
@@ -295,7 +296,7 @@ try {
 $res_apuntes = null;
 
 // [NUBIRA 2.0] Título fijo. La afinidad sigue activa en el ORDER BY (sin frases variables en UI).
-$titulo_apuntes = "Apuntes populares";
+$titulo_apuntes = "Apuntes de los que aprobaron";
 
 try {
     $sql_apuntes = "SELECT ap.*, 
@@ -309,14 +310,14 @@ try {
                    WHERE ap.estado = 'aprobado' AND ap.nivel_academico != 'paes' ";
                     
     if ($cat_favorita) {
-        $sql_apuntes .= "ORDER BY CASE WHEN ap.categoria = ? THEN 1 ELSE 2 END, ap.descargas DESC, ap.id DESC LIMIT 8";
+        $sql_apuntes .= "ORDER BY CASE WHEN ap.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 8";
         $stmt_ap = $conn->prepare($sql_apuntes);
         $stmt_ap->bind_param("s", $cat_favorita);
         $stmt_ap->execute();
         $res_apuntes = $stmt_ap->get_result();
     } else {
         // Fallback: lo más popular de todo Nubira
-        $sql_apuntes .= "ORDER BY {$orden_institucion_sql} ap.descargas DESC, ap.id DESC LIMIT 8";
+        $sql_apuntes .= "ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 8";
         $res_apuntes = $conn->query($sql_apuntes);
     }
 } catch (Exception $e) {
@@ -385,7 +386,7 @@ try {
                     LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                     WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1
                       AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
-                    ORDER BY (s.cupos_oferta > 0) DESC, s.id DESC LIMIT 12";
+                    ORDER BY (s.cupos_oferta > 0) DESC, RAND($seed) LIMIT 12";
     $res_ofertas = $conn->query($sql_ofertas);
 
     if ($res_ofertas) {
@@ -751,7 +752,7 @@ require_once __DIR__ . '/componentes/header.php';
            <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
                 <div class="flex items-center gap-2">
                     <div>
-                        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight leading-none">Ofertas</h2>
+                        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight leading-none">Precios de última hora</h2>
                     </div>
                 </div>
             </div>
@@ -817,8 +818,8 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                 include __DIR__ . '/componentes/overlay_card_servicio.php';
                                 ?>
 
-                                <div class="absolute top-2.5 right-2.5 z-10">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                <div class="absolute top-1 right-1 z-10">
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                                         <?= (int)$row_of['cupos_oferta'] ?> <?= (int)$row_of['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                                     </span>
                                 </div>
@@ -1001,8 +1002,8 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                        include __DIR__ . '/componentes/overlay_card_servicio.php';
                        ?>
                        <?php if ($es_oferta_r): ?>
-                       <div class="absolute top-2.5 right-2.5 z-10">
-                           <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                       <div class="absolute top-1 right-1 z-10">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                                <?= (int)$row_r['cupos_oferta'] ?> <?= (int)$row_r['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                            </span>
                        </div>
@@ -1115,8 +1116,8 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
 
                        <!-- Badge cupos (derecha) -->
                        <?php if ($es_oferta_n): ?>
-                       <div class="absolute top-2.5 right-2.5 z-10">
-                           <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                       <div class="absolute top-1 right-1 z-10">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                                <?= (int)$row_n['cupos_oferta'] ?> <?= (int)$row_n['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                            </span>
                        </div>
@@ -1264,23 +1265,23 @@ $portada_url = $portada_set['card'];
 
                        <!-- Badge nivel (derecha) - oculto en ofertas para no chocar con el badge de cupos -->
                        <?php if (empty($es_oferta)): ?>
-                       <div class="absolute top-2.5 right-2.5 z-10">
+                       <div class="absolute top-1 right-1 z-10">
                             <?php if ($nivel_tutor === 'leyenda'): ?>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
                             <?php elseif ($nivel_tutor === 'elite'): ?>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
                             <?php elseif ($nivel_tutor === 'pro'): ?>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
                             <?php elseif ($nivel_tutor === 'top'): ?>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
                             <?php endif; ?>
                        </div>
                        <?php endif; ?>
 
                        <!-- Badge cupos (derecha) -->
                        <?php if ($es_oferta): ?>
-                       <div class="absolute top-2.5 right-2.5 z-10">
-                           <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                       <div class="absolute top-1 right-1 z-10">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                                <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                            </span>
                        </div>

@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v11');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v13');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -334,7 +334,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 52, 36, $W, $yPrecio, $cTxt, $cTxt2);
 
         // Marca centrada-derecha — y=920, borde derecho en W*0.75=810.
-        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', (int)($W * 0.75), 920);
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', (int)($W * 0.75), 990);
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
