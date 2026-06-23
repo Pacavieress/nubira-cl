@@ -30,6 +30,22 @@ if ($id_ref <= 0 || empty($mensaje)) {
     exit;
 }
 
+// Gate express: bloquear a partir del 4to mensaje en esta conversación
+$cnt_express = 0;
+$es_express  = !empty($_SESSION['cuenta_express']);
+if ($es_express && $contexto === 'conversacion') {
+    $stmt_cnt = $conn->prepare("SELECT COUNT(*) FROM mensajes WHERE remitente_id = ? AND conversacion_id = ?");
+    $stmt_cnt->bind_param("ii", $my_id, $id_ref);
+    $stmt_cnt->execute();
+    $stmt_cnt->bind_result($cnt_express);
+    $stmt_cnt->fetch();
+    $stmt_cnt->close();
+    if ($cnt_express >= 3) {
+        echo json_encode(['success' => false, 'requiere_completar' => true]);
+        exit;
+    }
+}
+
 // =========================================================================================
 // 4. CAPA DLP NUBIRA (DATA LOSS PREVENTION) - ESTRICTO Y EDUCATIVO
 // =========================================================================================
@@ -272,7 +288,7 @@ if ($stmt_ins->execute()) {
             "[" . date('Y-m-d H:i:s') . "] ERROR notificacion msg: " . $e->getMessage() . "\n", 
             FILE_APPEND);
     }
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'mostrar_banner_express' => ($es_express && $cnt_express === 2)]);
 } else {
     echo json_encode(['success' => false, 'error' => 'Error al procesar el envío.']);
 }

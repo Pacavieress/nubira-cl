@@ -335,7 +335,40 @@ textarea, input {
 </head>
 
 <body class="w-full flex flex-col overflow-hidden text-gray-900 bg-gray-50 relative" style="height: calc(var(--vh, 1vh) * 100);">
-    
+
+<?php
+$redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
+?>
+<!-- Banner sutil express (msg 3) — activado por JS -->
+<div id="banner-express" class="hidden bg-amber-100 border-b border-amber-200 text-amber-900 text-xs md:text-sm">
+  <div class="max-w-[1600px] mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <span>💬</span>
+      <span class="font-medium">Crea tu contraseña para guardar esta conversación.</span>
+    </div>
+    <a href="/completar-registro?redir=<?= $redir_express ?>" class="font-bold underline hover:no-underline whitespace-nowrap">
+      Crear contraseña →
+    </a>
+  </div>
+</div>
+
+<!-- Modal hard gate express (msg 4+) — activado por JS -->
+<div id="modal-express" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+  <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
+    <div class="text-3xl mb-3">🔐</div>
+    <h2 class="text-xl font-bold text-gray-900 mb-2">Completa tu registro</h2>
+    <p class="text-gray-500 text-sm mb-6">Para enviar más mensajes, crea una contraseña y protege tu cuenta.</p>
+    <a href="/completar-registro?redir=<?= $redir_express ?>"
+       class="block w-full bg-[#54A6D8] text-white font-bold py-3 rounded-2xl mb-3 hover:bg-[#4895c3] transition-all">
+      Crear contraseña
+    </a>
+    <button onclick="cerrarModalExpress()"
+            class="block w-full text-gray-400 text-sm hover:text-gray-600 transition-all py-1">
+      Más tarde
+    </button>
+  </div>
+</div>
+
     <div id="toast-container" class="fixed top-20 left-1/2 z-50 hidden w-[90%] max-w-sm transform -translate-x-1/2 transition-all duration-300">
         <div class="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-xl flex items-start justify-between gap-3 border border-red-600">
             <div class="flex items-start gap-3">
@@ -838,7 +871,8 @@ window.addEventListener('orientationchange', () => {
                 const res = await fetch('/app/enviar_mensaje.php', { method: 'POST', body: formData });
                 const data = await res.json();
                 
-                if(data.success) { 
+                if(data.success) {
+                    if (data.mostrar_banner_express) mostrarBannerExpress();
                     // Forzamos polling inmediato para traer el mensaje real
                     pollIntervalo = POLL_MIN;
                     const huboCambio = await actualizarChat();
@@ -856,7 +890,8 @@ window.addEventListener('orientationchange', () => {
                             }
                         }
                     }
-                } else { 
+                } else {
+                    if (data.requiere_completar) { mostrarModalExpress(); return; }
                     marcarFallido(tempId);
                     mensajesFallidos[tempId] = { texto: texto };
                     showToast(data.error || 'Error al enviar. Toca el ícono de reintentar.');
@@ -902,6 +937,20 @@ form.addEventListener('submit', async (e) => {
 });
         // Exponer reintentar al scope global (para el onclick)
         window.reintentarMensaje = reintentarMensaje;
+
+        function mostrarBannerExpress() {
+            const b = document.getElementById('banner-express');
+            if (b) b.classList.remove('hidden');
+        }
+        function mostrarModalExpress() {
+            const m = document.getElementById('modal-express');
+            if (m) m.classList.remove('hidden');
+        }
+        function cerrarModalExpress() {
+            const m = document.getElementById('modal-express');
+            if (m) m.classList.add('hidden');
+        }
+        window.cerrarModalExpress = cerrarModalExpress;
 
         // [NUBIRA 2.0] Detector de posición (Smart Scroll)
         // [NUBIRA 2.0] Detector de posición (Smart Scroll)

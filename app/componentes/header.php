@@ -91,7 +91,6 @@ $url_subir_apunte   = $es_visitante ? '/login?redir=' . $current_url : '/formula
 $url_publicar_clase = $es_visitante ? '/login?redir=' . $current_url : '/publicar-servicio';
 $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/' . $usuario_id;
 ?>
-
 <style>
     * { -webkit-tap-highlight-color: transparent !important; }
     input:focus, select:focus, textarea:focus, button:focus, form:focus-within { outline: none !important; }
@@ -161,7 +160,7 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
                     class="flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-full text-[#54A6D8] hover:bg-blue-50 transition text-sm font-medium"
                     title="¿Cómo funciona?">
                 <?= icon('info-circle', 'w-5 h-5') ?>
-                <span>Tutorial</span>
+                <span class="hidden md:inline">Cómo funciona</span>
             </button>
 
             <a href="<?= $url_perfil ?>" class="relative hidden lg:block group" title="<?= $es_visitante ? 'Invitado - Iniciar Sesión' : 'Mi Perfil' ?>">

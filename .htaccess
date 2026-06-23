@@ -15,7 +15,16 @@ RewriteEngine On
 # ... (El resto del código sigue igual)
 RewriteEngine On
 RewriteBase /
+# === BLOQUEAR ARCHIVOS SENSIBLES (CRITICO) ===
+<FilesMatch "^\.(env|env\..*|git.*|htaccess|htpasswd)$">
+    Require all denied
+</FilesMatch>
 
+# Bloquear acceso a archivos .env por cualquier patrón
+<Files ~ "^\.env">
+    Order allow,deny
+    Deny from all
+</Files>
 
 # Evita reescribir si archivo o directorio existe (Permite carga de imágenes y CSS)
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -49,6 +58,7 @@ RewriteRule ^restablecer$             restablecer.php                   [L,QSA]
 RewriteRule ^procesar-cambio$         procesar_cambio.php               [L,QSA]
 RewriteRule ^enviar_recuperacion$     enviar_recuperacion.php           [L,QSA]
 RewriteRule ^completar_perfil$        app/completar_perfil.php          [L,QSA]
+RewriteRule ^completar-registro$      app/completar_registro_express.php [L,QSA]
 RewriteRule ^verificacion_rechazada$  app/verificacion_rechazada.php    [L,QSA]
 
 # Dashboard y Perfil

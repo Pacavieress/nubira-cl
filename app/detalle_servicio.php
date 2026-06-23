@@ -748,13 +748,21 @@ $is_oferta = oferta_vigente($servicio);
                                 <a href="/app/editar_servicio.php?id=<?= $id ?>" class="block w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-center hover:bg-gray-200 transition">Editar Servicio</a>
                             <?php else: ?>
                                 <?php if (!$logueado): ?>
-                                    <div class="p-5 bg-gradient-to-b from-blue-50 to-white rounded-xl text-center border border-blue-100 mb-4 shadow-sm">
-                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 text-[#54A6D8]">
-                                            <i class="fa-solid fa-lock"></i>
-                                        </div>
-                                        <p class="text-sm text-gray-800 mb-4 font-bold">Inicia sesión para contratar este servicio</p>
-                                        <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="block w-full bg-[#54A6D8] text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-md mb-2 transform hover:scale-[1.02]">Ingresar ahora</a>
-                                        <a href="/registro?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="block w-full text-[#54A6D8] font-bold text-xs hover:underline mt-2">¿No tienes cuenta? Regístrate gratis</a>
+                                    <a href="/app/iniciar_chat.php?servicio_id=<?= $id ?>"
+                                       class="mt-1 w-full bg-[#54A6D8] text-white font-bold rounded-xl text-sm px-5 py-3.5 hover:bg-blue-600 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                                       data-track-click="contact:mensaje_visitante">
+                                       <?= icon('chat-outline', 'w-5 h-5') ?>
+                                       <span>Iniciar chat</span>
+                                    </a>
+                                    <div class="flex items-center gap-2 my-3">
+                                        <div class="flex-1 h-px bg-gray-200"></div>
+                                        <span class="text-xs text-gray-400 font-medium">o</span>
+                                        <div class="flex-1 h-px bg-gray-200"></div>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded-xl text-center border border-gray-200">
+                                        <p class="text-xs text-gray-600 mb-3 font-semibold">¿Ya tienes cuenta?</p>
+                                        <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="block w-full bg-white text-gray-700 border border-gray-300 font-bold text-sm py-2.5 rounded-xl hover:bg-gray-100 transition mb-2">Ingresar ahora</a>
+                                        <a href="/registro?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="block w-full text-[#54A6D8] font-bold text-xs hover:underline">¿No tienes cuenta? Regístrate gratis</a>
                                     </div>
                                 <?php else: ?>
                                  <!-- [NUBIRA 2.0] Oculto en móvil (usa la barra flotante) -->
@@ -830,7 +838,7 @@ $is_oferta = oferta_vigente($servicio);
         
       <?php if ($recs && $recs->num_rows > 0): ?>
         <div class="mt-16 border-t border-gray-100 pt-10">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">Podría interesarte</h2>
+            <h2 class="text-xl font-bold text-gray-900 mb-6">Otros tutores disponibles ahora</h2>
             
             <div class="relative group">
                 
@@ -979,10 +987,18 @@ $mostrar_barra_movil = (
         </div>
 
         <?php if (!$logueado): ?>
-            <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>"
-               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-6 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap">
-                Ingresar
-            </a>
+            <div class="flex gap-2 shrink-0">
+                <a href="/app/iniciar_chat.php?servicio_id=<?= $id ?>"
+                   class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-4 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-1.5"
+                   data-track-click="contact:mensaje_visitante_movil">
+                   <?= icon('chat-outline', 'w-4 h-4') ?>
+                   <span>Iniciar chat</span>
+                </a>
+                <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>"
+                   class="bg-white border border-gray-300 text-gray-700 font-bold rounded-xl px-4 py-3 text-sm active:scale-95 transition-all whitespace-nowrap">
+                    Ingresar
+                </a>
+            </div>
         <?php else: ?>
             <div class="flex gap-2 shrink-0">
                 <a href="/app/iniciar_chat.php?servicio_id=<?= $id ?>"
@@ -1474,6 +1490,105 @@ window.borrarOpinionUI = async function(botonDom, id, tipo) {
             navigator.sendBeacon('/app/track_vista.php', payload());
         }
     });
+})();
+</script>
+
+<!-- MODAL CHAT VISITANTE — Cuenta Express -->
+<div id="modal-chat-visitante" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-gray-900">Para chatear con <?= htmlspecialchars($nombrePub) ?></h2>
+      <button type="button" id="btn-cerrar-modal-visitante" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    </div>
+    <p class="text-sm text-gray-600 mb-4">Te avisaremos por correo cuando responda.</p>
+    <form id="form-cuenta-express" class="space-y-3">
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Tu nombre</label>
+        <input type="text" name="nombre" required minlength="2" maxlength="100"
+               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#54A6D8]"
+               placeholder="Ej: Camila Soto">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Tu email</label>
+        <input type="email" name="email" required
+               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#54A6D8]"
+               placeholder="camila@ejemplo.cl">
+      </div>
+      <label class="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
+        <input type="checkbox" name="acepta_terminos" required class="mt-0.5 accent-[#54A6D8]">
+        <span>Acepto los <a href="/terminos" target="_blank" class="text-[#54A6D8] underline">términos</a></span>
+      </label>
+      <div id="error-visitante" class="hidden text-red-600 text-xs py-1"></div>
+      <button type="submit" id="btn-enviar-visitante"
+              class="w-full bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl py-3 text-sm transition-all active:scale-95">
+        Empezar conversación
+      </button>
+      <p class="text-center text-xs text-gray-500">
+        ¿Ya tienes cuenta? <a href="/login" class="text-[#54A6D8] underline">Inicia sesión</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const ES_VISITANTE = <?= !isset($_SESSION['usuario_id']) ? 'true' : 'false' ?>;
+  const SERVICIO_ID  = <?= (int)$id ?>;
+  if (!ES_VISITANTE) return;
+
+  const modal     = document.getElementById('modal-chat-visitante');
+  const form      = document.getElementById('form-cuenta-express');
+  const errorBox  = document.getElementById('error-visitante');
+  const btnEnviar = document.getElementById('btn-enviar-visitante');
+  const btnCerrar = document.getElementById('btn-cerrar-modal-visitante');
+
+  document.querySelectorAll('a[href*="iniciar_chat.php"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      modal.classList.remove('hidden');
+    });
+  });
+
+  btnCerrar.addEventListener('click', () => modal.classList.add('hidden'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    errorBox.classList.add('hidden');
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Creando cuenta...';
+
+    const fd = new FormData(form);
+    const payload = {
+      nombre:          fd.get('nombre').trim(),
+      email:           fd.get('email').trim().toLowerCase(),
+      acepta_terminos: fd.get('acepta_terminos') === 'on',
+      servicio_id:     SERVICIO_ID
+    };
+
+    try {
+      const r    = await fetch('/app/crear_cuenta_express.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'same-origin'
+      });
+      const data = await r.json();
+      if (data.ok) {
+        window.location.href = data.redirect;
+      } else {
+        errorBox.textContent = data.error || 'Error desconocido.';
+        errorBox.classList.remove('hidden');
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = 'Empezar conversación';
+      }
+    } catch {
+      errorBox.textContent = 'Error de conexión. Intenta de nuevo.';
+      errorBox.classList.remove('hidden');
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = 'Empezar conversación';
+    }
+  });
 })();
 </script>
 
