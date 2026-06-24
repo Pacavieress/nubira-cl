@@ -413,18 +413,18 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
 
         <div class="shrink-0 pl-2">
             <?php if(!$esVendedor): ?>
-                <a href="/app/contratar_servicio.php?servicio_id=<?= (int)$chat['servicio_id'] ?>" class="flex items-center gap-1 bg-gradient-to-r from-[#54A6D8] to-blue-600 hover:to-blue-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md shadow-blue-200 transition transform active:scale-95">
+                <a href="/app/contratar_servicio.php?servicio_id=<?= (int)$chat['servicio_id'] ?>" class="flex items-center gap-1 bg-gradient-to-r from-[#54A6D8] to-blue-600 hover:to-blue-700 text-white px-3 py-2.5 rounded-full text-xs font-bold shadow-md shadow-blue-200 transition transform active:scale-95">
                     Contratar
                 </a>
             <?php else: ?>
-                <button type="button" id="btn-generar-reserva" class="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95">
+                <button type="button" id="btn-generar-reserva" class="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-2.5 rounded-full text-xs font-bold transition active:scale-95">
                     Generar Reserva
                 </button>
             <?php endif; ?>
         </div>
     </header>
 
-<main id="chat-container" class="flex-1 overflow-y-auto p-4 pb-8 space-y-3 w-full relative no-scrollbar">
+<main id="chat-container" class="flex-1 overflow-y-auto p-4 pb-4 space-y-3 w-full relative no-scrollbar">
         
         <div class="flex justify-center mb-6 mt-2">
             <?php if (!$esVendedor): ?>
@@ -465,7 +465,7 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
       
     </main>
 
-    <footer class="bg-white px-3 py-3 border-t border-gray-100 shrink-0 w-full z-20 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+    <footer class="bg-white px-3 py-2 border-t border-gray-100 shrink-0 w-full z-20 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         
         <?php if ($tutor_inactivo): ?>
             <div class="max-w-4xl mx-auto w-full bg-orange-50 border border-orange-200 rounded-2xl p-3 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left mb-3">
@@ -514,7 +514,7 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
     </div>
     <!-- ============================================ -->
     
-    <div class="relative flex-1 bg-gray-100 rounded-[24px] flex items-center px-4 py-2 border border-transparent focus-within:border-blue-200 focus-within:bg-white focus-within:shadow-sm transition-all duration-200">
+    <div class="relative flex-1 bg-gray-100 rounded-[24px] flex items-center px-4 py-1 border border-transparent focus-within:border-blue-200 focus-within:bg-white focus-within:shadow-sm transition-all duration-200">
                 <textarea 
                     name="mensaje" 
                     id="input-msg"
@@ -529,9 +529,6 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
             </button>
         </form>
         
-        <div class="text-[10px] text-center text-gray-400 mt-2 select-none flex items-center justify-center gap-1.5 opacity-70 pb-1">
-             <?= icon('lock', 'w-3 h-3') ?> Pagos y chat protegidos por Nubira.
-        </div>
     </footer>
 
 <!-- ============================================ -->
@@ -746,8 +743,8 @@ input.addEventListener('blur', () => {
 // [NUBIRA 2.0] Control total del viewport en móvil cuando abre/cierra teclado
 function actualizarAlturaVH() {
     // visualViewport da la altura REAL disponible (sin teclado)
-    const vh = window.visualViewport 
-        ? window.visualViewport.height * 0.01 
+    const vh = window.visualViewport
+        ? window.visualViewport.height * 0.01
         : window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
@@ -759,16 +756,18 @@ if ('visualViewport' in window) {
     let resizeTimer;
     window.visualViewport.addEventListener('resize', () => {
         actualizarAlturaVH();
-        
+
         // Si el usuario está escribiendo, scroll al fondo cuando el teclado abra
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-            if (document.activeElement === input) {
-                scrollToBottom(false);
-            }
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (document.activeElement === input) scrollToBottom(false);
+                });
+            });
         }, 50);
     });
-    
+
     // Cuando el teclado cierra, también refrescamos
     window.visualViewport.addEventListener('scroll', () => {
         if (document.activeElement === input) {
@@ -831,7 +830,7 @@ window.addEventListener('orientationchange', () => {
                 </div>
             `;
             wrapper.insertAdjacentHTML('beforeend', html);
-            scrollToBottom(true);
+            scrollToBottom(false);
         }
 
         // Marcar un mensaje optimista como fallido
@@ -940,7 +939,10 @@ form.addEventListener('submit', async (e) => {
 
         function mostrarBannerExpress() {
             const b = document.getElementById('banner-express');
-            if (b) b.classList.remove('hidden');
+            if (b) {
+                b.classList.remove('hidden');
+                requestAnimationFrame(() => { chatContainer.scrollTop = chatContainer.scrollHeight; });
+            }
         }
         function mostrarModalExpress() {
             const m = document.getElementById('modal-express');

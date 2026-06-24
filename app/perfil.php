@@ -378,6 +378,10 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body.fouc-lock > *:not(#loader-nativo) { display: none !important; }
+        #loader-nativo { position: fixed; inset: 0; background: #f8fafc; z-index: 999999; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s ease-out; }
+        .spinner-nativo { width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top-color: #54A6D8; border-radius: 50%; animation: spin-nativo 0.8s linear infinite; }
+        @keyframes spin-nativo { 100% { transform: rotate(360deg); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tab-active { border-bottom: 2px solid #54A6D8; color: #54A6D8; }
         .tab-inactive { border-bottom: 2px solid transparent; color: #9ca3af; }
@@ -392,10 +396,10 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
         .force-no-shadow * { text-shadow: none !important; }
     </style>
 </head>
-<body class="text-[#222222] antialiased overflow-x-hidden">
+<body class="text-[#222222] antialiased overflow-x-hidden fouc-lock">
+<div id="loader-nativo"><div class="spinner-nativo"></div></div>
 
-
-<?php 
+<?php
 $ocultar_buscador = true; // Variable bandera para ocultar el buscador
 require_once __DIR__ . '/componentes/header.php'; 
 require_once __DIR__ . '/componentes/sidebar.php'; 
@@ -431,7 +435,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                     <div class="flex flex-row gap-3 md:gap-8 items-start w-full lg:pr-64">
 
                         <div class="shrink-0 relative group w-[104px] h-[104px] md:w-36 md:h-36 md:mx-0">
-                            <img id="img-perfil-visual" src="<?= $foto_url ?>" decoding="async" class="w-full h-full rounded-full object-cover border border-gray-200 transition-opacity duration-300 bg-white">
+                            <img id="img-perfil-visual" src="<?= $foto_url ?>" width="104" height="104" decoding="async" class="w-full h-full rounded-full object-cover border border-gray-200 transition-opacity duration-300 bg-white">
                             <?php if ($es_propio): ?>
                                 <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 backdrop-blur-[2px]">
                                     <button onclick="document.getElementById('foto-input').click()" class="text-white hover:text-[#54A6D8] transition-colors duration-200 p-2" title="Cambiar foto"><?= icon('camera', 'w-5 h-5') ?></button>
@@ -1453,6 +1457,24 @@ setInterval(async () => {
     } catch (e) {}
 }, 15000);
 <?php endif; ?>
+</script>
+
+<script>
+(function() {
+    var dismissLoader = function() {
+        var l = document.getElementById('loader-nativo');
+        var b = document.body;
+        if (b) b.classList.remove('fouc-lock');
+        if (l && l.style.display !== 'none') { l.style.opacity = '0'; setTimeout(function() { l.style.display = 'none'; }, 300); }
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', dismissLoader, { once: true });
+    } else {
+        requestAnimationFrame(dismissLoader);
+    }
+    window.addEventListener('load', dismissLoader, { once: true });
+    setTimeout(dismissLoader, 1500);
+})();
 </script>
 
 </body>

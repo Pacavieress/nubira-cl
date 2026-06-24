@@ -1269,5 +1269,6 @@ if ($chat_seleccionado) {
 
     })();
     </script>
+<?php if (file_exists(__DIR__ . '/componentes/nav_bottom.php')) require_once __DIR__ . '/componentes/nav_bottom.php'; ?>
 </body>
 </html>

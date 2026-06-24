@@ -40,7 +40,7 @@ if ($es_express && $contexto === 'conversacion') {
     $stmt_cnt->bind_result($cnt_express);
     $stmt_cnt->fetch();
     $stmt_cnt->close();
-    if ($cnt_express >= 3) {
+    if ($cnt_express >= 2) {
         echo json_encode(['success' => false, 'requiere_completar' => true]);
         exit;
     }
@@ -288,7 +288,7 @@ if ($stmt_ins->execute()) {
             "[" . date('Y-m-d H:i:s') . "] ERROR notificacion msg: " . $e->getMessage() . "\n", 
             FILE_APPEND);
     }
-    echo json_encode(['success' => true, 'mostrar_banner_express' => ($es_express && $cnt_express === 2)]);
+    echo json_encode(['success' => true, 'mostrar_banner_express' => ($es_express && $cnt_express === 1)]);
 } else {
     echo json_encode(['success' => false, 'error' => 'Error al procesar el envío.']);
 }

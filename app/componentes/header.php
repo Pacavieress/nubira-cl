@@ -92,7 +92,8 @@ $url_publicar_clase = $es_visitante ? '/login?redir=' . $current_url : '/publica
 $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/' . $usuario_id;
 ?>
 <style>
-    * { -webkit-tap-highlight-color: transparent !important; }
+    * { -webkit-tap-highlight-color: transparent !important; touch-action: manipulation; }
+    button:active, a:active { opacity: 0.75; transition: opacity 0.05s; }
     input:focus, select:focus, textarea:focus, button:focus, form:focus-within { outline: none !important; }
 </style>
 
