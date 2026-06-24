@@ -131,6 +131,10 @@ if ($res['confirmado_comprador'] && $res['confirmado_vendedor']) {
 
   enviarCorreo($c['vendedor_correo'], $asunto_v, $mensaje_v);
   enviarCorreo($c['comprador_correo'], $asunto_c, $mensaje_c);
+
+  require_once __DIR__ . '/enviar_push_nubira.php';
+  enviar_push_nubira((int)$c['vendedor_id'],  '🎓 Clase finalizada', 'El pago fue liberado. Recuerda valorar al estudiante', '/mis-evaluaciones');
+  enviar_push_nubira((int)$c['comprador_id'], '🎓 Clase finalizada', 'Recuerda dejar tu valoración para mejorar la comunidad', '/mis-evaluaciones');
 }
 
 // 🔁 Redirigir de vuelta al detalle

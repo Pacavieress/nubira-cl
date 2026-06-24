@@ -53,13 +53,13 @@ try {
         // Enviar Correo
         try {
             // CORRECCIÓN AQUÍ: Cambiamos 'a.email' por 'a.correo'
-            $sqlInfo = "SELECT s.titulo, a.nombre, a.correo 
-                        FROM servicios s 
-                        JOIN alumnos a ON s.alumno_id = a.id 
+            $sqlInfo = "SELECT s.titulo, a.id AS autor_id, a.nombre, a.correo
+                        FROM servicios s
+                        JOIN alumnos a ON s.alumno_id = a.id
                         WHERE s.id = $id_servicio";
-            
+
             $resInfo = $conn->query($sqlInfo);
-            
+
             if ($resInfo && $row = $resInfo->fetch_assoc()) {
                 // Usamos 'correo'
                 if (!empty($row['correo'])) {
@@ -68,10 +68,13 @@ try {
                     $html .= "<p>¡Gracias por ser parte de la comunidad!</p>";
 
                     enviarCorreo($row['correo'], "✅ ¡Tu servicio está publicado!", $html);
+                    require_once __DIR__ . '/enviar_push_nubira.php';
+                    $t_push = mb_substr($row['titulo'], 0, 50);
+                    enviar_push_nubira((int)$row['autor_id'], '✅ Servicio aprobado', 'Tu servicio "' . $t_push . '" ya está publicado', '/mis-publicaciones');
                 }
             }
-        } catch (Throwable $t) { 
-            error_log("Error envío SMTP: " . $t->getMessage()); 
+        } catch (Throwable $t) {
+            error_log("Error envío SMTP: " . $t->getMessage());
         }
 
         echo json_encode(['status' => 'ok']);

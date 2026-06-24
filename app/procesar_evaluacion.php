@@ -177,6 +177,21 @@ try {
         }
     } catch (Exception $e) { /* Silencioso */ }
 
+    // G) PUSH AL EVALUADO (solo cuando alumno evalúa tutor)
+    if ($es_comprador) {
+        try {
+            require_once __DIR__ . '/enviar_push_nubira.php';
+            $nombre_push = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'Alguien'))[0];
+            $cuerpo_push = $nombre_push . ' te dejó ' . $estrellas . ' ⭐';
+            if (!empty($comentario)) {
+                $preview_val = mb_substr($comentario, 0, 60);
+                if (mb_strlen($comentario) > 60) $preview_val .= '…';
+                $cuerpo_push .= ': "' . $preview_val . '"';
+            }
+            enviar_push_nubira($id_evaluado, '⭐ Nueva valoración', $cuerpo_push, '/mis-evaluaciones');
+        } catch (Exception $pushErr) { /* Silencioso */ }
+    }
+
     // F) REDIRECCIÓN EXITOSA HACIA EL PANEL (NUBIRA 2.0)
     header("Location: " . $ruta_salida);
     exit;

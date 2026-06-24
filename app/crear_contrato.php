@@ -323,6 +323,12 @@ try {
             if (function_exists('enviarCorreoConfirmacionCompra')) {
                 enviarCorreoConfirmacionCompra($users['comp_mail'], $comprador_privado, $vendedor_privado, $titulo, $contrato_id);
             }
+
+            require_once __DIR__ . '/enviar_push_nubira.php';
+            $push_comp = explode(' ', trim($users['comp_nom']))[0];
+            $push_vend = explode(' ', trim($users['vend_nom']))[0];
+            enviar_push_nubira($vendedor_id, '🎉 ¡Nueva venta!', $push_comp . ' contrató tu servicio: ' . $titulo, '/mis-ventas');
+            enviar_push_nubira($comprador_id, '✅ Contrato creado', 'Contrataste a ' . $push_vend . '. Te avisaremos cuando confirme.', '/mis-contratos');
         }
     } catch (Exception $mailErr) {
         error_log("Nubira | Fallo correo contrato #{$contrato_id}: " . $mailErr->getMessage());

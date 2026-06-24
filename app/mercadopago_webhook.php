@@ -35,7 +35,7 @@ if ($status === 'approved' && $contrato_id > 0) {
     
     // 2. Extraer datos para el cupo y correos
     $stmt = $conn->prepare("
-        SELECT c.servicio_id, c.monto, s.titulo AS servicio_titulo, 
+        SELECT c.servicio_id, c.comprador_id, c.vendedor_id, c.monto, s.titulo AS servicio_titulo,
                a.nombre AS comprador_nombre, a.correo AS comprador_correo,
                b.nombre AS vendedor_nombre, b.correo AS vendedor_correo
         FROM contratos c
@@ -88,6 +88,10 @@ if ($status === 'approved' && $contrato_id > 0) {
                 "<p>El sistema ha verificado el pago por tu servicio <b>{$tituloServicio}</b> (Monto: $<b>{$montoFmt}</b>).</p><p>Ingresa al Aula Virtual para comenzar.</p>",
                 "Pago verificado por {$tituloServicio}."
             );
+            require_once __DIR__ . '/enviar_push_nubira.php';
+            $t = mb_substr($contrato['servicio_titulo'], 0, 50);
+            enviar_push_nubira((int)$contrato['comprador_id'], '✅ Pago confirmado', 'Tu pago por "' . $t . '" fue procesado', '/mis-contratos');
+            enviar_push_nubira((int)$contrato['vendedor_id'], '💰 Pago recibido', 'Recibiste pago por "' . $t . '"', '/mis-ventas');
         }
     }
 }

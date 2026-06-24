@@ -149,6 +149,10 @@ if (!$yaProcesado) {
       </div>';
     $txtV = "Pago recibido por {$tituloServicio}. Monto: \${$montoFmt}. Comprador: {$compradorPrivado}.";
     enviarCorreo($contrato['vendedor_correo'], $asuntoV, $bodyV, $txtV);
+    require_once __DIR__ . '/enviar_push_nubira.php';
+    $t = mb_substr($tituloServicio, 0, 50);
+    enviar_push_nubira((int)$contrato['comprador_id'], '✅ Pago confirmado', 'Tu pago por "' . $t . '" fue procesado', '/mis-contratos');
+    enviar_push_nubira((int)$contrato['vendedor_id'], '💰 Pago recibido', 'Recibiste pago por "' . $t . '"', '/mis-ventas');
 }
 ?>
 <!doctype html>

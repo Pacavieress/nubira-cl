@@ -36,6 +36,7 @@ date_default_timezone_set('America/Santiago');
 $app_dir = dirname(__DIR__); // sube de /app/cron/ a /app/
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/correo.php';
+require_once $app_dir . '/enviar_push_nubira.php';
 
 // Logging
 $log_file = __DIR__ . '/log_recordatorios.txt';
@@ -55,10 +56,12 @@ $errores   = 0;
 // =========================================================================
 // Ventana: clases entre 23h y 25h en el futuro (rango de 2h por si el cron tarda)
 $sql_24h = "
-    SELECT 
+    SELECT
         r.id AS reserva_id,
         r.contrato_id,
         r.fecha_clase,
+        r.alumno_id,
+        r.tutor_id,
         s.titulo AS servicio_titulo,
         a_alumno.correo  AS correo_alumno,
         a_alumno.nombre  AS nombre_alumno,
@@ -116,7 +119,17 @@ if ($res) {
             log_cron("[24h] ERROR enviando a tutor (reserva #$reserva_id): " . $e->getMessage());
             $errores++;
         }
-        
+
+        // Push 24h al ALUMNO y TUTOR (fire-and-forget)
+        try {
+            $n_tutor  = explode(' ', trim($row['nombre_tutor']))[0];
+            $n_alumno = explode(' ', trim($row['nombre_alumno']))[0];
+            enviar_push_nubira((int)$row['alumno_id'], '🔔 Clase próxima', 'Tu clase con ' . $n_tutor  . ' comienza en 24 horas', '/mis-contratos');
+            enviar_push_nubira((int)$row['tutor_id'],  '🔔 Clase próxima', 'Tu clase con ' . $n_alumno . ' comienza en 24 horas', '/mis-ventas');
+        } catch (Exception $e) {
+            log_cron("[24h] Push error reserva #$reserva_id: " . $e->getMessage());
+        }
+
         // Marcar como enviado SOLO si al menos uno se envió
         if ($ok_alumno || $ok_tutor) {
             $stmt_upd = $conn->prepare("UPDATE reservas_slots SET recordatorio_24h_enviado = NOW() WHERE id = ?");
@@ -136,10 +149,12 @@ if ($res) {
 // =========================================================================
 // Ventana: clases entre 50min y 70min en el futuro (rango de 20min)
 $sql_1h = "
-    SELECT 
+    SELECT
         r.id AS reserva_id,
         r.contrato_id,
         r.fecha_clase,
+        r.alumno_id,
+        r.tutor_id,
         s.titulo AS servicio_titulo,
         a_alumno.correo  AS correo_alumno,
         a_alumno.nombre  AS nombre_alumno,
@@ -197,7 +212,17 @@ if ($res) {
             log_cron("[1h] ERROR enviando a tutor (reserva #$reserva_id): " . $e->getMessage());
             $errores++;
         }
-        
+
+        // Push 1h al ALUMNO y TUTOR (fire-and-forget)
+        try {
+            $n_tutor  = explode(' ', trim($row['nombre_tutor']))[0];
+            $n_alumno = explode(' ', trim($row['nombre_alumno']))[0];
+            enviar_push_nubira((int)$row['alumno_id'], '🔔 Clase en 1 hora', 'Tu clase con ' . $n_tutor  . ' comienza en 1 hora', '/mis-contratos');
+            enviar_push_nubira((int)$row['tutor_id'],  '🔔 Clase en 1 hora', 'Tu clase con ' . $n_alumno . ' comienza en 1 hora', '/mis-ventas');
+        } catch (Exception $e) {
+            log_cron("[1h] Push error reserva #$reserva_id: " . $e->getMessage());
+        }
+
         if ($ok_alumno || $ok_tutor) {
             $stmt_upd = $conn->prepare("UPDATE reservas_slots SET recordatorio_1h_enviado = NOW() WHERE id = ?");
             $stmt_upd->bind_param("i", $reserva_id);
