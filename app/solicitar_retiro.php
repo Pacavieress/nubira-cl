@@ -100,6 +100,10 @@ try {
     $stmtUpdateContratos->close();
 
     $conn->commit();
+    require_once __DIR__ . '/enviar_push_nubira.php';
+    $solicitante_p = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'Alguien'))[0];
+    $monto_p = '$' . number_format($monto_solicitado, 0, ',', '.');
+    enviar_push_nubira(1, '💸 Retiro solicitado', $solicitante_p . ' pidió retiro de ' . $monto_p . '. Procesar.', '/admin/retiros');
     header("Location: /app/datos_bancarios.php?retiro=ok");
 
 } catch (Exception $e) {

@@ -178,6 +178,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy && $puede_publicar
                     $nuevo_servicio_id = $stmt->insert_id;
                     actualizar_score_servicio($conn, $nuevo_servicio_id);
 
+                    require_once __DIR__ . '/enviar_push_nubira.php';
+                    $autor_p  = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'Alguien'))[0];
+                    $titulo_p = mb_substr($titulo, 0, 50);
+                    enviar_push_nubira(1, '🔔 Servicio nuevo', $autor_p . ' publicó: "' . $titulo_p . '". Revisar.', '/admin/servicios');
+
                     $mensaje = "¡Excelente! Tu servicio ha sido enviado a revisión.";
                     $exito   = true;
                     $ya_publico_hoy = true;

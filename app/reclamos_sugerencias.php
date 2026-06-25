@@ -94,6 +94,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_reclamo'])) {
             $stmt->bind_param("iss", $usuario_id, $texto_completo, $categoria);
             if ($stmt->execute()) {
                 $stmt->close();
+                require_once __DIR__ . '/enviar_push_nubira.php';
+                $reclamante_p = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'Alguien'))[0];
+                $asunto_p     = mb_substr($asunto, 0, 50);
+                $genero_p     = $categoria === 'sugerencia' ? 'nueva' : 'nuevo';
+                enviar_push_nubira(1, '🚨 ' . ucfirst($categoria) . ' ' . $genero_p, $reclamante_p . ': "' . $asunto_p . '"', '/admin/reclamos');
                 flash_redirect('Tu solicitud ha sido enviada. Te ayudaremos pronto.', false, $current_url);
             } else { throw new Exception($stmt->error); }
         } catch (Exception $e) {

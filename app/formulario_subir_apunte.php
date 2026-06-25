@@ -170,7 +170,12 @@ $stmt->bind_param("siissisisiisssss", $titulo, $semestre, $anio, $descripcion, $
 
         $id_apunte = $stmt->insert_id;
         $stmt->close();
-        
+
+        require_once __DIR__ . '/enviar_push_nubira.php';
+        $autor_p  = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'Alguien'))[0];
+        $titulo_p = mb_substr($titulo, 0, 50);
+        enviar_push_nubira(1, '📚 Apunte pendiente', $autor_p . ' subió: "' . $titulo_p . '". Aprobar.', '/admin/apuntes');
+
         $filename_preview = $id_apunte . '.webp';
         $ruta_final_preview = $dir_preview . $filename_preview;
         $se_genero_preview = false;
