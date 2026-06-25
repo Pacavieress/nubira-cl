@@ -25,3 +25,13 @@ if ('serviceWorker' in navigator) {
     });
 }
 </script>
+<?php if (!empty($_SESSION['usuario_id'])): ?>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({ appId: "ae684576-e9b6-491e-a7e0-e2033e423ea4", serviceWorkerPath: "/sw.js" });
+    await OneSignal.login("<?= (int)$_SESSION['usuario_id'] ?>");
+});
+</script>
+<?php endif; ?>

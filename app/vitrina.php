@@ -609,23 +609,6 @@ try {
 
 <!-- [NUBIRA 2.0] Preload de imagen fallback default (la más usada) -->
 <link rel="preload" as="image" href="https://nubira.cl/upload/servicios/default_clases.webp" fetchpriority="high">
-   <!-- OneSignal Web Push Notifications -->
-    <?php if (!$is_guest): ?>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "ae684576-e9b6-491e-a7e0-e2033e423ea4",
-      serviceWorkerPath: "/sw.js",
-    });
-    
-    // Enlazar este navegador con el usuario de Nubira
-    await OneSignal.login("<?= (int)$_SESSION['usuario_id'] ?>");
-  });
-</script>
-    <?php endif; ?>
-
     <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
