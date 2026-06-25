@@ -363,6 +363,42 @@ session_write_close();
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="<?= $og_image ?>" />
 
+    <script type="application/ld+json">
+    <?php
+    $ld_provider = ['@type' => 'Person', 'name' => $servicio['nombre_alumno']];
+    if (!empty($servicio['foto_perfil'])) {
+        $ld_provider['image'] = str_starts_with($servicio['foto_perfil'], 'http')
+            ? $servicio['foto_perfil']
+            : $base_url . $servicio['foto_perfil'];
+    }
+    $ld = [
+        '@context'    => 'https://schema.org',
+        '@type'       => 'Service',
+        'name'        => $servicio['titulo'],
+        'description' => mb_strimwidth(strip_tags($servicio['descripcion']), 0, 300, '…'),
+        'url'         => $url_servicio_masked,
+        'provider'    => $ld_provider,
+        'areaServed'  => 'Chile',
+        'offers'      => [
+            '@type'         => 'Offer',
+            'price'         => (int)$servicio['precio'],
+            'priceCurrency' => 'CLP',
+            'availability'  => 'https://schema.org/InStock',
+        ],
+    ];
+    if ($tot_votos > 0) {
+        $ld['aggregateRating'] = [
+            '@type'       => 'AggregateRating',
+            'ratingValue' => $promedio,
+            'bestRating'  => 5,
+            'worstRating' => 1,
+            'reviewCount' => $tot_votos,
+        ];
+    }
+    echo json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    ?>
+    </script>
+
     <script>
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

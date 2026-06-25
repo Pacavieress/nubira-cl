@@ -22,50 +22,10 @@ if (!in_array($tipo, ['clases', 'apuntes'], true) || !isset($MAPA[$slug])) {
 }
 $categoria = $MAPA[$slug];
 
-// 2. CONSULTA PÚBLICA POR CATEGORÍA → filas completas para la card (filtros = cargar_servicios)
-$filas = [];
-if ($tipo === 'clases') {
-    // SELECT maestro: mismas columnas que cargar_servicios.php que necesita render_card_servicio_grid()
-    $sql = "SELECT s.*,
-                   COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
-                   (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') AS total_votos,
-                   (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') AS rating_promedio,
-                   a.foto_perfil,
-                   a.nombre AS nombre_tutor,
-                   bi.archivo AS banco_archivo
-            FROM servicios s
-            JOIN alumnos a ON a.id = s.alumno_id
-            LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-            LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-            WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
-              AND s.visible = 1
-              AND COALESCE(a.visible, 1) = 1
-              AND s.categoria = ?
-            ORDER BY s.fecha_publicacion DESC";
-} else { // apuntes — diferido (no ruteado). TODO: card propia de apunte al activar.
-    $sql = "SELECT ap.*
-            FROM apuntes ap
-            JOIN alumnos al ON al.id = ap.id_alumno
-            WHERE ap.publico = 1
-              AND ap.visible = 1
-              AND al.visible = 1
-              AND ap.categoria = ?
-            ORDER BY ap.fecha_subida DESC";
-}
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $categoria);
-$stmt->execute();
-$res = $stmt->get_result();
-while ($row = $res->fetch_assoc()) { $filas[] = $row; }
-$stmt->close();
-$total = count($filas);
-$noindex = ($total < 3);
-
-// 3. CONTENIDO SEO EDITABLE (override desde BD si existe; específico gana a 'ambos')
-// Degrada con gracia si la tabla seo_categorias_contenido aún no fue migrada.
-$titulo_h1 = $parrafo_intro = $meta_desc_db = null;
+// 2. CONTENIDO SEO — se lee PRIMERO para obtener filtro_titulo antes del query principal
+$titulo_h1 = $parrafo_intro = $meta_desc_db = $filtro_like = null;
 try {
-    $st = $conn->prepare("SELECT titulo_h1, parrafo_intro, meta_description
+    $st = $conn->prepare("SELECT titulo_h1, parrafo_intro, meta_description, filtro_titulo
                           FROM seo_categorias_contenido
                           WHERE categoria = ? AND tipo IN (?, 'ambos')
                           ORDER BY (tipo = 'ambos') ASC
@@ -79,11 +39,57 @@ try {
             $titulo_h1     = $rc['titulo_h1']     ?: null;
             $parrafo_intro = $rc['parrafo_intro'] ?: null;
             $meta_desc_db  = $rc['meta_description'] ?: null;
+            $filtro_like   = $rc['filtro_titulo']  ?: null;
         }
     }
 } catch (Throwable $e) {
-    // Tabla aún no migrada → se usan los textos por defecto (paso 4).
+    // Tabla o columna aún no migrada → filtro_like=null usa categoria exacta.
 }
+
+// 3. CONSULTA PÚBLICA POR CATEGORÍA (o por título LIKE si filtro_like está definido)
+$filas = [];
+if ($tipo === 'clases') {
+    $sql_select = "SELECT s.*,
+                   COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
+                   (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') AS total_votos,
+                   (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') AS rating_promedio,
+                   a.foto_perfil,
+                   a.nombre AS nombre_tutor,
+                   bi.archivo AS banco_archivo
+            FROM servicios s
+            JOIN alumnos a ON a.id = s.alumno_id
+            LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+            LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+            WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
+              AND s.visible = 1
+              AND COALESCE(a.visible, 1) = 1";
+    if ($filtro_like) {
+        $sql  = $sql_select . " AND s.titulo LIKE ? ORDER BY s.fecha_publicacion DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $filtro_like);
+    } else {
+        $sql  = $sql_select . " AND s.categoria = ? ORDER BY s.fecha_publicacion DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $categoria);
+    }
+} else { // apuntes — diferido (no ruteado). TODO: card propia de apunte al activar.
+    $sql = "SELECT ap.*
+            FROM apuntes ap
+            JOIN alumnos al ON al.id = ap.id_alumno
+            WHERE ap.publico = 1
+              AND ap.visible = 1
+              AND al.visible = 1
+              AND ap.categoria = ?
+            ORDER BY ap.fecha_subida DESC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $categoria);
+}
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) { $filas[] = $row; }
+$stmt->close();
+$total = count($filas);
+$noindex = ($total < 3);
 
 // 4. METADATA (defaults si no hay override en BD)
 $tipo_palabra  = ($tipo === 'clases') ? 'Clases' : 'Apuntes';

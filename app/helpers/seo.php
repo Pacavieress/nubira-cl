@@ -49,6 +49,9 @@ if (!function_exists('nubira_canonical')) {
             'diseno'       => 'Diseño',
             'derecho'      => 'Derecho',
             'asesoria'     => 'Asesoría',
+            'calculo'      => 'Cálculo',
+            'ingles'       => 'Inglés',
+            'tesis'        => 'Tesis',
         ];
     }
 }

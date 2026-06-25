@@ -3,7 +3,6 @@ Allow: /
 Disallow: /admin
 Disallow: /login
 Disallow: /registro
-Disallow: /perfil
 Disallow: /bandeja-entrada
 Disallow: /mini-aula
 Sitemap: https://nubira.cl/sitemap.xml
