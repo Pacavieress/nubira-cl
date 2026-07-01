@@ -88,7 +88,7 @@ function _enviarEmailBase($destinatario, $asunto, $htmlBody, $altText = '', $usa
         $mail->isHTML(true);
         $mail->Subject = $asunto;
         $mail->Body    = $htmlBody;
-        $mail->AltBody = $altText ?: strip_tags($htmlBody);
+        $mail->AltBody = $altText ?: preg_replace('/\s+/', ' ', trim(strip_tags($htmlBody)));
 
         $mail->send();
         file_put_contents(LOG_FILE, date('Y-m-d H:i:s') . " [OK] Enviado a $destinatario | Asunto: $asunto\n", FILE_APPEND);
@@ -116,10 +116,15 @@ function plantillaMaestra($titulo, $contenido, $botonTexto = null, $botonLink = 
     }
 
     $preheaderHtml = $preheader !== '' ? "<span style='display:none !important; max-height:0; overflow:hidden; visibility:hidden; opacity:0;'>{$preheader}</span>" : '';
-    return "
-    <!DOCTYPE html>
-    <html>
-    <body style='margin:0; padding:0; background-color:#F3F4F6; font-family: Helvetica, Arial, sans-serif;'>
+    return "<!DOCTYPE html>
+<html lang='es'>
+<head>
+<meta charset='UTF-8'>
+<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Nubira</title>
+</head>
+<body style='margin:0; padding:0; background-color:#F3F4F6; font-family: Helvetica, Arial, sans-serif;'>
         {$preheaderHtml}
         <table width='100%' border='0' cellspacing='0' cellpadding='0'>
             <tr>
