@@ -103,7 +103,7 @@ function _enviarEmailBase($destinatario, $asunto, $htmlBody, $altText = '', $usa
    FUNCIÓN DE UI: Plantilla Maestra (ESCALABILIDAD)
    Aquí defines el diseño UNA SOLA VEZ para todos los correos.
    ========================================================== */
-function plantillaMaestra($titulo, $contenido, $botonTexto = null, $botonLink = null) {
+function plantillaMaestra($titulo, $contenido, $botonTexto = null, $botonLink = null, $preheader = '') {
     $botonHtml = '';
     if ($botonTexto && $botonLink) {
         $botonHtml = "
@@ -115,10 +115,12 @@ function plantillaMaestra($titulo, $contenido, $botonTexto = null, $botonLink = 
         ";
     }
 
+    $preheaderHtml = $preheader !== '' ? "<span style='display:none !important; max-height:0; overflow:hidden; visibility:hidden; opacity:0;'>{$preheader}</span>" : '';
     return "
     <!DOCTYPE html>
     <html>
     <body style='margin:0; padding:0; background-color:#F3F4F6; font-family: Helvetica, Arial, sans-serif;'>
+        {$preheaderHtml}
         <table width='100%' border='0' cellspacing='0' cellpadding='0'>
             <tr>
                 <td align='center' style='padding: 40px 0;'>

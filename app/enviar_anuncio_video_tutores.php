@@ -105,7 +105,7 @@ if (php_sapi_name() === 'cli') {
             logCampana('[ANUNCIO_VIDEO SKIP] ' . $correo); continue;
         }
         $html      = generarHtmlEmailAnuncioVideo($primer_nombre);
-        $html_full = plantillaMaestra($asunto, $html);
+        $html_full = plantillaMaestra($asunto, $html, null, null, 'Ahora puedes destacar con un video de presentación en tu servicio.');
         $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', true);
         $exito_int = $exito ? 1 : 0;
         $stmt_log->bind_param('issssi', $admin_id_cli, $admin_nombre, $correo, $asunto, $html, $exito_int);
@@ -205,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $html      = generarHtmlEmailAnuncioVideo($primer_nombre);
-        $html_full = plantillaMaestra($asunto, $html);
+        $html_full = plantillaMaestra($asunto, $html, null, null, 'Ahora puedes destacar con un video de presentación en tu servicio.');
         $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', true);
         $exito_int = $exito ? 1 : 0;
 

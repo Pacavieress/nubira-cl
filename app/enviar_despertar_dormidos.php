@@ -15,7 +15,7 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
 
 <p>Hace un tiempo te registraste en Nubira buscando ayuda académica.</p>
 
-<p>Si aún necesitas apoyo con un ramo, una tesis o un servicio académico específico, aquí sigues teniendo tu cuenta activa.</p>
+<p>Si este semestre todavía necesitas apoyo con un ramo, preparar una prueba, avanzar en tu tesis o encontrar otro servicio académico, tu cuenta sigue activa.</p>
 
 <p><strong>Lo que hace distinta a Nubira:</strong></p>
 
@@ -24,6 +24,8 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
   <li>Puedes conversar con los tutores sin compartir tu WhatsApp ni contactos de redes sociales.</li>
   <li>Las clases se hacen dentro de Nubira, sin instalar Zoom ni Meet.</li>
 </ul>
+
+<p>Hoy hay estudiantes y tutores activos en la plataforma resolviendo dudas y agendando clases particulares.</p>
 
 <p style=\"text-align:center; margin:32px 0;\">
   <a href=\"https://nubira.cl/explorar\"
@@ -34,7 +36,7 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
   </a>
 </p>
 
-<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">nubira.cl</span></p>
+<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
 ";
 }
 
@@ -98,7 +100,7 @@ if (php_sapi_name() === 'cli') {
             logCampana('[DESPERTAR_DORMIDOS SKIP] ' . $correo); continue;
         }
         $html      = generarHtmlEmailDespertarDormidos($primer_nombre);
-        $html_full = plantillaMaestra($asunto, $html);
+        $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
         $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', true);
         $exito_int = $exito ? 1 : 0;
         $stmt_log->bind_param('issssi', $admin_id_cli, $admin_nombre, $correo, $asunto, $html, $exito_int);
@@ -197,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $html      = generarHtmlEmailDespertarDormidos($primer_nombre);
-        $html_full = plantillaMaestra($asunto, $html);
+        $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
         $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', true);
         $exito_int = $exito ? 1 : 0;
 
