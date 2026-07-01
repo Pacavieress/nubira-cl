@@ -55,3 +55,38 @@ if (!function_exists('nubira_canonical')) {
         ];
     }
 }
+
+if (!function_exists('generar_slug')) {
+    function generar_slug(string $titulo): string {
+        $texto = preg_replace('/[\x{1F000}-\x{1FFFF}]/u', '', $titulo) ?? '';
+        $texto = preg_replace('/[\x{2600}-\x{27BF}]/u', '', $texto) ?? '';
+        $texto = mb_strtolower($texto, 'UTF-8');
+        $mapa = [
+            'á'=>'a','à'=>'a','â'=>'a','ä'=>'a','ã'=>'a',
+            'é'=>'e','è'=>'e','ê'=>'e','ë'=>'e',
+            'í'=>'i','ì'=>'i','î'=>'i','ï'=>'i',
+            'ó'=>'o','ò'=>'o','ô'=>'o','ö'=>'o','õ'=>'o',
+            'ú'=>'u','ù'=>'u','û'=>'u','ü'=>'u',
+            'ñ'=>'n','ç'=>'c',
+        ];
+        $texto = strtr($texto, $mapa);
+        $texto = preg_replace('/[^a-z0-9\s\-]/u', '-', $texto) ?? '';
+        $texto = preg_replace('/[\s\-]+/', '-', $texto) ?? '';
+        $texto = trim($texto, '-');
+        if (mb_strlen($texto) > 100) {
+            $texto = mb_substr($texto, 0, 100);
+            $pos = mb_strrpos($texto, '-');
+            if ($pos !== false && $pos > 50) {
+                $texto = mb_substr($texto, 0, $pos);
+            }
+        }
+        return $texto;
+    }
+
+    function url_servicio(int $id, ?string $slug = null): string {
+        if (!empty($slug)) {
+            return '/servicios/' . $slug . '-' . $id;
+        }
+        return '/servicios/' . $id;
+    }
+}

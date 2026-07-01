@@ -15,6 +15,7 @@ require_once __DIR__ . '/../helpers/imagen_servicio.php';  // url_portada()
 require_once __DIR__ . '/../helpers/ofertas.php';          // oferta_vigente()
 require_once __DIR__ . '/../helpers/institucion.php';      // institucion_tutor()
 require_once __DIR__ . '/../seguridad_url.php';            // nubira_encriptar_id()
+require_once __DIR__ . '/../helpers/seo.php';              // url_servicio()
 
 if (!function_exists('render_card_servicio_grid')) {
     /**
@@ -28,8 +29,7 @@ if (!function_exists('render_card_servicio_grid')) {
         $hoy = new DateTime();
 
         // ===== DATA-PREP (verbatim de cargar_servicios.php 183-289) =====
-        // [NUBIRA SHIELD] Enmascarar ID
-        $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
+        $link_hash = url_servicio((int)$row['id'], $row['slug'] ?? null);
 
         // 1. DATA PREP PORTADA (banco → legacy → placeholder, vía helper unificado; ignora imagen_estado)
         $portada_url = url_portada($row);
@@ -116,7 +116,7 @@ if (!function_exists('render_card_servicio_grid')) {
         // ===== MARKUP (verbatim de cargar_servicios.php 292-375) =====
         ob_start();
         ?>
-<a href="/detalle-servicio/<?= $link_hash ?>"
+<a href="<?= $link_hash ?>"
    class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
 
   <div class="card-apunte relative overflow-hidden w-full <?= $compacto ? 'aspect-square rounded-xl' : 'aspect-[3/2] rounded-xl' ?> bg-gray-100 border border-gray-200">

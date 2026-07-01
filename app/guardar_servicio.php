@@ -125,6 +125,16 @@ $stmt->close();
 require_once __DIR__ . '/helpers/usuario_helper.php';
 actualizar_score_servicio($conn, $nuevo_servicio_id);
 
+// Slug SEO
+require_once __DIR__ . '/helpers/seo.php';
+$slug_nuevo = generar_slug($titulo);
+if (!empty($slug_nuevo)) {
+    $stmt_slug = $conn->prepare("UPDATE servicios SET slug = ? WHERE id = ?");
+    $stmt_slug->bind_param("si", $slug_nuevo, $nuevo_servicio_id);
+    $stmt_slug->execute();
+    $stmt_slug->close();
+}
+
 $conn->close();
 
 header("Location: /publicar-servicio?ok=1");

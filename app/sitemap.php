@@ -49,7 +49,7 @@ foreach ($estaticas as [$p, $prio, $freq]) {
 }
 
 // B. Servicios públicos (mismo filtro que app/cargar_servicios.php)
-$sql = "SELECT s.id, s.fecha_publicacion
+$sql = "SELECT s.id, s.slug, s.fecha_publicacion
         FROM servicios s
         JOIN alumnos a ON a.id = s.alumno_id
         WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
@@ -57,7 +57,7 @@ $sql = "SELECT s.id, s.fecha_publicacion
           AND COALESCE(a.visible, 1) = 1";
 $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
-    echo url_xml($BASE . '/detalle-servicio/' . nubira_encriptar_id($row['id']),
+    echo url_xml($BASE . url_servicio((int)$row['id'], $row['slug'] ?? null),
                  w3c($row['fecha_publicacion']), 'weekly', '0.7');
 }
 

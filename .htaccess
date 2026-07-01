@@ -126,6 +126,9 @@ RewriteRule ^descubre$                app/descubre.php                  [L,QSA]
 RewriteRule ^cargar-proyectos$        app/cargar_proyectos.php          [L,QSA]
 RewriteRule ^cargar-oportunidades$    app/cargar_oportunidades.php      [L,QSA]
 
+# === URL CANÓNICA SEO (Fase 1) ===
+RewriteRule ^servicios/(.+)-(\d+)/?$ app/detalle_servicio.php?servicio_id=$2&slug_captured=$1 [L,QSA]
+
 # Detalles (Unificados para evitar error 404/imágenes rotas)
 RewriteRule ^detalle-servicio/([a-zA-Z0-9_-]+)/?$ app/detalle_servicio.php?id=$1 [L,QSA]
 RewriteRule ^detalle-servicio$            app/detalle_servicio.php       [L,QSA]
@@ -139,6 +142,7 @@ RewriteRule ^detalle-oportunidad/([0-9]+)$ app/detalle_oportunidad.php?id=$1 [L,
 # Gestión de Servicios y Apuntes
 RewriteRule ^publicar-servicio$       app/publicar_servicio.php         [L,QSA]
 RewriteRule ^guardar-servicio$        app/guardar_servicio.php          [L,QSA]
+RewriteRule ^subir-video-servicio$    app/subir_video_servicio.php      [L,QSA]
 
 # === RUTA LIMPIA PARA SERVICIOS ===
 RewriteRule ^servicios/?$                  app/clases_servicios.php          [L,QSA]
@@ -228,6 +232,7 @@ RewriteRule ^admin/autores_servicios$ app/admin_autores_servicios.php   [L,QSA]
 RewriteRule ^admin/reporte-servicios$ app/admin_reportes_servicios.php  [L,QSA]
 RewriteRule ^admin/apuntes$           app/admin_apuntes.php             [L,QSA]
 RewriteRule ^admin/acciones-apunte$   app/acciones_apunte.php           [L,QSA]
+RewriteRule ^admin/videos$            app/admin_videos.php              [L,QSA]
 RewriteRule ^admin/retiros$           app/admin_retiros.php             [L,QSA]
 RewriteRule ^admin/pagos$             app/admin_pagos.php               [L,QSA]
 RewriteRule ^admin/cuentas-bancarias$ app/admin_cuentas.php              [L,QSA]
@@ -253,6 +258,9 @@ RewriteRule ^admin/config-precio$     app/admin_config_precios.php      [L,QSA]
 RewriteRule ^admin/accesos$           app/admin_accesos_vitrina.php     [L,QSA]
 RewriteRule ^admin/cupones$            app/cupones.php                  [L,QSA]
 RewriteRule ^admin/avisos/?$            app/admin_avisos.php [L,QSA]
+RewriteRule ^admin/campanas$           app/admin_campanas.php [L,QSA]
+RewriteRule ^admin/leads-gmail$        app/admin_leads_gmail.php [L,QSA]
+RewriteRule ^admin/despertar-dormidos$ app/enviar_despertar_dormidos.php [L,QSA]
 
 
 # Acciones Admin Oportunidades

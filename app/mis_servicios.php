@@ -6,7 +6,7 @@
  */
 session_start();
 
-if (!isset($_SESSION['usuario_id'])) { header('Location: /login'); exit; }
+if (!isset($_SESSION['usuario_id'])) { header('Location: /login?redir=' . urlencode($_SERVER['REQUEST_URI'])); exit; }
 
 $app_dir = __DIR__;
 if (!file_exists($app_dir . '/conexion.php')) {
@@ -86,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 // -------------------------------------------------------
 
 require_once $app_dir . '/iconos.php';
+require_once $app_dir . '/helpers/seo.php';
 
 // 1. Obtener Servicios (Clases) - Excluyendo los eliminados
 $servicios = [];
@@ -218,7 +219,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             </button>
         </form>
     <?php else: ?>
-        <a href="/detalle-servicio/<?= $s['id'] ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:bg-white active:bg-white transition" title="Ver publicación">
+        <a href="<?= url_servicio((int)$s['id'], $s['slug'] ?? null) ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:bg-white active:bg-white transition" title="Ver publicación">
             <i class="fa-regular fa-eye text-xs"></i>
         </a>
         <a href="/app/editar_servicio.php?id=<?= $s['id'] ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:bg-white hover:text-[#54A6D8] active:bg-white transition" title="Editar">

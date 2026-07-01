@@ -17,6 +17,7 @@ if (!file_exists($base_path . '/conexion.php')) exit;
 require_once $base_path . '/conexion.php';
 require_once $base_path . '/helpers/ofertas.php';
 require_once $base_path . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
+require_once $base_path . '/helpers/seo.php';
 
 if (!isset($_SESSION['usuario_id'])) exit;
 $usuario_id = (int)$_SESSION['usuario_id'];
@@ -64,7 +65,7 @@ $data_apuntes = [];
 if (!empty($ids_servicios)) {
     $ids_in = implode(',', $ids_servicios);
     $res = $conn->query("
-      SELECT s.id, s.titulo, s.categoria, s.precio, s.imagen, s.imagen_banco_id, s.score_nubira, s.fecha_publicacion,
+      SELECT s.id, s.slug, s.titulo, s.categoria, s.precio, s.imagen, s.imagen_banco_id, s.score_nubira, s.fecha_publicacion,
                s.is_subvencionado, s.precio_oferta, s.cupos_oferta, s.oferta_termino,
                a.nombre as tutor_nombre, a.foto_perfil, bi.archivo as banco_archivo,
                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -124,7 +125,7 @@ foreach ($items_ordenados as $item):
             }
         }
         
-        $link = "/detalle-servicio/" . (function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : $row['id']);
+        $link = url_servicio((int)$row['id'], $row['slug'] ?? null);
         $titulo = $row['titulo'];
 
         // Lógica Tiers YouTube Edition

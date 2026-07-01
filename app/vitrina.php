@@ -750,7 +750,7 @@ require_once __DIR__ . '/componentes/header.php';
                    foreach ($lista_ofertas as $row_of): 
                        $idx_of++;
                        $es_lcp_of = ($idx_of <= 2);
-                       $link_hash_of = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_of['id']) : (int)$row_of['id'];
+                       $link_hash_of = url_servicio((int)$row_of['id'], $row_of['slug'] ?? null);
                       $portada_set_of = srcset_portada($row_of);
 $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es suficiente
                         $es_activa = ((int)($row_of['cupos_oferta'] ?? 0) > 0 && !isset($row_of['es_falsa_oferta']));
@@ -778,7 +778,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                        $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
                     ?>
                         <?php if($es_activa): ?>
-                        <a href="/detalle-servicio/<?= $link_hash_of ?>"
+                        <a href="<?= $link_hash_of ?>"
                            onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
                            class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
 
@@ -824,7 +824,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                             </div>
                         </a>
                         <?php else: ?>
-                        <a href="/detalle-servicio/<?= $link_hash_of ?>"
+                        <a href="<?= $link_hash_of ?>"
                            onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
                            class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
 
@@ -927,7 +927,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                 <?php $idx_r = 0; while ($row_r = $res_rapidos->fetch_assoc()):
                     $idx_r++;
                     $es_lcp_r = ($idx_r <= 2);
-                    $link_hash_r = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_r['id']) : (int)$row_r['id'];
+                    $link_hash_r = url_servicio((int)$row_r['id'], $row_r['slug'] ?? null);
                     $portada_set_r = srcset_portada($row_r);
                     $portada_url_r = $portada_set_r['card'];
                     $rating_val_r = isset($row_r['rating_promedio']) ? (float)$row_r['rating_promedio'] : 0;
@@ -961,7 +961,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                     $html_stars_r = render_rating_html($rating_val_r, $total_v_r);
                     $inst_text_r = institucion_tutor($row_r['institucion_maestra'] ?? ($row_r['institucion'] ?? ''));
                 ?>
-                <a href="/detalle-servicio/<?= $link_hash_r ?>" onclick="registrarClick(<?= (int)$row_r['id'] ?>, 'servicio')"
+                <a href="<?= $link_hash_r ?>" onclick="registrarClick(<?= (int)$row_r['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
                     <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
                         <img src="<?= htmlspecialchars($portada_url_r) ?>"
@@ -1025,7 +1025,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                 <?php while ($row_n = $res_nuevos->fetch_assoc()): 
                     $idx_n++;
                     $es_lcp_n = ($idx_n <= 2);
-                    $link_hash_n = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_n['id']) : (int)$row_n['id'];
+                    $link_hash_n = url_servicio((int)$row_n['id'], $row_n['slug'] ?? null);
                   $portada_set_n = srcset_portada($row_n);
 $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inicial)
                     $rating_val_n = isset($row_n['rating_promedio']) ? (float)$row_n['rating_promedio'] : 0;
@@ -1071,7 +1071,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $inst_text_n = institucion_tutor($row_n['institucion_maestra'] ?? ($row_n['institucion'] ?? ''));
                 ?>
                 
-                <a href="/detalle-servicio/<?= $link_hash_n ?>" onclick="registrarClick(<?= (int)$row_n['id'] ?>, 'servicio')" 
+                <a href="<?= $link_hash_n ?>" onclick="registrarClick(<?= (int)$row_n['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
 
                     <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
@@ -1148,7 +1148,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $idx_serv++;
                     $esRecomendado = ($es_recomendacion_inmediata && $row['categoria'] === $cat_favorita);
                     $es_lcp_serv = ($idx_serv <= 2); // Primeras 2 cards = prioridad alta
-                    $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
+                    $link_hash = url_servicio((int)$row['id'], $row['slug'] ?? null);
                     $portada_set = srcset_portada($row);
 $portada_url = $portada_set['card'];
                     
@@ -1220,7 +1220,7 @@ $portada_url = $portada_set['card'];
                     $inst_text = institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
                 ?>
                 
-                <a href="/detalle-servicio/<?= $link_hash ?>" onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')" 
+                <a href="<?= $link_hash ?>" onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
 
                     <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">

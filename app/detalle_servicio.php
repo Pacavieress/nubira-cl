@@ -61,17 +61,18 @@ $uid = (int)($_SESSION['usuario_id'] ?? 0);
 // 4. Validación ID (NUBIRA SHIELD)
 require_once $ruta_raiz . '/seguridad_url.php';
 
-$param_id = $_GET['id'] ?? null;
+require_once $ruta_raiz . '/helpers/seo.php';
 $id = 0;
+$viene_url_nueva = false;
 
-if ($param_id) {
+if (isset($_GET['servicio_id']) && is_numeric($_GET['servicio_id'])) {
+    $id = (int)$_GET['servicio_id'];
+    $viene_url_nueva = true;
+} elseif (isset($_GET['id'])) {
+    $param_id = $_GET['id'];
     if (is_numeric($param_id)) {
-        // Es un ID viejo o vulnerable. Lo convertimos y forzamos la URL segura.
-        $hash_seguro = nubira_encriptar_id($param_id);
-        header("Location: /detalle-servicio/" . $hash_seguro, true, 301);
-        exit;
+        $id = (int)$param_id;
     } else {
-        // Es un hash seguro estilo Nubira 2.0. Lo desencriptamos silenciosamente.
         $id = nubira_desencriptar_id($param_id);
     }
 }
@@ -97,6 +98,18 @@ try {
 } catch (Exception $e) { die("Error DB."); }
 
 if (!$servicio) { http_response_code(404); die("Servicio eliminado."); }
+
+// Canonicalizar URL a formato slug
+if (!$viene_url_nueva) {
+    $slug_can = $servicio['slug'] ?? '';
+    header("Location: " . url_servicio($id, $slug_can ?: null), true, 301);
+    exit;
+} elseif (!empty($_GET['slug_captured']) && !empty($servicio['slug'])) {
+    if ($_GET['slug_captured'] !== $servicio['slug']) {
+        header("Location: " . url_servicio($id, $servicio['slug']), true, 301);
+        exit;
+    }
+}
 
 // [NUBIRA SHIELD] Bloqueo de visibilidad por estado
 $es_propietario = ($logueado && $uid == $servicio['alumno_id']);
@@ -235,7 +248,7 @@ if ($stmt_fav = $conn->prepare($sql_fav)) {
 
 // 3. Buscar recomendaciones mezclando: Su categoría favorita + La categoría actual + Algo de frescura
 // Priorizamos lo que le gusta, pero si no hay suficiente, rellenamos con la categoría del servicio actual.
-$sql_recs = "SELECT s.id, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.categoria, s.modalidad,
+$sql_recs = "SELECT s.id, s.slug, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.categoria, s.modalidad,
                     COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                     (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                     (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -261,10 +274,21 @@ if ($stmt_recs = $conn->prepare($sql_recs)) {
 
 // 6. METADATOS & OG TAGS
 $page_title = htmlspecialchars($servicio['titulo']);
+$_inst = $servicio['institucion_maestra'] ?? $servicio['institucion'] ?? 'Chile';
+$_seo_titulo_raw = $servicio['titulo'] . ' en ' . $_inst . ' | Nubira';
+$seo_title = htmlspecialchars(mb_strlen($_seo_titulo_raw) > 65
+    ? mb_substr($_seo_titulo_raw, 0, 62) . '...'
+    : $_seo_titulo_raw);
+$_nombre_tutor = explode(' ', trim($servicio['nombre_alumno'] ?? ''))[0];
+$_desc_corta = mb_strimwidth(strip_tags($servicio['descripcion'] ?? ''), 0, 100, '');
+$_meta_desc_raw = ucfirst($servicio['modalidad'] ?? '') . ' de ' . ($servicio['categoria'] ?? '')
+    . ' con ' . $_nombre_tutor . '. ' . $_desc_corta . '. Contrata en Nubira.';
+$og_desc = htmlspecialchars(mb_strlen($_meta_desc_raw) > 155
+    ? mb_substr($_meta_desc_raw, 0, 152) . '...'
+    : $_meta_desc_raw);
 $token_seguro = nubira_encriptar_id($id);
 $url_servicio_masked = $base_url . "/detalle-servicio/" . $token_seguro;
-$url_canonical = $url_servicio_masked;
-$og_desc = mb_strimwidth(strip_tags($servicio['descripcion']), 0, 150, "...");
+$url_canonical = $base_url . url_servicio($id, $servicio['slug'] ?? null);
 
 $og_image = $default_image; 
 $web_src = $default_image;
@@ -344,7 +368,8 @@ session_write_close();
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title><?= $page_title ?> | Nubira</title>
+    <title><?= $seo_title ?></title>
+    <meta name="description" content="<?= $og_desc ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <link rel="canonical" href="<?= $url_canonical ?>" />
@@ -561,6 +586,7 @@ session_write_close();
     </div>
 </a>
 
+
                    <div class="mt-6">
                         <h3 class="font-bold text-gray-900 mb-3">Sobre este servicio</h3>
                         <div class="text-gray-600 text-sm whitespace-normal font-normal leading-relaxed" style="overflow-wrap:anywhere; word-break:break-word;">
@@ -576,35 +602,104 @@ session_write_close();
                         </div>
                     </div>
 
+<?php if (!empty($servicio['video_path']) && $servicio['video_estado'] === 'aprobado'): ?>
+<div class="mt-6 pt-6 border-t border-gray-50">
+    <button type="button" onclick="toggleVideoTutor()" id="btn-video-tutor"
+            class="flex items-center justify-between w-full text-left group py-1">
+        <span class="text-sm font-bold text-gray-700 group-hover:text-[#54A6D8] transition-colors">
+            Ver video de presentación del tutor
+        </span>
+        <svg id="icono-video-tutor"
+             class="w-5 h-5 text-gray-400 group-hover:text-[#54A6D8] shrink-0"
+             style="transition:transform 200ms ease-out;"
+             fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+    <div id="contenedor-video-tutor"
+         style="max-height:0; overflow:hidden; transition:max-height 200ms ease-out;">
+        <div class="pt-4">
+            <div class="w-[140px] md:w-[180px]">
+                <div class="relative aspect-[9/16] bg-black rounded-xl overflow-hidden shadow-sm">
+                    <video id="video-tutor-player"
+                           src="/upload/videos_servicios/<?= htmlspecialchars($servicio['video_path']) ?>"
+                           class="w-full h-full object-cover"
+                           controls
+                           preload="none"
+                           controlsList="nodownload"
+                           disablePictureInPicture
+                           playsinline>
+                    </video>
+                    <div class="absolute top-1.5 right-1.5 pointer-events-none z-10">
+                        <span class="text-white/75 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-black/30"
+                              style="text-shadow:0 1px 2px rgba(0,0,0,0.8);">
+                            Nubira.cl
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var abierto = false;
+    window.toggleVideoTutor = function () {
+        var c  = document.getElementById('contenedor-video-tutor');
+        var ic = document.getElementById('icono-video-tutor');
+        var v  = document.getElementById('video-tutor-player');
+        abierto = !abierto;
+        if (abierto) {
+            c.style.maxHeight = c.scrollHeight + 'px';
+            ic.style.transform = 'rotate(180deg)';
+            if (v) v.preload = 'metadata';
+        } else {
+            c.style.maxHeight = '0';
+            ic.style.transform = '';
+            if (v) v.pause();
+        }
+    };
+}());
+</script>
+<?php endif; ?>
+
                    <div class="mt-8 pt-8 border-t border-gray-50">
     <h3 class="font-bold text-gray-900 mb-5">Lo que incluye este servicio</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
         <div class="flex items-start gap-3">
-            <?= icon('video', 'text-gray-400 mt-1') ?>
+            <svg class="text-gray-400 mt-1 w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0H3" />
+            </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Sesión interactiva</p>
-                <p class="text-[11px] text-gray-500">Clase o reunión 100% online.</p>
+                <p class="text-sm font-bold text-gray-800">Clase 100% online en Nubira</p>
+                <p class="text-[11px] text-gray-500">Sin Meet, Zoom ni Teams. Aula virtual integrada en la plataforma.</p>
             </div>
         </div>
         <div class="flex items-start gap-3">
-            <?= icon('comments', 'text-gray-400 mt-1') ?>
+            <svg class="text-gray-400 mt-1 w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Chat directo</p>
-                <p class="text-[11px] text-gray-500">Comunícate por el aula virtual.</p>
+                <p class="text-sm font-bold text-gray-800">Chat anónimo antes de contratar</p>
+                <p class="text-[11px] text-gray-500">Conversa con el tutor sin compartir WhatsApp ni redes sociales. Cuidamos tu privacidad.</p>
             </div>
         </div>
         <div class="flex items-start gap-3">
-            <?= icon('clock-rotate-left', 'text-gray-400 mt-1') ?>
+            <svg class="text-gray-400 mt-1 w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+            </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Horario a convenir</p>
-                <p class="text-[11px] text-gray-500">Coordina directo con el vendedor.</p>
+                <p class="text-sm font-bold text-gray-800">Horarios publicados por el tutor</p>
+                <p class="text-[11px] text-gray-500">Reserva con días de anticipación según su disponibilidad.</p>
             </div>
         </div>
         <div class="flex items-start gap-3">
-            <?= icon('file-pdf', 'text-gray-400 mt-1') ?>
+            <svg class="text-gray-400 mt-1 w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Material de apoyo</p>
-                <p class="text-[11px] text-gray-500">Si el autor lo especifica.</p>
+                <p class="text-sm font-bold text-gray-800">Garantía Nubira</p>
+                <p class="text-[11px] text-gray-500">Tu pago queda protegido hasta confirmar la clase.</p>
             </div>
         </div>
     </div>
@@ -940,7 +1035,7 @@ $is_oferta = oferta_vigente($servicio);
             $inst_text = htmlspecialchars(mb_strimwidth($inst_clean, 0, 22, '...'));
         }
     ?>
-        <a href="/detalle-servicio/<?= $r['id'] ?>" class="group block snap-start shrink-0 w-[240px] md:w-[280px]" data-track-click="rec:<?= $r['id'] ?>">
+        <a href="<?= url_servicio((int)$r['id'], $r['slug'] ?? null) ?>" class="group block snap-start shrink-0 w-[240px] md:w-[280px]" data-track-click="rec:<?= $r['id'] ?>">
                   <div class="relative bg-white rounded-xl overflow-hidden aspect-[4/3] mb-3 border border-gray-200 transition-all">
                 <img src="<?= $ir ?>" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='<?= $default_image ?>'">
             </div>

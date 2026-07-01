@@ -20,6 +20,7 @@ require_once __DIR__ . '/init_sesion.php';
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
 require_once __DIR__ . '/helpers/institucion.php';     // institucion_tutor()
+require_once __DIR__ . '/helpers/seo.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -779,14 +780,12 @@ require_once __DIR__ . '/componentes/sidebar.php';
                     <?php else: foreach($publicaciones as $row): 
                         
                         $sid_raw = (int)($row['id'] ?? 0);
-                        $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($sid_raw) : $sid_raw;
-                        
                         $tipo_pub = $row['tipo_pub'] ?? 'servicio';
                         $es_apunte = ($tipo_pub === 'apunte');
 
                         // Data Prep
-                        $titulo = (string)($row['titulo'] ?? ''); 
-                        $precio_val = $row['precio'] ?? 0; 
+                        $titulo = (string)($row['titulo'] ?? '');
+                        $precio_val = $row['precio'] ?? 0;
                         if ($es_apunte) {
                             $img = (string)($row['portada'] ?? '');
                             $portada_url = !empty($img) ? "/upload/preview/" . $img : $default_pub_img;
@@ -794,7 +793,11 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             $portada_url = url_portada($row); // [BANCO] banco → legacy → placeholder
                         }
 
-                        $enlace_detalle = $es_apunte ? "/apunte/" . $link_hash : "/detalle-servicio/" . $link_hash;
+                        if ($es_apunte) {
+                            $enlace_detalle = "/apunte/" . nubira_encriptar_id($sid_raw);
+                        } else {
+                            $enlace_detalle = url_servicio($sid_raw, $row['slug'] ?? null);
+                        }
                         
                         // Formato de Precio
                         if (is_numeric($precio_val) && $precio_val > 0) {

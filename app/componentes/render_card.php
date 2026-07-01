@@ -13,6 +13,9 @@ foreach($rutas_helper as $rh) if(file_exists($rh)){ require_once $rh; break; }
 $rutas_img = [__DIR__.'/../helpers/imagen_servicio.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/imagen_servicio.php'];
 foreach($rutas_img as $rim) if(file_exists($rim)){ require_once $rim; break; }
 
+$rutas_seo = [__DIR__.'/../helpers/seo.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/seo.php'];
+foreach($rutas_seo as $rseo) if(file_exists($rseo)){ require_once $rseo; break; }
+
 // 2. RECIBIR DATOS
 $id = (int)($_GET['id'] ?? 0);
 $tipo = $_GET['tipo'] ?? 'servicio'; 
@@ -24,7 +27,7 @@ $es_basico = false; // Por defecto no penaliza a apuntes
 // 3. LOGICA DE RENDERIZADO
 if ($tipo === 'servicio') {
     // 1. Agregamos precio_oferta, cupos_oferta e is_subvencionado a la consulta
-    $sql = "SELECT s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, s.imagen, s.imagen_banco_id, s.categoria, s.score_nubira,
+    $sql = "SELECT s.titulo, s.slug, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, s.imagen, s.imagen_banco_id, s.categoria, s.score_nubira,
             a.foto_perfil AS tutor_foto, a.nombre AS tutor_nombre,
             bi.archivo as banco_archivo,
             (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -53,7 +56,7 @@ if ($tipo === 'servicio') {
     $precio_cls = ($precio_normal > 0) ? "text-gray-700" : "text-gray-700";
     $tag = "CLASES"; // <--- AJUSTADO A PLURAL
     $tag_color = "text-[#54A6D8]";
-    $link = "/detalle-servicio/$id";
+    $link = url_servicio($id, $row['slug'] ?? null);
     
     // --- LÓGICA DE ESCALAFONES DE STATUS (TIERS NUBIRA 2.0 YOUTUBE EDITION) ---
     $score = (int)($row['score_nubira'] ?? 0);

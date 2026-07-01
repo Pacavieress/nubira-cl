@@ -41,6 +41,7 @@ if (file_exists($app_dir . '/iconos.php')) {
 } else {
     if (!function_exists('icon')) { function icon($n, $c='') { return "<i class='fa-solid fa-$n $c'></i>"; } }
 }
+require_once $app_dir . '/helpers/seo.php';
 
 // 3. SEGURIDAD DE SESIÓN
 if (!isset($_SESSION['usuario_id'])) { header("Location: /login"); exit; }
@@ -189,6 +190,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $mensaje = "Cambios guardados. Pendiente de revisión.";
                 $exito = true;
+
+                // Regenerar slug si el título cambió
+                require_once $app_dir . '/helpers/seo.php';
+                $slug_nuevo = generar_slug($titulo);
+                if (!empty($slug_nuevo) && $slug_nuevo !== ($servicio['slug'] ?? '')) {
+                    $stmt_sl = $conn->prepare("UPDATE servicios SET slug = ? WHERE id = ?");
+                    $stmt_sl->bind_param("si", $slug_nuevo, $id_servicio);
+                    $stmt_sl->execute();
+                    $stmt_sl->close();
+                }
             } else {
                 error_log("Nubira Error - Update Servicio: " . $stmt->error);
                 $mensaje = "Error al guardar.";
@@ -284,7 +295,7 @@ if (!function_exists('nav_class')) {
             </svg>
         </a>
         
-        <a href="/detalle-servicio/<?= $id_servicio ?>" target="_blank" class="hidden md:flex text-sm font-bold text-[#54A6D8] hover:underline items-center gap-1 flex-shrink-0">
+        <a href="<?= url_servicio($id_servicio, $servicio['slug'] ?? null) ?>" target="_blank" class="hidden md:flex text-sm font-bold text-[#54A6D8] hover:underline items-center gap-1 flex-shrink-0">
             <?= icon('eye', 'w-4 h-4') ?> Ver publicación
         </a>
     </div>
@@ -459,6 +470,357 @@ if (!function_exists('nav_class')) {
                 </div>
 
             </form>
+
+            <?php
+            /* ── SECCIÓN VIDEO ─────────────────────────────────────────────── */
+            $video_estado  = $servicio['video_estado']         ?? 'sin_video';
+            $video_path    = $servicio['video_path']            ?? null;
+            $video_motivo  = $servicio['video_motivo_rechazo']  ?? null;
+            $mostrar_form_upload = in_array($video_estado, ['sin_video', 'rechazado']);
+            ?>
+
+            <div class="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm mt-6" id="seccion-video">
+
+                <!-- Cabecera -->
+                <div class="flex items-start justify-between gap-3 mb-5">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 class="text-base font-bold text-gray-900">Video de presentación</h2>
+                            <span class="text-[10px] font-bold bg-blue-50 text-[#54A6D8] px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">Opcional</span>
+                        </div>
+                        <p class="text-xs text-gray-400 leading-relaxed max-w-lg">
+                            Video vertical (9:16) de máx. 45 seg. Aumenta la confianza del comprador y Nubira puede usarlo en Instagram y TikTok para promover tu servicio.
+                        </p>
+                    </div>
+
+                    <?php if ($video_estado === 'aprobado'): ?>
+                        <span class="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 whitespace-nowrap">
+                            <?= icon('check-circle', 'w-3.5 h-3.5') ?> Publicado
+                        </span>
+                    <?php elseif ($video_estado === 'pendiente'): ?>
+                        <span class="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100 whitespace-nowrap">
+                            <?= icon('clock', 'w-3.5 h-3.5') ?> En revisión
+                        </span>
+                    <?php elseif ($video_estado === 'rechazado'): ?>
+                        <span class="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 whitespace-nowrap">
+                            <?= icon('exclamation-triangle', 'w-3.5 h-3.5') ?> Rechazado
+                        </span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Estado APROBADO: player + opción reemplazar -->
+                <?php if ($video_estado === 'aprobado' && $video_path): ?>
+                    <div id="video-aprobado" class="mb-5">
+                        <div class="relative rounded-2xl overflow-hidden bg-black aspect-[9/16] max-w-[180px]">
+                            <video
+                                src="/upload/videos_servicios/<?= htmlspecialchars($video_path) ?>"
+                                controls
+                                preload="metadata"
+                                controlsList="nodownload"
+                                disablePictureInPicture
+                                playsinline
+                                class="w-full h-full object-contain"
+                            ></video>
+                        </div>
+                        <button type="button"
+                                onclick="document.getElementById('video-upload-form').classList.remove('hidden'); document.getElementById('video-aprobado').classList.add('hidden');"
+                                class="mt-3 flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                            Reemplazar video
+                        </button>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Estado PENDIENTE: aviso + opción reemplazar -->
+                <?php if ($video_estado === 'pendiente'): ?>
+                    <div id="video-pendiente" class="mb-5 bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3 items-start">
+                        <span class="text-amber-400 mt-0.5 shrink-0"><?= icon('clock', 'w-5 h-5') ?></span>
+                        <div>
+                            <p class="text-sm font-bold text-amber-800">Tu video está siendo revisado</p>
+                            <p class="text-xs text-amber-600 mt-0.5 leading-relaxed">Recibirás una notificación cuando sea aprobado. Mientras tanto no aparece en tu publicación.</p>
+                            <button type="button"
+                                    onclick="document.getElementById('video-pendiente').classList.add('hidden'); document.getElementById('video-upload-form').classList.remove('hidden');"
+                                    class="mt-2 flex items-center gap-1 text-xs font-bold text-amber-700 hover:underline">
+                                <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                Subir otro video (reemplaza el actual)
+                            </button>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Estado RECHAZADO: motivo -->
+                <?php if ($video_estado === 'rechazado'): ?>
+                    <div class="mb-5 bg-red-50 border border-red-100 rounded-xl p-4 flex gap-3 items-start">
+                        <span class="text-red-400 mt-0.5 shrink-0"><?= icon('exclamation-triangle', 'w-5 h-5') ?></span>
+                        <div>
+                            <p class="text-sm font-bold text-red-800">Video rechazado</p>
+                            <?php if ($video_motivo): ?>
+                                <p class="text-xs text-red-600 mt-1 leading-relaxed"><?= htmlspecialchars($video_motivo) ?></p>
+                            <?php endif; ?>
+                            <p class="text-xs text-red-500 mt-1.5 font-medium">Sube un nuevo video corrigiendo lo indicado.</p>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Formulario de upload -->
+                <div id="video-upload-form" class="<?= $mostrar_form_upload ? '' : 'hidden' ?> space-y-4">
+
+                    <!-- Reglas del video -->
+                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
+                        <span class="shrink-0 mt-0.5 text-amber-500">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-xs font-bold text-amber-800 mb-2">Reglas importantes para tu video</p>
+                            <ul class="space-y-1 text-xs text-amber-700 leading-relaxed">
+                                <li>· Solo puedes mencionar tu primer nombre (ej: "Hola, soy Juan"). No menciones tu apellido.</li>
+                                <li>· No menciones números de teléfono, WhatsApp, correos electrónicos, ni redes sociales.</li>
+                                <li>· No muestres en pantalla ningún dato de contacto (carteles, papel, fondo con tu Instagram, etc.).</li>
+                                <li>· Habla solo de tu servicio: qué enseñas, cómo lo haces, qué pueden esperar.</li>
+                                <li>· Si rompes estas reglas tu video será rechazado y deberás subir uno nuevo.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Zona de selección -->
+                    <div id="video-drop-zone"
+                         onclick="document.getElementById('video-input').click()"
+                         class="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer
+                                hover:border-[#54A6D8] hover:bg-blue-50/20 transition-all">
+
+                        <div id="video-drop-icon" class="flex flex-col items-center gap-2.5">
+                            <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-300">
+                                <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Toca para seleccionar tu video</p>
+                                <p class="text-xs text-gray-400 mt-0.5">MP4 · WebM · MOV &nbsp;·&nbsp; Máx. 30 MB &nbsp;·&nbsp; Máx. 45 seg. &nbsp;·&nbsp; Vertical 9:16</p>
+                            </div>
+                        </div>
+
+                        <div id="video-preview-wrap" class="hidden flex-col items-center gap-2">
+                            <div class="relative rounded-xl overflow-hidden bg-black aspect-[9/16] w-[140px]">
+                                <video id="video-preview-local" class="w-full h-full object-contain" muted playsinline></video>
+                            </div>
+                            <p id="video-preview-info" class="text-xs text-gray-500 truncate max-w-[220px]"></p>
+                            <button type="button"
+                                    onclick="event.stopPropagation(); quitarVideo();"
+                                    class="text-xs font-bold text-red-400 hover:text-red-600 transition-colors flex items-center gap-1">
+                                <?= icon('x-circle', 'w-3.5 h-3.5') ?> Quitar
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="file" id="video-input"
+                           accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime"
+                           class="hidden">
+
+                    <!-- Error de validación -->
+                    <div id="video-error" class="hidden bg-red-50 border border-red-100 rounded-xl px-4 py-3 flex items-start gap-2">
+                        <?= icon('exclamation-triangle', 'w-4 h-4 text-red-500 shrink-0 mt-0.5') ?>
+                        <span id="video-error-msg" class="text-xs font-bold text-red-700"></span>
+                    </div>
+
+                    <!-- Consentimiento RRSS -->
+                    <label class="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer
+                                  hover:bg-blue-50/30 hover:border-blue-100 transition-all select-none">
+                        <input type="checkbox" id="video-consent"
+                               class="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#54A6D8] focus:ring-[#54A6D8] cursor-pointer shrink-0">
+                        <span class="text-xs text-gray-600 leading-relaxed">
+                            <span class="font-bold text-gray-800">Autorizo a Nubira</span> a publicar este video en redes sociales (Instagram, TikTok, Facebook) para promocionar mi servicio. El video no será editado y siempre se asociará a mi perfil de tutor.
+                        </span>
+                    </label>
+
+                    <!-- Barra de progreso -->
+                    <div id="video-progress-wrap" class="hidden space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-500">Subiendo video...</span>
+                            <span id="video-progress-pct" class="text-xs font-bold text-[#54A6D8]">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div id="video-progress-bar"
+                                 class="h-2 rounded-full transition-all duration-150"
+                                 style="width:0%; background-color:#54A6D8;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Botón subir -->
+                    <button type="button" id="btn-subir-video" disabled
+                            onclick="subirVideo()"
+                            class="w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2
+                                   bg-[#54A6D8] text-white shadow-sm
+                                   disabled:opacity-40 disabled:cursor-not-allowed
+                                   enabled:hover:bg-sky-500 enabled:active:scale-[0.99]">
+                        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <span id="btn-subir-texto">Subir video</span>
+                    </button>
+
+                </div><!-- /video-upload-form -->
+
+            </div><!-- /seccion-video -->
+
+            <script>
+            (function () {
+                const SERVICIO_ID  = <?= (int)$id_servicio ?>;
+                const CSRF_TOKEN   = <?= json_encode($csrf_token) ?>;
+                const MAX_BYTES    = 30 * 1024 * 1024;
+                const MAX_SEG      = 45;
+
+                const elInput        = document.getElementById('video-input');
+                const elDropIcon     = document.getElementById('video-drop-icon');
+                const elPreviewWrap  = document.getElementById('video-preview-wrap');
+                const elPreviewVid   = document.getElementById('video-preview-local');
+                const elPreviewInfo  = document.getElementById('video-preview-info');
+                const elError        = document.getElementById('video-error');
+                const elErrorMsg     = document.getElementById('video-error-msg');
+                const elConsent      = document.getElementById('video-consent');
+                const elProgressWrap = document.getElementById('video-progress-wrap');
+                const elProgressBar  = document.getElementById('video-progress-bar');
+                const elProgressPct  = document.getElementById('video-progress-pct');
+                const elBtn          = document.getElementById('btn-subir-video');
+                const elBtnTxt       = document.getElementById('btn-subir-texto');
+
+                let archivoListo = false;
+
+                elInput.addEventListener('change', function () {
+                    const file = this.files[0];
+                    if (!file) return;
+                    archivoListo = false;
+                    ocultarError();
+                    actualizarBtn();
+
+                    const tiposOk = ['video/mp4', 'video/webm', 'video/quicktime'];
+                    if (!tiposOk.includes(file.type)) {
+                        error('Formato no válido. Usa MP4, WebM o MOV.'); this.value = ''; return;
+                    }
+                    if (file.size > MAX_BYTES) {
+                        error('El archivo supera 30 MB. Comprime el video e intenta de nuevo.'); this.value = ''; return;
+                    }
+
+                    const objURL = URL.createObjectURL(file);
+                    const tmp    = document.createElement('video');
+                    tmp.preload  = 'metadata';
+                    tmp.src      = objURL;
+
+                    tmp.addEventListener('loadedmetadata', function () {
+                        URL.revokeObjectURL(objURL);
+
+                        if (this.duration > MAX_SEG) {
+                            error('El video dura ' + Math.ceil(this.duration) + ' s. El máximo es 45 segundos.');
+                            elInput.value = ''; return;
+                        }
+                        if (this.videoWidth > 0 && this.videoWidth >= this.videoHeight) {
+                            error('El video debe ser vertical (9:16). Grábalo con el celular en modo retrato.');
+                            elInput.value = ''; return;
+                        }
+
+                        archivoListo = true;
+                        elPreviewVid.src = URL.createObjectURL(file);
+                        elPreviewInfo.textContent =
+                            file.name + ' · ' + (file.size / (1024 * 1024)).toFixed(1) + ' MB · ' +
+                            Math.ceil(this.duration) + ' s';
+                        elDropIcon.classList.add('hidden');
+                        elPreviewWrap.classList.remove('hidden');
+                        elPreviewWrap.classList.add('flex');
+                        actualizarBtn();
+                    });
+
+                    tmp.addEventListener('error', function () {
+                        error('No se pudo leer el video. Asegúrate de que el archivo no esté dañado.');
+                        elInput.value = '';
+                    });
+                });
+
+                elConsent.addEventListener('change', actualizarBtn);
+
+                window.quitarVideo = function () {
+                    elInput.value    = '';
+                    archivoListo     = false;
+                    elPreviewVid.src = '';
+                    elPreviewWrap.classList.add('hidden');
+                    elPreviewWrap.classList.remove('flex');
+                    elDropIcon.classList.remove('hidden');
+                    ocultarError();
+                    actualizarBtn();
+                };
+
+                window.subirVideo = function () {
+                    if (!archivoListo || !elConsent.checked) return;
+                    const file = elInput.files[0];
+                    if (!file) return;
+
+                    const fd = new FormData();
+                    fd.append('video',               file);
+                    fd.append('servicio_id',         SERVICIO_ID);
+                    fd.append('csrf_token',          CSRF_TOKEN);
+                    fd.append('consentimiento_rrss', '1');
+
+                    elBtn.disabled       = true;
+                    elBtnTxt.textContent = 'Subiendo...';
+                    elProgressWrap.classList.remove('hidden');
+                    ocultarError();
+
+                    const xhr = new XMLHttpRequest();
+
+                    xhr.upload.addEventListener('progress', function (e) {
+                        if (!e.lengthComputable) return;
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        elProgressBar.style.width = pct + '%';
+                        elProgressPct.textContent = pct + '%';
+                    });
+
+                    xhr.addEventListener('load', function () {
+                        let res = {};
+                        try { res = JSON.parse(xhr.responseText); } catch (e) {}
+
+                        if (xhr.status === 200 && res.ok) {
+                            elProgressBar.style.width      = '100%';
+                            elProgressBar.style.background = '#10b981';
+                            elProgressPct.textContent      = '100%';
+                            elBtnTxt.textContent           = '¡Listo!';
+                            setTimeout(() => location.reload(), 1200);
+                        } else {
+                            error(res.error || 'Error al subir el video. Intenta de nuevo.');
+                            resetUI();
+                        }
+                    });
+
+                    xhr.addEventListener('error',   function () { error('Error de conexión. Verifica tu internet.'); resetUI(); });
+                    xhr.addEventListener('timeout', function () { error('El upload tardó demasiado. Intenta con mejor conexión.'); resetUI(); });
+
+                    xhr.timeout = 120000;
+                    xhr.open('POST', '/subir-video-servicio');
+                    xhr.send(fd);
+                };
+
+                function actualizarBtn() { elBtn.disabled = !(archivoListo && elConsent.checked); }
+                function error(msg) {
+                    elErrorMsg.textContent = msg;
+                    elError.classList.remove('hidden');
+                    elError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                function ocultarError() { elError.classList.add('hidden'); }
+                function resetUI() {
+                    elBtn.disabled             = false;
+                    elBtnTxt.textContent       = 'Subir video';
+                    elProgressWrap.classList.add('hidden');
+                    elProgressBar.style.width      = '0%';
+                    elProgressBar.style.background = '#54A6D8';
+                    elProgressPct.textContent      = '0%';
+                }
+            }());
+            </script>
+
         </div>
     </div>
 </main>

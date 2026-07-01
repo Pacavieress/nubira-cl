@@ -13,6 +13,7 @@ require_once __DIR__ . '/helpers/portada_helper.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 require_once __DIR__ . '/helpers/ofertas.php';
 require_once __DIR__ . '/helpers/institucion.php'; // abreviar_institucion() / institucion_tutor()
+require_once __DIR__ . '/helpers/seo.php';
 
 // [NUBIRA 2.0] Cargar iconos oficiales de la plataforma
 $rutas_iconos = [__DIR__.'/iconos.php', __DIR__.'/../iconos.php', $_SERVER['DOCUMENT_ROOT'].'/app/iconos.php', $_SERVER['DOCUMENT_ROOT'].'/iconos.php'];
@@ -180,9 +181,8 @@ $frecuencia_banner = 4;
 
 foreach ($servicios as $i => $row):
     
-    // [NUBIRA SHIELD] Enmascarar ID
-    $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
-    
+    $link_hash = url_servicio((int)$row['id'], $row['slug'] ?? null);
+
     // 1. DATA PREP PORTADA (banco → legacy → placeholder, vía helper unificado; ignora imagen_estado)
     $portada_url = url_portada($row);
 
@@ -266,7 +266,7 @@ foreach ($servicios as $i => $row):
     $inst_text = $hide_inst ? '' : institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
 ?>
 
-<a href="/detalle-servicio/<?= $link_hash ?>"
+<a href="<?= $link_hash ?>"
    class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
 
   <div class="card-apunte relative overflow-hidden w-full <?= $compacto ? 'aspect-square rounded-xl' : 'aspect-[3/2] rounded-xl' ?> bg-gray-100 border border-gray-200">

@@ -24,6 +24,7 @@ if (file_exists($ruta_raiz . '/seguridad_url.php')) {
 if (!function_exists('nubira_encriptar_id')) {
     function nubira_encriptar_id($id) { return $id; }
 }
+require_once $ruta_raiz . '/helpers/seo.php';
 
 // 2. Verificación de sesión
 if (!isset($_SESSION['usuario_id'])) {
@@ -36,7 +37,7 @@ $uid = (int)$_SESSION['usuario_id'];
 $servicio_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($servicio_id === 0) { die("ID de servicio no válido."); }
 
-$stmt = $conn->prepare("SELECT titulo, horarios_json, alumno_id FROM servicios WHERE id = ?");
+$stmt = $conn->prepare("SELECT titulo, slug, horarios_json, alumno_id FROM servicios WHERE id = ?");
 $stmt->bind_param("i", $servicio_id);
 $stmt->execute();
 $servicio = $stmt->get_result()->fetch_assoc();
@@ -105,7 +106,7 @@ if(file_exists($ruta_comp . '/sidebar.php')) require_once $ruta_comp . '/sidebar
 <main class="pt-24 pb-12 lg:ml-64 px-4 max-w-[800px] mx-auto animate-fade-in-up">
     
     <div class="mb-8 flex items-center gap-4">
-        <a href="/detalle-servicio/<?= nubira_encriptar_id($servicio_id) ?>" class="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-all">
+        <a href="<?= url_servicio($servicio_id, $servicio['slug'] ?? null) ?>" class="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-all">
             <i class="fa-solid fa-arrow-left"></i>
         </a>
         <div>

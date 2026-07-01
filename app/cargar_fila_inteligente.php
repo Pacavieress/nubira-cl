@@ -20,6 +20,9 @@ foreach($rutas_iconos as $ri) if(file_exists($ri)){ require_once $ri; break; }
 $rutas_img = [__DIR__.'/helpers/imagen_servicio.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/imagen_servicio.php'];
 foreach($rutas_img as $rim) if(file_exists($rim)){ require_once $rim; break; }
 
+$rutas_seo = [__DIR__.'/helpers/seo.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/seo.php'];
+foreach($rutas_seo as $rseo) if(file_exists($rseo)){ require_once $rseo; break; }
+
 // 1. CONFIGURACIÓN DE SECCIÓN
 $titulo = "Selección Premium";
 $default_img = 'https://nubira.cl/upload/servicios/default_clases.webp';
@@ -81,8 +84,7 @@ if (!function_exists('render_rating_html')) {
         
         <?php foreach ($items as $row): 
             
-            // [NUBIRA SHIELD] Enmascarar ID
-            $link_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
+            $link_hash = url_servicio((int)$row['id'], $row['slug'] ?? null);
 
             // 1. Imagen del servicio (banco → legacy → placeholder, vía helper unificado)
             $img_url = url_portada($row);
@@ -132,8 +134,8 @@ if (!function_exists('render_rating_html')) {
             $inst_text = institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
         ?>
 
-        <a href="/detalle-servicio/<?= $link_hash ?>" 
-           onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')" 
+        <a href="<?= $link_hash ?>"
+           onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
            class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
             <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl">

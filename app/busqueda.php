@@ -33,6 +33,7 @@ if (!function_exists('resaltarTermino')) {
 }
 
 require_once __DIR__ . '/helpers/institucion.php';
+require_once __DIR__ . '/helpers/seo.php';
 
 if (!function_exists('render_rating_html')) {
     function render_rating_html(float $rating_val, int $total_votos, string $fallback_label = 'Nuevo'): string {
@@ -394,7 +395,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                         $idx_srv++;
 
                         // Identificadores y Links
-                        $link_hash_srv = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row['id']) : (int)$row['id'];
+                        $link_hash_srv = url_servicio((int)$row['id'], $row['slug'] ?? null);
                         
                         // Imagen de portada con cache estático
                         $img_url = resolver_portada_busqueda('servicio', $row);
@@ -472,7 +473,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                         $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
                     ?>
                     
-                    <a href="/detalle-servicio/<?= $link_hash_srv ?>"
+                    <a href="<?= $link_hash_srv ?>"
                        onclick="if(typeof registrarClick === 'function') registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
                        class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
