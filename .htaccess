@@ -128,6 +128,8 @@ RewriteRule ^cargar-oportunidades$    app/cargar_oportunidades.php      [L,QSA]
 
 # === URL CANÓNICA SEO (Fase 1) ===
 RewriteRule ^servicios/(.+)-(\d+)/?$ app/detalle_servicio.php?servicio_id=$2&slug_captured=$1 [L,QSA]
+# Fallback: /servicios/123 (sin slug, para servicios con slug NULL)
+RewriteRule ^servicios/(\d+)/?$ app/detalle_servicio.php?servicio_id=$1 [L,QSA]
 
 # Detalles (Unificados para evitar error 404/imágenes rotas)
 RewriteRule ^detalle-servicio/([a-zA-Z0-9_-]+)/?$ app/detalle_servicio.php?id=$1 [L,QSA]

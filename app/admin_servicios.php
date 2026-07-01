@@ -13,6 +13,7 @@ if (!file_exists($app_dir . '/conexion.php')) $app_dir = __DIR__;
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
+require_once $app_dir . '/helpers/seo.php';
 
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
     header('Location: /vitrina'); exit;
@@ -71,7 +72,7 @@ if ($busqueda !== '') {
     $types = "ss";
 }
 
-$sql = "SELECT s.id, s.titulo, s.nombre_oferente, s.categoria, s.imagen, s.imagen_banco_id, s.estado, s.fecha_publicacion, s.alumno_id, s.motivo_rechazo, s.visible,
+$sql = "SELECT s.id, s.slug, s.titulo, s.nombre_oferente, s.categoria, s.imagen, s.imagen_banco_id, s.estado, s.fecha_publicacion, s.alumno_id, s.motivo_rechazo, s.visible,
                a.nombre AS nombre_alumno, bi.archivo AS banco_archivo
         FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
@@ -172,7 +173,7 @@ require_once $app_dir . '/componentes/sidebar.php';
           <?php foreach ($servicios as $row): 
      $esVisible = !isset($row['visible']) || $row['visible'] == 1; 
 ?>
-  <tr id="fila-<?= $row['id'] ?>" class="hover:bg-slate-50 transition-all align-middle group <?= !$esVisible ? 'opacity-60 bg-slate-50' : '' ?>">
+  <tr id="fila-<?= $row['id'] ?>" data-url="<?= htmlspecialchars(url_servicio((int)$row['id'], $row['slug'] ?? null)) ?>" class="hover:bg-slate-50 transition-all align-middle group <?= !$esVisible ? 'opacity-60 bg-slate-50' : '' ?>">
                
                <td class="px-6 py-4 text-center text-slate-400 font-mono text-xs">#<?= $row['id'] ?></td>
                
@@ -243,7 +244,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                      <a href="/admin/editar-servicio/<?= $row['id'] ?>" class="bg-violet-50 active:bg-violet-100 text-violet-600 p-2 rounded-xl transition-colors text-xs" title="Editar título / categoría / imagen">
                          <i class="fa-solid fa-pen-to-square"></i>
                      </a>
-                     <a href="/detalle-servicio/<?= $row['id'] ?>" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
+                     <a href="<?= url_servicio((int)$row['id'], $row['slug'] ?? null) ?>" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
                          <i class="fa-solid fa-arrow-up-right-from-square"></i>
                      </a>
 <form method="POST" action="/app/admin_servicios_accion.php" class="inline form-toggle-visibilidad">
@@ -384,7 +385,7 @@ async function aprobarServicio(id) {
           fila.querySelector('.estado-cell').innerHTML = '<span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">Aprobado</span>';
           fila.querySelector('.acciones-cell').innerHTML = `
               <div class="flex items-center justify-end gap-1.5 opacity-100 md:opacity-60 md:group-hover:opacity-100 transition-opacity">
-                 <a href="/detalle-servicio/${id}" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
+                 <a href="${fila.dataset.url}" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
                      <i class="fa-solid fa-arrow-up-right-from-square"></i>
                  </a>
                  <form method="POST" action="/app/admin_servicios_accion.php" class="inline form-eliminar">
@@ -425,7 +426,7 @@ document.getElementById('form-rechazo').addEventListener('submit', async e=>{
           fila.querySelector('.estado-cell').innerHTML = '<span class="bg-red-50 text-red-600 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">Rechazado</span>';
           fila.querySelector('.acciones-cell').innerHTML = `
               <div class="flex items-center justify-end gap-1.5 opacity-100 md:opacity-60 md:group-hover:opacity-100 transition-opacity">
-                 <a href="/detalle-servicio/${id}" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
+                 <a href="${fila.dataset.url}" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
                      <i class="fa-solid fa-arrow-up-right-from-square"></i>
                  </a>
                  <form method="POST" action="/app/admin_servicios_accion.php" class="inline form-eliminar">
