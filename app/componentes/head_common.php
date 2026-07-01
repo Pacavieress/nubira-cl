@@ -24,6 +24,7 @@ if ('serviceWorker' in navigator) {
             .catch(function(err) { console.warn('[SW] fallo al registrar:', err); });
     });
 }
+if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
 </script>
 <?php if (!empty($_SESSION['usuario_id'])): ?>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>

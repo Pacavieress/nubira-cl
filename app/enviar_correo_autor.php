@@ -35,7 +35,7 @@ if ($firma !== '') {
 }
 
 /* Enviar correo */
-$exito_envio = enviarCorreo($correo, $asunto, $mensaje_html);
+$exito_envio = _enviarEmailBase($correo, $asunto, plantillaMaestra($asunto, $mensaje_html), '', true);
 
 /* Guardar en BD */
 $stmt = $conn->prepare("

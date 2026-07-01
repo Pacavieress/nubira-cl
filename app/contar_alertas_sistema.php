@@ -52,7 +52,11 @@ try {
         'admin_solicitudes' => 0,
         'admin_login_fallos' => 0,
         'admin_accesos' => 0,
-        'admin_pendientes_verificacion' => 0
+        'admin_pendientes_verificacion' => 0,
+        'admin_perfil_incompleto' => 0,
+        'admin_videos' => 0,
+        'admin_anuncio_video' => 0,
+        'admin_despertar_dormidos' => 0
     ];
 
     if ($uid > 0) {
@@ -172,13 +176,13 @@ try {
             // 6. Servicios pendientes de aprobación
             try {
                 // Ajusta 'revisado = 0' o 'estado = "pendiente"' según tu base de datos
-                $res = $conn->query("SELECT COUNT(id) as total FROM servicios WHERE activo = 0");
+                $res = $conn->query("SELECT COUNT(id) as total FROM servicios WHERE estado = 'pendiente'");
                 if ($res) { $alertas['admin_servicios'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
 
             // 7. Apuntes pendientes de revisión
             try {
-                $res = $conn->query("SELECT COUNT(id) as total FROM apuntes WHERE activo = 0");
+                $res = $conn->query("SELECT COUNT(id) as total FROM apuntes WHERE estado = 'pendiente'");
                 if ($res) { $alertas['admin_apuntes'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
             
@@ -204,6 +208,70 @@ try {
             try {
                 $res = $conn->query("SELECT COUNT(id) AS total FROM alumnos WHERE verificacion_estado = 'pendiente' AND visible = 1");
                 if ($res) { $alertas['admin_pendientes_verificacion'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
+            // 12. Tutores con perfil incompleto (sin foto, bio, tipo o servicios sin horario)
+            try {
+                $res = $conn->query("SELECT COUNT(*) AS total FROM (
+                    SELECT a.id
+                    FROM alumnos a
+                    INNER JOIN servicios s ON s.alumno_id = a.id AND s.estado = 'aprobado'
+                    WHERE a.visible = 1 AND a.confirmado = 1
+                    GROUP BY a.id
+                    HAVING (a.foto_perfil IS NULL OR a.foto_perfil = ''
+                         OR a.bio IS NULL OR a.bio = ''
+                         OR a.tipo IS NULL OR a.tipo = ''
+                         OR SUM(CASE WHEN s.horarios_json IS NOT NULL
+                                      AND s.horarios_json != ''
+                                      AND s.horarios_json LIKE '% - %'
+                                      THEN 1 ELSE 0 END) < COUNT(*))
+                ) AS sub");
+                if ($res) { $alertas['admin_perfil_incompleto'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
+            // 13. Videos pendientes de moderación
+            try {
+                $res = $conn->query("SELECT COUNT(id) AS total FROM servicios WHERE video_estado = 'pendiente'");
+                if ($res) { $alertas['admin_videos'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
+            // 14. Tutores activos sin recibir el anuncio de video
+            try {
+                $res = $conn->query("
+                    SELECT COUNT(DISTINCT a.id) AS total
+                    FROM alumnos a
+                    INNER JOIN servicios s ON s.alumno_id = a.id
+                    WHERE s.estado = 'aprobado'
+                      AND a.visible = 1
+                      AND a.id != 1
+                      AND a.correo NOT LIKE 'testpablo%'
+                      AND LOWER(TRIM(a.correo)) NOT IN (
+                          SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+                          WHERE admin_nombre = 'anuncio_video_tutores_jun2026' AND exito = 1
+                      )
+                ");
+                if ($res) { $alertas['admin_anuncio_video'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
+            // 15. Usuarios dormidos sin recibir campaña despertar
+            try {
+                $res = $conn->query("
+                    SELECT COUNT(DISTINCT a.id) AS total
+                    FROM alumnos a
+                    WHERE a.visible = 1
+                      AND a.bloqueado = 0
+                      AND a.confirmado = 1
+                      AND a.recibir_emails = 1
+                      AND a.id != 1
+                      AND a.correo NOT LIKE 'testpablo%'
+                      AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
+                      AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
+                      AND LOWER(TRIM(a.correo)) NOT IN (
+                          SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+                          WHERE admin_nombre = 'despertar_dormidos_jun2026' AND exito = 1
+                      )
+                ");
+                if ($res) { $alertas['admin_despertar_dormidos'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
         }
     }

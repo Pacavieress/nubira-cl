@@ -143,12 +143,9 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
     @media (display-mode: standalone) {
         .nav-native-feel {
             padding-top: 0.5rem !important;
-            padding-bottom: max(22px, calc(env(safe-area-inset-bottom) - 12px)) !important;
+            padding-bottom: max(4px, env(safe-area-inset-bottom)) !important;
         }
-        .nav-native-feel li:not(:nth-child(3)) .w-6 {
-            width: 1.75rem !important;
-            height: 1.75rem !important;
-        }
+
     }
 </style>
 
