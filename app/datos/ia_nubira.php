@@ -15,10 +15,14 @@ header('Content-Type: application/json; charset=utf-8');
 session_start();
 
 if (!isset($_SESSION['usuario_id'])) {
-    http_response_code(401); 
-    echo json_encode(['error' => 'Acceso denegado']); 
+    http_response_code(401);
+    echo json_encode(['error' => 'Acceso denegado']);
     exit;
 }
+
+// TEMPORAL: servicio suspendido mientras se migra a nuevo proveedor de IA
+echo json_encode(['exito' => false, 'error' => 'Servicio de IA temporalmente no disponible. Puedes subir tu apunte llenando los campos manualmente.'], JSON_UNESCAPED_UNICODE);
+exit;
 
 $input = json_decode(file_get_contents('php://input'), true);
 $filename  = $input['filename'] ?? 'Documento_Nubira';
