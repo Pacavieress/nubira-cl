@@ -28,13 +28,21 @@ $page_title = "Autores de Servicios";
    CONSULTA PRINCIPAL
 ────────────────────────────── */
 $busqueda = trim($_GET['q'] ?? '');
+$filtro   = trim($_GET['filtro'] ?? '');
 $sql = "
-SELECT 
+SELECT
     a.id AS id_usuario,
     a.nombre AS nombre_usuario,
     a.correo,
     a.institucion,
+    a.foto_perfil,
+    a.bio,
+    a.tipo,
     COUNT(DISTINCT s.id) AS cantidad_servicios,
+    COUNT(DISTINCT CASE WHEN s.horarios_json IS NOT NULL
+                        AND s.horarios_json != ''
+                        AND s.horarios_json LIKE '% - %'
+                        THEN s.id END) AS servicios_con_horario,
     MAX(s.fecha_publicacion) AS ultima_publicacion,
 
     (
@@ -77,16 +85,23 @@ SELECT
 ) AS portada_servicio
 
 FROM servicios s
-INNER JOIN alumnos a ON a.id = s.alumno_id
+INNER JOIN alumnos a ON a.id = s.alumno_id AND s.estado = 'aprobado'
 ";
 
 $params = [];
+$where  = [];
 if ($busqueda !== '') {
-    $sql .= " WHERE a.nombre LIKE ? OR a.correo LIKE ? OR a.institucion LIKE ? ";
+    $where[] = "(a.nombre LIKE ? OR a.correo LIKE ? OR a.institucion LIKE ?)";
     $like = "%$busqueda%";
     $params = [$like, $like, $like];
 }
-$sql .= " GROUP BY a.id ORDER BY cantidad_servicios DESC";
+if ($where) $sql .= " WHERE " . implode(" AND ", $where);
+$sql .= " GROUP BY a.id";
+if ($filtro === 'incompleto') {
+    $sql .= " HAVING (a.foto_perfil IS NULL OR a.foto_perfil = '' OR a.bio IS NULL OR a.bio = '' OR a.tipo IS NULL OR a.tipo = '')
+                  OR (COUNT(DISTINCT CASE WHEN s.horarios_json IS NOT NULL AND s.horarios_json != '' AND s.horarios_json LIKE '% - %' THEN s.id END) < COUNT(DISTINCT s.id))";
+}
+$sql .= " ORDER BY cantidad_servicios DESC";
 
 $stmt = $conn->prepare($sql);
 if ($params) $stmt->bind_param("sss", ...$params);
@@ -132,15 +147,30 @@ require_once $app_dir . '/componentes/sidebar.php';
             <p class="text-slate-400 text-xs font-medium mt-0.5">Gestión de creadores de contenido y comunicación.</p>
         </div>
         
-        <form method="get" class="flex w-full md:w-auto">
-            <div class="relative w-full md:w-72">
-                <input type="text" name="q" value="<?= htmlspecialchars($busqueda) ?>" placeholder="Buscar por nombre o correo..." 
-                       class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white transition-colors outline-none font-medium placeholder-slate-400">
-                <button type="submit" class="absolute right-3 top-2.5 text-slate-400 active:text-[#54A6D8] transition-colors">
-                    <i class="fa-solid fa-search"></i>
-                </button>
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <form method="get" class="flex">
+                <?php if ($filtro === 'incompleto'): ?>
+                    <input type="hidden" name="filtro" value="incompleto">
+                <?php endif; ?>
+                <div class="relative w-full md:w-64">
+                    <input type="text" name="q" value="<?= htmlspecialchars($busqueda) ?>" placeholder="Buscar por nombre o correo..."
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:ring-0 focus:border-[#54A6D8] focus:bg-white transition-colors outline-none font-medium placeholder-slate-400">
+                    <button type="submit" class="absolute right-3 top-2.5 text-slate-400 active:text-[#54A6D8] transition-colors">
+                        <i class="fa-solid fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            <div class="flex gap-2 shrink-0">
+                <a href="?<?= $busqueda ? 'q=' . urlencode($busqueda) : '' ?>"
+                   class="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-colors <?= $filtro !== 'incompleto' ? 'bg-[#54A6D8] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200' ?>">
+                    Todos
+                </a>
+                <a href="?filtro=incompleto<?= $busqueda ? '&q=' . urlencode($busqueda) : '' ?>"
+                   class="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-colors <?= $filtro === 'incompleto' ? 'bg-[#54A6D8] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200' ?>">
+                    <i class="fa-solid fa-circle-exclamation mr-1"></i>Incompletos
+                </a>
             </div>
-        </form>
+        </div>
     </div>
 
     <div class="bg-white border border-slate-100 rounded-3xl overflow-hidden min-h-[400px]">
@@ -175,12 +205,44 @@ require_once $app_dir . '/componentes/sidebar.php';
                            class="w-12 h-10 rounded-xl object-cover border <?= $border_img ?>" 
                            loading="lazy" decoding="async" alt="Portada"
                            onerror="this.src='/upload/servicios/default_clases.webp';">
+                      <?php
+                          $tiene_foto = !empty($r['foto_perfil']);
+                          $tiene_bio  = !empty($r['bio']);
+                          $tiene_tipo = !empty($r['tipo']);
+                          $total_servicios   = (int)$r['cantidad_servicios'];
+                          $con_horario       = (int)$r['servicios_con_horario'];
+                          $todos_con_horario = $total_servicios > 0 && $con_horario === $total_servicios;
+                          $tipos_label = ['estudiante' => 'Estudiante', 'egresado' => 'Egresado', 'profesor' => 'Profesor', 'particular' => 'Particular'];
+                          $tipo_label  = $tipos_label[$r['tipo'] ?? ''] ?? 'Sin definir';
+                      ?>
                       <div class="min-w-0">
-                          <p class="font-bold text-slate-900 text-sm truncate max-w-[200px]">
-                              <?= htmlspecialchars($r['nombre_usuario']) ?>
-                          </p>
-                          <p class="text-[10px] font-medium text-slate-500 truncate max-w-[200px] mt-0.5">
+                          <div class="flex items-center gap-1.5 mb-0.5">
+                              <p class="font-bold text-slate-900 text-sm truncate max-w-[160px]">
+                                  <?= htmlspecialchars($r['nombre_usuario']) ?>
+                              </p>
+                              <span title="<?= $tiene_foto ? 'Con foto de perfil' : 'Sin foto de perfil' ?>"
+                                    class="<?= $tiene_foto ? 'text-emerald-500' : 'text-amber-400' ?> text-xs">
+                                  <i class="fa-solid fa-camera"></i>
+                              </span>
+                              <span title="<?= $tiene_bio ? 'Con bio' : 'Sin bio' ?>"
+                                    class="<?= $tiene_bio ? 'text-emerald-500' : 'text-amber-400' ?> text-xs">
+                                  <i class="fa-solid fa-align-left"></i>
+                              </span>
+                              <span title="<?= $tiene_tipo ? 'Tipo definido' : 'Sin tipo' ?>"
+                                    class="<?= $tiene_tipo ? 'text-emerald-500' : 'text-amber-400' ?> text-xs">
+                                  <i class="fa-solid fa-id-badge"></i>
+                              </span>
+                              <span title="<?= $con_horario ?>/<?= $total_servicios ?> servicios con horario"
+                                    class="<?= $todos_con_horario ? 'text-emerald-500' : 'text-amber-400' ?> text-[10px] font-bold ml-0.5">
+                                  <i class="fa-solid fa-clock"></i>
+                                  <?= $con_horario ?>/<?= $total_servicios ?>
+                              </span>
+                          </div>
+                          <p class="text-[10px] font-medium text-slate-500 truncate max-w-[200px]">
                               <?= htmlspecialchars($r['correo']) ?>
+                          </p>
+                          <p class="text-[10px] font-medium text-slate-400 mt-0.5">
+                              <?= htmlspecialchars($tipo_label) ?>
                           </p>
                       </div>
                   </div>

@@ -60,6 +60,12 @@ if (empty($_SESSION['csrf_token_publicar'])) {
 }
 $csrf_token = $_SESSION['csrf_token_publicar'];
 
+// Para upload de video post-publicación (el endpoint usa csrf_token_editar)
+if (empty($_SESSION['csrf_token_editar'])) {
+    $_SESSION['csrf_token_editar'] = bin2hex(random_bytes(32));
+}
+$csrf_token_editar = $_SESSION['csrf_token_editar'];
+
 // 6. LÓGICA DE NEGOCIO
 $mensaje = "";
 $exito   = false;
@@ -337,7 +343,10 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <span class="text-sm font-bold flex-1"><?= htmlspecialchars($mensaje); ?></span>
                             <?php if(!$exito): ?><button type="button" onclick="document.getElementById('toast').remove()" class="text-sm opacity-70 hover:opacity-100">✕</button><?php endif; ?>
                         </div>
-                        <?php if($exito): ?><script>setTimeout(()=>window.location.href='/clases-servicios', 2500);</script><?php endif; ?>
+                        <?php if($exito): ?>
+                        <input type="hidden" id="nubira-new-svc-id" value="<?= (int)$nuevo_servicio_id ?>">
+                        <script>setTimeout(()=>window.location.href='/clases-servicios', 2500);</script>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -477,6 +486,101 @@ require_once $app_dir . '/componentes/sidebar.php';
 </div>
 
             </form>
+
+            <!-- Video de presentación (se sube DESPUÉS de crear el servicio vía XHR) -->
+            <div class="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm mt-6" id="seccion-video">
+                <div class="flex items-start gap-3 mb-5">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 class="text-base font-bold text-gray-900">Video de presentación</h2>
+                            <span class="text-[10px] font-bold bg-blue-50 text-[#54A6D8] px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">Opcional</span>
+                        </div>
+                        <p class="text-xs text-gray-400 leading-relaxed max-w-lg">
+                            Video vertical (9:16) de máx. 45 seg. Aumenta la confianza del comprador y Nubira puede usarlo en Instagram y TikTok para promover tu servicio.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Reglas del video -->
+                <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3 mb-4">
+                    <span class="shrink-0 mt-0.5 text-amber-500">
+                        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
+                    </span>
+                    <div>
+                        <p class="text-xs font-bold text-amber-800 mb-2">Reglas importantes para tu video</p>
+                        <ul class="space-y-1 text-xs text-amber-700 leading-relaxed">
+                            <li>· Solo puedes mencionar tu primer nombre (ej: "Hola, soy Juan"). No menciones tu apellido.</li>
+                            <li>· No menciones números de teléfono, WhatsApp, correos electrónicos, ni redes sociales.</li>
+                            <li>· No muestres en pantalla ningún dato de contacto (carteles, papel, fondo con tu Instagram, etc.).</li>
+                            <li>· Habla solo de tu servicio: qué enseñas, cómo lo haces, qué pueden esperar.</li>
+                            <li>· Si rompes estas reglas tu video será rechazado y deberás subir uno nuevo.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="video-drop-zone"
+                     onclick="document.getElementById('video-input').click()"
+                     class="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer
+                            hover:border-[#54A6D8] hover:bg-blue-50/20 transition-all">
+                    <div id="video-drop-icon" class="flex flex-col items-center gap-2.5">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-300">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-700">Toca para seleccionar tu video</p>
+                            <p class="text-xs text-gray-400 mt-0.5">MP4 · WebM · MOV &nbsp;·&nbsp; Máx. 30 MB &nbsp;·&nbsp; Máx. 45 seg. &nbsp;·&nbsp; Vertical 9:16</p>
+                        </div>
+                    </div>
+                    <div id="video-preview-wrap" class="hidden flex-col items-center gap-2">
+                        <div class="relative rounded-xl overflow-hidden bg-black aspect-[9/16] w-[140px]">
+                            <video id="video-preview-local" class="w-full h-full object-contain" muted playsinline></video>
+                        </div>
+                        <p id="video-preview-info" class="text-xs text-gray-500 truncate max-w-[220px]"></p>
+                        <button type="button"
+                                onclick="event.stopPropagation(); quitarVideoPublicar();"
+                                class="text-xs font-bold text-red-400 hover:text-red-600 transition-colors flex items-center gap-1">
+                            <?= icon('x-circle', 'w-3.5 h-3.5') ?> Quitar
+                        </button>
+                    </div>
+                </div>
+
+                <input type="file" id="video-input"
+                       accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime"
+                       class="hidden">
+
+                <div id="video-error" class="hidden mt-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3 flex items-start gap-2">
+                    <?= icon('exclamation-triangle', 'w-4 h-4 text-red-500 shrink-0 mt-0.5') ?>
+                    <span id="video-error-msg" class="text-xs font-bold text-red-700"></span>
+                </div>
+
+                <label class="mt-4 flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer
+                              hover:bg-blue-50/30 hover:border-blue-100 transition-all select-none">
+                    <input type="checkbox" id="video-consent"
+                           class="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#54A6D8] focus:ring-[#54A6D8] cursor-pointer shrink-0">
+                    <span class="text-xs text-gray-600 leading-relaxed">
+                        <span class="font-bold text-gray-800">Autorizo a Nubira</span> a publicar este video en redes sociales (Instagram, TikTok, Facebook) para promocionar mi servicio. El video no será editado y siempre se asociará a mi perfil de tutor.
+                    </span>
+                </label>
+
+                <div id="video-progress-wrap" class="hidden mt-4 space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-500">Subiendo video...</span>
+                        <span id="video-progress-pct" class="text-xs font-bold text-[#54A6D8]">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div id="video-progress-bar" class="h-2 rounded-full transition-all duration-150" style="width:0%; background-color:#54A6D8;"></div>
+                    </div>
+                </div>
+
+                <p class="mt-4 text-[11px] text-gray-400 text-center">
+                    El video se sube automáticamente al publicar. Si no lo subes ahora, puedes hacerlo después desde "Mis Publicaciones".
+                </p>
+            </div><!-- /seccion-video -->
+
         </div>
     </div>
     <?php endif; ?>
@@ -735,6 +839,196 @@ if (window.innerWidth < 768) {
         });
     });
 }
+
+// ── VIDEO DE PRESENTACIÓN (flujo A2: sube tras crear el servicio) ─────────────
+(function () {
+    const CSRF_VIDEO   = <?= json_encode($csrf_token_editar) ?>;
+    const MAX_BYTES    = 30 * 1024 * 1024;
+    const MAX_SEG      = 45;
+
+    const elInput        = document.getElementById('video-input');
+    const elDropIcon     = document.getElementById('video-drop-icon');
+    const elPreviewWrap  = document.getElementById('video-preview-wrap');
+    const elPreviewVid   = document.getElementById('video-preview-local');
+    const elPreviewInfo  = document.getElementById('video-preview-info');
+    const elError        = document.getElementById('video-error');
+    const elErrorMsg     = document.getElementById('video-error-msg');
+    const elConsent      = document.getElementById('video-consent');
+    const elProgressWrap = document.getElementById('video-progress-wrap');
+    const elProgressBar  = document.getElementById('video-progress-bar');
+    const elProgressPct  = document.getElementById('video-progress-pct');
+    const elForm         = document.getElementById('form-servicio');
+    const elBtnSubmit    = document.getElementById('btn-submit');
+    const elBtnText      = document.getElementById('btn-text');
+
+    if (!elInput) return; // sección de video no renderizada (estado de error/límite)
+
+    let archivoListo = false;
+
+    elInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        archivoListo = false;
+        ocultarError();
+
+        const tiposOk = ['video/mp4', 'video/webm', 'video/quicktime'];
+        if (!tiposOk.includes(file.type)) {
+            mostrarError('Formato no válido. Usa MP4, WebM o MOV.'); this.value = ''; return;
+        }
+        if (file.size > MAX_BYTES) {
+            mostrarError('El archivo supera 30 MB. Comprime el video e intenta de nuevo.'); this.value = ''; return;
+        }
+
+        const objURL = URL.createObjectURL(file);
+        const tmp    = document.createElement('video');
+        tmp.preload  = 'metadata';
+        tmp.src      = objURL;
+
+        tmp.addEventListener('loadedmetadata', function () {
+            URL.revokeObjectURL(objURL);
+            if (this.duration > MAX_SEG) {
+                mostrarError('El video dura ' + Math.ceil(this.duration) + ' s. Máximo 45 segundos.');
+                elInput.value = ''; return;
+            }
+            if (this.videoWidth > 0 && this.videoWidth >= this.videoHeight) {
+                mostrarError('El video debe ser vertical (9:16). Grábalo con el celular en modo retrato.');
+                elInput.value = ''; return;
+            }
+            archivoListo = true;
+            elPreviewVid.src = URL.createObjectURL(file);
+            elPreviewInfo.textContent = file.name + ' · ' + (file.size / (1024 * 1024)).toFixed(1) + ' MB · ' + Math.ceil(this.duration) + ' s';
+            elDropIcon.classList.add('hidden');
+            elPreviewWrap.classList.remove('hidden');
+            elPreviewWrap.classList.add('flex');
+        });
+
+        tmp.addEventListener('error', function () {
+            mostrarError('No se pudo leer el video. Asegúrate de que el archivo no esté dañado.');
+            elInput.value = '';
+        });
+    });
+
+    window.quitarVideoPublicar = function () {
+        elInput.value    = '';
+        archivoListo     = false;
+        elPreviewVid.src = '';
+        elPreviewWrap.classList.add('hidden');
+        elPreviewWrap.classList.remove('flex');
+        elDropIcon.classList.remove('hidden');
+        ocultarError();
+    };
+
+    // Intercepta submit SOLO cuando hay video + consent válidos.
+    // La validación del banco corre primero (listener registrado antes en setupBancoCarrusel).
+    elForm && elForm.addEventListener('submit', function (e) {
+        if (!archivoListo || !elConsent.checked) return; // sin video → submit normal
+
+        // Si el banco no está seleccionado, dejar que su listener muestre el error
+        const bancoId = document.getElementById('imagen_banco_id')?.value;
+        if (!bancoId) return;
+
+        e.preventDefault();
+
+        elBtnSubmit.disabled = true;
+        if (elBtnText) elBtnText.textContent = 'Publicando...';
+
+        const fd = new FormData(elForm);
+
+        fetch(window.location.pathname, { method: 'POST', body: fd })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                const doc   = new DOMParser().parseFromString(html, 'text/html');
+                const svcEl = doc.getElementById('nubira-new-svc-id');
+                const svcId = svcEl ? parseInt(svcEl.value, 10) : 0;
+
+                if (!svcId) {
+                    // Servicio no creado: extraer mensaje de error del server y mostrarlo
+                    const toastEl = doc.querySelector('#toast span.flex-1') || doc.querySelector('#toast');
+                    const errMsg  = toastEl ? toastEl.textContent.trim() : 'Error al publicar el servicio. Intenta de nuevo.';
+                    elBtnSubmit.disabled = false;
+                    if (elBtnText) elBtnText.textContent = 'Publicar Servicio';
+                    const prev = document.getElementById('toast');
+                    if (prev) prev.remove();
+                    const t = document.createElement('div');
+                    t.id = 'toast';
+                    t.className = 'mb-6 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm bg-red-50 text-red-700 border border-red-200';
+                    t.innerHTML = '<span class="text-sm font-bold flex-1">' + errMsg + '</span><button type="button" onclick="this.parentElement.remove()" class="text-sm opacity-70">✕</button>';
+                    const card = elForm.querySelector('.bg-white');
+                    if (card) card.prepend(t);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+
+                // Servicio creado → mostrar toast verde del server antes de subir
+                const toastOk = doc.querySelector('#toast');
+                if (toastOk) {
+                    const prev = document.getElementById('toast');
+                    if (prev) prev.remove();
+                    const t = document.createElement('div');
+                    t.id = 'toast';
+                    t.className = toastOk.className;
+                    t.innerHTML = toastOk.innerHTML;
+                    const card = elForm.querySelector('.bg-white');
+                    if (card) card.prepend(t);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+
+                // Subir video
+                if (elBtnText) elBtnText.textContent = 'Subiendo video...';
+                if (elProgressWrap) elProgressWrap.classList.remove('hidden');
+
+                const vfd = new FormData();
+                vfd.append('video',               elInput.files[0]);
+                vfd.append('servicio_id',         svcId);
+                vfd.append('csrf_token',          CSRF_VIDEO);
+                vfd.append('consentimiento_rrss', '1');
+
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.addEventListener('progress', function (ev) {
+                    if (!ev.lengthComputable) return;
+                    const pct = Math.round((ev.loaded / ev.total) * 100);
+                    if (elProgressBar) elProgressBar.style.width = pct + '%';
+                    if (elProgressPct) elProgressPct.textContent = pct + '%';
+                });
+
+                function redirigir(ok, id) {
+                    if (ok) {
+                        if (elProgressBar) { elProgressBar.style.width = '100%'; elProgressBar.style.background = '#10b981'; }
+                        if (elProgressPct) elProgressPct.textContent = '100%';
+                        setTimeout(function () { window.location.href = '/clases-servicios'; }, 700);
+                    } else {
+                        // Servicio creado pero video falló: ir a editar para reintentar
+                        setTimeout(function () { window.location.href = '/editar-servicio?id=' + id; }, 700);
+                    }
+                }
+
+                xhr.addEventListener('load', function () {
+                    let res = {};
+                    try { res = JSON.parse(xhr.responseText); } catch (ex) {}
+                    redirigir(xhr.status === 200 && res.ok, svcId);
+                });
+                xhr.addEventListener('error',   function () { redirigir(false, svcId); });
+                xhr.addEventListener('timeout', function () { redirigir(false, svcId); });
+
+                xhr.timeout = 120000;
+                xhr.open('POST', '/subir-video-servicio');
+                xhr.send(vfd);
+            })
+            .catch(function () {
+                elBtnSubmit.disabled = false;
+                if (elBtnText) elBtnText.textContent = 'Publicar Servicio';
+            });
+    });
+
+    function mostrarError(msg) {
+        if (!elErrorMsg || !elError) return;
+        elErrorMsg.textContent = msg;
+        elError.classList.remove('hidden');
+        elError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function ocultarError() { if (elError) elError.classList.add('hidden'); }
+}());
 </script>
 
 </body>

@@ -34,6 +34,7 @@ app/cache_ia/
 
 # Backups locales
 backup_*/
+backups/
 
 # Archivos temporales y de sistema
 *.tmp
