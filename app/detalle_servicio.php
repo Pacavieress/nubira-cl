@@ -274,12 +274,15 @@ if ($stmt_recs = $conn->prepare($sql_recs)) {
 
 // 6. METADATOS & OG TAGS
 $page_title = htmlspecialchars($servicio['titulo']);
-$_inst = $servicio['institucion_maestra'] ?? $servicio['institucion'] ?? 'Chile';
+$_inst = !empty($servicio['institucion_maestra'])
+    ? $servicio['institucion_maestra']
+    : (!empty($servicio['institucion']) ? $servicio['institucion'] : 'Chile');
 $_seo_titulo_raw = $servicio['titulo'] . ' en ' . $_inst . ' | Nubira';
 $seo_title = htmlspecialchars(mb_strlen($_seo_titulo_raw) > 65
     ? mb_substr($_seo_titulo_raw, 0, 62) . '...'
     : $_seo_titulo_raw);
 $_nombre_tutor = explode(' ', trim($servicio['nombre_alumno'] ?? ''))[0];
+$_nombre_tutor = !empty($_nombre_tutor) ? $_nombre_tutor : 'tu tutor';
 $_desc_corta = mb_strimwidth(strip_tags($servicio['descripcion'] ?? ''), 0, 100, '');
 $_meta_desc_raw = ucfirst($servicio['modalidad'] ?? '') . ' de ' . ($servicio['categoria'] ?? '')
     . ' con ' . $_nombre_tutor . '. ' . $_desc_corta . '. Contrata en Nubira.';
