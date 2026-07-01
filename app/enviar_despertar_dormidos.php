@@ -13,15 +13,16 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
     return "
 <p>Hola <strong>{$nombre_safe}</strong>,</p>
 
-<p>Hace un tiempo te registraste en Nubira.cl para buscar tutor, clase o un servicio académico.
-Sigues teniendo tu cuenta activa, ven a ver qué hay para ti.</p>
+<p>Hace un tiempo te registraste en Nubira buscando ayuda académica.</p>
 
-<p>En Nubira conectamos estudiantes con tutores y servicios académicos en Chile:</p>
+<p>Si aún necesitas apoyo con un ramo, una tesis o un servicio académico específico, aquí sigues teniendo tu cuenta activa.</p>
+
+<p><strong>Lo que hace distinta a Nubira:</strong></p>
 
 <ul style=\"padding-left:20px; line-height:2.2;\">
-  <li><strong>Pago protegido</strong> — tu dinero queda protegido en la plataforma hasta que confirmes que recibiste lo contratado</li>
-  <li><strong>Chat anónimo</strong> — habla con el tutor sin compartir tu WhatsApp ni contactos de redes sociales</li>
-  <li><strong>Aula virtual integrada</strong> — clases 100% online en la plataforma, sin Meet ni Zoom</li>
+  <li>Tu dinero queda protegido en la plataforma hasta que confirmes que recibiste lo contratado. Si algo sale mal, no lo pierdes.</li>
+  <li>Puedes conversar con los tutores sin compartir tu WhatsApp ni contactos de redes sociales.</li>
+  <li>Las clases se hacen dentro de Nubira, sin instalar Zoom ni Meet.</li>
 </ul>
 
 <p style=\"text-align:center; margin:32px 0;\">
@@ -33,7 +34,7 @@ Sigues teniendo tu cuenta activa, ven a ver qué hay para ti.</p>
   </a>
 </p>
 
-<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
+<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">nubira.cl</span></p>
 ";
 }
 
@@ -49,7 +50,7 @@ if (php_sapi_name() === 'cli') {
     $LIMITE       = isset($argv[1]) ? (int)$argv[1] : 5;
     $admin_id_cli = 0;
     $admin_nombre = 'despertar_dormidos_jun2026';
-    $asunto       = 'Te esperamos en Nubira';
+    $asunto       = '¿Todavía necesitas un tutor?';
 
     $sql_cli = "
         SELECT a.id AS alumno_id, a.nombre, LOWER(TRIM(a.correo)) AS correo
@@ -135,7 +136,7 @@ if (!isset($_SESSION['csrf_despertar_dormidos'])) {
 }
 $csrf_token   = $_SESSION['csrf_despertar_dormidos'];
 $admin_nombre = 'despertar_dormidos_jun2026';
-$asunto       = 'Te esperamos en Nubira';
+$asunto       = '¿Todavía necesitas un tutor?';
 
 // ── POST: envío ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
