@@ -222,6 +222,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $filtro = $_GET['filtro'] ?? 'pendiente';
 if (!in_array($filtro, ['pendiente', 'enviado', 'todos'], true)) $filtro = 'pendiente';
 
+$orden = $_GET['orden'] ?? 'id_asc';
+if (!in_array($orden, ['id_asc','id_desc','correo_asc','correo_desc','nombre_asc','nombre_desc','estado'], true)) $orden = 'id_asc';
+
+$order_map = [
+    'id_asc'     => 'a.id ASC',
+    'id_desc'    => 'a.id DESC',
+    'correo_asc' => 'LOWER(a.correo) ASC',
+    'correo_desc'=> 'LOWER(a.correo) DESC',
+    'nombre_asc' => 'LOWER(a.nombre) ASC',
+    'nombre_desc'=> 'LOWER(a.nombre) DESC',
+    'estado'     => '(estado_envio IS NOT NULL) ASC, estado_envio ASC, a.id ASC',
+];
+$order_clause = $order_map[$orden];
+
 $sql = "
     SELECT
         a.id AS alumno_id,
@@ -244,7 +258,7 @@ $sql = "
       AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
       AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
     GROUP BY a.id
-    ORDER BY (estado_envio IS NOT NULL) ASC, a.id ASC
+    ORDER BY {$order_clause}
 ";
 
 $stmt = $conn->prepare($sql);
@@ -253,7 +267,38 @@ $todos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 $conn->close();
 
+function clasificar_proveedor(string $correo): string {
+    $c = strtolower(trim($correo));
+    if (str_ends_with($c, '@gmail.com')) return 'gmail';
+    if (preg_match('/@(outlook|hotmail|live)\./i', $c)) return 'outlook';
+    if (preg_match('/@yahoo\./i', $c)) return 'yahoo';
+    static $inst = [
+        'uc.cl','usach.cl','uandes.cl','unab.cl','uandresbello.edu','duoc.cl',
+        'aiep.cl','santotomas.cl','fen.uchile.cl','sansano.usm.cl','ing.puc.cl',
+        'utem.cl','umayor.cl','uai.cl','uchile.cl','uv.cl','udec.cl',
+        'pucv.cl','ulagos.cl','ucn.cl','uach.cl','umag.cl','utalca.cl',
+    ];
+    $dominio = substr($c, strpos($c, '@') + 1);
+    if (in_array($dominio, $inst, true)) return 'institucional';
+    if (preg_match('/^(correo|alumnos|estudiantes|mail)\./', $dominio)) return 'institucional';
+    if (str_ends_with($dominio, '.edu') || str_ends_with($dominio, '.edu.cl')) return 'institucional';
+    return 'otro';
+}
+
+$proveedores_validos = ['gmail', 'outlook', 'yahoo', 'institucional', 'otro'];
+$proveedores_raw = $_GET['proveedores'] ?? '';
+if ($proveedores_raw === '' || $proveedores_raw === 'todos') {
+    $proveedores_activos = $proveedores_validos;
+} else {
+    $proveedores_activos = array_values(array_intersect(
+        explode(',', $proveedores_raw),
+        $proveedores_validos
+    ));
+    if (empty($proveedores_activos)) $proveedores_activos = $proveedores_validos;
+}
+
 $stats = ['total' => count($todos), 'enviados' => 0, 'pendientes' => 0, 'fallidos' => 0];
+$stats_prov = array_fill_keys($proveedores_validos, 0);
 $filas = [];
 
 foreach ($todos as $row) {
@@ -269,13 +314,35 @@ foreach ($todos as $row) {
         $stats['fallidos']++;
     }
 
-    $incluir = match($filtro) {
+    $row['_proveedor'] = clasificar_proveedor($row['correo']);
+
+    $pasa_estado = match($filtro) {
         'pendiente' => in_array($row['_estado'], ['pendiente', 'fallo']),
         'enviado'   => $row['_estado'] === 'enviado',
         default     => true,
     };
-    if ($incluir) $filas[] = $row;
+
+    if ($pasa_estado) {
+        $stats_prov[$row['_proveedor']]++;
+        if (in_array($row['_proveedor'], $proveedores_activos, true)) {
+            $filas[] = $row;
+        }
+    }
 }
+
+$makeProvUrl = function(string $prov) use ($proveedores_activos, $proveedores_validos, $filtro, $orden): string {
+    if (in_array($prov, $proveedores_activos, true)) {
+        $nueva = array_values(array_filter($proveedores_activos, fn($p) => $p !== $prov));
+    } else {
+        $nueva = $proveedores_activos;
+        $nueva[] = $prov;
+        usort($nueva, fn($a, $b) => array_search($a, $proveedores_validos) - array_search($b, $proveedores_validos));
+    }
+    $base = '?filtro=' . $filtro . '&orden=' . $orden;
+    return (empty($nueva) || count($nueva) === count($proveedores_validos))
+        ? $base
+        : $base . '&proveedores=' . implode(',', $nueva);
+};
 
 $preview_html = plantillaMaestra($asunto, generarHtmlEmailDespertarDormidos('Estudiante'));
 ?>
@@ -352,7 +419,7 @@ require_once $app_dir . '/componentes/sidebar.php';
       ];
       foreach ($ops as $key => [$label, $cnt]):
       ?>
-      <a href="?filtro=<?= $key ?>"
+      <a href="?filtro=<?= $key ?>&amp;orden=<?= htmlspecialchars($orden) ?>&amp;proveedores=<?= htmlspecialchars(implode(',', $proveedores_activos)) ?>"
          class="px-4 py-2 rounded-xl text-sm font-bold border transition flex items-center gap-1.5
                 <?= $filtro === $key
                     ? 'bg-[#54A6D8] text-white border-[#54A6D8] shadow-sm'
@@ -360,6 +427,28 @@ require_once $app_dir . '/componentes/sidebar.php';
         <?= $label ?>
         <span class="<?= $filtro === $key ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500' ?> text-[10px] font-bold px-1.5 py-0.5 rounded-full">
           <?= $cnt ?>
+        </span>
+      </a>
+      <?php endforeach; ?>
+    </div>
+
+    <!-- Filtro proveedor -->
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mr-1 shrink-0">Proveedor:</span>
+      <?php
+      $prov_labels = ['gmail' => 'Gmail', 'outlook' => 'Outlook/Hotmail', 'yahoo' => 'Yahoo', 'institucional' => 'Institucional', 'otro' => 'Otro'];
+      foreach ($prov_labels as $pkey => $plabel):
+          $pactivo = in_array($pkey, $proveedores_activos, true);
+          $purl    = $makeProvUrl($pkey);
+      ?>
+      <a href="<?= htmlspecialchars($purl) ?>"
+         class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5
+                <?= $pactivo
+                    ? 'bg-white text-gray-700 border-gray-300 shadow-sm hover:border-[#54A6D8]'
+                    : 'bg-gray-50 text-gray-300 border-gray-100 opacity-50 hover:opacity-75' ?>">
+        <?= $plabel ?>
+        <span class="<?= $pactivo ? 'bg-gray-100 text-gray-500' : 'bg-gray-100 text-gray-300' ?> text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          <?= $stats_prov[$pkey] ?>
         </span>
       </a>
       <?php endforeach; ?>
