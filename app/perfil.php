@@ -276,9 +276,8 @@ $prom_a  = $c_nota;
 // [NUBIRA 2.0] TRUST SIGNAL: TIEMPO DE RESPUESTA
 // =========================================================================
 require_once __DIR__ . '/helpers/tiempo_respuesta.php';
-// Fuente unificada (igual que detalle-servicio y sec-rapidos): alumnos.tiempo_respuesta_promedio
-$tiempo_resp_min = (isset($perfil_data['tiempo_respuesta_promedio']) && $perfil_data['tiempo_respuesta_promedio'] !== null)
-    ? (int)$perfil_data['tiempo_respuesta_promedio'] : null;
+// Fuente unificada (igual que detalle-servicio y sec-rapidos): cálculo on-demand desde respuestas_tutor
+$tiempo_resp_min = calcular_tiempo_respuesta_tutor($conn, $perfil_id_ver);
 if ($tiempo_resp_min !== null) {
     $tiempo_resp_data = formatearTiempoRespuestaNubira($tiempo_resp_min);
 } elseif ($total_v_qty > 0) {

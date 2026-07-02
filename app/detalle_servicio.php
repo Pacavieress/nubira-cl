@@ -84,7 +84,7 @@ if ($id === 0) {
 
 // 5. Consulta SQL
 $servicio = null;
-$sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil, a.tiempo_respuesta_promedio, a.verificacion_estado, COALESCE(dp.institucion, a.institucion) AS institucion_maestra, bi.archivo AS banco_archivo
+$sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil, a.verificacion_estado, COALESCE(dp.institucion, a.institucion) AS institucion_maestra, bi.archivo AS banco_archivo
         FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -176,16 +176,14 @@ if (!empty($servicio['nombre_alumno'])) {
 
 /**
  * [NUBIRA 2.0] Formatea tiempo de respuesta del tutor en rangos amigables (estilo Airbnb).
- * Recibe minutos (mediana móvil 30d, ya filtrada de outliers >24h por el cron).
+ * Recibe minutos (mediana móvil 30d, calculada on-demand, outliers >24h descartados).
  * 
  * @return array ['texto' => string, 'tono' => 'verde'|'azul'|'naranjo'|'gris']
  */
 require_once __DIR__ . '/helpers/tiempo_respuesta.php';
 
 $tiempo_data = formatearTiempoRespuestaNubira(
-    $servicio['tiempo_respuesta_promedio'] !== null 
-        ? (int)$servicio['tiempo_respuesta_promedio'] 
-        : null
+    calcular_tiempo_respuesta_tutor($conn, (int)$servicio['alumno_id'])
 );
 $texto_valor = $tiempo_data['texto'];
 $tono_valor = $tiempo_data['tono'];

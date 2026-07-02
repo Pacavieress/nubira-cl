@@ -259,32 +259,39 @@ WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL)
 $res_rapidos   = null;
 $count_rapidos = 0;
 try {
-    // Gate: tutores DISTINTOS que cumplen (debe ser >= 6 para mostrar la sección)
+    // Gate: tutores DISTINTOS que cumplen (debe ser >= 3 para mostrar la sección)
+    // Cálculo on-demand desde respuestas_tutor (reemplaza a.tiempo_respuesta_promedio, que dependía del cron parado)
     $rg = $conn->query("SELECT COUNT(DISTINCT a.id) AS n
                         FROM alumnos a
-                        WHERE a.tiempo_respuesta_promedio IS NOT NULL
-                          AND a.tiempo_respuesta_promedio < 60
-                          AND EXISTS (SELECT 1 FROM servicios s
-                                      WHERE s.alumno_id = a.id AND s.estado = 'aprobado' AND s.visible = 1)");
+                        WHERE EXISTS (SELECT 1 FROM servicios s
+                                      WHERE s.alumno_id = a.id AND s.estado = 'aprobado' AND s.visible = 1)
+                          AND (SELECT AVG(rt.minutos_respuesta)
+                               FROM respuestas_tutor rt
+                               WHERE rt.tutor_id = a.id
+                                 AND rt.creado_en > (NOW() - INTERVAL 30 DAY)
+                                 AND rt.minutos_respuesta <= 1440) < 60");
     $count_rapidos = $rg ? (int)$rg->fetch_assoc()['n'] : 0;
 
-    if ($count_rapidos >= 6) {
+    if ($count_rapidos >= 3) {
         $sql_rapidos = "SELECT s.*, s.oferta_termino,
                                COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                                (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                                a.foto_perfil,
                                a.nombre as nombre_tutor,
-                               a.tiempo_respuesta_promedio,
+                               (SELECT AVG(rt.minutos_respuesta)
+                                FROM respuestas_tutor rt
+                                WHERE rt.tutor_id = a.id
+                                  AND rt.creado_en > (NOW() - INTERVAL 30 DAY)
+                                  AND rt.minutos_respuesta <= 1440) AS tiempo_resp_calculado,
                                bi.archivo as banco_archivo
                         FROM servicios s
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                         WHERE s.estado = 'aprobado' AND s.visible = 1
-                          AND a.tiempo_respuesta_promedio IS NOT NULL
-                          AND a.tiempo_respuesta_promedio < 60
-                        ORDER BY a.tiempo_respuesta_promedio ASC, RAND($seed)
+                        HAVING tiempo_resp_calculado IS NOT NULL AND tiempo_resp_calculado < 60
+                        ORDER BY tiempo_resp_calculado ASC, RAND($seed)
                         LIMIT 12";
         $res_rapidos = $conn->query($sql_rapidos);
     }
