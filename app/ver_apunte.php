@@ -144,7 +144,7 @@ if (!$archivo) {
 // [OPT-1] Lectura directa de la Única Fuente de Verdad (Estándar Nubira 2.0)
 $sql_apunte = "
     SELECT 
-        id, titulo, precio, id_alumno, descripcion, sigla, semestre, anio, institucion, asignatura, fecha_subida, portada, archivo,
+        id, titulo, precio, id_alumno, descripcion, sigla, semestre, anio, institucion, asignatura, materia, nivel_academico, fecha_subida, portada, archivo,
         ia_used, ia_keywords, categoria, estado, promo_gratis, promo_limite, promo_contador,
         descargas as total_ventas
     FROM apuntes
@@ -371,6 +371,7 @@ if (!empty($thumb_url)) {
 <head>
   <meta charset="UTF-8">
   <title><?= $titulo ?> | Nubira</title>
+  <meta name="description" content="<?= htmlspecialchars(mb_strimwidth(strip_tags($apunte['descripcion'] ?? ''), 0, 155, '...')) ?>">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
 
@@ -425,6 +426,40 @@ if (!empty($thumb_url)) {
         }
     }
   </style>
+  <script type="application/ld+json">
+  <?php
+  $schema_ld = [
+      '@context'             => 'https://schema.org',
+      '@type'                => 'LearningResource',
+      'name'                 => $apunte['titulo'] ?? '',
+      'description'          => mb_strimwidth(strip_tags($apunte['descripcion'] ?? ''), 0, 300, '...'),
+      'url'                  => $url_canonical,
+      'datePublished'        => date('c', strtotime($apunte['fecha_subida'])),
+      'inLanguage'           => 'es',
+      'learningResourceType' => 'Apunte',
+      'educationalLevel'     => $apunte['nivel_academico'] ?? 'universitario',
+      'about'                => $apunte['asignatura'] ?? $apunte['materia'] ?? '',
+      'provider' => [
+          '@type' => 'Organization',
+          'name'  => 'Nubira.cl',
+          'url'   => 'https://nubira.cl',
+      ],
+      'author' => [
+          '@type' => 'Person',
+          'name'  => $nombreDisplay ?: 'Estudiante Nubira',
+      ],
+  ];
+  if ($precio > 0) {
+      $schema_ld['offers'] = [
+          '@type'         => 'Offer',
+          'price'         => $precio,
+          'priceCurrency' => 'CLP',
+          'availability'  => 'https://schema.org/OnlineOnly',
+      ];
+  }
+  echo json_encode($schema_ld, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+  ?>
+  </script>
 </head>
 
 <body class="bg-gray-50 min-h-screen text-gray-800 font-sans overflow-x-hidden"
