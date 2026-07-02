@@ -49,8 +49,8 @@ Mientras tanto, nuestros tutores han ayudado a estudiantes en:</p>
 ";
 }
 
-function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsubUrl) {
-    $cfg  = getSmtpConfig('contacto');
+function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsubUrl, $sender = 'contacto') {
+    $cfg  = getSmtpConfig($sender);
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -68,7 +68,7 @@ function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsu
 
         $mail->addCustomHeader(
             'List-Unsubscribe',
-            '<mailto:contacto@nubira.cl?subject=unsubscribe>, <' . $unsubUrl . '>'
+            '<mailto:' . $cfg['user'] . '?subject=unsubscribe>, <' . $unsubUrl . '>'
         );
         $mail->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
 

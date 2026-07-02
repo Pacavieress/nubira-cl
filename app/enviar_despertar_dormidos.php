@@ -101,7 +101,7 @@ if (php_sapi_name() === 'cli') {
         }
         $html      = generarHtmlEmailDespertarDormidos($primer_nombre);
         $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
-        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', true);
+        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', false);
         $exito_int = $exito ? 1 : 0;
         $stmt_log->bind_param('issssi', $admin_id_cli, $admin_nombre, $correo, $asunto, $html, $exito_int);
         $stmt_log->execute();
@@ -200,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $html      = generarHtmlEmailDespertarDormidos($primer_nombre);
         $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
-        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', true);
+        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', false);
         $exito_int = $exito ? 1 : 0;
 
         $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
