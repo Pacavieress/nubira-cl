@@ -26,6 +26,7 @@ if (!isset($_SESSION['usuario_id']) && !empty($_COOKIE['remember_token'])) {
         if ($res && $res->num_rows === 1) {
             $u = $res->fetch_assoc();
             $_SESSION['usuario_id']     = $u['id'];
+            session_regenerate_id(true);
             $_SESSION['usuario_nombre'] = $u['nombre'];
             $_SESSION['rol']            = $u['rol'] ?? 'alumno';
             $_SESSION['email']          = $u['correo'];

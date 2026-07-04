@@ -12,6 +12,12 @@ if (!$token || !$nueva || !$confirmar) {
     exit;
 }
 
+if (strlen($nueva) < 6) {
+    $_SESSION['mensaje_recuperacion'] = "❌ La contraseña debe tener al menos 6 caracteres.";
+    header("Location: nueva_contrasena.php?token=" . urlencode($token));
+    exit;
+}
+
 if ($nueva !== $confirmar) {
     $_SESSION['mensaje_recuperacion'] = "❌ Las contraseñas no coinciden.";
     header("Location: nueva_contrasena.php?token=" . urlencode($token));
@@ -29,9 +35,14 @@ if ($resultado->num_rows === 1) {
     $hash = password_hash($nueva, PASSWORD_DEFAULT);
 
     // Actualizar contraseña y eliminar token
-    $stmt = $conn->prepare("UPDATE alumnos SET password = ?, token_recuperacion = NULL, expiracion_token = NULL WHERE id = ?");
+    $stmt = $conn->prepare("UPDATE alumnos SET password = ?, token_recuperacion = NULL, expiracion_token = NULL, remember_token = NULL WHERE id = ?");
     $stmt->bind_param("si", $hash, $usuario['id']);
-    $stmt->execute();
+
+    if (!$stmt->execute() || $stmt->affected_rows < 1) {
+        $_SESSION['mensaje_recuperacion'] = "❌ No pudimos actualizar tu contraseña. Intenta de nuevo en unos minutos o escríbenos a contacto@nubira.cl.";
+        header("Location: nueva_contrasena.php?token=" . urlencode($token));
+        exit;
+    }
 
     $_SESSION['mensaje_login'] = "✅ Tu contraseña fue actualizada correctamente.";
     header("Location: login.php");

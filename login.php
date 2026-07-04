@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once(__DIR__ . '/app/conexion.php');
+require_once(__DIR__ . '/app/helpers/seo.php');
 
 // Auto-migración: sistema de verificación híbrido
 try { $conn->query("ALTER TABLE alumnos ADD COLUMN verificacion_estado VARCHAR(20) DEFAULT NULL"); } catch (Throwable $e) {}
@@ -50,6 +51,7 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
             }
         }
 
+        session_regenerate_id(true);
         $_SESSION['usuario_id']          = $usuario_auto['id'];
         $_SESSION['usuario_nombre']      = $usuario_auto['nombre'];
         $_SESSION['rol']                 = $usuario_auto['rol'] ?? 'alumno';
@@ -172,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (password_verify($contrasena, $usuario['password'])) {
 
                         // --- LOGIN EXITOSO ---
+                        session_regenerate_id(true);
                         $_SESSION['usuario_id'] = $usuario['id'];
                         $_SESSION['usuario_nombre'] = $usuario['nombre'];
                         $_SESSION['rol'] = $usuario['rol'] ?? 'alumno';
@@ -254,6 +257,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8">
   <title>Iniciar Sesión | Nubira</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?= nubira_canonical_tag() ?>
+  <?php if (!empty($_GET['redir'])): ?>
+  <meta name="robots" content="noindex,follow" />
+  <?php endif; ?>
   <?php require_once __DIR__ . '/app/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
