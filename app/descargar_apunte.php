@@ -14,6 +14,7 @@ if (file_exists(__DIR__ . '/conexion.php')) {
     $base_path = __DIR__ . '/..';
 }
 require_once $base_path . '/conexion.php';
+require_once $base_path . '/env_loader.php';
 
 function salir($codigo = 403, $mensaje = "Error desconocido") {
     http_response_code($codigo);
@@ -51,8 +52,8 @@ if (time() > $exp) {
     salir(403, "El enlace expiró. Hora servidor: " . time() . " | Expiración: " . $exp); 
 }
 
-// Validación de Firma (HMAC SHA256) 
-$secret = 'NUBIRA_SECRET_TEMP'; 
+// Validación de Firma (HMAC SHA256)
+$secret = getenv('NUBIRA_HMAC_SECRET') ?: ($_ENV['NUBIRA_HMAC_SECRET'] ?? 'NUBIRA_SECRET_TEMP_CAMBIAR');
 $data = $id_apunte . '|' . $usuario_id . '|' . $archivo . '|' . $exp;
 $hash = hash_hmac('sha256', $data, $secret);
 

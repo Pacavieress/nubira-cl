@@ -18,8 +18,10 @@ if (php_sapi_name() !== 'cli' && !isset($_GET['cron_secret'])) {
     die('Forbidden');
 }
 
+require_once dirname(__DIR__) . '/env_loader.php';
+
 // Token simple anti-acceso web no autorizado (opcional, si quieres correrlo manualmente vía URL)
-$CRON_SECRET = 'nubira_cron_2026_xK9p2L'; // Cámbialo si quieres
+$CRON_SECRET = getenv('CRON_RECORDATORIOS_SECRET') ?: '';
 if (php_sapi_name() !== 'cli' && ($_GET['cron_secret'] ?? '') !== $CRON_SECRET) {
     http_response_code(403);
     die('Forbidden');
