@@ -144,6 +144,21 @@ if ($subtema === '') $subtema = null;
             echo json_encode(['error' => 'Solo se aceptan archivos PDF o imágenes (.jpg, .jpeg, .png, .webp)']); exit;
         }
 
+        $MIME_PERMITIDOS = [
+            'jpg'  => ['image/jpeg'],
+            'jpeg' => ['image/jpeg'],
+            'png'  => ['image/png'],
+            'webp' => ['image/webp'],
+            'pdf'  => ['application/pdf'],
+        ];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_real = finfo_file($finfo, $_FILES['archivo']['tmp_name']);
+        finfo_close($finfo);
+
+        if (!$mime_real || !in_array($mime_real, $MIME_PERMITIDOS[$ext], true)) {
+            echo json_encode(['error' => 'El contenido del archivo no coincide con su extensión.']); exit;
+        }
+
         $filename_original = time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
         $ruta_final_apunte = $dir_apuntes . $filename_original;
 
@@ -332,22 +347,6 @@ $stmt->bind_param("siissisisiisssss", $titulo, $semestre, $anio, $descripcion, $
             animation: laser-move 2s ease-in-out infinite; z-index: 20; pointer-events: none;
         }
 
-        @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-        .ai-border-spin {
-            position: relative; background: white !important; color: #111827;
-            border-radius: 9999px; z-index: 1; display: inline-flex; align-items: center; justify-content: center;
-            border: 2px solid transparent; background-clip: padding-box !important;
-        }
-        .ai-border-spin::before {
-            content: ""; position: absolute; inset: -2px; border-radius: inherit; padding: 2px;
-            background: conic-gradient(from var(--angle), #54A6D8, #a855f7, #ec4899, #54A6D8);
-            animation: spin-border 2s linear infinite;
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; z-index: -1;
-        }
-        @keyframes spin-border { to { --angle: 360deg; } }
-
         /* [V3-1] Barra de progreso real */
         .upload-progress-track { height: 6px; border-radius: 999px; overflow: hidden; }
         .upload-progress-bar { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
@@ -471,7 +470,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
     <div class="scan-layer absolute inset-0 z-10 bg-white/80 backdrop-blur-[2px]">
         <div class="scan-laser-beam absolute left-0 right-0 top-0"></div> 
         <div class="absolute bottom-6 w-full text-center">
-            <span id="scan-text" class="text-xs font-bold text-[#54A6D8] tracking-widest animate-pulse">ANALIZANDO CON IA...</span>
+            <span id="scan-text" class="text-xs font-bold text-[#54A6D8] tracking-widest animate-pulse">PROCESANDO...</span>
         </div>
     </div>
     
@@ -607,36 +606,9 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                        <span id="badge-categoria" class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-md uppercase hidden">General</span>
                     </div>
                     
-                  <!-- [NUBIRA 2.0] 3 botones de tono IA -->
-<div class="flex flex-wrap gap-2 mb-2">
-    <button type="button" data-tono="default" class="btn-tono ai-border-spin px-3 py-1 bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm cursor-pointer">
-        <div class="flex items-center gap-1.5">
-            <?= icon('sparkles', 'w-3 h-3 text-indigo-500') ?>
-            <span class="text-[10px] font-bold text-indigo-600">Redactar con IA</span>
-        </div>
-    </button>
-   <div class="feature-host">
-    <button type="button" data-tono="academico" class="btn-tono ai-border-spin px-3 py-1 bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm cursor-pointer">
-        <div class="flex items-center gap-1.5">
-            <?= icon('sparkles', 'w-3 h-3 text-indigo-500') ?>
-            <span class="text-[10px] font-bold text-indigo-600">Redactar con IA Académico</span>
-        </div>
-    </button>
-    <span class="feature-badge" data-feature-key="redactar_academico" data-feature-launch="2026-05-04">Nuevo</span>
-</div>
-<div class="feature-host">
-    <button type="button" data-tono="vendedor" class="btn-tono ai-border-spin px-3 py-1 bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm cursor-pointer">
-        <div class="flex items-center gap-1.5">
-            <?= icon('sparkles', 'w-3 h-3 text-indigo-500') ?>
-            <span class="text-[10px] font-bold text-indigo-600">Redactar con IA Vendedor</span>
-        </div>
-    </button>
-    <span class="feature-badge" data-feature-key="redactar_vendedor" data-feature-launch="2026-05-04">Nuevo</span>
-</div>
-</div>
                     <textarea name="descripcion" id="descripcion"
                               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-[#54A6D8] block p-4 resize-none transition-all outline-none h-32 leading-relaxed" 
-                              maxlength="1500" placeholder="Sube el archivo y la IA de Nubira redactará por ti..." required></textarea>
+                              maxlength="1500" placeholder="Escribe una descripción de tu apunte..." required></textarea>
                     <p id="descripcion-error" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
                 </div>
 
@@ -659,7 +631,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                 <div class="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-[#54A6D8] border border-sky-100 shrink-0"><?= icon('sparkles', 'w-6 h-6') ?></div>
                 <div>
                     <h3 class="text-xl md:text-2xl font-bold tracking-tight text-gray-900">Mejora tu escaneo</h3>
-                    <p class="text-xs text-gray-500">Ayuda a la IA a leer tu apunte sin errores.</p>
+                    <p class="text-xs text-gray-500">Sube una imagen clara para mejorar la visualización.</p>
                 </div>
             </div>
             <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-6 relative overflow-hidden">
@@ -837,114 +809,19 @@ async function compressImage(file, maxWidth = 2000, quality = 0.8) {
     });
 }
 
-// =============================================
-// MOTOR DE ANÁLISIS IA (igual que antes)
-// =============================================
-async function analizarArchivo(file, tono = 'default') {
-    // Validar extensión antes de comprimir o llamar a la IA
+function analizarArchivo(file) {
     const ext = file.name.split('.').pop().toLowerCase();
     if (!['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
         showToast(`Solo se aceptan PDF o imágenes (.jpg, .jpeg, .png, .webp). El archivo ".${ext}" no es compatible.`, false);
         document.getElementById('archivo').value = '';
         return;
     }
-
-    const isFile = file instanceof File;
-    if(isFile) currentFile = file;
-    window.tonoActual = tono;
-
-    // Comprimir si es imagen
-    if (['jpg','jpeg','png','webp'].includes(ext)) {
-        document.getElementById('previewStatus').innerText = 'Comprimiendo imagen...';
-        processedFile = await compressImage(file);
-    } else {
-        processedFile = file;
-    }
-
+    currentFile = file;
+    processedFile = file;
     document.getElementById('mobile-buttons').classList.add('hidden');
-    const dz = document.getElementById('drop-zone');
-    if(dz) {
-        dz.classList.remove('hidden', 'md:flex'); dz.classList.add('flex', 'scanning');
-        document.getElementById('brain-icon').classList.replace('brain-idle','brain-thinking');
-    }
     document.getElementById('preview').classList.remove('hidden');
-    if(isFile) document.getElementById('previewContent').innerText = file.name;
-    
-    const btnText = document.getElementById('btn-ia-text');
-    if(btnText) { btnText.innerText = "Analizando..."; btnText.parentElement.classList.add('animate-pulse'); }
-    
-    triggerProgress(10);
-    setStatus("DETECTANDO FORMATO...");
-
-    try {
-    let payload = { filename: isFile ? file.name : "Archivo Manual", text: "", image: null, tono: tono };
-
-        if (isFile) {
-            if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
-                setStatus("ESCANEANDO IMAGEN...");
-                payload.image = await fileToBase64(file);
-            } else if (ext === 'pdf') {
-                setStatus("LEYENDO PDF...");
-                payload.text = await extractPdfText(file);
-            }
-        }
-
-        setStatus("IA NUBIRA PENSANDO...");
-        triggerProgress(60);
-
-        const response = await fetch('/app/datos/ia_nubira.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if(!response.ok) throw new Error("Error Servidor");
-        const data = await response.json();
-        
-document.getElementById('titulo').value = data.titulo || payload.filename.substring(0, 80);
-document.getElementById('ia_keywords').value = data.keywords || "";
-document.getElementById('ia_used').value = "1";
-document.getElementById('ia_accepted').value = "1";
-if(document.getElementById('asignatura')) document.getElementById('asignatura').value = data.asignatura || "General";
-
-// [NUBIRA 2.0] Aplicar materia/nivel/subtema desde IA
-if (data.materia) {
-    document.getElementById('select-materia').value = data.materia;
-    document.getElementById('materia').value = data.materia;
-    document.getElementById('badge-ia-materia').classList.remove('hidden');
-}
-if (data.nivel_academico) {
-    document.getElementById('select-nivel').value = data.nivel_academico;
-    document.getElementById('nivel_academico').value = data.nivel_academico;
-    document.getElementById('badge-ia-nivel').classList.remove('hidden');
-}
-if (data.subtema) {
-    document.getElementById('input-subtema').value = data.subtema;
-    document.getElementById('subtema').value = data.subtema;
-    document.getElementById('badge-ia-subtema').classList.remove('hidden');
-}
-        
-        const badge = document.getElementById('badge-categoria');
-        badge.innerText = data.categoria || "General";
-        badge.classList.remove('hidden');
-        
-        triggerProgress(85);
-        setStatus("REDACTANDO...");
-        typeWriter(data.descripcion || "", document.getElementById('descripcion'));
-
-    } catch (e) {
-        console.error("Error Nubira IA:", e);
-        document.getElementById('titulo').value = (currentFile?.name || "").split('.')[0].substring(0, 80);
-        document.getElementById('descripcion').value = "⚡ Apunte esencial para tu estudio. Organiza tu semestre con este material clave.";
-        setStatus("MODO MANUAL");
-        triggerProgress(0);
-    } finally {
-        if(dz) dz.classList.remove('scanning');
-        document.getElementById('brain-icon').classList.replace('brain-thinking','brain-idle');
-        if(btnText) { btnText.innerText = "Regenerar IA"; btnText.parentElement.classList.remove('animate-pulse'); }
-        // Revalidar después de que la IA llenó los campos
-        setTimeout(() => validateAll(), 500);
-    }
+    document.getElementById('previewContent').innerText = file.name;
+    setTimeout(() => validateAll(), 100);
 }
 
 function fileToBase64(file) {
@@ -1156,18 +1033,6 @@ document.getElementById('archivo').onchange = function(){
     }
 };
 document.getElementById('cameraInput').onchange = function(){ if(this.files[0]) { analizarArchivo(this.files[0]); validateAll(); } };
-// [NUBIRA 2.0] 3 botones de tono IA
-document.querySelectorAll('.btn-tono').forEach(btn => {
-    btn.onclick = function() {
-        const tono = this.dataset.tono;
-        if (currentFile) {
-            analizarArchivo(currentFile, tono);
-        } else {
-            document.getElementById('archivo').click();
-        }
-    };
-});
-
 // --- UX MÓVIL: Ocultar nav al escribir ---
 const navBottom = document.querySelector('.fixed.bottom-0');
 const mainContent = document.querySelector('main');
