@@ -50,7 +50,7 @@ $compacto  = !empty($_GET['compacto']);
 // === FILTROS ===
 // [NUBIRA 2.0] Exigimos que tanto el servicio como el autor estén visibles (Soft Delete Shield)
 $filtros = [
-    "TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')",
+    "s.estado = 'aprobado'",
     "s.visible = 1",
     "COALESCE(a.visible, 1) = 1"
 ];
