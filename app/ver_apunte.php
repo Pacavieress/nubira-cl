@@ -164,18 +164,6 @@ $stmt->close();
 
 if (!$apunte) mostrarError("El apunte no existe.");
 
-$stmt = $conn->prepare($sql_apunte);
-if (!$stmt) {
-    mostrarError("Error de base de datos. Si eres admin, asegúrate de haber ejecutado el ALTER TABLE para las Promos Flash.");
-}
-
-$stmt->bind_param("s", $archivo);
-$stmt->execute();
-$apunte = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$apunte) mostrarError("El apunte no existe.");
-
 // [NUBIRA SHIELD] Bloqueo de visibilidad por estado
 $es_propietario_shield = ($logueado && $usuario_id === (int)$apunte['id_alumno']);
 $es_admin_shield = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
