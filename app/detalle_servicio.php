@@ -312,44 +312,13 @@ if ($portada_rel && $portada_fis) {
 }
 $share_txt = urlencode("¡Mira este servicio en Nubira.cl! " . $servicio['titulo']);
 
-// --- LÓGICA DE HORARIOS DINÁMICOS NUBIRA 2.0 ---
-$horarios_tutor = null;
-$tiene_horarios = false;
-$dias_disponibles = []; // Solo días con bloques reales
-$dia_proximo = null;    // Primer día disponible desde hoy
+require_once __DIR__ . '/helpers/horarios.php';
 
-if (!empty($servicio['horarios_json'])) {
-    $horarios_tutor = json_decode($servicio['horarios_json'], true);
-    
-    if (is_array($horarios_tutor)) {
-        $orden_dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-        
-        // Filtrar solo días con bloques no vacíos
-        foreach ($orden_dias as $dia) {
-            if (!empty($horarios_tutor[$dia]) && count($horarios_tutor[$dia]) > 0) {
-                $dias_disponibles[$dia] = $horarios_tutor[$dia];
-            }
-        }
-        
-        if (count($dias_disponibles) > 0) {
-            $tiene_horarios = true;
-            
-            // Calcular el próximo día disponible desde HOY (timezone Chile)
-            date_default_timezone_set('America/Santiago');
-            $hoy_index = (int)date('N') - 1; // 0=Lunes ... 6=Domingo
-            
-            // Buscar el próximo día disponible (incluyendo hoy)
-            for ($i = 0; $i < 7; $i++) {
-                $check_index = ($hoy_index + $i) % 7;
-                $check_dia = $orden_dias[$check_index];
-                if (isset($dias_disponibles[$check_dia])) {
-                    $dia_proximo = $check_dia;
-                    break;
-                }
-            }
-        }
-    }
-}
+// --- LÓGICA DE HORARIOS DINÁMICOS NUBIRA 2.0 ---
+$horarios_info    = parsear_horarios_servicio($servicio['horarios_json'] ?? null);
+$tiene_horarios   = $horarios_info['tiene_horarios'];
+$dias_disponibles = $horarios_info['dias'];
+$dia_proximo      = $horarios_info['dia_proximo'];
 // --- LÓGICA DE TUTOR EN CLASE ---
 $tutor_en_clase = false;
 $q_busy = $conn->prepare("SELECT id FROM contratos WHERE vendedor_id = ? AND estado = 'en_progreso' LIMIT 1");
@@ -590,18 +559,45 @@ session_write_close();
 
                    <div class="mt-6">
                         <h3 class="font-bold text-gray-900 mb-3">Sobre este servicio</h3>
-                        <div class="text-gray-600 text-sm whitespace-normal font-normal leading-relaxed" style="overflow-wrap:anywhere; word-break:break-word;">
-                            <?php
-                                $desc_raw = trim($servicio['descripcion'] ?? '');
-                                $desc_raw = html_entity_decode($desc_raw, ENT_QUOTES, 'UTF-8');
-                                $desc_raw = preg_replace_callback('/\(([^)]+\|[^)]+)\)/', function($m) {
-                                    $ops = explode('|', $m[1]);
-                                    return $ops[array_rand($ops)];
-                                }, $desc_raw);
-                                echo nl2br(htmlspecialchars($desc_raw, ENT_QUOTES, 'UTF-8'));
-                            ?>
+                        <?php
+                            $desc_raw = trim($servicio['descripcion'] ?? '');
+                            $desc_raw = html_entity_decode($desc_raw, ENT_QUOTES, 'UTF-8');
+                            $desc_raw = preg_replace_callback('/\(([^)]+\|[^)]+)\)/', function($m) {
+                                $ops = explode('|', $m[1]);
+                                return $ops[array_rand($ops)];
+                            }, $desc_raw);
+                            $desc_larga = mb_strlen($desc_raw) > 150;
+                            $desc_corta = $desc_larga ? mb_strimwidth($desc_raw, 0, 150, '…') : $desc_raw;
+                        ?>
+                        <div id="desc-servicio-corta" class="text-gray-600 text-sm whitespace-normal font-normal leading-relaxed" style="overflow-wrap:anywhere; word-break:break-word;">
+                            <?= nl2br(htmlspecialchars($desc_corta, ENT_QUOTES, 'UTF-8')) ?>
                         </div>
+                        <?php if ($desc_larga): ?>
+                        <div id="desc-servicio-completa" class="hidden text-gray-600 text-sm whitespace-normal font-normal leading-relaxed" style="overflow-wrap:anywhere; word-break:break-word;">
+                            <?= nl2br(htmlspecialchars($desc_raw, ENT_QUOTES, 'UTF-8')) ?>
+                        </div>
+                        <button type="button" onclick="toggleDescripcionServicio(this)" class="text-[#54A6D8] text-[11px] font-bold mt-1.5 hover:underline outline-none tracking-wide uppercase">Leer más</button>
+                        <?php endif; ?>
                     </div>
+                    <?php if ($desc_larga): ?>
+                    <script>
+                    function toggleDescripcionServicio(btn) {
+                        var corta = document.getElementById('desc-servicio-corta');
+                        var completa = document.getElementById('desc-servicio-completa');
+                        if (!corta || !completa) return;
+                        var expandido = !completa.classList.contains('hidden');
+                        if (expandido) {
+                            completa.classList.add('hidden');
+                            corta.classList.remove('hidden');
+                            btn.innerText = 'Leer más';
+                        } else {
+                            completa.classList.remove('hidden');
+                            corta.classList.add('hidden');
+                            btn.innerText = 'Leer menos';
+                        }
+                    }
+                    </script>
+                    <?php endif; ?>
 
 <?php if (!empty($servicio['video_path']) && $servicio['video_estado'] === 'aprobado'): ?>
 <div class="mt-6 pt-6 border-t border-gray-50">
