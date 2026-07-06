@@ -738,168 +738,6 @@ require_once __DIR__ . '/componentes/header.php';
       class="pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full mx-auto block">
     
     
- <?php if ($tiene_ofertas_activas): ?>
-     <section class="mb-3 md:mb-5 relative">
-           <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-                <div class="flex items-center gap-2">
-                    <div>
-                        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight leading-none">Precios de última hora</h2>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="relative group">
-               <button onclick="scrollCarrusel('sec-ofertas', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-                
-               <div id="sec-ofertas" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-center">
-                    
-                   <?php 
-                   $idx_of = 0; // [NUBIRA 2.0] Contador LCP para ofertas
-                   foreach ($lista_ofertas as $row_of): 
-                       $idx_of++;
-                       $es_lcp_of = ($idx_of <= 2);
-                       $link_hash_of = url_servicio((int)$row_of['id'], $row_of['slug'] ?? null);
-                      $portada_set_of = srcset_portada($row_of);
-$portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es suficiente
-                        $es_activa = ((int)($row_of['cupos_oferta'] ?? 0) > 0 && !isset($row_of['es_falsa_oferta']));
-                        $pct_of = ($es_activa && (int)$row_of['precio'] > 0) ? round(((int)$row_of['precio'] - (int)$row_of['precio_oferta']) / (int)$row_of['precio'] * 100) : 0;
-                        // Lógica Nubira 2.0: Estrellas y Tag
-                       $rating_val_of = isset($row_of['rating_promedio']) ? (float)$row_of['rating_promedio'] : 0;
-                       $total_v_of = isset($row_of['total_votos']) ? (int)$row_of['total_votos'] : 0;
-                       $html_stars_of = render_rating_html($rating_val_of, $total_v_of);
-                       $tag_of = "CLASES";
-                       $tag_color_of = "text-[#54A6D8]";
-                       // [OVERLAY NUBIRA] avatar tutor + categoría sobre la portada
-                       $nombre_completo_ov = !empty($row_of['nombre_tutor']) ? $row_of['nombre_tutor'] : 'Profesor';
-                       $partes_ov = array_values(array_filter(explode(' ', trim((string)$nombre_completo_ov))));
-                       $tutor_nombre_ov = "Profesor";
-                       if (!empty($partes_ov[0])) {
-                           $tutor_nombre_ov = ucwords(strtolower($partes_ov[0]));
-                           if (count($partes_ov) >= 2) {
-                               $tutor_nombre_ov .= ' ' . strtoupper(substr($partes_ov[count($partes_ov)-1], 0, 1)) . '.';
-                           }
-                       }
-                       $foto_field_ov   = $row_of['foto_perfil'] ?? '';
-                       $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
-                       $categoria_overlay = $row_of['categoria'] ?? 'Otros';
-                       $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
-                       $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
-                    ?>
-                        <?php if($es_activa): ?>
-                        <a href="<?= $link_hash_of ?>"
-                           onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
-                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
-
-                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
-                                <img src="<?= htmlspecialchars($portada_url_of) ?>"
-                                     srcset="<?= htmlspecialchars($portada_set_of['thumb']) ?> 240w, <?= htmlspecialchars($portada_set_of['card']) ?> 480w"
-                                     sizes="170px"
-                                     alt="<?= htmlspecialchars($row_of['titulo']) ?>"
-                                     class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                                     loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" decoding="async"
-                                     <?= $es_lcp_of ? 'fetchpriority="high"' : '' ?>
-                                     width="170" height="128">
-
-                                <?php
-                                $ov_prefijo   = $prefijo_overlay;
-                                $ov_categoria = $nombre_categoria_overlay;
-                                $ov_foto      = $foto_tutor_ov;
-                                $ov_nombre    = $tutor_nombre_ov;
-                                $ov_size      = 'lg';
-                                include __DIR__ . '/componentes/overlay_card_servicio.php';
-                                ?>
-
-                                <div class="absolute top-1 right-1 z-10">
-                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-                                        <?= (int)$row_of['cupos_oferta'] ?> <?= (int)$row_of['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="pt-2.5 flex flex-col flex-1 text-left">
-                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
-                                <div class="text-[14px] mt-auto mb-1.5 leading-none whitespace-nowrap">
-                                    <span class="text-[11px] text-gray-400 line-through font-medium mr-1">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
-                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
-                                    <?php if ($pct_of > 0): ?><span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-<?= $pct_of ?>%</span><?php endif; ?>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
-                                        <span class="truncate"><?= $tag_of ?></span>
-                                    </div>
-                                    <div class="shrink-0 flex items-center gap-1"><?= $html_stars_of ?></div>
-                                </div>
-                            </div>
-                        </a>
-                        <?php else: ?>
-                        <a href="<?= $link_hash_of ?>"
-                           onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
-                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
-
-                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
-                                <img src="<?= htmlspecialchars($portada_url_of) ?>"
-                                     alt="<?= htmlspecialchars($row_of['titulo']) ?>"
-                                     class="w-full h-full object-cover"
-                                     loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" decoding="async"
-                                     width="170" height="128">
-
-                                <?php
-                                $ov_prefijo   = $prefijo_overlay;
-                                $ov_categoria = $nombre_categoria_overlay;
-                                $ov_foto      = $foto_tutor_ov;
-                                $ov_nombre    = $tutor_nombre_ov;
-                                $ov_size      = 'lg';
-                                include __DIR__ . '/componentes/overlay_card_servicio.php';
-                                ?>
-                            </div>
-
-                            <div class="pt-2.5 flex flex-col flex-1 text-left">
-                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
-                                <div class="text-[13px] mt-auto mb-1.5 leading-none">
-                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
-                                        <span class="truncate"><?= $tag_of ?></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
-              <button onclick="scrollCarrusel('sec-ofertas', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
-            </div>
-        </section>
-        <?php endif; ?>
-
-<?php if (false): // OCULTO: seccion IA removida de la home ?>
-   <section id="zona-ia" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500">
-    
-    <?php require_once __DIR__ . '/componentes/seccion_recomendaciones.php'; ?>
-    
-    <div class="relative group">
-      <button onclick="scrollCarrusel('carrusel-ia', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-        
- <div id="carrusel-ia" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10 min-h-[100px] md:min-h-[130px]">
-            <?php for($i=0; $i<6; $i++): ?>
-            <div class="flex-shrink-0 w-[220px] md:w-[300px] h-[96px] md:h-[112px] bg-gray-50 rounded-2xl border border-gray-200 p-2 md:p-2.5 flex gap-3 snap-start overflow-hidden">
-                <div class="w-20 h-20 md:w-[90px] md:h-[90px] rounded-xl bg-gray-200 flex-shrink-0 animate-pulse self-center"></div>
-                <div class="flex flex-col justify-center w-full gap-2 py-1">
-                    <div class="h-2 bg-gray-200 rounded-full w-1/4 animate-pulse"></div>
-                    <div class="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
-                    <div class="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                    <div class="h-3 bg-gray-200 rounded w-1/3 animate-pulse mt-1"></div>
-                </div>
-            </div>
-            <?php endfor; ?>
-        </div>
-        
-        <button onclick="scrollCarrusel('carrusel-ia', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
-    </div>
-</section>
-<?php endif; ?>
-
 <?php if (!$is_guest): ?>
     <section id="sec-recientes-wrapper" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500 delay-100">
       <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
@@ -923,7 +761,167 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
         </div>
     </section>
 <?php endif; ?>
+
+<section class="mb-3 md:mb-5 relative ">
+<div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
+        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_servicios ?></h2>
+        <a href="/servicios" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+    </div>
+    
+    <div class="relative group">
+        <button onclick="scrollCarrusel('sec-servicios', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
         
+        <div id="sec-servicios" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
+            <?php if ($res_servicios && $res_servicios->num_rows > 0): 
+                $idx_serv = 0; // [NUBIRA 2.0] Contador para priorizar LCP en primeras cards
+            ?>
+                <?php while ($row = $res_servicios->fetch_assoc()): 
+                    $idx_serv++;
+                    $esRecomendado = ($es_recomendacion_inmediata && $row['categoria'] === $cat_favorita);
+                    $es_lcp_serv = ($idx_serv <= 2); // Primeras 2 cards = prioridad alta
+                    $link_hash = url_servicio((int)$row['id'], $row['slug'] ?? null);
+                    $portada_set = srcset_portada($row);
+$portada_url = $portada_set['card'];
+                    
+                    $rating_val = isset($row['rating_promedio']) ? (float)$row['rating_promedio'] : 0;
+                    $total_v = isset($row['total_votos']) ? (int)$row['total_votos'] : 0;
+                    
+                    // --- LÓGICA DE ESCALAFONES DE STATUS (TIERS NUBIRA 2.0) ---
+                    $score = (int)($row['score_nubira'] ?? 0);
+                    $nivel_tutor = '';
+                    $es_basico = ($score < 60);
+
+                    if ($score >= 100 && $total_v >= 10 && $rating_val >= 4.7) {
+                        $nivel_tutor = 'leyenda';
+                    } elseif ($score >= 80 && $total_v >= 3 && $rating_val >= 4.0) {
+                        $nivel_tutor = 'elite';
+                    } elseif ($score >= 80) {
+                        $nivel_tutor = 'pro';
+                    } elseif ($score >= 60) {
+                        $nivel_tutor = 'top';
+                    }
+                    
+                    // --- LÓGICA DE AVATAR Y TUTOR ---
+                    $nombre_completo = !empty($row['nombre_tutor']) ? $row['nombre_tutor'] : 'Profesor';
+                    $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
+                    $tutor_nombre = "Profesor";
+                    if (!empty($partes_nombre[0])) {
+                        $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
+                        if (count($partes_nombre) >= 2) {
+                            $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
+                        }
+                    }
+                    $foto_tutor = !empty($row['foto_perfil']) ? '/app/perfil/fotos/' . $row['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b&size=128";
+
+                    // [OVERLAY NUBIRA] avatar tutor + categoría sobre la portada
+                    $tutor_nombre_ov = $row['nombre_tutor'] ?? '';
+                    $foto_field_ov   = $row['foto_perfil'] ?? '';
+                    $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
+                    $categoria_overlay = $row['categoria'] ?? 'Otros';
+                    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
+                    $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
+
+                    $es_nuevo = false;
+                    if (!empty($row['fecha_publicacion']) && $row['fecha_publicacion'] !== '0000-00-00 00:00:00' && $row['fecha_publicacion'] !== '0000-00-00') {
+                        try { $es_nuevo = (new DateTime())->diff(new DateTime($row['fecha_publicacion']))->days <= 7; } catch (Throwable $e) {}
+                    }
+                    
+                   // --- LÓGICA DE PRECIOS Y OFERTAS (NUBIRA 2.0) ---
+                    $es_oferta = oferta_vigente($row);
+                    $precio_normal = $row['precio'] ?? 0;
+                    $pct_descuento = ($es_oferta && (int)$precio_normal > 0) ? round(((int)$precio_normal - (int)$row['precio_oferta']) / (int)$precio_normal * 100) : 0;
+                    
+                    if ($es_oferta) {
+                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_descuento > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_descuento}%</span>" : "");
+                        $precio_class = "text-gray-900 font-semibold";
+                    } else if (is_numeric($precio_normal) && $precio_normal > 0) {
+                        $precio_html = "$" . number_format($precio_normal, 0, ',', '.');
+                        $precio_class = "text-gray-700 font-semibold";
+                    } else {
+                        $precio_html = "Gratis";
+                        $precio_class = "text-gray-700 font-semibold";
+                    }
+                    
+                    $mod = strtolower($row['modalidad'] ?? '');
+                    $icon_mod = '<i class="fa-solid fa-laptop text-[10px]"></i>';
+                    if (strpos($mod,'online')!==false) $icon_mod = '<i class="fa-solid fa-wifi text-[10px]"></i>';
+                    elseif (strpos($mod,'presencial')!==false) $icon_mod = '<i class="fa-solid fa-user-group text-[10px]"></i>';
+                    
+                    $html_stars = render_rating_html($rating_val, $total_v);
+                    $inst_text = institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
+                ?>
+                
+                <a href="<?= $link_hash ?>" onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
+                   class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
+
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                      <img src="<?= htmlspecialchars($portada_url) ?>" 
+     srcset="<?= htmlspecialchars($portada_set['thumb']) ?> 240w,
+             <?= htmlspecialchars($portada_set['card']) ?> 480w,
+             <?= htmlspecialchars($portada_set['main']) ?> 1200w"
+     sizes="(max-width: 640px) 220px, 240px"
+     alt="<?= htmlspecialchars($row['titulo']) ?>" 
+     class="w-full h-full object-cover" 
+     loading="<?= $es_lcp_serv ? 'eager' : 'lazy' ?>" 
+     decoding="async" 
+     <?= $es_lcp_serv ? 'fetchpriority="high"' : '' ?> 
+     width="240" height="180"
+     onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
+
+                       <?php
+                       $ov_prefijo   = $prefijo_overlay;
+                       $ov_categoria = $nombre_categoria_overlay;
+                       $ov_foto      = $foto_tutor;
+                       $ov_nombre    = $tutor_nombre;
+                       $ov_size      = 'lg';
+                       include __DIR__ . '/componentes/overlay_card_servicio.php';
+                       ?>
+
+                       <!-- Badge nivel (derecha) - oculto en ofertas para no chocar con el badge de cupos -->
+                       <?php if (empty($es_oferta)): ?>
+                       <div class="absolute top-1 right-1 z-10">
+                            <?php if ($nivel_tutor === 'leyenda'): ?>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+                            <?php elseif ($nivel_tutor === 'elite'): ?>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+                            <?php elseif ($nivel_tutor === 'pro'): ?>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+                            <?php elseif ($nivel_tutor === 'top'): ?>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+                            <?php endif; ?>
+                       </div>
+                       <?php endif; ?>
+
+                       <!-- Badge cupos (derecha) -->
+                       <?php if ($es_oferta): ?>
+                       <div class="absolute top-1 right-1 z-10">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                               <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                           </span>
+                       </div>
+                       <?php endif; ?>
+                    </div>
+
+                    <div class="pt-2.5 flex flex-col flex-1 text-left">
+                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row['titulo']) ?></h3>
+                      <div class="text-[14px] <?= $precio_class ?> mt-auto mb-1.5 leading-none"><?= $precio_html ?></div>
+                        
+                        <div class="flex items-center justify-between">
+    <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+        <?php if(!empty($inst_text)): ?><span class="truncate"><?= $inst_text ?></span><?php endif; ?>
+    </div>
+    <div class="shrink-0 flex items-center gap-1"><?= $html_stars ?></div>
+</div>
+                    </div>
+                </a>
+                <?php endwhile; ?>
+            <?php endif; ?>
+        </div>
+        
+        <button onclick="scrollCarrusel('sec-servicios', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+    </div>
+</section>
+
 <?php if ($res_rapidos && $res_rapidos->num_rows > 0): ?>
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
@@ -1139,165 +1137,273 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
     </div>
 </section>
 
-<section class="mb-3 md:mb-5 relative ">
-<div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_servicios ?></h2>
-        <a href="/servicios" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+<section class="mb-3 md:mb-5 relative">
+<div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_apuntes ?></h2>
+        <a href="/apuntes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
     
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-servicios', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
         
-        <div id="sec-servicios" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
-            <?php if ($res_servicios && $res_servicios->num_rows > 0): 
-                $idx_serv = 0; // [NUBIRA 2.0] Contador para priorizar LCP en primeras cards
+<div id="sec-apuntes" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
+            <?php if (isset($res_apuntes) && $res_apuntes && $res_apuntes->num_rows > 0): 
+                $idx_ap = 0; // [NUBIRA 2.0] Contador para priorizar LCP en primeras cards
             ?>
-                <?php while ($row = $res_servicios->fetch_assoc()): 
-                    $idx_serv++;
-                    $esRecomendado = ($es_recomendacion_inmediata && $row['categoria'] === $cat_favorita);
-                    $es_lcp_serv = ($idx_serv <= 2); // Primeras 2 cards = prioridad alta
-                    $link_hash = url_servicio((int)$row['id'], $row['slug'] ?? null);
-                    $portada_set = srcset_portada($row);
-$portada_url = $portada_set['card'];
+                <?php while ($row_ap = $res_apuntes->fetch_assoc()): 
+                    $idx_ap++;
+                    $es_lcp_ap = ($idx_ap <= 2); // Primeras 2 cards = prioridad alta
+                    $link_hash_ap = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_ap['id']) : (int)$row_ap['id'];
+                    $portada_url_ap = resolver_portada_apunte($row_ap);
+                    $promo_gratis = (int)($row_ap['promo_gratis'] ?? 0);
+                    $promo_limite = (int)($row_ap['promo_limite'] ?? 0);
+                    $promo_contador = (int)($row_ap['promo_contador'] ?? 0);
+                    $es_promo_activa = ($promo_gratis === 1 && $promo_contador < $promo_limite);
+                    $descargas_restantes = $promo_limite - $promo_contador;
+                    $ventas_totales = (int)($row_ap['ventas_totales'] ?? 0);
+                    $ventas_txt = abreviar_conteo($ventas_totales);
                     
-                    $rating_val = isset($row['rating_promedio']) ? (float)$row['rating_promedio'] : 0;
-                    $total_v = isset($row['total_votos']) ? (int)$row['total_votos'] : 0;
-                    
-                    // --- LÓGICA DE ESCALAFONES DE STATUS (TIERS NUBIRA 2.0) ---
-                    $score = (int)($row['score_nubira'] ?? 0);
-                    $nivel_tutor = '';
-                    $es_basico = ($score < 60);
-
-                    if ($score >= 100 && $total_v >= 10 && $rating_val >= 4.7) {
-                        $nivel_tutor = 'leyenda';
-                    } elseif ($score >= 80 && $total_v >= 3 && $rating_val >= 4.0) {
-                        $nivel_tutor = 'elite';
-                    } elseif ($score >= 80) {
-                        $nivel_tutor = 'pro';
-                    } elseif ($score >= 60) {
-                        $nivel_tutor = 'top';
-                    }
-                    
-                    // --- LÓGICA DE AVATAR Y TUTOR ---
-                    $nombre_completo = !empty($row['nombre_tutor']) ? $row['nombre_tutor'] : 'Profesor';
+                    // --- LÓGICA DE AVATAR Y NOMBRE PARA APUNTES ---
+                    $nombre_completo = !empty($row_ap['nombre_tutor']) ? $row_ap['nombre_tutor'] : 'Estudiante';
                     $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
-                    $tutor_nombre = "Profesor";
+                    $tutor_nombre = "Estudiante";
                     if (!empty($partes_nombre[0])) {
                         $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
                         if (count($partes_nombre) >= 2) {
                             $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
                         }
                     }
-                    $foto_tutor = !empty($row['foto_perfil']) ? '/app/perfil/fotos/' . $row['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b&size=128";
+                    $foto_tutor = !empty($row_ap['foto_perfil']) ? '/app/perfil/fotos/' . $row_ap['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b";
 
-                    // [OVERLAY NUBIRA] avatar tutor + categoría sobre la portada
-                    $tutor_nombre_ov = $row['nombre_tutor'] ?? '';
-                    $foto_field_ov   = $row['foto_perfil'] ?? '';
-                    $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
-                    $categoria_overlay = $row['categoria'] ?? 'Otros';
-                    $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
-                    $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
-
-                    $es_nuevo = false;
-                    if (!empty($row['fecha_publicacion']) && $row['fecha_publicacion'] !== '0000-00-00 00:00:00' && $row['fecha_publicacion'] !== '0000-00-00') {
-                        try { $es_nuevo = (new DateTime())->diff(new DateTime($row['fecha_publicacion']))->days <= 7; } catch (Throwable $e) {}
+                    $es_nuevo_ap = false;
+                    if (!empty($row_ap['fecha_subida']) && $row_ap['fecha_subida'] !== '0000-00-00 00:00:00' && $row_ap['fecha_subida'] !== '0000-00-00') {
+                        try { $es_nuevo_ap = (new DateTime())->diff(new DateTime($row_ap['fecha_subida']))->days <= 7; } catch (Throwable $e) {}
                     }
                     
-                   // --- LÓGICA DE PRECIOS Y OFERTAS (NUBIRA 2.0) ---
-                    $es_oferta = oferta_vigente($row);
-                    $precio_normal = $row['precio'] ?? 0;
-                    $pct_descuento = ($es_oferta && (int)$precio_normal > 0) ? round(((int)$precio_normal - (int)$row['precio_oferta']) / (int)$precio_normal * 100) : 0;
-                    
-                    if ($es_oferta) {
-                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_descuento > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_descuento}%</span>" : "");
-                        $precio_class = "text-gray-900 font-semibold";
-                    } else if (is_numeric($precio_normal) && $precio_normal > 0) {
-                        $precio_html = "$" . number_format($precio_normal, 0, ',', '.');
-                        $precio_class = "text-gray-700 font-semibold";
-                    } else {
-                        $precio_html = "Gratis";
-                        $precio_class = "text-gray-700 font-semibold";
+                    $precio_val_ap = $row_ap['precio'] ?? 0;
+                    if ($es_promo_activa) {
+                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
+                        $precio_class_ap = "text-gray-900 font-semibold flex items-center";
+                    } else if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
+                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-gray-700 font-semibold";
+                    } else { 
+                        $precio_ap = "Gratis"; $precio_class_ap = "text-gray-700 font-semibold";
                     }
-                    
-                    $mod = strtolower($row['modalidad'] ?? '');
-                    $icon_mod = '<i class="fa-solid fa-laptop text-[10px]"></i>';
-                    if (strpos($mod,'online')!==false) $icon_mod = '<i class="fa-solid fa-wifi text-[10px]"></i>';
-                    elseif (strpos($mod,'presencial')!==false) $icon_mod = '<i class="fa-solid fa-user-group text-[10px]"></i>';
-                    
-                    $html_stars = render_rating_html($rating_val, $total_v);
-                    $inst_text = institucion_tutor($row['institucion_maestra'] ?? ($row['institucion'] ?? ''));
+                    $inst_text_ap = abreviar_institucion($row_ap['institucion_maestra'] ?? ($row_ap['institucion'] ?? ''));
                 ?>
                 
-                <a href="<?= $link_hash ?>" onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
-                   class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
-
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
-                      <img src="<?= htmlspecialchars($portada_url) ?>" 
-     srcset="<?= htmlspecialchars($portada_set['thumb']) ?> 240w,
-             <?= htmlspecialchars($portada_set['card']) ?> 480w,
-             <?= htmlspecialchars($portada_set['main']) ?> 1200w"
-     sizes="(max-width: 640px) 220px, 240px"
-     alt="<?= htmlspecialchars($row['titulo']) ?>" 
+                <a href="/apunte/<?= $link_hash_ap ?>" onclick="registrarClick(<?= (int)$row_ap['id'] ?>, 'apunte')" 
+                   class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
+                    
+                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                       <img src="<?= htmlspecialchars($portada_url_ap) ?>"
+     alt="<?= htmlspecialchars($row_ap['titulo']) ?>" 
      class="w-full h-full object-cover" 
-     loading="<?= $es_lcp_serv ? 'eager' : 'lazy' ?>" 
+     loading="<?= $es_lcp_ap ? 'eager' : 'lazy' ?>" 
      decoding="async" 
-     <?= $es_lcp_serv ? 'fetchpriority="high"' : '' ?> 
+     <?= $es_lcp_ap ? 'fetchpriority="high"' : '' ?> 
      width="240" height="180"
+     sizes="(max-width: 640px) 220px, 240px"
      onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
-
-                       <?php
-                       $ov_prefijo   = $prefijo_overlay;
-                       $ov_categoria = $nombre_categoria_overlay;
-                       $ov_foto      = $foto_tutor;
-                       $ov_nombre    = $tutor_nombre;
-                       $ov_size      = 'lg';
-                       include __DIR__ . '/componentes/overlay_card_servicio.php';
-                       ?>
-
-                       <!-- Badge nivel (derecha) - oculto en ofertas para no chocar con el badge de cupos -->
-                       <?php if (empty($es_oferta)): ?>
-                       <div class="absolute top-1 right-1 z-10">
-                            <?php if ($nivel_tutor === 'leyenda'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
-                            <?php elseif ($nivel_tutor === 'elite'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
-                            <?php elseif ($nivel_tutor === 'pro'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
-                            <?php elseif ($nivel_tutor === 'top'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+                        <div class="absolute top-2.5 left-2.5 z-10">
+                            <?php if ($es_promo_activa): ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                    Quedan <?= $descargas_restantes ?>
+                                </span>
                             <?php endif; ?>
-                       </div>
-                       <?php endif; ?>
+                        </div>
 
-                       <!-- Badge cupos (derecha) -->
-                       <?php if ($es_oferta): ?>
-                       <div class="absolute top-1 right-1 z-10">
-                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-                               <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
-                           </span>
-                       </div>
-                       <?php endif; ?>
                     </div>
-
+                    
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row['titulo']) ?></h3>
-                      <div class="text-[14px] <?= $precio_class ?> mt-auto mb-1.5 leading-none"><?= $precio_html ?></div>
+                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_ap['titulo']) ?></h3>
+                        
+                        <div class="text-[14px] <?= $precio_class_ap ?> mt-auto mb-1.5 leading-none"><?= $precio_ap ?></div>
                         
                         <div class="flex items-center justify-between">
-    <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
-        <?php if(!empty($inst_text)): ?><span class="truncate"><?= $inst_text ?></span><?php endif; ?>
-    </div>
-    <div class="shrink-0 flex items-center gap-1"><?= $html_stars ?></div>
-</div>
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                                <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
+                            </div>
+                            <?php if ($ventas_totales > 0): ?>
+                            <div class="shrink-0 flex items-center">
+                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </a>
                 <?php endwhile; ?>
+            <?php else: ?>
+                <div class="p-4 text-sm text-gray-400 font-medium">No hay apuntes disponibles en este momento.</div>
             <?php endif; ?>
         </div>
         
-        <button onclick="scrollCarrusel('sec-servicios', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
+
+ <?php if ($tiene_ofertas_activas): ?>
+     <section class="mb-3 md:mb-5 relative">
+           <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+                <div class="flex items-center gap-2">
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight leading-none">Precios de última hora</h2>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="relative group">
+               <button onclick="scrollCarrusel('sec-ofertas', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                
+               <div id="sec-ofertas" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-center">
+                    
+                   <?php 
+                   $idx_of = 0; // [NUBIRA 2.0] Contador LCP para ofertas
+                   foreach ($lista_ofertas as $row_of): 
+                       $idx_of++;
+                       $es_lcp_of = ($idx_of <= 2);
+                       $link_hash_of = url_servicio((int)$row_of['id'], $row_of['slug'] ?? null);
+                      $portada_set_of = srcset_portada($row_of);
+$portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es suficiente
+                        $es_activa = ((int)($row_of['cupos_oferta'] ?? 0) > 0 && !isset($row_of['es_falsa_oferta']));
+                        $pct_of = ($es_activa && (int)$row_of['precio'] > 0) ? round(((int)$row_of['precio'] - (int)$row_of['precio_oferta']) / (int)$row_of['precio'] * 100) : 0;
+                        // Lógica Nubira 2.0: Estrellas y Tag
+                       $rating_val_of = isset($row_of['rating_promedio']) ? (float)$row_of['rating_promedio'] : 0;
+                       $total_v_of = isset($row_of['total_votos']) ? (int)$row_of['total_votos'] : 0;
+                       $html_stars_of = render_rating_html($rating_val_of, $total_v_of);
+                       $tag_of = "CLASES";
+                       $tag_color_of = "text-[#54A6D8]";
+                       // [OVERLAY NUBIRA] avatar tutor + categoría sobre la portada
+                       $nombre_completo_ov = !empty($row_of['nombre_tutor']) ? $row_of['nombre_tutor'] : 'Profesor';
+                       $partes_ov = array_values(array_filter(explode(' ', trim((string)$nombre_completo_ov))));
+                       $tutor_nombre_ov = "Profesor";
+                       if (!empty($partes_ov[0])) {
+                           $tutor_nombre_ov = ucwords(strtolower($partes_ov[0]));
+                           if (count($partes_ov) >= 2) {
+                               $tutor_nombre_ov .= ' ' . strtoupper(substr($partes_ov[count($partes_ov)-1], 0, 1)) . '.';
+                           }
+                       }
+                       $foto_field_ov   = $row_of['foto_perfil'] ?? '';
+                       $foto_tutor_ov   = !empty($foto_field_ov) ? '/app/perfil/fotos/' . $foto_field_ov : 'https://ui-avatars.com/api/?name=' . urlencode($tutor_nombre_ov) . '&background=54A6D8&color=fff&size=128&bold=true';
+                       $categoria_overlay = $row_of['categoria'] ?? 'Otros';
+                       $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
+                       $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
+                    ?>
+                        <?php if($es_activa): ?>
+                        <a href="<?= $link_hash_of ?>"
+                           onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
+                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
+
+                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                                <img src="<?= htmlspecialchars($portada_url_of) ?>"
+                                     srcset="<?= htmlspecialchars($portada_set_of['thumb']) ?> 240w, <?= htmlspecialchars($portada_set_of['card']) ?> 480w"
+                                     sizes="170px"
+                                     alt="<?= htmlspecialchars($row_of['titulo']) ?>"
+                                     class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                     loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" decoding="async"
+                                     <?= $es_lcp_of ? 'fetchpriority="high"' : '' ?>
+                                     width="170" height="128">
+
+                                <?php
+                                $ov_prefijo   = $prefijo_overlay;
+                                $ov_categoria = $nombre_categoria_overlay;
+                                $ov_foto      = $foto_tutor_ov;
+                                $ov_nombre    = $tutor_nombre_ov;
+                                $ov_size      = 'lg';
+                                include __DIR__ . '/componentes/overlay_card_servicio.php';
+                                ?>
+
+                                <div class="absolute top-1 right-1 z-10">
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                        <?= (int)$row_of['cupos_oferta'] ?> <?= (int)$row_of['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2.5 flex flex-col flex-1 text-left">
+                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
+                                <div class="text-[14px] mt-auto mb-1.5 leading-none whitespace-nowrap">
+                                    <span class="text-[11px] text-gray-400 line-through font-medium mr-1">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
+                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
+                                    <?php if ($pct_of > 0): ?><span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-<?= $pct_of ?>%</span><?php endif; ?>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                                        <span class="truncate"><?= $tag_of ?></span>
+                                    </div>
+                                    <div class="shrink-0 flex items-center gap-1"><?= $html_stars_of ?></div>
+                                </div>
+                            </div>
+                        </a>
+                        <?php else: ?>
+                        <a href="<?= $link_hash_of ?>"
+                           onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
+                           class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
+
+                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                                <img src="<?= htmlspecialchars($portada_url_of) ?>"
+                                     alt="<?= htmlspecialchars($row_of['titulo']) ?>"
+                                     class="w-full h-full object-cover"
+                                     loading="<?= $es_lcp_of ? 'eager' : 'lazy' ?>" decoding="async"
+                                     width="170" height="128">
+
+                                <?php
+                                $ov_prefijo   = $prefijo_overlay;
+                                $ov_categoria = $nombre_categoria_overlay;
+                                $ov_foto      = $foto_tutor_ov;
+                                $ov_nombre    = $tutor_nombre_ov;
+                                $ov_size      = 'lg';
+                                include __DIR__ . '/componentes/overlay_card_servicio.php';
+                                ?>
+                            </div>
+
+                            <div class="pt-2.5 flex flex-col flex-1 text-left">
+                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
+                                <div class="text-[13px] mt-auto mb-1.5 leading-none">
+                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                                        <span class="truncate"><?= $tag_of ?></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+              <button onclick="scrollCarrusel('sec-ofertas', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+            </div>
+        </section>
+        <?php endif; ?>
+
+<?php if (false): // OCULTO: seccion IA removida de la home ?>
+   <section id="zona-ia" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500">
+    
+    <?php require_once __DIR__ . '/componentes/seccion_recomendaciones.php'; ?>
+    
+    <div class="relative group">
+      <button onclick="scrollCarrusel('carrusel-ia', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        
+ <div id="carrusel-ia" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10 min-h-[100px] md:min-h-[130px]">
+            <?php for($i=0; $i<6; $i++): ?>
+            <div class="flex-shrink-0 w-[220px] md:w-[300px] h-[96px] md:h-[112px] bg-gray-50 rounded-2xl border border-gray-200 p-2 md:p-2.5 flex gap-3 snap-start overflow-hidden">
+                <div class="w-20 h-20 md:w-[90px] md:h-[90px] rounded-xl bg-gray-200 flex-shrink-0 animate-pulse self-center"></div>
+                <div class="flex flex-col justify-center w-full gap-2 py-1">
+                    <div class="h-2 bg-gray-200 rounded-full w-1/4 animate-pulse"></div>
+                    <div class="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
+                    <div class="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                    <div class="h-3 bg-gray-200 rounded w-1/3 animate-pulse mt-1"></div>
+                </div>
+            </div>
+            <?php endfor; ?>
+        </div>
+        
+        <button onclick="scrollCarrusel('carrusel-ia', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+    </div>
+</section>
+<?php endif; ?>
+
 <?php if (false): // OCULTO: seccion Apuntes nuevos removida de la home ?>
 <!-- [NUBIRA 2.0] APUNTES RECIÉN PUBLICADOS -->
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
@@ -1411,110 +1517,7 @@ $portada_url = $portada_set['card'];
     </div>
 </section>
 <?php endif; ?>
-<section class="mb-3 md:mb-5 relative">
-<div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_apuntes ?></h2>
-        <a href="/apuntes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
-    </div>
-    
-    <div class="relative group">
-        <button onclick="scrollCarrusel('sec-apuntes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-        
-<div id="sec-apuntes" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
-            <?php if (isset($res_apuntes) && $res_apuntes && $res_apuntes->num_rows > 0): 
-                $idx_ap = 0; // [NUBIRA 2.0] Contador para priorizar LCP en primeras cards
-            ?>
-                <?php while ($row_ap = $res_apuntes->fetch_assoc()): 
-                    $idx_ap++;
-                    $es_lcp_ap = ($idx_ap <= 2); // Primeras 2 cards = prioridad alta
-                    $link_hash_ap = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_ap['id']) : (int)$row_ap['id'];
-                    $portada_url_ap = resolver_portada_apunte($row_ap);
-                    $promo_gratis = (int)($row_ap['promo_gratis'] ?? 0);
-                    $promo_limite = (int)($row_ap['promo_limite'] ?? 0);
-                    $promo_contador = (int)($row_ap['promo_contador'] ?? 0);
-                    $es_promo_activa = ($promo_gratis === 1 && $promo_contador < $promo_limite);
-                    $descargas_restantes = $promo_limite - $promo_contador;
-                    $ventas_totales = (int)($row_ap['ventas_totales'] ?? 0);
-                    $ventas_txt = abreviar_conteo($ventas_totales);
-                    
-                    // --- LÓGICA DE AVATAR Y NOMBRE PARA APUNTES ---
-                    $nombre_completo = !empty($row_ap['nombre_tutor']) ? $row_ap['nombre_tutor'] : 'Estudiante';
-                    $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
-                    $tutor_nombre = "Estudiante";
-                    if (!empty($partes_nombre[0])) {
-                        $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
-                        if (count($partes_nombre) >= 2) {
-                            $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
-                        }
-                    }
-                    $foto_tutor = !empty($row_ap['foto_perfil']) ? '/app/perfil/fotos/' . $row_ap['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b";
 
-                    $es_nuevo_ap = false;
-                    if (!empty($row_ap['fecha_subida']) && $row_ap['fecha_subida'] !== '0000-00-00 00:00:00' && $row_ap['fecha_subida'] !== '0000-00-00') {
-                        try { $es_nuevo_ap = (new DateTime())->diff(new DateTime($row_ap['fecha_subida']))->days <= 7; } catch (Throwable $e) {}
-                    }
-                    
-                    $precio_val_ap = $row_ap['precio'] ?? 0;
-                    if ($es_promo_activa) {
-                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
-                        $precio_class_ap = "text-gray-900 font-semibold flex items-center";
-                    } else if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
-                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-gray-700 font-semibold";
-                    } else { 
-                        $precio_ap = "Gratis"; $precio_class_ap = "text-gray-700 font-semibold";
-                    }
-                    $inst_text_ap = abreviar_institucion($row_ap['institucion_maestra'] ?? ($row_ap['institucion'] ?? ''));
-                ?>
-                
-                <a href="/apunte/<?= $link_hash_ap ?>" onclick="registrarClick(<?= (int)$row_ap['id'] ?>, 'apunte')" 
-                   class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
-                    
-                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
-                       <img src="<?= htmlspecialchars($portada_url_ap) ?>"
-     alt="<?= htmlspecialchars($row_ap['titulo']) ?>" 
-     class="w-full h-full object-cover" 
-     loading="<?= $es_lcp_ap ? 'eager' : 'lazy' ?>" 
-     decoding="async" 
-     <?= $es_lcp_ap ? 'fetchpriority="high"' : '' ?> 
-     width="240" height="180"
-     sizes="(max-width: 640px) 220px, 240px"
-     onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
-                        <div class="absolute top-2.5 left-2.5 z-10">
-                            <?php if ($es_promo_activa): ?>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-                                    Quedan <?= $descargas_restantes ?>
-                                </span>
-                            <?php endif; ?>
-                        </div>
-
-                    </div>
-                    
-                    <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_ap['titulo']) ?></h3>
-                        
-                        <div class="text-[14px] <?= $precio_class_ap ?> mt-auto mb-1.5 leading-none"><?= $precio_ap ?></div>
-                        
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
-                                <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
-                            </div>
-                            <?php if ($ventas_totales > 0): ?>
-                            <div class="shrink-0 flex items-center">
-                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </a>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="p-4 text-sm text-gray-400 font-medium">No hay apuntes disponibles en este momento.</div>
-            <?php endif; ?>
-        </div>
-        
-        <button onclick="scrollCarrusel('sec-apuntes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
-    </div>
-</section>
 <?php if ($mostrar_seccion_paes): ?>
 <!-- [NUBIRA 2.0] APUNTES PAES -->
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
