@@ -608,7 +608,7 @@ try {
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_seo_meta('Explorar tutorías y apuntes universitarios | Nubira Chile', 'Encuentra tutorías online y apuntes de universidades chilenas. Clases particulares con pago protegido. PUC, U. de Chile, USACH, UNAB y más en Nubira.'); ?>
+    <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_seo_meta('Nubira — Tutores, apuntes y clases particulares universitarias en Chile', 'Encuentra tutores verificados con correo institucional, apuntes universitarios y clases particulares en Chile. Pagos protegidos con Garantía Nubira.'); ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag('/explorar'); ?>
