@@ -235,9 +235,19 @@ if ($cat_favorita) {
 }
 } catch (Exception $e) {}
 
+// [DEDUP] Pool de IDs de servicios ya mostrados en esta carga (recomendadas no excluye nada, elige primero)
+$ids_servicios_usados = [0];
+if ($res_servicios) {
+    while ($row_dedup = $res_servicios->fetch_assoc()) {
+        $ids_servicios_usados[] = (int)$row_dedup['id'];
+    }
+    $res_servicios->data_seek(0); // rebobinar: el render más abajo vuelve a leer este mismo result
+}
+
 // --- [NUBIRA 2.0] CONSULTA: RECIÉN LLEGADOS ---
 $res_nuevos = null;
 try {
+    $placeholders_nuevos = implode(',', array_fill(0, count($ids_servicios_usados), '?'));
     $sql_nuevos = "SELECT s.*, s.oferta_termino,
                           COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                           (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -250,8 +260,19 @@ try {
                    LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                    LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
 WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL)
+                   AND s.id NOT IN ($placeholders_nuevos)
                    ORDER BY {$orden_institucion_sql} s.id DESC LIMIT 8";
-    $res_nuevos = $conn->query($sql_nuevos);
+    $stmt_nuevos = $conn->prepare($sql_nuevos);
+    $stmt_nuevos->bind_param(str_repeat('i', count($ids_servicios_usados)), ...$ids_servicios_usados);
+    $stmt_nuevos->execute();
+    $res_nuevos = $stmt_nuevos->get_result();
+
+    if ($res_nuevos) {
+        while ($row_dedup = $res_nuevos->fetch_assoc()) {
+            $ids_servicios_usados[] = (int)$row_dedup['id'];
+        }
+        $res_nuevos->data_seek(0);
+    }
 } catch (Exception $e) {
     error_log("Error cargando recientes vitrina: " . $e->getMessage());
 }
@@ -274,6 +295,7 @@ try {
     $count_rapidos = $rg ? (int)$rg->fetch_assoc()['n'] : 0;
 
     if ($count_rapidos >= 3) {
+        $placeholders_rapidos = implode(',', array_fill(0, count($ids_servicios_usados), '?'));
         $sql_rapidos = "SELECT s.*, s.oferta_termino,
                                COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -291,10 +313,21 @@ try {
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                         WHERE s.estado = 'aprobado' AND s.visible = 1
+                          AND s.id NOT IN ($placeholders_rapidos)
                         HAVING tiempo_resp_calculado IS NOT NULL AND tiempo_resp_calculado < 60
                         ORDER BY tiempo_resp_calculado ASC, RAND($seed)
                         LIMIT 12";
-        $res_rapidos = $conn->query($sql_rapidos);
+        $stmt_rapidos = $conn->prepare($sql_rapidos);
+        $stmt_rapidos->bind_param(str_repeat('i', count($ids_servicios_usados)), ...$ids_servicios_usados);
+        $stmt_rapidos->execute();
+        $res_rapidos = $stmt_rapidos->get_result();
+
+        if ($res_rapidos) {
+            while ($row_dedup = $res_rapidos->fetch_assoc()) {
+                $ids_servicios_usados[] = (int)$row_dedup['id'];
+            }
+            $res_rapidos->data_seek(0);
+        }
     }
 } catch (Exception $e) {
     error_log("Error cargando tutores rápidos vitrina: " . $e->getMessage());
@@ -379,9 +412,10 @@ try {
 // --- CONSULTA DE OFERTAS Y RELLENO PERSISTENTE ---
 $lista_ofertas = [];
 $tiene_ofertas_activas = false;
-$ids_usados = [0];
+$ids_usados = $ids_servicios_usados; // [DEDUP] arranca con lo ya mostrado en recomendadas+nuevas+rápidas
 
 try {
+    $placeholders_ofertas = implode(',', array_fill(0, count($ids_usados), '?'));
     $sql_ofertas = "SELECT s.*, s.oferta_termino,
                            COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                            (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -394,8 +428,12 @@ try {
                     LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                     WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1
                       AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
+                      AND s.id NOT IN ($placeholders_ofertas)
                     ORDER BY (s.cupos_oferta > 0) DESC, RAND($seed) LIMIT 12";
-    $res_ofertas = $conn->query($sql_ofertas);
+    $stmt_ofertas = $conn->prepare($sql_ofertas);
+    $stmt_ofertas->bind_param(str_repeat('i', count($ids_usados)), ...$ids_usados);
+    $stmt_ofertas->execute();
+    $res_ofertas = $stmt_ofertas->get_result();
 
     if ($res_ofertas) {
         while ($r = $res_ofertas->fetch_assoc()) {
