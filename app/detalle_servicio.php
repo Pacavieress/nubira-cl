@@ -247,6 +247,8 @@ if ($stmt_fav = $conn->prepare($sql_fav)) {
 // 3. Buscar recomendaciones mezclando: Su categoría favorita + La categoría actual + Algo de frescura
 // Priorizamos lo que le gusta, pero si no hay suficiente, rellenamos con la categoría del servicio actual.
 $sql_recs = "SELECT s.id, s.slug, s.titulo, s.precio, s.imagen, s.imagen_banco_id, s.categoria, s.modalidad,
+                    s.score_nubira, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino,
+                    a.nombre as nombre_tutor, a.foto_perfil,
                     COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                     (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                     (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -255,11 +257,11 @@ $sql_recs = "SELECT s.id, s.slug, s.titulo, s.precio, s.imagen, s.imagen_banco_i
              LEFT JOIN alumnos a ON s.alumno_id = a.id
              LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
              LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-             WHERE s.estado = 'aprobado' AND s.id != ?
-             ORDER BY 
-                CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, 
-                CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, 
-                s.id DESC 
+             WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 AND s.id != ?
+             ORDER BY
+                CASE WHEN s.categoria = ? THEN 1 ELSE 2 END,
+                CASE WHEN s.categoria = ? THEN 1 ELSE 2 END,
+                s.id DESC
              LIMIT 4";
 
 if ($stmt_recs = $conn->prepare($sql_recs)) {
@@ -601,61 +603,50 @@ session_write_close();
 
 <?php if (!empty($servicio['video_path']) && $servicio['video_estado'] === 'aprobado'): ?>
 <div class="mt-6 pt-6 border-t border-gray-50">
-    <button type="button" onclick="toggleVideoTutor()" id="btn-video-tutor"
-            class="flex items-center justify-between w-full text-left group py-1">
-        <span class="text-sm font-bold text-gray-700 group-hover:text-[#54A6D8] transition-colors">
-            Ver video de presentación del tutor
-        </span>
-        <svg id="icono-video-tutor"
-             class="w-5 h-5 text-gray-400 group-hover:text-[#54A6D8] shrink-0"
-             style="transition:transform 200ms ease-out;"
-             fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-        </svg>
-    </button>
-    <div id="contenedor-video-tutor"
-         style="max-height:0; overflow:hidden; transition:max-height 200ms ease-out;">
-        <div class="pt-4">
-            <div class="w-[140px] md:w-[180px]">
-                <div class="relative aspect-[9/16] bg-black rounded-xl overflow-hidden shadow-sm">
-                    <video id="video-tutor-player"
-                           src="/upload/videos_servicios/<?= htmlspecialchars($servicio['video_path']) ?>"
-                           class="w-full h-full object-cover"
-                           controls
-                           preload="none"
-                           controlsList="nodownload"
-                           disablePictureInPicture
-                           playsinline>
-                    </video>
-                    <div class="absolute top-1.5 right-1.5 pointer-events-none z-10">
-                        <span class="text-white/75 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-black/30"
-                              style="text-shadow:0 1px 2px rgba(0,0,0,0.8);">
-                            Nubira.cl
-                        </span>
-                    </div>
-                </div>
+    <h3 class="text-sm font-bold text-gray-700 mb-3">Video de presentación del tutor</h3>
+    <div class="w-[140px] md:w-[180px]">
+        <div class="relative aspect-[9/16] bg-black rounded-xl overflow-hidden shadow-sm">
+            <video id="video-tutor-player"
+                   src="/upload/videos_servicios/<?= htmlspecialchars($servicio['video_path']) ?>"
+                   poster="<?= htmlspecialchars($portada_rel) ?>"
+                   class="w-full h-full object-cover"
+                   controls
+                   preload="none"
+                   controlsList="nodownload"
+                   disablePictureInPicture
+                   playsinline>
+            </video>
+            <button type="button" id="btn-play-video-tutor" onclick="reproducirVideoTutor()"
+                    class="absolute inset-0 flex items-center justify-center bg-black/10 hover:bg-black/20 transition-colors">
+                <span class="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-md">
+                    <svg class="w-4 h-4 text-gray-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </span>
+            </button>
+            <div class="absolute top-1.5 right-1.5 pointer-events-none z-10">
+                <span class="text-white/75 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-black/30"
+                      style="text-shadow:0 1px 2px rgba(0,0,0,0.8);">
+                    Nubira.cl
+                </span>
             </div>
         </div>
     </div>
 </div>
 <script>
+function reproducirVideoTutor() {
+    var v = document.getElementById('video-tutor-player');
+    var btn = document.getElementById('btn-play-video-tutor');
+    if (!v) return;
+    v.play();
+    if (btn) btn.style.display = 'none';
+}
 (function () {
-    var abierto = false;
-    window.toggleVideoTutor = function () {
-        var c  = document.getElementById('contenedor-video-tutor');
-        var ic = document.getElementById('icono-video-tutor');
-        var v  = document.getElementById('video-tutor-player');
-        abierto = !abierto;
-        if (abierto) {
-            c.style.maxHeight = c.scrollHeight + 'px';
-            ic.style.transform = 'rotate(180deg)';
-            if (v) v.preload = 'metadata';
-        } else {
-            c.style.maxHeight = '0';
-            ic.style.transform = '';
-            if (v) v.pause();
-        }
-    };
+    var v = document.getElementById('video-tutor-player');
+    var btn = document.getElementById('btn-play-video-tutor');
+    if (!v || !btn) return;
+    v.addEventListener('pause', function () { btn.style.display = 'flex'; });
+    v.addEventListener('ended', function () { btn.style.display = 'flex'; });
 }());
 </script>
 <?php endif; ?>
@@ -992,64 +983,97 @@ $is_oferta = oferta_vigente($servicio);
             $html_stars = '';
         }
         
-        // [NUBIRA 2.0] Limpiar y formatear institución (Diccionario Global)
-        $inst_raw = $r['institucion_maestra'] ?? '';
-        if (empty(trim($inst_raw))) {
-            $inst_text = 'Estudiante';
-        } else {
-            $inst_clean = trim($inst_raw);
-            $dicc = [
-                'Economía y Negocios' => 'FEN U. Chile',
-                'ECONOMíA Y NEGOCIOS' => 'FEN U. Chile',
-                'Servicio Local de Educ' => 'SLEP',
-                'SERVICIO LOCAL DE EDUC' => 'SLEP',
-                'Santísima Concepci' => 'UCSC',
-                'SANTíSIMA CONCEPCI' => 'UCSC',
-                'Santisima Concepci' => 'UCSC',
-                'Konrad Lorenz' => 'Konrad Lorenz',
-                'Universidad Andr' => 'UNAB', 'Universidad Nac' => 'UNAB',
-                'Pontificia Universidad Cat' => 'PUC', 'Universidad de Santiago' => 'USACH',
-                'Universidad de Concepci' => 'UdeC', 'Universidad T' => 'USM', 
-                'Federico Santa Mar' => 'USM', 'Adolfo Ib' => 'UAI',
-                'Universidad de Chile' => 'U. de Chile', 
-                'Universidad del B' => 'UBB', 'Bío Bío' => 'UBB', 'Bio Bio' => 'UBB',
-                'Instituto Profesional' => 'IP', 'Centro de Formación Técnica' => 'CFT'
-            ];
+        // Institución: mismo helper compartido que usa vitrina.php (institucion_tutor ya devuelve texto escapado)
+        $inst_text = institucion_tutor($r['institucion_maestra'] ?? '');
 
-            foreach($dicc as $parcial => $corto) {
-                if (stripos($inst_clean, $parcial) !== false) {
-                    if (strlen($corto) <= 6) {
-                        $inst_clean = $corto;
-                    } else {
-                        $inst_clean = str_ireplace($parcial, $corto, $inst_clean);
-                    }
-                    break;
-                }
-            }
-              if (stripos($inst_clean, 'universidad ') === 0) {
-                  $inst_clean = 'U. ' . substr($inst_clean, 12);
-              }
-            $inst_text = htmlspecialchars(mb_strimwidth($inst_clean, 0, 22, '...'));
+        // --- Tier del tutor (idéntico a vitrina.php / card_servicio_grid.php) ---
+        $score = (int)($r['score_nubira'] ?? 0);
+        $nivel_tutor = '';
+        $es_basico = ($score < 60);
+        if ($score >= 100 && $total_v >= 10 && $rating_val >= 4.7) {
+            $nivel_tutor = 'leyenda';
+        } elseif ($score >= 80 && $total_v >= 3 && $rating_val >= 4.0) {
+            $nivel_tutor = 'elite';
+        } elseif ($score >= 80) {
+            $nivel_tutor = 'pro';
+        } elseif ($score >= 60) {
+            $nivel_tutor = 'top';
         }
+
+        // --- Oferta vigente (idéntico a vitrina.php) ---
+        $es_oferta = oferta_vigente($r);
+        $pct_descuento = ($es_oferta && (int)$r['precio'] > 0)
+            ? round(((int)$r['precio'] - (int)$r['precio_oferta']) / (int)$r['precio'] * 100)
+            : 0;
+
+        // --- Avatar y nombre del tutor para el overlay (idéntico a vitrina.php) ---
+        $nombre_completo = !empty($r['nombre_tutor']) ? $r['nombre_tutor'] : 'Profesor';
+        $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
+        $tutor_nombre = "Profesor";
+        if (!empty($partes_nombre[0])) {
+            $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
+            if (count($partes_nombre) >= 2) {
+                $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
+            }
+        }
+        $foto_tutor = !empty($r['foto_perfil'])
+            ? '/app/perfil/fotos/' . $r['foto_perfil']
+            : "https://ui-avatars.com/api/?name=" . urlencode($tutor_nombre) . "&background=54A6D8&color=fff&size=128&bold=true";
+
+        $categoria_overlay = $r['categoria'] ?? 'Otros';
+        $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
+        $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
     ?>
-        <a href="<?= url_servicio((int)$r['id'], $r['slug'] ?? null) ?>" class="group block snap-start shrink-0 w-[240px] md:w-[280px]" data-track-click="rec:<?= $r['id'] ?>">
-                  <div class="relative bg-white rounded-xl overflow-hidden aspect-[4/3] mb-3 border border-gray-200 transition-all">
-                <img src="<?= $ir ?>" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='<?= $default_image ?>'">
+        <a href="<?= url_servicio((int)$r['id'], $r['slug'] ?? null) ?>" class="block flex flex-col cursor-pointer group snap-start shrink-0 w-[220px] md:w-[240px] bg-transparent h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>" data-track-click="rec:<?= $r['id'] ?>">
+            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                <img src="<?= htmlspecialchars($ir) ?>" alt="<?= htmlspecialchars($r['titulo']) ?>" loading="lazy" decoding="async" width="240" height="180" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.onerror=null;this.src='<?= $default_image ?>'">
+
+                <?php
+                $ov_prefijo   = $prefijo_overlay;
+                $ov_categoria = $nombre_categoria_overlay;
+                $ov_foto      = $foto_tutor;
+                $ov_nombre    = $tutor_nombre;
+                $ov_size      = 'lg';
+                include __DIR__ . '/componentes/overlay_card_servicio.php';
+                ?>
+
+                <?php if (empty($es_oferta) && !empty($nivel_tutor)): ?>
+                <div class="absolute top-1 right-1 z-10">
+                    <?php $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? ''; ?>
+                    <?php if ($nivel_label): ?>
+                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($es_oferta): ?>
+                <div class="absolute top-1 right-1 z-10">
+                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                        <?= (int)$r['cupos_oferta'] ?> <?= (int)$r['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
+                    </span>
+                </div>
+                <?php endif; ?>
             </div>
-            <div class="px-1 flex flex-col">
-                <!-- Título estricto a 2 líneas -->
-                <h6 class="font-bold text-[13px] leading-[1.3] text-gray-900 line-clamp-2 h-[34px] overflow-hidden mb-0.5 group-hover:text-[#54A6D8] transition-colors">
+
+            <div class="pt-2.5 flex flex-col flex-1 text-left">
+                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]">
                     <?= htmlspecialchars($r['titulo']) ?>
-                </h6>
-                
-                  <div class="text-[13px] text-gray-700 font-semibold leading-none mb-0 mt-0.5">
-                    $<?= number_format($r['precio'], 0, ',', '.') ?>
+                </h3>
+
+                <div class="text-[14px] mt-auto mb-1.5 leading-none">
+                    <?php if ($es_oferta): ?>
+                        <span class="text-[11px] text-gray-400 line-through font-medium mr-1">$<?= number_format($r['precio'], 0, ',', '.') ?></span>
+                        <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($r['precio_oferta'], 0, ',', '.') ?></span>
+                        <?php if ($pct_descuento > 0): ?><span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-<?= $pct_descuento ?>%</span><?php endif; ?>
+                    <?php else: ?>
+                        <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($r['precio'], 0, ',', '.') ?></span>
+                    <?php endif; ?>
                 </div>
 
-                <div class="flex items-center justify-between mt-1">
-                      <div class="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
-                          <span class="truncate"><?= $inst_text ?></span>
-                      </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                        <span class="truncate"><?= $inst_text ?></span>
+                    </div>
                     <div class="shrink-0 flex items-center gap-1">
                         <?= $html_stars ?>
                     </div>
