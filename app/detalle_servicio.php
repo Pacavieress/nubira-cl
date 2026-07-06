@@ -604,11 +604,16 @@ session_write_close();
 <?php if (!empty($servicio['video_path']) && $servicio['video_estado'] === 'aprobado'): ?>
 <div class="mt-6 pt-6 border-t border-gray-50">
     <h3 class="text-sm font-bold text-gray-700 mb-3">Video de presentación del tutor</h3>
+    <?php
+        $poster_video = !empty($servicio['video_thumb_path'])
+            ? '/upload/servicios/' . htmlspecialchars($servicio['video_thumb_path'])
+            : $portada_rel;
+    ?>
     <div class="w-[140px] md:w-[180px]">
         <div class="relative aspect-[9/16] bg-black rounded-xl overflow-hidden shadow-sm">
             <video id="video-tutor-player"
                    src="/upload/videos_servicios/<?= htmlspecialchars($servicio['video_path']) ?>"
-                   poster="<?= htmlspecialchars($portada_rel) ?>"
+                   poster="<?= htmlspecialchars($poster_video) ?>"
                    class="w-full h-full object-cover"
                    controls
                    preload="none"

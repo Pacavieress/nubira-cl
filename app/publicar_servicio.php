@@ -369,24 +369,9 @@ require_once $app_dir . '/componentes/sidebar.php';
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Modalidad</label>
-                            <div class="relative">
-                                <select name="modalidad" id="modalidad" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
-                                    <option value="">Selecciona...</option>
-                                    <option value="Online">Online</option>
-                                    <option value="Presencial">Presencial</option>
-                                    <option value="Híbrido">Híbrido</option>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                                    <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
-                                </div>
-                            </div>
+                            <div class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl block p-3.5">Online</div>
+                            <input type="hidden" name="modalidad" id="modalidad" value="Online">
                         </div>
-                    </div>
-
-                    <div id="campo-ubicacion" class="hidden mb-6">
-                        <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Ubicación</label>
-                        <input type="text" name="ubicacion" id="ubicacion" placeholder="Ej: Santiago Centro, Campus San Joaquín..."
-                               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 transition outline-none">
                     </div>
 
                     <div class="mb-6">
@@ -651,8 +636,6 @@ const ui = {
     imgInput: document.getElementById('imagen'),
     imgPreview: document.getElementById('preview'),
     imgTag: document.getElementById('previewImg'),
-    ubicacionBox: document.getElementById('campo-ubicacion'),
-    ubicacionInput: document.getElementById('ubicacion'),
     warning: document.getElementById('security-warning'),
     btnSubmit: document.getElementById('btn-submit'),
     bar: document.getElementById('barra-progreso'),
@@ -730,10 +713,6 @@ const ui = {
         }
     });
 })();
-ui.modalidad?.addEventListener('change', function() {
-    if (this.value === 'Presencial' || this.value === 'Híbrido') { ui.ubicacionBox.classList.remove('hidden'); ui.ubicacionInput.required = true; } 
-    else { ui.ubicacionBox.classList.add('hidden'); ui.ubicacionInput.required = false; ui.ubicacionInput.value = ''; }
-});
 ui.desc?.addEventListener('input', function() {
     const isBad = [
         /\d{8,}/,
@@ -864,11 +843,13 @@ if (window.innerWidth < 768) {
     if (!elInput) return; // sección de video no renderizada (estado de error/límite)
 
     let archivoListo = false;
+    let capturaThumbBlob = null;
 
     elInput.addEventListener('change', function () {
         const file = this.files[0];
         if (!file) return;
         archivoListo = false;
+        capturaThumbBlob = null;
         ocultarError();
 
         const tiposOk = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -876,7 +857,8 @@ if (window.innerWidth < 768) {
             mostrarError('Formato no válido. Usa MP4, WebM o MOV.'); this.value = ''; return;
         }
         if (file.size > MAX_BYTES) {
-            mostrarError('El archivo supera 30 MB. Comprime el video e intenta de nuevo.'); this.value = ''; return;
+            const pesoMB = (file.size / (1024 * 1024)).toFixed(1);
+            mostrarError('Tu video pesa ' + pesoMB + ' MB, el máximo permitido es 30 MB. Comprime el video e intenta de nuevo.'); this.value = ''; return;
         }
 
         const objURL = URL.createObjectURL(file);
@@ -885,12 +867,13 @@ if (window.innerWidth < 768) {
         tmp.src      = objURL;
 
         tmp.addEventListener('loadedmetadata', function () {
-            URL.revokeObjectURL(objURL);
             if (this.duration > MAX_SEG) {
+                URL.revokeObjectURL(objURL);
                 mostrarError('El video dura ' + Math.ceil(this.duration) + ' s. Máximo 45 segundos.');
                 elInput.value = ''; return;
             }
             if (this.videoWidth > 0 && this.videoWidth >= this.videoHeight) {
+                URL.revokeObjectURL(objURL);
                 mostrarError('El video debe ser vertical (9:16). Grábalo con el celular en modo retrato.');
                 elInput.value = ''; return;
             }
@@ -900,9 +883,47 @@ if (window.innerWidth < 768) {
             elDropIcon.classList.add('hidden');
             elPreviewWrap.classList.remove('hidden');
             elPreviewWrap.classList.add('flex');
+
+            // --- Captura de miniatura real (mejor esfuerzo; si falla, el poster usa la portada del servicio) ---
+            const finalizarCaptura = (function () {
+                let hecho = false;
+                return function () {
+                    if (hecho) return;
+                    hecho = true;
+                    URL.revokeObjectURL(objURL);
+                };
+            })();
+            const timeoutCaptura = setTimeout(finalizarCaptura, 3000);
+
+            try {
+                tmp.addEventListener('seeked', function onSeeked() {
+                    tmp.removeEventListener('seeked', onSeeked);
+                    try {
+                        const w = tmp.videoWidth, h = tmp.videoHeight;
+                        const escala = Math.min(1, 480 / Math.max(w, h));
+                        const canvas = document.createElement('canvas');
+                        canvas.width  = Math.round(w * escala);
+                        canvas.height = Math.round(h * escala);
+                        canvas.getContext('2d').drawImage(tmp, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob(function (blob) {
+                            capturaThumbBlob = blob;
+                            clearTimeout(timeoutCaptura);
+                            finalizarCaptura();
+                        }, 'image/jpeg', 0.82);
+                    } catch (e) {
+                        clearTimeout(timeoutCaptura);
+                        finalizarCaptura();
+                    }
+                });
+                tmp.currentTime = Math.max(0, Math.min(15, this.duration - 0.5));
+            } catch (e) {
+                clearTimeout(timeoutCaptura);
+                finalizarCaptura();
+            }
         });
 
         tmp.addEventListener('error', function () {
+            URL.revokeObjectURL(objURL);
             mostrarError('No se pudo leer el video. Asegúrate de que el archivo no esté dañado.');
             elInput.value = '';
         });
@@ -911,6 +932,7 @@ if (window.innerWidth < 768) {
     window.quitarVideoPublicar = function () {
         elInput.value    = '';
         archivoListo     = false;
+        capturaThumbBlob = null;
         elPreviewVid.src = '';
         elPreviewWrap.classList.add('hidden');
         elPreviewWrap.classList.remove('flex');
@@ -982,6 +1004,9 @@ if (window.innerWidth < 768) {
                 vfd.append('servicio_id',         svcId);
                 vfd.append('csrf_token',          CSRF_VIDEO);
                 vfd.append('consentimiento_rrss', '1');
+                if (capturaThumbBlob) {
+                    vfd.append('thumb', capturaThumbBlob, 'thumb.jpg');
+                }
 
                 const xhr = new XMLHttpRequest();
 

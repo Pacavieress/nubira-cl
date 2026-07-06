@@ -73,7 +73,6 @@ $titulo          = $servicio['titulo'];
 $descripcion     = $servicio['descripcion'];
 $categoria       = $servicio['categoria'];
 $modalidad       = $servicio['modalidad'];
-$ubicacion       = $servicio['ubicacion'];
 $precio          = $servicio['precio'];
 $imagen_actual   = $servicio['imagen'];
 $institucion     = $servicio['institucion'];
@@ -144,7 +143,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descripcion = trim(strip_tags($_POST['descripcion'] ?? ''));
     $categoria   = trim(strip_tags($_POST['categoria'] ?? ''));
     $modalidad   = trim(strip_tags($_POST['modalidad'] ?? ''));
-    $ubicacion   = trim(strip_tags($_POST['ubicacion'] ?? ''));
     $precio      = (float)($_POST['precio'] ?? 0);
     $preview     = mb_substr($descripcion, 0, 80) . (mb_strlen($descripcion) > 80 ? "..." : "");
 
@@ -180,16 +178,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Se mantiene la columna imagen (legacy) SIN tocar; el resolver prioriza imagen_banco_id.
             $sql = "UPDATE servicios SET
                     titulo=?, preview=?, descripcion=?, categoria=?, modalidad=?,
-                    ubicacion=?, precio=?, imagen_banco_id=?,
+                    precio=?, imagen_banco_id=?,
                     estado='pendiente', fecha_revision=NOW()
                     WHERE id=?";
 
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssssssdii", $titulo, $preview, $descripcion, $categoria, $modalidad, $ubicacion, $precio, $imagen_banco_id, $id_servicio);
+            $stmt->bind_param("sssssdii", $titulo, $preview, $descripcion, $categoria, $modalidad, $precio, $imagen_banco_id, $id_servicio);
 
             if ($stmt->execute()) {
                 $mensaje = "Cambios guardados. Pendiente de revisión.";
                 $exito = true;
+
+                // [MODALIDAD] Si estaba oculto por la regla de solo-online, restaurar visibilidad al guardar
+                $stmt_restore = $conn->prepare("UPDATE servicios SET visible = 1, oculto_por_modalidad = 0 WHERE id = ? AND oculto_por_modalidad = 1");
+                $stmt_restore->bind_param("i", $id_servicio);
+                $stmt_restore->execute();
+                $stmt_restore->close();
 
                 // Regenerar slug si el título cambió
                 require_once $app_dir . '/helpers/seo.php';
@@ -348,28 +352,9 @@ if (!function_exists('nav_class')) {
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Modalidad</label>
-                            <div class="relative">
-                                <select name="modalidad" id="modalidad" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
-                                    <option value="">Selecciona...</option>
-                                    <?php
-                                    $mods = ['Online', 'Presencial', 'Híbrido'];
-                                    foreach($mods as $m) {
-                                        $sel = ($modalidad === $m) ? 'selected' : '';
-                                        echo "<option value='$m' $sel>$m</option>";
-                                    }
-                                    ?>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                                    <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
-                                </div>
-                            </div>
+                            <div class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl block p-3.5">Online</div>
+                            <input type="hidden" name="modalidad" id="modalidad" value="Online">
                         </div>
-                    </div>
-
-                    <div id="campo-ubicacion" class="<?= in_array($modalidad, ['Presencial','Híbrido']) ? '' : 'hidden' ?> mb-6">
-                        <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Ubicación</label>
-                        <input type="text" name="ubicacion" id="ubicacion" value="<?= htmlspecialchars($ubicacion) ?>" placeholder="Ej: Santiago Centro, Campus San Joaquín..."
-                               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 transition outline-none">
                     </div>
 
                     <div class="mb-6">
@@ -691,11 +676,13 @@ if (!function_exists('nav_class')) {
                 const elBtnTxt       = document.getElementById('btn-subir-texto');
 
                 let archivoListo = false;
+                let capturaThumbBlob = null;
 
                 elInput.addEventListener('change', function () {
                     const file = this.files[0];
                     if (!file) return;
                     archivoListo = false;
+                    capturaThumbBlob = null;
                     ocultarError();
                     actualizarBtn();
 
@@ -704,7 +691,8 @@ if (!function_exists('nav_class')) {
                         error('Formato no válido. Usa MP4, WebM o MOV.'); this.value = ''; return;
                     }
                     if (file.size > MAX_BYTES) {
-                        error('El archivo supera 30 MB. Comprime el video e intenta de nuevo.'); this.value = ''; return;
+                        const pesoMB = (file.size / (1024 * 1024)).toFixed(1);
+                        error('Tu video pesa ' + pesoMB + ' MB, el máximo permitido es 30 MB. Comprime el video e intenta de nuevo.'); this.value = ''; return;
                     }
 
                     const objURL = URL.createObjectURL(file);
@@ -713,13 +701,13 @@ if (!function_exists('nav_class')) {
                     tmp.src      = objURL;
 
                     tmp.addEventListener('loadedmetadata', function () {
-                        URL.revokeObjectURL(objURL);
-
                         if (this.duration > MAX_SEG) {
+                            URL.revokeObjectURL(objURL);
                             error('El video dura ' + Math.ceil(this.duration) + ' s. El máximo es 45 segundos.');
                             elInput.value = ''; return;
                         }
                         if (this.videoWidth > 0 && this.videoWidth >= this.videoHeight) {
+                            URL.revokeObjectURL(objURL);
                             error('El video debe ser vertical (9:16). Grábalo con el celular en modo retrato.');
                             elInput.value = ''; return;
                         }
@@ -733,9 +721,47 @@ if (!function_exists('nav_class')) {
                         elPreviewWrap.classList.remove('hidden');
                         elPreviewWrap.classList.add('flex');
                         actualizarBtn();
+
+                        // --- Captura de miniatura real (mejor esfuerzo; si falla, el poster usa la portada del servicio) ---
+                        const finalizarCaptura = (function () {
+                            let hecho = false;
+                            return function () {
+                                if (hecho) return;
+                                hecho = true;
+                                URL.revokeObjectURL(objURL);
+                            };
+                        })();
+                        const timeoutCaptura = setTimeout(finalizarCaptura, 3000);
+
+                        try {
+                            tmp.addEventListener('seeked', function onSeeked() {
+                                tmp.removeEventListener('seeked', onSeeked);
+                                try {
+                                    const w = tmp.videoWidth, h = tmp.videoHeight;
+                                    const escala = Math.min(1, 480 / Math.max(w, h));
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width  = Math.round(w * escala);
+                                    canvas.height = Math.round(h * escala);
+                                    canvas.getContext('2d').drawImage(tmp, 0, 0, canvas.width, canvas.height);
+                                    canvas.toBlob(function (blob) {
+                                        capturaThumbBlob = blob;
+                                        clearTimeout(timeoutCaptura);
+                                        finalizarCaptura();
+                                    }, 'image/jpeg', 0.82);
+                                } catch (e) {
+                                    clearTimeout(timeoutCaptura);
+                                    finalizarCaptura();
+                                }
+                            });
+                            tmp.currentTime = Math.max(0, Math.min(15, this.duration - 0.5));
+                        } catch (e) {
+                            clearTimeout(timeoutCaptura);
+                            finalizarCaptura();
+                        }
                     });
 
                     tmp.addEventListener('error', function () {
+                        URL.revokeObjectURL(objURL);
                         error('No se pudo leer el video. Asegúrate de que el archivo no esté dañado.');
                         elInput.value = '';
                     });
@@ -746,6 +772,7 @@ if (!function_exists('nav_class')) {
                 window.quitarVideo = function () {
                     elInput.value    = '';
                     archivoListo     = false;
+                    capturaThumbBlob = null;
                     elPreviewVid.src = '';
                     elPreviewWrap.classList.add('hidden');
                     elPreviewWrap.classList.remove('flex');
@@ -764,6 +791,9 @@ if (!function_exists('nav_class')) {
                     fd.append('servicio_id',         SERVICIO_ID);
                     fd.append('csrf_token',          CSRF_TOKEN);
                     fd.append('consentimiento_rrss', '1');
+                    if (capturaThumbBlob) {
+                        fd.append('thumb', capturaThumbBlob, 'thumb.jpg');
+                    }
 
                     elBtn.disabled       = true;
                     elBtnTxt.textContent = 'Subiendo...';
@@ -849,8 +879,6 @@ const ui = {
     imgInput: document.getElementById('imagen'),
     imgPreview: document.getElementById('preview'),
     imgTag: document.getElementById('previewImg'),
-    ubicacionBox: document.getElementById('campo-ubicacion'),
-    ubicacionInput: document.getElementById('ubicacion'),
     warning: document.getElementById('security-warning'),
     btnSubmit: document.getElementById('btn-submit'),
 
@@ -863,10 +891,6 @@ const ui = {
 
 
 // --- EVENTOS UI ---
-ui.modalidad?.addEventListener('change', function() {
-    if (this.value === 'Presencial' || this.value === 'Híbrido') { ui.ubicacionBox.classList.remove('hidden'); ui.ubicacionInput.required = true; } 
-    else { ui.ubicacionBox.classList.add('hidden'); ui.ubicacionInput.required = false; ui.ubicacionInput.value = ''; }
-});
 ui.desc?.addEventListener('input', function() {
     const isBad = [/\d{8,}/, /@/, /\.cl/].some(p => p.test(this.value));
     ui.warning.classList.toggle('hidden', !isBad);
