@@ -1498,9 +1498,11 @@ $portada_url = $portada_set['card'];
                             <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
                             </div>
+                            <?php if ($ventas_totales > 0): ?>
                             <div class="shrink-0 flex items-center">
                                 <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
                             </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </a>

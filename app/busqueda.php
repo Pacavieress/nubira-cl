@@ -610,10 +610,12 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                                         <span class="truncate"><?= $inst_text_ap ?></span>
                                     <?php endif; ?>
                                 </div>
+                                <?php if ((int)($a['descargas'] ?? 0) > 0): ?>
                                 <div class="shrink-0 flex items-center gap-1 text-[10px] text-gray-500 font-semibold">
                                     <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     <?= (int)($a['descargas'] ?? 0) ?>
                                 </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </a>

@@ -318,8 +318,10 @@ foreach ($apuntes as $i => $a):
                     <?php endif; ?>
                 </div>
                 <div class="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
+                    <?php if ($ventas_totales > 0): ?>
                     <svg class="w-3 h-3 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     <?= $ventas_txt ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -344,8 +346,10 @@ foreach ($apuntes as $i => $a):
                     <?php endif; ?>
                 </div>
                 <div class="flex items-center gap-1 text-[11px] text-gray-500">
+                    <?php if ($ventas_totales > 0): ?>
                     <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     <?= $ventas_txt ?>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endif; ?>
