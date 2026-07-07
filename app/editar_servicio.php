@@ -85,25 +85,6 @@ if (empty($_SESSION['csrf_token_editar'])) {
 }
 $csrf_token = $_SESSION['csrf_token_editar'];
 
-// [BANCO] Imágenes del banco (todas activas) para el carrusel; el JS filtra por categoría.
-$banco_imagenes = [];
-$res_banco = $conn->query("SELECT id, categoria, archivo, descripcion FROM banco_imagenes WHERE activa = 1 ORDER BY categoria, id");
-if ($res_banco) { while ($b = $res_banco->fetch_assoc()) $banco_imagenes[] = $b; }
-
-// [BANCO] Preselección de imagen al abrir:
-//   1) Si el servicio ya tiene imagen_banco_id → esa.
-//   2) Si es legacy (imagen sin banco) → primera activa de su categoría.
-//   3) Si no tiene nada → sin preselección (igual que publicar).
-$imagen_banco_id_preseleccionado = (int)($servicio['imagen_banco_id'] ?? 0);
-if ($imagen_banco_id_preseleccionado <= 0 && !empty($imagen_actual)) {
-    $stmt_pre = $conn->prepare("SELECT id FROM banco_imagenes WHERE activa = 1 AND categoria = ? ORDER BY id LIMIT 1");
-    $stmt_pre->bind_param("s", $categoria);
-    $stmt_pre->execute();
-    $stmt_pre->bind_result($pre_id);
-    if ($stmt_pre->fetch()) $imagen_banco_id_preseleccionado = (int)$pre_id;
-    $stmt_pre->close();
-}
-
 // Datos bancarios
 
 // Función Anti-Contacto
@@ -159,21 +140,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (contiene_contacto($titulo) || contiene_contacto($descripcion)) {
         $mensaje = "No incluyas teléfonos ni correos.";
     } else {
-        // [BANCO] Validación estricta: imagen_banco_id debe ser un id ACTIVO del banco
-        // Y pertenecer a la categoría seleccionada (cierra manipulación del formulario).
-        $imagen_banco_id = (int)($_POST['imagen_banco_id'] ?? 0);
-        $banco_valido = false;
-        if ($imagen_banco_id > 0) {
-            $stmt_b = $conn->prepare("SELECT id FROM banco_imagenes WHERE id = ? AND activa = 1 AND categoria = ? LIMIT 1");
-            $stmt_b->bind_param("is", $imagen_banco_id, $categoria);
-            $stmt_b->execute();
-            $stmt_b->store_result();
-            $banco_valido = ($stmt_b->num_rows === 1);
-            $stmt_b->close();
-        }
+        // [BANCO] Imagen de portada asignada automáticamente según la categoría
+        // (ya no requiere selección manual del usuario).
+        $imagen_banco_id = 0;
+        $stmt_b = $conn->prepare("SELECT id FROM banco_imagenes WHERE activa = 1 AND categoria = ? ORDER BY RAND() LIMIT 1");
+        $stmt_b->bind_param("s", $categoria);
+        $stmt_b->execute();
+        $stmt_b->bind_result($imagen_banco_id);
+        $stmt_b->fetch();
+        $stmt_b->close();
 
-        if (!$banco_valido) {
-            $mensaje = "Elige una imagen del banco para tu categoría antes de guardar.";
+        if ($imagen_banco_id <= 0) {
+            $mensaje = "No hay imágenes disponibles para esta categoría. Contacta a soporte.";
         } else {
             // Se mantiene la columna imagen (legacy) SIN tocar; el resolver prioriza imagen_banco_id.
             $sql = "UPDATE servicios SET
@@ -260,9 +238,6 @@ if (!function_exists('nav_class')) {
     
    
 
-    /* [BANCO] Carrusel horizontal estilo iOS: scroll suave, sin barra visible */
-    .banco-scroll { -ms-overflow-style: none; scrollbar-width: none; scroll-behavior: smooth; }
-    .banco-scroll::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased overflow-x-hidden selection:bg-blue-100 selection:text-blue-700">
@@ -401,44 +376,6 @@ if (!function_exists('nav_class')) {
                         <p class="text-xs text-gray-400 mt-1 ml-1">Pon "0" si el precio es a convenir o gratuito.</p>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Imagen de portada</label>
-                        <p class="text-xs text-gray-400 mb-3">Elige una imagen profesional de nuestro banco. Se filtran según la categoría que selecciones.</p>
-
-                        <!-- [BANCO] id elegido (preseleccionado en servidor; validado contra la categoría) -->
-                        <input type="hidden" name="imagen_banco_id" id="imagen_banco_id" value="<?= $imagen_banco_id_preseleccionado ?: '' ?>">
-
-                        <!-- Estado sin categoría (no debería verse al editar; queda por seguridad) -->
-                        <div id="banco-empty" class="hidden bg-gray-50 border border-dashed border-gray-300 rounded-2xl py-10 text-center">
-                            <div class="text-gray-300 mb-2 flex justify-center">
-                                <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            </div>
-                            <p class="text-sm font-medium text-gray-500">Elige una categoría primero</p>
-                        </div>
-
-                        <!-- Carrusel del banco (PHP renderiza TODAS; el JS filtra por categoría) -->
-                        <div id="banco-carrusel">
-                            <div class="flex gap-3 py-1 overflow-x-auto banco-scroll -mx-1 px-1">
-                                <?php foreach ($banco_imagenes as $bi):
-                                    $es_pre = ((int)$bi['id'] === $imagen_banco_id_preseleccionado);
-                                ?>
-                                    <button type="button"
-                                            class="banco-card group relative flex-shrink-0 w-[140px] h-[100px] rounded-xl overflow-hidden border-[3px] <?= $es_pre ? 'border-[#54A6D8]' : 'border-transparent' ?> transition-all focus:outline-none focus:ring-2 focus:ring-[#54A6D8]"
-                                            data-id="<?= (int)$bi['id'] ?>"
-                                            data-categoria="<?= htmlspecialchars($bi['categoria']) ?>"
-                                            title="<?= htmlspecialchars($bi['descripcion'] ?? '') ?>">
-                                        <img src="/upload/banco/<?= htmlspecialchars($bi['archivo']) ?>" alt="<?= htmlspecialchars($bi['descripcion'] ?? $bi['categoria']) ?>" class="w-full h-full object-cover" loading="lazy">
-                                        <span class="banco-check absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#54A6D8] text-white <?= $es_pre ? 'flex' : 'hidden' ?> items-center justify-center shadow">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                        </span>
-                                    </button>
-                                <?php endforeach; ?>
-                            </div>
-                            <div id="banco-sin-imagenes" class="hidden py-8 text-center text-sm text-gray-400">Selecciona una imagen del banco (esta categoría aún no tiene imágenes).</div>
-                        </div>
-
-                        <p id="banco-error" class="hidden mt-2 text-xs text-red-500 font-bold">Debes elegir una imagen del banco para tu categoría.</p>
-                    </div>
                 </div>
 
                 <!-- [NUBIRA 2.0] Wrapper sticky solo en móvil -->
@@ -474,7 +411,7 @@ if (!function_exists('nav_class')) {
                             <span class="text-[10px] font-bold bg-blue-50 text-[#54A6D8] px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">Opcional</span>
                         </div>
                         <p class="text-xs text-gray-400 leading-relaxed max-w-lg">
-                            Video vertical (9:16) de máx. 45 seg. Aumenta la confianza del comprador y Nubira puede usarlo en Instagram y TikTok para promover tu servicio.
+                            Los alumnos eligen primero a los tutores que pueden ver antes de escribirles. Video vertical (9:16), máx. 45 seg.
                         </p>
                     </div>
 
@@ -960,74 +897,6 @@ ui.titulo?.dispatchEvent(new Event('input'));
             this.setSelectionRange(newCursor, newCursor);
         } finally {
             formateando = false;
-        }
-    });
-})();
-
-// [BANCO] Carrusel de imágenes del banco (con preselección al editar).
-// PHP ya renderizó TODAS las tarjetas y marcó la preseleccionada; aquí filtramos por categoría.
-(function setupBancoCarrusel() {
-    const sel      = document.getElementById('categoria');
-    const carrusel = document.getElementById('banco-carrusel');
-    const empty    = document.getElementById('banco-empty');
-    const sinImgs  = document.getElementById('banco-sin-imagenes');
-    const errorMsg = document.getElementById('banco-error');
-    const hidden   = document.getElementById('imagen_banco_id');
-    const cards    = Array.from(document.querySelectorAll('.banco-card'));
-    if (!sel || !carrusel || !hidden) return;
-
-    function limpiar(card) {
-        card.classList.remove('border-[#54A6D8]');
-        card.classList.add('border-transparent');
-        const chk = card.querySelector('.banco-check');
-        chk.classList.add('hidden');
-        chk.classList.remove('flex');
-    }
-
-    function seleccionar(card) {
-        cards.forEach(limpiar);
-        card.classList.add('border-[#54A6D8]');
-        card.classList.remove('border-transparent');
-        const chk = card.querySelector('.banco-check');
-        chk.classList.remove('hidden');
-        chk.classList.add('flex');
-        hidden.value = card.dataset.id;
-        if (errorMsg) errorMsg.classList.add('hidden');
-    }
-
-    cards.forEach(card => card.addEventListener('click', () => seleccionar(card)));
-
-    // reset=true al cambiar de categoría (limpia selección); reset=false en el init (respeta preselección).
-    function filtrar(reset) {
-        const cat = sel.value;
-        if (reset) hidden.value = '';
-        if (!cat) {
-            carrusel.classList.add('hidden');
-            empty.classList.remove('hidden');
-            return;
-        }
-        empty.classList.add('hidden');
-        carrusel.classList.remove('hidden');
-        let visibles = 0;
-        cards.forEach(card => {
-            const match = (card.dataset.categoria === cat);
-            card.classList.toggle('hidden', !match);
-            if (reset) limpiar(card);
-            if (match) visibles++;
-        });
-        if (sinImgs) sinImgs.classList.toggle('hidden', visibles > 0);
-    }
-
-    sel.addEventListener('change', () => filtrar(true));
-    filtrar(false); // init: respeta la preselección renderizada por PHP
-
-    // Validación en cliente: no permitir guardar sin imagen del banco
-    document.getElementById('form-servicio')?.addEventListener('submit', function(e) {
-        if (!hidden.value) {
-            e.preventDefault();
-            if (errorMsg) errorMsg.classList.remove('hidden');
-            (empty.classList.contains('hidden') ? carrusel : empty)
-                .scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
 })();
