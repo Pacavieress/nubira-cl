@@ -91,12 +91,6 @@ $stmt_vf->fetch();
 $stmt_vf->close();
 $puede_publicar = ($verificacion_estado_pub === 'aprobado');
 
-// [BANCO] Imágenes del banco para el carrusel. Se cargan TODAS de una vez (sin AJAX);
-// el JS filtra en cliente según la categoría seleccionada.
-$banco_imagenes = [];
-$res_banco = $conn->query("SELECT id, categoria, archivo, descripcion FROM banco_imagenes WHERE activa = 1 ORDER BY categoria, id");
-if ($res_banco) { while ($b = $res_banco->fetch_assoc()) $banco_imagenes[] = $b; }
-
 // Función Anti-Contacto
 function contiene_contacto($texto) {
     $patrones = [
@@ -156,21 +150,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy && $puede_publicar
     } elseif (contiene_contacto($titulo) || contiene_contacto($descripcion)) {
         $mensaje = "Por seguridad, no incluyas teléfonos ni correos.";
     } else {
-        // [BANCO] Validación estricta: imagen_banco_id debe ser un id ACTIVO del banco
-        // Y pertenecer a la categoría seleccionada (cierra manipulación del formulario).
-        $imagen_banco_id = (int)($_POST['imagen_banco_id'] ?? 0);
-        $banco_valido = false;
-        if ($imagen_banco_id > 0) {
-            $stmt_b = $conn->prepare("SELECT id FROM banco_imagenes WHERE id = ? AND activa = 1 AND categoria = ? LIMIT 1");
-            $stmt_b->bind_param("is", $imagen_banco_id, $categoria);
-            $stmt_b->execute();
-            $stmt_b->store_result();
-            $banco_valido = ($stmt_b->num_rows === 1);
-            $stmt_b->close();
-        }
+        // [BANCO] Imagen de portada asignada automáticamente según la categoría
+        // (ya no requiere selección manual del usuario).
+        $imagen_banco_id = 0;
+        $stmt_b = $conn->prepare("SELECT id FROM banco_imagenes WHERE activa = 1 AND categoria = ? ORDER BY RAND() LIMIT 1");
+        $stmt_b->bind_param("s", $categoria);
+        $stmt_b->execute();
+        $stmt_b->bind_result($imagen_banco_id);
+        $stmt_b->fetch();
+        $stmt_b->close();
 
-        if (!$banco_valido) {
-            $mensaje = "Elige una imagen del banco para tu categoría antes de publicar.";
+        if ($imagen_banco_id <= 0) {
+            $mensaje = "No hay imágenes disponibles para esta categoría. Contacta a soporte.";
         } else {
             // Servicios nuevos: imagen legacy vacía; el resolver prioriza imagen_banco_id.
             $imagen_legacy = '';
@@ -183,6 +174,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy && $puede_publicar
                 if ($stmt->execute()) {
                     $nuevo_servicio_id = $stmt->insert_id;
                     actualizar_score_servicio($conn, $nuevo_servicio_id);
+
+                    // Generar slug SEO para la URL amigable del servicio
+                    require_once $app_dir . '/helpers/seo.php';
+                    $slug_nuevo = generar_slug($titulo);
+                    if (!empty($slug_nuevo)) {
+                        $stmt_sl = $conn->prepare("UPDATE servicios SET slug = ? WHERE id = ?");
+                        $stmt_sl->bind_param("si", $slug_nuevo, $nuevo_servicio_id);
+                        $stmt_sl->execute();
+                        $stmt_sl->close();
+                    }
 
                     require_once __DIR__ . '/enviar_push_nubira.php';
                     $autor_p  = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'Alguien'))[0];
@@ -238,9 +239,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy && $puede_publicar
         }
     }
 
-    /* [BANCO] Carrusel horizontal estilo iOS: scroll suave, sin barra visible */
-    .banco-scroll { -ms-overflow-style: none; scrollbar-width: none; scroll-behavior: smooth; }
-    .banco-scroll::-webkit-scrollbar { display: none; }
 </style>
 </head>
 
@@ -317,10 +315,10 @@ require_once $app_dir . '/componentes/sidebar.php';
         
         <div class="lg:col-span-10 lg:col-start-2 flex flex-col">
             
-            <div class="mb-6 bg-white border border-gray-100 rounded-xl px-4 py-2.5 shadow-sm flex items-center justify-between gap-4">
+            <div class="mb-4 md:mb-6 bg-white border border-gray-100 rounded-xl px-4 py-2.5 shadow-sm flex items-center justify-between gap-4">
                 <div class="flex items-center gap-2">
                     <?= icon('sparkles', 'w-4 h-4 text-[#54A6D8]') ?>
-                    <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">Calidad</span>
+                    <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">Progreso</span>
                 </div>
                 <div class="flex items-center gap-3 flex-1 max-w-[200px] justify-end">
                     <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
@@ -335,8 +333,8 @@ require_once $app_dir . '/componentes/sidebar.php';
                 <!-- [NUBIRA 2.0] CSRF Token -->
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 
-                <div class="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm">
-                    
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm !mt-0">
+
                     <?php if ($mensaje): ?>
                         <div id="toast" class="mb-6 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm <?= $exito ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'; ?>">
                             <?= icon($exito ? 'check-circle' : 'alert', 'w-5 h-5 flex-shrink-0') ?>
@@ -349,7 +347,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                         <?php endif; ?>
                     <?php endif; ?>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 md:mb-6">
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Categoría</label>
                             <div class="relative">
@@ -374,7 +372,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                         </div>
                     </div>
 
-                    <div class="mb-6">
+                    <div class="mb-4 md:mb-6">
                         <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Título del anuncio</label>
                         <div class="relative">
                             <input type="text" name="titulo" id="titulo" required maxlength="50" placeholder="Ej: Clases de Cálculo / Asesoría de Tesis"
@@ -383,8 +381,8 @@ require_once $app_dir . '/componentes/sidebar.php';
                         </div>
                     </div>
 
-                    <div class="mb-6 mt-8">
-                        <div class="mb-2">
+                    <div class="mb-4 md:mb-6 mt-4 md:mt-6">
+                        <div class="mb-1.5">
                             <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide">Descripción</label>
                         </div>
                         
@@ -400,7 +398,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                     </div>
 
                     <!-- [NUBIRA 2.0] Precio con formato chileno ($15.000) -->
-                    <div class="mb-6">
+                    <div class="mb-4 md:mb-6">
                         <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Precio Base (CLP)</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold pointer-events-none">$</span>
@@ -419,42 +417,6 @@ require_once $app_dir . '/componentes/sidebar.php';
                         <p class="text-xs text-gray-400 mt-1 ml-1">Pon "0" si el precio es a convenir o gratuito.</p>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Imagen de portada</label>
-                        <p class="text-xs text-gray-400 mb-3">Elige una imagen profesional de nuestro banco. Se filtran según la categoría que selecciones.</p>
-
-                        <!-- [BANCO] id de la imagen elegida (validado en servidor contra la categoría) -->
-                        <input type="hidden" name="imagen_banco_id" id="imagen_banco_id" value="">
-
-                        <!-- Estado inicial: sin categoría elegida -->
-                        <div id="banco-empty" class="bg-gray-50 border border-dashed border-gray-300 rounded-2xl py-10 text-center">
-                            <div class="text-gray-300 mb-2 flex justify-center">
-                                <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            </div>
-                            <p class="text-sm font-medium text-gray-500">Elige una categoría primero</p>
-                        </div>
-
-                        <!-- Carrusel del banco (PHP renderiza TODAS; el JS filtra por categoría) -->
-                        <div id="banco-carrusel" class="hidden">
-                            <div class="flex gap-3 py-1 overflow-x-auto banco-scroll -mx-1 px-1">
-                                <?php foreach ($banco_imagenes as $bi): ?>
-                                    <button type="button"
-                                            class="banco-card group relative flex-shrink-0 w-[140px] h-[100px] rounded-xl overflow-hidden border-[3px] border-transparent transition-all focus:outline-none focus:ring-2 focus:ring-[#54A6D8]"
-                                            data-id="<?= (int)$bi['id'] ?>"
-                                            data-categoria="<?= htmlspecialchars($bi['categoria']) ?>"
-                                            title="<?= htmlspecialchars($bi['descripcion'] ?? '') ?>">
-                                        <img src="/upload/banco/<?= htmlspecialchars($bi['archivo']) ?>" alt="<?= htmlspecialchars($bi['descripcion'] ?? $bi['categoria']) ?>" class="w-full h-full object-cover" loading="lazy">
-                                        <span class="banco-check absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#54A6D8] text-white items-center justify-center hidden shadow">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                        </span>
-                                    </button>
-                                <?php endforeach; ?>
-                            </div>
-                            <div id="banco-sin-imagenes" class="hidden py-8 text-center text-sm text-gray-400">Aún no hay imágenes para esta categoría.</div>
-                        </div>
-
-                        <p id="banco-error" class="hidden mt-2 text-xs text-red-500 font-bold">Debes elegir una imagen del banco para tu categoría.</p>
-                    </div>
                 </div>
 
                 <!-- [NUBIRA 2.0] Wrapper sticky solo en móvil. En escritorio queda inline. -->
@@ -473,7 +435,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             </form>
 
             <!-- Video de presentación (se sube DESPUÉS de crear el servicio vía XHR) -->
-            <div class="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm mt-6" id="seccion-video">
+            <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm mt-6" id="seccion-video">
                 <div class="flex items-start gap-3 mb-5">
                     <div>
                         <div class="flex items-center gap-2 mb-1">
@@ -481,7 +443,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <span class="text-[10px] font-bold bg-blue-50 text-[#54A6D8] px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">Opcional</span>
                         </div>
                         <p class="text-xs text-gray-400 leading-relaxed max-w-lg">
-                            Video vertical (9:16) de máx. 45 seg. Aumenta la confianza del comprador y Nubira puede usarlo en Instagram y TikTok para promover tu servicio.
+                            Los alumnos eligen primero a los tutores que pueden ver antes de escribirles. Video vertical (9:16), máx. 45 seg.
                         </p>
                     </div>
                 </div>
@@ -503,6 +465,18 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <li>· Si rompes estas reglas tu video será rechazado y deberás subir uno nuevo.</li>
                         </ul>
                     </div>
+                </div>
+
+                <!-- Guion sugerido -->
+                <div class="bg-sky-50 border border-sky-100 rounded-xl p-4 flex gap-3 mb-4">
+                    <span class="shrink-0 mt-0.5 text-[#54A6D8]">
+                        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                        </svg>
+                    </span>
+                    <p class="text-xs text-sky-800 leading-relaxed">
+                        <span class="font-bold">¿No sabes qué decir?</span> Prueba con esto: "Hola, soy [tu nombre]. Enseño [tu materia] hace [tiempo]. Escríbeme por Nubira si tienes dudas antes de agendar tu clase."
+                    </p>
                 </div>
 
                 <div id="video-drop-zone"
@@ -644,75 +618,9 @@ const ui = {
     countTitulo: document.getElementById('titulo-count')
 };
 
-// [BANCO] Carrusel de imágenes del banco — reemplaza la subida de archivos.
-// PHP ya renderizó TODAS las tarjetas; aquí filtramos por categoría y gestionamos la selección.
-(function setupBancoCarrusel() {
-    const sel      = document.getElementById('categoria');
-    const carrusel = document.getElementById('banco-carrusel');
-    const empty    = document.getElementById('banco-empty');
-    const sinImgs  = document.getElementById('banco-sin-imagenes');
-    const errorMsg = document.getElementById('banco-error');
-    const hidden   = document.getElementById('imagen_banco_id');
-    const cards    = Array.from(document.querySelectorAll('.banco-card'));
-    if (!sel || !carrusel || !hidden) return;
-
-    function limpiar(card) {
-        card.classList.remove('border-[#54A6D8]');
-        card.classList.add('border-transparent');
-        const chk = card.querySelector('.banco-check');
-        chk.classList.add('hidden');
-        chk.classList.remove('flex');
-    }
-
-    function seleccionar(card) {
-        cards.forEach(limpiar);
-        card.classList.add('border-[#54A6D8]');
-        card.classList.remove('border-transparent');
-        const chk = card.querySelector('.banco-check');
-        chk.classList.remove('hidden');
-        chk.classList.add('flex');
-        hidden.value = card.dataset.id;
-        if (errorMsg) errorMsg.classList.add('hidden');
-        if (typeof calcQuality === 'function') calcQuality();
-    }
-
-    cards.forEach(card => card.addEventListener('click', () => seleccionar(card)));
-
-    function filtrar() {
-        const cat = sel.value;
-        hidden.value = ''; // al cambiar de categoría se resetea la selección
-        if (!cat) {
-            carrusel.classList.add('hidden');
-            empty.classList.remove('hidden');
-            if (typeof calcQuality === 'function') calcQuality();
-            return;
-        }
-        empty.classList.add('hidden');
-        carrusel.classList.remove('hidden');
-        let visibles = 0;
-        cards.forEach(card => {
-            const match = (card.dataset.categoria === cat);
-            card.classList.toggle('hidden', !match);
-            limpiar(card);
-            if (match) visibles++;
-        });
-        if (sinImgs) sinImgs.classList.toggle('hidden', visibles > 0);
-        if (typeof calcQuality === 'function') calcQuality();
-    }
-
-    sel.addEventListener('change', filtrar);
-    filtrar(); // estado inicial
-
-    // Validación en cliente: no permitir enviar sin imagen del banco
-    document.getElementById('form-servicio')?.addEventListener('submit', function(e) {
-        if (!hidden.value) {
-            e.preventDefault();
-            if (errorMsg) errorMsg.classList.remove('hidden');
-            (empty.classList.contains('hidden') ? carrusel : empty)
-                .scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
-})();
+document.getElementById('categoria')?.addEventListener('change', function() {
+    if (typeof calcQuality === 'function') calcQuality();
+});
 ui.desc?.addEventListener('input', function() {
     const isBad = [
         /\d{8,}/,
@@ -751,7 +659,7 @@ function calcQuality() {
     let score = 0;
     if (ui.titulo?.value.length >= 10) score += 25;
     if (ui.desc?.value.length >= 50) score += 25;
-    if (document.getElementById('imagen_banco_id')?.value) score += 30;
+    if (document.getElementById('categoria')?.value) score += 30;
     
     const precioVisible = document.getElementById('precio_visible');
     if (precioVisible && precioVisible.value !== '') score += 20;

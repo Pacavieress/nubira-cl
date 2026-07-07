@@ -318,8 +318,8 @@ if (!function_exists('nav_class')) {
                 <!-- [NUBIRA 2.0] CSRF Token -->
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 
-                <div class="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm">
-                    
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm !mt-0">
+
                     <?php if ($mensaje): ?>
                         <div id="toast" class="mb-6 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm <?= $exito ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'; ?>">
                             <?= icon($exito ? 'check-circle' : 'alert', 'w-5 h-5 flex-shrink-0') ?>
@@ -329,7 +329,7 @@ if (!function_exists('nav_class')) {
                         <?php if($exito): ?><script>setTimeout(()=>window.location.href='/clases-servicios', 2500);</script><?php endif; ?>
                     <?php endif; ?>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 md:mb-6">
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Categoría</label>
                             <div class="relative">
@@ -357,7 +357,7 @@ if (!function_exists('nav_class')) {
                         </div>
                     </div>
 
-                    <div class="mb-6">
+                    <div class="mb-4 md:mb-6">
                         <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Título del anuncio</label>
                         <div class="relative">
                             <input type="text" name="titulo" id="titulo" required maxlength="50" value="<?= htmlspecialchars($titulo) ?>" placeholder="Ej: Clases de Cálculo / Asesoría de Tesis"
@@ -366,8 +366,8 @@ if (!function_exists('nav_class')) {
                         </div>
                     </div>
 
-                    <div class="mb-6 mt-8">
-    <div class="mb-2">
+                    <div class="mb-4 md:mb-6 mt-4 md:mt-6">
+    <div class="mb-1.5">
         <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide">Descripción</label>
     </div>
                         
@@ -383,7 +383,7 @@ if (!function_exists('nav_class')) {
                     </div>
 
                     <!-- [NUBIRA 2.0] Precio con formato chileno ($15.000) -->
-                    <div class="mb-6">
+                    <div class="mb-4 md:mb-6">
                         <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Precio Base (CLP)</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold pointer-events-none">$</span>
@@ -464,7 +464,7 @@ if (!function_exists('nav_class')) {
             $mostrar_form_upload = in_array($video_estado, ['sin_video', 'rechazado']);
             ?>
 
-            <div class="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm mt-6" id="seccion-video">
+            <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm mt-6" id="seccion-video">
 
                 <!-- Cabecera -->
                 <div class="flex items-start justify-between gap-3 mb-5">
@@ -571,6 +571,18 @@ if (!function_exists('nav_class')) {
                                 <li>· Si rompes estas reglas tu video será rechazado y deberás subir uno nuevo.</li>
                             </ul>
                         </div>
+                    </div>
+
+                    <!-- Guion sugerido -->
+                    <div class="bg-sky-50 border border-sky-100 rounded-xl p-4 flex gap-3">
+                        <span class="shrink-0 mt-0.5 text-[#54A6D8]">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                            </svg>
+                        </span>
+                        <p class="text-xs text-sky-800 leading-relaxed">
+                            <span class="font-bold">¿No sabes qué decir?</span> Prueba con esto: "Hola, soy [tu nombre]. Enseño [tu materia] hace [tiempo]. Escríbeme por Nubira si tienes dudas antes de agendar tu clase."
+                        </p>
                     </div>
 
                     <!-- Zona de selección -->
