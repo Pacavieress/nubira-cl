@@ -822,7 +822,7 @@ require_once __DIR__ . '/componentes/header.php';
         </div>
         <div class="relative group">
             <button onclick="scrollCarrusel('sec-recientes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-md items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-100 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-<div id="sec-recientes" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-stretch" data-src="/app/cargar_vistos.php">
+<div id="sec-recientes" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-stretch" data-src="/app/cargar_vistos.php" data-hide-target="#sec-recientes-wrapper">
                     <?php for($i=0; $i<4; $i++): ?>
                     <div class="flex-shrink-0 w-[220px] md:w-[300px] h-[96px] md:h-[112px] bg-white rounded-2xl border border-gray-100 p-2 md:p-3 flex gap-3 snap-start opacity-60 overflow-hidden">
                     <div class="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-gray-100 flex-shrink-0 animate-pulse self-center"></div>
@@ -2051,9 +2051,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = await fetch(src + (src.includes('?')?'&':'?') + 't=' + Date.now());
                 if(!r.ok) throw new Error();
                 const html = await r.text();
-                if(html.trim()) container.innerHTML = html;
-                else container.style.display = 'none'; 
-            } catch(e) { 
+                if(html.trim()) {
+                    container.innerHTML = html;
+                } else {
+                    const hideTarget = container.getAttribute('data-hide-target');
+                    const elToHide = hideTarget ? document.querySelector(hideTarget) : container;
+                    (elToHide || container).style.display = 'none';
+                }
+            } catch(e) {
                 // UX: Si falla el internet, damos opción de reintentar (Airbnb vibe)
                 container.innerHTML = `
                 <div class="flex-shrink-0 w-full p-4 flex flex-col items-center justify-center border border-dashed border-gray-200 bg-gray-50 rounded-2xl">
