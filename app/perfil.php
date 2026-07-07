@@ -215,6 +215,31 @@ $falta_foto = empty($foto_field);
 $falta_bio  = empty(trim($bio_actual));
 $perfil_incompleto_local = ($es_propio && ($falta_foto || $falta_bio));
 
+// --- Horarios y video de servicios activos ---
+require_once __DIR__ . '/helpers/horarios.php';
+$falta_horarios = false;
+$falta_video = false;
+$servicio_falta_horarios_id = null;
+$servicio_falta_video_id = null;
+
+if ($es_propio) {
+    $stmt_sv_p = $conn->prepare("SELECT id, horarios_json, video_estado FROM servicios WHERE alumno_id = ? AND estado = 'aprobado' AND COALESCE(visible, 1) = 1");
+    $stmt_sv_p->bind_param("i", $perfil_id_ver);
+    $stmt_sv_p->execute();
+    $res_sv_p = $stmt_sv_p->get_result();
+    while ($row_sv_p = $res_sv_p->fetch_assoc()) {
+        if (!$falta_horarios && !parsear_horarios_servicio($row_sv_p['horarios_json'])['tiene_horarios']) {
+            $falta_horarios = true;
+            $servicio_falta_horarios_id = (int)$row_sv_p['id'];
+        }
+        if (!$falta_video && $row_sv_p['video_estado'] !== 'aprobado') {
+            $falta_video = true;
+            $servicio_falta_video_id = (int)$row_sv_p['id'];
+        }
+    }
+    $stmt_sv_p->close();
+}
+
 // LÓGICA DE TIERS PARA EL WIDGET
 $tier_actual = "Básico";
 $tier_color = "bg-gray-100 text-gray-500 border-gray-200";
@@ -409,7 +434,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
     <div class="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-6 md:gap-8 items-start">
         <div class="space-y-5 md:space-y-6 min-w-0">
 
-            <?php if ($es_propio && ($falta_banco || $perfil_incompleto_local)): ?>
+            <?php if ($es_propio && ($falta_banco || $falta_horarios || $falta_video || $perfil_incompleto_local)): ?>
             <div class="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div class="flex items-center gap-2 min-w-0">
                     <?= icon('sparkles', 'w-4 h-4 text-[#54A6D8] shrink-0') ?>
@@ -424,6 +449,12 @@ require_once __DIR__ . '/componentes/sidebar.php';
                     <?php endif; ?>
                     <?php if ($falta_bio): ?>
                         <button onclick="toggleEditBio(); document.getElementById('bio-input')?.focus();" class="bg-white border border-blue-100 text-[#54A6D8] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Bio</button>
+                    <?php endif; ?>
+                    <?php if ($falta_horarios): ?>
+                        <a href="/app/editar_horarios.php?id=<?= $servicio_falta_horarios_id ?>" class="bg-white border border-blue-100 text-[#54A6D8] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Horarios</a>
+                    <?php endif; ?>
+                    <?php if ($falta_video): ?>
+                        <a href="/app/editar_servicio.php?id=<?= $servicio_falta_video_id ?>" class="bg-white border border-blue-100 text-[#54A6D8] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">Video</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -584,11 +615,12 @@ require_once __DIR__ . '/componentes/sidebar.php';
             <?php if ($es_propio && $max_score > 0): 
                 $tiene_apunte = false;
                 $tiene_desc_larga = false;
-                $tiene_resena = ($v_qty > 0); 
+                $tiene_resena = ($v_qty >= 3);
+                $tiene_bio_larga = (mb_strlen(trim($bio_actual)) >= 60);
 
                 foreach ($publicaciones as $pub) {
                     if (($pub['tipo_pub'] ?? '') === 'apunte') $tiene_apunte = true;
-                    if (($pub['tipo_pub'] ?? '') === 'servicio' && !empty($pub['descripcion']) && strlen(trim($pub['descripcion'])) > 40) $tiene_desc_larga = true;
+                    if (($pub['tipo_pub'] ?? '') === 'servicio' && !empty($pub['descripcion']) && mb_strlen(trim($pub['descripcion'])) >= 300) $tiene_desc_larga = true;
                 }
             ?>
             <section class="bg-white rounded-3xl border border-gray-200 p-6 md:p-8">
@@ -623,8 +655,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= !$falta_foto ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
                             <?= !$falta_foto ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Foto de perfil (+20)
                         </div>
-                        <div class="flex items-center gap-2 text-[11px] md:text-xs <?= !$falta_bio ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
-                            <?= !$falta_bio ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Biografía (+20)
+                        <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_bio_larga ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60" title="Mínimo 60 caracteres">
+                            <?= $tiene_bio_larga ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Biografía (+20)
                         </div>
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_desc_larga ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60" title="Añade al menos 300 letras a la descripción">
                             <?= $tiene_desc_larga ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Descripción Larga (+20)
@@ -633,7 +665,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                             <?= $tiene_apunte ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Subir Apunte Público (+20)
                         </div>
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_resena ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
-                            <?= $tiene_resena ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Obtener 1 Reseña (+20)
+                            <?= $tiene_resena ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Obtener 3 Reseñas (+20)
                         </div>
                     </div>
                 </div>
