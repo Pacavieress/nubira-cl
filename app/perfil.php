@@ -69,8 +69,13 @@ if (isset($_GET['id'])) {
             exit;
         }
     } else {
+        // [SEO] Si trae slug decorativo ("nombre--hash"), usamos solo el hash real
+        // (lo que va después del ÚLTIMO "--"). Si no hay "--", es el hash puro (comportamiento actual).
+        $pos_sep = strrpos($param_id, '--');
+        $hash_real = ($pos_sep !== false) ? substr($param_id, $pos_sep + 2) : $param_id;
+
         if (function_exists('nubira_desencriptar_id')) {
-            $perfil_id_ver = nubira_desencriptar_id($param_id);
+            $perfil_id_ver = nubira_desencriptar_id($hash_real);
         }
     }
 }
@@ -387,6 +392,39 @@ if ($es_propio || $es_admin) {
 }
 // =========================================================================
 
+// =========================================================================
+// [SEO] Slug decorativo + hash real para URL canónica /perfil/{slug}--{hash}
+// =========================================================================
+// Categoría principal: la más frecuente entre sus servicios (empate → la más reciente,
+// porque $publicaciones ya viene ordenado por fecha desc y arsort() es estable en PHP 8+).
+$conteo_categorias = [];
+foreach ($publicaciones as $pub) {
+    if (($pub['tipo_pub'] ?? '') === 'servicio' && !empty($pub['categoria'])) {
+        $cat = $pub['categoria'];
+        $conteo_categorias[$cat] = ($conteo_categorias[$cat] ?? 0) + 1;
+    }
+}
+$categoria_principal = '';
+if (!empty($conteo_categorias)) {
+    arsort($conteo_categorias);
+    $categoria_principal = array_key_first($conteo_categorias);
+}
+
+$slug_perfil = generar_slug(trim($nombre_display . ($categoria_principal ? ' ' . $categoria_principal : '')));
+$hash_perfil = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($perfil_id_ver) : '';
+$url_canonica_perfil = $hash_perfil ? "/perfil/{$slug_perfil}--{$hash_perfil}" : nubira_canonical();
+// =========================================================================
+
+$inst_seo = $inst_nombre ? institucion_tutor($inst_nombre, true) : '';
+
+$titulo_seo = "Perfil de {$nombre_display}"
+    . ($categoria_principal ? " · Tutor de {$categoria_principal}" : "")
+    . ($inst_seo ? " · {$inst_seo}" : "") . " | Nubira";
+$desc_seo = "Conoce a {$nombre_display}"
+    . ($categoria_principal ? ", tutor de {$categoria_principal}" : "")
+    . ($inst_seo ? " en {$inst_seo}" : "")
+    . ". Reseñas, servicios y apuntes verificados en Nubira.";
+
 // RUTA PANEL GESTION
 $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
 ?>
@@ -396,7 +434,8 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
-    <title>Perfil de <?= htmlspecialchars($nombre_display) ?> | Nubira</title>
+    <?= nubira_canonical_tag($url_canonica_perfil) ?>
+    <?= nubira_seo_meta($titulo_seo, $desc_seo) ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
