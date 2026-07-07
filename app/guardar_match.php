@@ -22,7 +22,7 @@ $id_item    = (int)($_POST['id_item'] ?? 0);
 $tipo       = $_POST['tipo']   ?? '';
 $accion     = $_POST['accion'] ?? '';
 
-if (!$usuario_id || !$id_item || !in_array($tipo, ['apunte','servicio','oportunidad'], true) ||
+if (!$usuario_id || !$id_item || !in_array($tipo, ['apunte','servicio'], true) ||
     !in_array($accion, ['like','dislike'], true)) {
   http_response_code(400);
   echo json_encode(['ok'=>false, 'error'=>'bad_params']);

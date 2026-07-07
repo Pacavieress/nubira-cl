@@ -39,7 +39,6 @@ $estaticas = [
     ['/apuntes',         '0.9', 'daily'],
     ['/servicios',       '0.9', 'daily'],
     ['/descubre',        '0.7', 'weekly'],
-    ['/oportunidades',   '0.7', 'weekly'],
     ['/sobre-nosotros',  '0.4', 'monthly'],
     ['/terminos',        '0.2', 'monthly'],
     ['/privacidad',      '0.2', 'monthly'],
@@ -72,17 +71,6 @@ $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
     echo url_xml($BASE . '/apunte/' . nubira_encriptar_id($row['id']),
                  w3c($row['fecha_subida']), 'weekly', '0.7');
-}
-
-// D. Oportunidades aprobadas y vigentes (no vencidas; perpetuas = fecha_termino NULL)
-$sql = "SELECT id, fecha_publicacion
-        FROM oportunidades
-        WHERE aprobado = 1
-          AND (fecha_termino IS NULL OR fecha_termino >= CURDATE())";
-$r = $conn->query($sql);
-while ($r && $row = $r->fetch_assoc()) {
-    echo url_xml($BASE . '/detalle-oportunidad/' . (int)$row['id'],
-                 w3c($row['fecha_publicacion']), 'weekly', '0.5');
 }
 
 // E. Landings de categoría (clases) — solo las que tienen >=3 servicios públicos

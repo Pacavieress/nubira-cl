@@ -61,8 +61,6 @@ RewriteRule ^completar_perfil$        app/completar_perfil.php          [L,QSA]
 RewriteRule ^completar-registro$      app/completar_registro_express.php [L,QSA]
 RewriteRule ^verificacion_rechazada$  app/verificacion_rechazada.php    [L,QSA]
 
-# Dashboard y Perfil
-RewriteRule ^dashboard$               app/dashboard.php                 [L,QSA]
 # 1. Redirigimos la URL vieja a la nueva optimizada (sin tildes y con guiones)
 RewriteRule ^editar_mis_datos/?$ /configurar-cuenta [R=301,L]
 
@@ -124,7 +122,6 @@ RewriteRule ^descubre$                app/descubre.php                  [L,QSA]
 
 # Cargas AJAX
 RewriteRule ^cargar-proyectos$        app/cargar_proyectos.php          [L,QSA]
-RewriteRule ^cargar-oportunidades$    app/cargar_oportunidades.php      [L,QSA]
 
 # === URL CANÓNICA SEO (Fase 1) ===
 RewriteRule ^servicios/(.+)-(\d+)/?$ app/detalle_servicio.php?servicio_id=$2&slug_captured=$1 [L,QSA]
@@ -138,12 +135,10 @@ RewriteRule ^detalle-servicio$            app/detalle_servicio.php       [L,QSA]
 # === REGLA NUEVA ESTILO AIRBNB (Apuntes) ===
 RewriteRule ^apunte/([a-zA-Z0-9_-]+)/?$   app/ver_apunte.php?id=$1       [L,QSA]
 RewriteRule ^ver-apunte$                  app/ver_apunte.php             [L,QSA]
-RewriteRule ^detalle-oportunidad/([0-9]+)$ app/detalle_oportunidad.php?id=$1 [L,QSA]
 
 
 # Gestión de Servicios y Apuntes
 RewriteRule ^publicar-servicio$       app/publicar_servicio.php         [L,QSA]
-RewriteRule ^guardar-servicio$        app/guardar_servicio.php          [L,QSA]
 RewriteRule ^subir-video-servicio$    app/subir_video_servicio.php      [L,QSA]
 
 # === RUTA LIMPIA PARA SERVICIOS ===
@@ -151,6 +146,7 @@ RewriteRule ^servicios/?$                  app/clases_servicios.php          [L,
 
 # === LANDINGS SEO POR CATEGORÍA (pSEO Fase 1) ===
 RewriteRule ^clases/([a-z]+)/?$            app/landing_categoria.php?tipo=clases&cat=$1   [L,QSA]
+RewriteRule ^apuntes/([a-z]+)/?$           app/landing_categoria.php?tipo=apuntes&cat=$1  [L,QSA]
 
 # (Redirecciones SEO por si alguien usa los links viejos)
 RewriteRule ^explorar-clases-servicos/?$   /servicios                        [R=301,L]
@@ -189,22 +185,17 @@ RewriteRule ^solicitar-retiro$        app/solicitar_retiro.php          [L,QSA]
 RewriteRule ^editar-datos-bancarios$  app/editar_datos_bancarios.php    [L,QSA]
 RewriteRule ^iniciar-pago$            app/iniciar_pago.php              [L,QSA]
 RewriteRule ^iniciar-pago-servicio$   app/iniciar_pago_servicio.php     [L,QSA]
-RewriteRule ^pagar-oportunidad$       app/pagar_oportunidad.php         [L,QSA]
 RewriteRule ^busqueda$                app/busqueda.php        [L,QSA]
 
 # Retornos de Pasarela
 RewriteRule ^pago-error$              pago_error.php                    [L,QSA]
 RewriteRule ^pago-exitoso-publicacion$ app/pago_exitoso_publicacion.php [L,QSA]
 RewriteRule ^pago-error-publicacion$  app/pago_error_publicacion.php    [L,QSA]
-RewriteRule ^pago-oportunidad-exitoso$ app/pago_oportunidad_exitoso.php [L,QSA]
 RewriteRule ^pago-exitoso-contacto$   app/pago_exitoso_contacto.php     [L,QSA]
 
 ####################################
 # INTERACCIONES
 ####################################
-RewriteRule ^oportunidades$           app/oportunidades.php             [L,QSA]
-RewriteRule ^crear-oportunidad$       app/crear_oportunidad.php         [L,QSA]
-RewriteRule ^crear_oportunidad\.php$  app/crear_oportunidad.php         [L,QSA]
 RewriteRule ^mis-preguntas$           app/mis_preguntas.php             [L,QSA]
 # 1. Redirigimos la URL vieja a la nueva optimizada
 RewriteRule ^mis_evaluaciones/?$ /mis-evaluaciones [R=301,L]
@@ -265,10 +256,6 @@ RewriteRule ^admin/leads-gmail$        app/admin_leads_gmail.php [L,QSA]
 RewriteRule ^admin/despertar-dormidos$ app/enviar_despertar_dormidos.php [L,QSA]
 
 
-# Acciones Admin Oportunidades
-RewriteRule ^admin/oportunidades/aprobar/([0-9]+)$  app/admin_oportunidades.php?action=aprobar&id=$1  [L,QSA]
-RewriteRule ^admin/oportunidades/rechazar/([0-9]+)$ app/admin_oportunidades.php?action=rechazar&id=$1 [L,QSA]
-RewriteRule ^admin/oportunidades/eliminar/([0-9]+)$ app/admin_oportunidades.php?action=eliminar&id=$1 [L,QSA]
 
 # Retrocompatibilidad final (archivos .php sueltos)
 RewriteRule ^mis_ventas\.php$         /mis-ventas                       [R=301,L]

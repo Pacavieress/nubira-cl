@@ -22,7 +22,7 @@ $conn->close();
 <head>
   <meta charset="UTF-8" />
   <title>Resumen por Dominio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -36,10 +36,9 @@ $conn->close();
   <div class="p-6">
     <nav class="flex flex-col space-y-3">
             <a href="/vitrina" class="text-gray-700 hover:text-[#54A6D8]">🏠 Inicio</a>
-      <a href="/dashboard" class="text-gray-700 hover:text-[#54A6D8]">⚙️ Perfil</a>
+      <a href="/perfil/<?= (int)$_SESSION['usuario_id'] ?>" class="text-gray-700 hover:text-[#54A6D8]">⚙️ Perfil</a>
 <a href="/vitrina-apuntes" class="text-gray-700 hover:text-[#54A6D8]">📘 Explorar Apuntes</a>
 <a href="/clases-servicios" class="text-gray-700 hover:text-[#54A6D8]">🧑‍🏫 Explorar Servicios</a>
-<a href="/oportunidades" class="text-gray-700 hover:text-[#54A6D8]">🎯 Explorar Oportunidades</a>
     </nav>
   </div>
 </aside>
@@ -128,7 +127,7 @@ $conn->close();
       </button>
     </li>
     <li>
-      <a href="/dashboard" class="flex flex-col items-center justify-center py-2 w-full focus:outline-none">
+      <a href="/perfil/<?= (int)$_SESSION['usuario_id'] ?>" class="flex flex-col items-center justify-center py-2 w-full focus:outline-none">
         <svg class="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M5.12 17.8A9 9 0 0 1 12 15c2.29 0 4.38.87 5.88 2.30"/>
           <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -151,7 +150,7 @@ $conn->close();
         </svg>
       </button>
       <h3 class="text-base md:text-lg font-bold text-nubira mb-3 text-center">¿Qué quieres explorar?</h3>
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-2 gap-3">
         <a href="/vitrina-apuntes" class="border rounded-xl p-3 text-center hover:shadow-md transition active:scale-[.99]">
           <div class="text-blue-600 font-semibold text-sm">Apuntes</div>
           <div class="text-[11px] text-gray-500">Encuentra material</div>
@@ -159,10 +158,6 @@ $conn->close();
         <a href="/clases-servicios" class="border rounded-xl p-3 text-center hover:shadow-md transition active:scale-[.99]">
           <div class="text-yellow-600 font-semibold text-sm">Servicios</div>
           <div class="text-[11px] text-gray-500">Clases / ayuda</div>
-        </a>
-        <a href="/oportunidades" class="border rounded-xl p-3 text-center hover:shadow-md transition active:scale-[.99]">
-          <div class="text-purple-600 font-semibold text-sm">Anuncios</div>
-          <div class="text-[11px] text-gray-500">Becas / prácticas</div>
         </a>
       </div>
     </div>
@@ -179,7 +174,7 @@ $conn->close();
           <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
         </button>
         <h3 class="text-base md:text-lg font-bold text-nubira mb-3 text-center">¿Qué quieres publicar hoy?</h3>
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 gap-3">
           <a href="/formulario-subir-apunte" class="border rounded-xl p-3 text-center hover:shadow-md transition active:scale-[.99]">
             <div class="text-green-600 font-semibold text-sm">Apunte</div>
             <div class="text-[11px] text-gray-500">PDF / Word</div>
@@ -187,10 +182,6 @@ $conn->close();
           <a href="/publicar-servicio" class="border rounded-xl p-3 text-center hover:shadow-md transition active:scale-[.99]">
             <div class="text-yellow-600 font-semibold text-sm">Servicio</div>
             <div class="text-[11px] text-gray-500">Clases</div>
-          </a>
-          <a href="/crear-oportunidad" class="border rounded-xl p-3 text-center hover:shadow-md transition active:scale-[.99]">
-            <div class="text-purple-600 font-semibold text-sm">Oportunidad</div>
-            <div class="text-[11px] text-gray-500">Becas</div>
           </a>
         </div>
       </div>

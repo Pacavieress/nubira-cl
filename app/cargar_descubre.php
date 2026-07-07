@@ -28,8 +28,8 @@ $offset      = ($pagina - 1) * $limite;
 
 $asig_filter = trim((string)($_POST['asignatura'] ?? ''));
 $sem_filter  = trim((string)($_POST['semestre'] ?? ''));
-$tipos       = $_POST['tipos'] ?? ['apunte','servicio','oportunidad'];
-if (!is_array($tipos) || empty($tipos)) $tipos = ['apunte','servicio','oportunidad'];
+$tipos       = $_POST['tipos'] ?? ['apunte','servicio'];
+if (!is_array($tipos) || empty($tipos)) $tipos = ['apunte','servicio'];
 
 $asig_score_pattern = $asig_filter !== '' ? $asig_filter : $carrera;
 
@@ -160,47 +160,6 @@ try {
       ]
     );
     foreach ($rows as $r) $items[] = map_item($r, 'servicio');
-  }
-
-  // =============== OPORTUNIDADES ===============
-  if (in_array('oportunidad', $tipos, true)) {
-    // oportunidades: id, titulo, descripcion, institucion, imagen, estado, aprobado, fecha_publicacion
-    // Relajamos: (aprobado IS NULL OR aprobado=1) y estados varios o vacíos
-    $sqlO = "
-      SELECT
-        o.id                 AS _id,
-        o.titulo             AS _titulo,
-        o.descripcion        AS _desc,
-        ''                   AS _asig,
-        ''                   AS _sem,
-        NULL                 AS _precio,
-        o.institucion        AS _inst,
-        o.fecha_publicacion  AS _fecha,
-        o.imagen             AS _img,
-        (CASE WHEN o.institucion = ? THEN 2 ELSE 0 END) AS _score
-      FROM oportunidades o
-      WHERE
-        (o.aprobado IS NULL OR o.aprobado = 1)
-        AND (o.estado IS NULL OR o.estado IN ('Aprobada','aprobado','aprobada','publicado','Publicada','activo','Activo',''))
-        AND NOT EXISTS (
-          SELECT 1 FROM interacciones_descubre i
-          WHERE i.usuario_id = ?
-            AND i.item_id = o.id
-            AND i.tipo = 'oportunidad'
-        )
-      ORDER BY COALESCE(o.fecha_publicacion, NOW()) DESC
-      LIMIT ?, ?
-    ";
-    $rows = q(
-      $conn, $sqlO,
-      'siii',
-      [
-        $inst_usuario,
-        $usuario_id,
-        $offset_pool, $limit_pool
-      ]
-    );
-    foreach ($rows as $r) $items[] = map_item($r, 'oportunidad');
   }
 
   // Mezcla + orden por score y fecha

@@ -39,8 +39,6 @@ try {
         ['tabla' => 'compras', 'campo' => 'usuario_id'],
         ['tabla' => 'datos_pago_usuario', 'campo' => 'usuario_id'],
         ['tabla' => 'emprendimientos', 'campo' => 'alumno_id'],
-        ['tabla' => 'favoritos_oportunidades', 'campo' => 'usuario_id'],
-        ['tabla' => 'oportunidades', 'campo' => 'usuario_id'],
         ['tabla' => 'reclamos_sugerencias', 'campo' => 'usuario_id'],
         ['tabla' => 'servicios', 'campo' => 'alumno_id'],
         ['tabla' => 'solicitudes_retiro', 'campo' => 'usuario_id'],

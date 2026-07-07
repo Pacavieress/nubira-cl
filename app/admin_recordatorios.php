@@ -106,7 +106,7 @@ function labelTipo(string $tipo): string {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
 <title>Recordatorios automáticos - Nubira</title>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -148,7 +148,7 @@ function labelTipo(string $tipo): string {
   <div class="p-6">
     <nav class="flex flex-col space-y-3">
       <a href="/vitrina" class="text-gray-700 hover:text-[#54A6D8]">🏠 Inicio</a>
-      <a href="/dashboard" class="text-gray-700 hover:text-[#54A6D8]">⚙️ Perfil</a>
+      <a href="/perfil/<?= (int)$_SESSION['usuario_id'] ?>" class="text-gray-700 hover:text-[#54A6D8]">⚙️ Perfil</a>
       <a href="/vitrina-apuntes" class="text-gray-700 hover:text-[#54A6D8]">📘 Explorar Apuntes</a>
       <a href="/clases-servicios" class="text-gray-700 hover:text-[#54A6D8]">🧑‍🏫 Explorar Servicios</a>
       <!-- 💬 Mis Chats con badge -->
@@ -161,8 +161,6 @@ function labelTipo(string $tipo): string {
           0
         </span>
       </a>
-
-      <a href="/oportunidades" class="text-gray-700 hover:text-[#54A6D8]">🎯 Explorar Oportunidades</a>
     </nav>
   </div>
 </aside>
