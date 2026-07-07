@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/helpers/usuario_helper.php';
 
 /* ✅ Solo permitir POST (evita toggles por GET) */
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
@@ -87,10 +88,10 @@ if ($id_int > 0) {
            ============================================================ */
         if ($accion === 'aprobar') {
             // Traer portada (para generar miniatura email)
-            $stmt = $conn->prepare("SELECT portada FROM apuntes WHERE id = ?");
+            $stmt = $conn->prepare("SELECT portada, id_alumno FROM apuntes WHERE id = ?");
             $stmt->bind_param("i", $id_int);
             $stmt->execute();
-            $stmt->bind_result($portadaBD);
+            $stmt->bind_result($portadaBD, $id_alumno_apunte);
             $stmt->fetch();
             $stmt->close();
 
@@ -106,6 +107,18 @@ if ($id_int > 0) {
             $stmt->bind_param("i", $id_int);
             $stmt->execute();
             $stmt->close();
+
+            // [NUBIRA 2.0] Recalcular gamificación de todos los servicios del tutor dueño del apunte
+            if ($id_alumno_apunte > 0) {
+                $q_serv = $conn->prepare("SELECT id FROM servicios WHERE alumno_id = ?");
+                $q_serv->bind_param("i", $id_alumno_apunte);
+                $q_serv->execute();
+                $res_serv = $q_serv->get_result();
+                while ($sv = $res_serv->fetch_assoc()) {
+                    actualizar_score_servicio($conn, $sv['id']);
+                }
+                $q_serv->close();
+            }
 
             // Generar miniatura de email 600px
             crearMiniaturaEmailApunte($id_int, $portadaBD);

@@ -19,6 +19,7 @@ if (!file_exists($ruta_conexion)) {
     die("Error Crítico: No se encuentra el sistema (conexion.php).");
 }
 require_once $ruta_conexion;
+require_once __DIR__ . '/helpers/usuario_helper.php';
 
 // 2. SEGURIDAD
 if (!isset($_SESSION['usuario_id'])) { die("Error: Sesión no iniciada."); }
@@ -159,6 +160,9 @@ try {
                 $stmt_upd_s->execute();
                 $stmt_upd_s->close();
             }
+
+            // [NUBIRA 2.0] Recalcular gamificación: esta reseña puede cruzar el umbral de 3
+            actualizar_score_servicio($conn, $servicio_id);
         }
     }
     // =========================================================================

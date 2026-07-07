@@ -42,6 +42,7 @@ if (file_exists($app_dir . '/iconos.php')) {
     if (!function_exists('icon')) { function icon($n, $c='') { return "<i class='fa-solid fa-$n $c'></i>"; } }
 }
 require_once $app_dir . '/helpers/seo.php';
+require_once $app_dir . '/helpers/usuario_helper.php';
 
 // 3. SEGURIDAD DE SESIÓN
 if (!isset($_SESSION['usuario_id'])) { header("Location: /login"); exit; }
@@ -166,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $mensaje = "Cambios guardados. Pendiente de revisión.";
                 $exito = true;
+                actualizar_score_servicio($conn, $id_servicio);
 
                 // [MODALIDAD] Si estaba oculto por la regla de solo-online, restaurar visibilidad al guardar
                 $stmt_restore = $conn->prepare("UPDATE servicios SET visible = 1, oculto_por_modalidad = 0 WHERE id = ? AND oculto_por_modalidad = 1");
