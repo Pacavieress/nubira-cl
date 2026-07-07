@@ -116,6 +116,18 @@ Verificación post-deploy:
 - app/admin_ofertas.php
 - app/contratar_servicio.php
 
+### Pendiente desde 07/07/2026: eliminar 5 archivos huérfanos en Hostinger
+Ya eliminados y commiteados en local (commit 9c96d96). Hay que borrarlos también del servidor vía FileZilla en /home/u516405553/domains/nubira.cl/public_html/:
+- app/panel_tutor_guia.php
+- app/centro_tutores.php
+- app/admin/gestionar_guia.php
+- app/api/registrar_feedback_guia.php
+- app/mercadopago_webhook.php
+
+Contexto: ninguno tenía ruta activa en .htaccess ni links reales en el repo (diagnóstico completo antes de eliminar). No se tocaron las tablas guia_tutores_contenido ni guia_feedback — quedan vacías en la BD por si se necesita recuperar el contenido a futuro (mismo criterio que con Oportunidades).
+
+No requiere verificación post-deploy especial (nada los enlazaba).
+
 ### Producto (sin urgencia)
 - Conversación con Nubira Producto (Cowork) sobre cómo atraer primeros compradores reales
 - Identificar segmento concreto (USACH / PUC / AIEP / PAES)
