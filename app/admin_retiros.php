@@ -12,32 +12,44 @@ if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
     exit;
 }
 
+// [NUBIRA 2.0] CSRF TOKEN — Protección contra Cross-Site Request Forgery
+if (empty($_SESSION['csrf_token_retiros'])) {
+    $_SESSION['csrf_token_retiros'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token_retiros'];
+
 $mensaje = "";
 $error   = "";
 
 /* ----------- Guardar Configuraciones Globales (Mínimo Retiro y Comisión) ----------- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_configuracion'])) {
-    $monto_minimo = intval($_POST['monto_minimo']);
-    $comision = intval($_POST['comision']);
-
-    if ($monto_minimo < 1) {
-        $error = "❌ El monto mínimo debe ser al menos 1 peso.";
-    } elseif ($comision < 0 || $comision > 100) {
-        $error = "❌ La comisión debe estar entre 0% y 100%.";
+    $token_recibido = $_POST['csrf_token'] ?? '';
+    if (empty($token_recibido) || !hash_equals($_SESSION['csrf_token_retiros'] ?? '', $token_recibido)) {
+        error_log("Nubira CSRF Alert (retiros-config) - Token inválido. usuario_id={$_SESSION['usuario_id']}, IP=" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        $error = "❌ Sesión expirada. Por favor recarga la página e intenta nuevamente.";
     } else {
-        // Guardar Monto Mínimo
-        $stmt = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('monto_minimo_retiro', ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)");
-        $stmt->bind_param("i", $monto_minimo);
-        $stmt->execute();
-        $stmt->close();
+        $monto_minimo = intval($_POST['monto_minimo']);
+        $comision = intval($_POST['comision']);
 
-        // Guardar Comisión
-        $stmt2 = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('comision_plataforma', ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)");
-        $stmt2->bind_param("i", $comision);
-        $stmt2->execute();
-        $stmt2->close();
+        if ($monto_minimo < 1) {
+            $error = "❌ El monto mínimo debe ser al menos 1 peso.";
+        } elseif ($comision < 0 || $comision > 100) {
+            $error = "❌ La comisión debe estar entre 0% y 100%.";
+        } else {
+            // Guardar Monto Mínimo
+            $stmt = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('monto_minimo_retiro', ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)");
+            $stmt->bind_param("i", $monto_minimo);
+            $stmt->execute();
+            $stmt->close();
 
-        $mensaje = "✅ Configuraciones financieras actualizadas con éxito.";
+            // Guardar Comisión
+            $stmt2 = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('comision_plataforma', ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)");
+            $stmt2->bind_param("i", $comision);
+            $stmt2->execute();
+            $stmt2->close();
+
+            $mensaje = "✅ Configuraciones financieras actualizadas con éxito.";
+        }
     }
 }
 
@@ -76,38 +88,44 @@ $where = $condicion ? "WHERE " . implode(" AND ", $condicion) : "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'], $_POST['id']) && !isset($_POST['form_configuracion'])) {
     $id     = intval($_POST['id']);
     $accion = $_POST['accion'];
-    
-    // Cargar el motor de correos
-    require_once $app_dir . '/correo.php';
-    
-    if ($accion === 'aprobar') {
-        $stmt = $conn->prepare("UPDATE solicitudes_retiro SET estado = 'aprobado', fecha_pago = NOW() WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $stmt->close();
-        
-        // Buscar datos para el correo de éxito
-        $q = $conn->query("SELECT r.monto, a.nombre, a.correo FROM solicitudes_retiro r JOIN alumnos a ON r.usuario_id = a.id WHERE r.id = $id");
-        if ($row = $q->fetch_assoc()) {
-            $monto_f = '$' . number_format($row['monto'], 0, ',', '.');
-            $msg = "<h3>¡Pago Enviado! 💸</h3><p>Hola <b>{$row['nombre']}</b>,</p><p>Te hemos transferido exitosamente los fondos solicitados desde tu billetera hacia tu cuenta bancaria.</p><p>Monto transferido: <b style='color:#059669; font-size:18px;'>{$monto_f}</b></p><hr><p><small>Equipo Nubira.cl</small></p>";
-            if (function_exists('enviarCorreo')) enviarCorreo($row['correo'], "✅ Pago Transferido a tu Cuenta", $msg);
+
+    $token_recibido = $_POST['csrf_token'] ?? '';
+    if (empty($token_recibido) || !hash_equals($_SESSION['csrf_token_retiros'] ?? '', $token_recibido)) {
+        error_log("Nubira CSRF Alert (retiros-accion) - Token inválido. usuario_id={$_SESSION['usuario_id']}, retiro_id={$id}, IP=" . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        $error = "❌ Sesión expirada. Por favor recarga la página e intenta nuevamente.";
+    } else {
+        // Cargar el motor de correos
+        require_once $app_dir . '/correo.php';
+
+        if ($accion === 'aprobar') {
+            $stmt = $conn->prepare("UPDATE solicitudes_retiro SET estado = 'aprobado', fecha_pago = NOW() WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->close();
+
+            // Buscar datos para el correo de éxito
+            $q = $conn->query("SELECT r.monto, a.nombre, a.correo FROM solicitudes_retiro r JOIN alumnos a ON r.usuario_id = a.id WHERE r.id = $id");
+            if ($row = $q->fetch_assoc()) {
+                $monto_f = '$' . number_format($row['monto'], 0, ',', '.');
+                $msg = "<h3>¡Pago Enviado! 💸</h3><p>Hola <b>{$row['nombre']}</b>,</p><p>Te hemos transferido exitosamente los fondos solicitados desde tu billetera hacia tu cuenta bancaria.</p><p>Monto transferido: <b style='color:#059669; font-size:18px;'>{$monto_f}</b></p><hr><p><small>Equipo Nubira.cl</small></p>";
+                if (function_exists('enviarCorreo')) enviarCorreo($row['correo'], "✅ Pago Transferido a tu Cuenta", $msg);
+            }
+            $mensaje = "✅ Solicitud aprobada y comprobante enviado al tutor.";
+
+        } elseif ($accion === 'rechazar') {
+            $stmt = $conn->prepare("UPDATE solicitudes_retiro SET estado = 'rechazado' WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->close();
+
+            // Buscar datos para el correo de rechazo
+            $q = $conn->query("SELECT a.nombre, a.correo FROM solicitudes_retiro r JOIN alumnos a ON r.usuario_id = a.id WHERE r.id = $id");
+            if ($row = $q->fetch_assoc()) {
+                $msg = "<h3>Retiro Rechazado ❌</h3><p>Hola <b>{$row['nombre']}</b>,</p><p>Tu solicitud de retiro ha sido rechazada. Por favor, revisa que tus datos bancarios en la plataforma estén correctos y vuelve a solicitar el retiro desde tu billetera.</p><hr><p><small>Equipo Nubira.cl</small></p>";
+                if (function_exists('enviarCorreo')) enviarCorreo($row['correo'], "❌ Revisa tus Datos Bancarios", $msg);
+            }
+            $mensaje = "❌ Solicitud rechazada y aviso enviado al tutor.";
         }
-        $mensaje = "✅ Solicitud aprobada y comprobante enviado al tutor.";
-        
-    } elseif ($accion === 'rechazar') {
-        $stmt = $conn->prepare("UPDATE solicitudes_retiro SET estado = 'rechazado' WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $stmt->close();
-        
-        // Buscar datos para el correo de rechazo
-        $q = $conn->query("SELECT a.nombre, a.correo FROM solicitudes_retiro r JOIN alumnos a ON r.usuario_id = a.id WHERE r.id = $id");
-        if ($row = $q->fetch_assoc()) {
-            $msg = "<h3>Retiro Rechazado ❌</h3><p>Hola <b>{$row['nombre']}</b>,</p><p>Tu solicitud de retiro ha sido rechazada. Por favor, revisa que tus datos bancarios en la plataforma estén correctos y vuelve a solicitar el retiro desde tu billetera.</p><hr><p><small>Equipo Nubira.cl</small></p>";
-            if (function_exists('enviarCorreo')) enviarCorreo($row['correo'], "❌ Revisa tus Datos Bancarios", $msg);
-        }
-        $mensaje = "❌ Solicitud rechazada y aviso enviado al tutor.";
     }
 }
 
@@ -177,7 +195,8 @@ $stmt->close();
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 lg:col-span-1">
           <form method="POST" class="flex flex-col gap-4">
             <input type="hidden" name="form_configuracion" value="1">
-            
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+
             <div>
                 <label for="monto_minimo" class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Mínimo Retiro</label>
                 <div class="relative w-full">
@@ -319,6 +338,7 @@ $stmt->close();
                       <?php if ($r['estado']==='pendiente'): ?>
                         <form method="post" class="flex flex-col gap-2">
                           <input type="hidden" name="id" value="<?= $r['id'] ?>">
+                          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                           <button name="accion" value="aprobar" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm transition-all flex justify-center items-center gap-1">
                               <i class="fa-solid fa-check"></i> Aprobar
                           </button>
@@ -398,6 +418,7 @@ $stmt->close();
             <?php if ($r['estado']==='pendiente'): ?>
               <form method="post" class="flex gap-2 w-full">
                 <input type="hidden" name="id" value="<?= $r['id'] ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <button name="accion" value="rechazar" class="w-1/2 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold px-3 py-2 rounded-lg transition-all shadow-sm">
                     Rechazar
                 </button>
