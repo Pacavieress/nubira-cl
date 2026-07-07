@@ -39,7 +39,7 @@ $stmt->bind_param("i", $usuario_id);
 $stmt->execute();
 $res_log = $stmt->get_result();
 
-if ($res_log->num_rows === 0) exit;
+if ($res_log->num_rows < 3) exit;
 
 // 3. PROCESAMIENTO
 $items_ordenados = []; 
