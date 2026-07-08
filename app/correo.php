@@ -132,7 +132,7 @@ function plantillaMaestra($titulo, $contenido, $botonTexto = null, $botonLink = 
                     <table width='600' border='0' cellspacing='0' cellpadding='0' style='background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
                         <tr>
                             <td align='center' style='padding:30px; border-bottom:1px solid #E5E7EB;'>
-                                <span style='color:#54A6D8; font-size:24px; font-weight:bold; letter-spacing:-1px;'>nubira.cl</span>
+                                <span style='color:#54A6D8; font-size:24px; font-weight:bold; letter-spacing:-1px;'>Nubira.cl</span>
                             </td>
                         </tr>
                         <tr>
@@ -401,28 +401,27 @@ function enviarCorreoRecordatorioClase($correoDestino, $nombreDestino, $nombreOt
 function enviarCorreoVerificacionAprobada($correo, $nombre) {
     $html = "
         <p>Hola <strong>" . htmlspecialchars($nombre) . "</strong>,</p>
-        <p>Revisamos tu información y tu cuenta ha sido <strong style='color:#10B981;'>verificada y aprobada</strong>.</p>
-        <p>Ya puedes publicar servicios y apuntes en Nubira.</p>
+        <p>Revisamos tu información y tu cuenta ahora muestra el sello de <strong style='color:#10B981;'>Verificado</strong> en Nubira.</p>
+        <p>Esto le da más confianza a otros estudiantes cuando ven tu perfil, tus servicios o tus apuntes.</p>
         <p style='font-size:14px; color:#6B7280; margin-top:20px;'>
             Si tienes preguntas, escríbenos a <a href='mailto:soporte@nubira.cl' style='color:#54A6D8;'>soporte@nubira.cl</a>.
         </p>
     ";
-    $cuerpo = plantillaMaestra("¡Tu cuenta fue aprobada!", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
-    return _enviarEmailBase($correo, "Tu cuenta fue aprobada en Nubira", $cuerpo);
+    $cuerpo = plantillaMaestra("¡Tu cuenta fue verificada!", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
+    return _enviarEmailBase($correo, "Tu cuenta fue verificada en Nubira", $cuerpo);
 }
 
 function enviarCorreoVerificacionRechazada($correo, $nombre) {
     $html = "
         <p>Hola <strong>" . htmlspecialchars($nombre) . "</strong>,</p>
-        <p>Revisamos la información de tu cuenta y por ahora no pudimos completar la verificación.</p>
-        <p>Si crees que esto es un error o tienes documentación que respalde tu perfil, escríbenos directamente a
-           <a href='mailto:soporte@nubira.cl' style='color:#54A6D8;'>soporte@nubira.cl</a> y lo revisamos contigo.
-        </p>
+        <p>Revisamos la información de tu cuenta y por ahora no obtuviste el sello de <strong>Verificado</strong> en Nubira.</p>
+        <p>Esto no afecta tu acceso a la plataforma — puedes seguir comprando, publicando y contactando tutores con normalidad.</p>
         <p style='font-size:14px; color:#6B7280; margin-top:20px;'>
-            Puedes seguir usando Nubira para explorar servicios y apuntes mientras tanto.
+            Si crees que esto es un error o tienes documentación que respalde tu perfil, escríbenos a
+            <a href='mailto:soporte@nubira.cl' style='color:#54A6D8;'>soporte@nubira.cl</a> y lo revisamos contigo.
         </p>
     ";
-    $cuerpo = plantillaMaestra("Revisamos tu cuenta en Nubira", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
-    return _enviarEmailBase($correo, "Revisamos tu cuenta en Nubira", $cuerpo);
+    $cuerpo = plantillaMaestra("Revisamos tu solicitud de verificación", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
+    return _enviarEmailBase($correo, "Revisamos tu solicitud de verificación en Nubira", $cuerpo);
 }
 ?>

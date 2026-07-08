@@ -59,7 +59,6 @@ RewriteRule ^procesar-cambio$         procesar_cambio.php               [L,QSA]
 RewriteRule ^enviar_recuperacion$     enviar_recuperacion.php           [L,QSA]
 RewriteRule ^completar_perfil$        app/completar_perfil.php          [L,QSA]
 RewriteRule ^completar-registro$      app/completar_registro_express.php [L,QSA]
-RewriteRule ^verificacion_rechazada$  app/verificacion_rechazada.php    [L,QSA]
 
 # 1. Redirigimos la URL vieja a la nueva optimizada (sin tildes y con guiones)
 RewriteRule ^editar_mis_datos/?$ /configurar-cuenta [R=301,L]

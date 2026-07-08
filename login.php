@@ -89,7 +89,6 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
 // -------------------------------------------------------------------------
 if (isset($_SESSION['usuario_id'])) {
     $est = $_SESSION['verificacion_estado'] ?? null;
-    if ($est === 'rechazado') { header("Location: /verificacion_rechazada"); exit; }
     if ($est === 'pendiente' && !($_SESSION['perfil_completo'] ?? false)) { header("Location: /completar_perfil"); exit; }
     if (!empty($redir_destino)) { header("Location: " . $redir_destino); exit; }
     header("Location: " . ($est === 'pendiente' ? '/vitrina?aviso=verificacion_pendiente' : '/vitrina'));
@@ -209,16 +208,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['perfil_completo']     = !empty(trim($usuario['bio'] ?? ''));
                         $est = $_SESSION['verificacion_estado'];
 
-                        if ($est === 'rechazado') {
-                            header("Location: /verificacion_rechazada");
-                            exit;
-                        }
                         if ($est === 'pendiente') {
                             header("Location: " . ($_SESSION['perfil_completo'] ? '/vitrina?aviso=verificacion_pendiente' : '/completar_perfil'));
                             exit;
                         }
 
-                        // Estado 'aprobado' o NULL (usuarios pre-sistema): flujo normal
+                        // Estado 'aprobado', 'rechazado' o NULL: flujo normal
                         $ruta_final = '/vitrina';
                         if (!empty($redir_post)) {
                             $ruta_final = filter_var($redir_post, FILTER_SANITIZE_URL);
