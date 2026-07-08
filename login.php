@@ -101,7 +101,7 @@ if (isset($_SESSION['mensaje_login'])) {
     $mensaje = $_SESSION['mensaje_login'];
     unset($_SESSION['mensaje_login']);
 } elseif (isset($_GET['mensaje']) && $_GET['mensaje'] === 'promo_agotada') {
-    $mensaje = "¡Ups! La promo se agotó o necesitas tu cuenta. Inicia sesión para ver el apunte.";
+    $mensaje = "La promo gratuita de este apunte ya se agotó. Inicia sesión para verlo con tu cuenta.";
 }
 
 // -------------------------------------------------------------------------

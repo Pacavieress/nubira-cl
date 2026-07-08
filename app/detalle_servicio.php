@@ -541,7 +541,7 @@ session_write_close();
     <p class="text-[11px] text-gray-500 font-medium flex items-center gap-1.5">
         <i class="fa-regular fa-clock <?= $c['icono'] ?>"></i>
         <?php if ($tono_valor === 'gris'): ?>
-            <span class="<?= $c['texto'] ?> font-bold"><?= htmlspecialchars($texto_valor) ?></span>
+            <span class="<?= $c['texto'] ?> font-bold">Sin historial de respuesta</span>
         <?php else: ?>
             Responde <span class="<?= $c['texto'] ?> font-bold"><?= htmlspecialchars($texto_valor) ?></span>
         <?php endif; ?>
@@ -777,7 +777,7 @@ function reproducirVideoTutor() {
                     </div>
                 
                 <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-             <h3 class="font-bold text-gray-900 mb-6 flex gap-2 items-center">Opiniones <span id="badge-votos" class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs"><?= $tot_votos ?></span></h3>
+             <h3 class="font-bold text-gray-900 mb-6 flex gap-2 items-center">Opiniones <?php if ($tot_votos > 0): ?><span id="badge-votos" class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs"><?= $tot_votos ?></span><?php endif; ?></h3>
                     <?php if (count($coms) > 0): ?>
                         <div class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar">
                             <?php foreach ($coms as $c): 
