@@ -724,17 +724,6 @@ try {
     
    <style>
         html, body { background-color: #ffffff; }
-        body.fouc-lock > *:not(#loader-nativo) { display: none !important; }
-        #loader-nativo { 
-            position: fixed; inset: 0; background: #ffffff; z-index: 999999; 
-            display: flex; align-items: center; justify-content: center; 
-            transition: opacity 0.3s ease-out; 
-        }
-        .spinner-nativo { 
-            width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top-color: #54A6D8; 
-            border-radius: 50%; animation: spin-nativo 0.8s linear infinite; 
-        }
-        @keyframes spin-nativo { 100% { transform: rotate(360deg); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
@@ -801,11 +790,9 @@ try {
 
 <body class="bg-white text-gray-900 antialiased overflow-x-hidden fouc-lock">
 
-    <div id="loader-nativo">
-        <div class="spinner-nativo"></div>
-    </div>
+    <?php require_once __DIR__ . '/componentes/loader_nativo.php'; ?>
 
-<?php 
+<?php
 $page_title = "Vitrina Principal";
 require_once __DIR__ . '/componentes/header.php'; 
 ?>

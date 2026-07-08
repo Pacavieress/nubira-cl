@@ -442,10 +442,6 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        body.fouc-lock > *:not(#loader-nativo) { display: none !important; }
-        #loader-nativo { position: fixed; inset: 0; background: #f8fafc; z-index: 999999; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s ease-out; }
-        .spinner-nativo { width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top-color: #54A6D8; border-radius: 50%; animation: spin-nativo 0.8s linear infinite; }
-        @keyframes spin-nativo { 100% { transform: rotate(360deg); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tab-active { border-bottom: 2px solid #54A6D8; color: #54A6D8; }
         .tab-inactive { border-bottom: 2px solid transparent; color: #9ca3af; }
@@ -461,7 +457,7 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
     </style>
 </head>
 <body class="text-[#222222] antialiased overflow-x-hidden fouc-lock">
-<div id="loader-nativo"><div class="spinner-nativo"></div></div>
+<?php require_once __DIR__ . '/componentes/loader_nativo.php'; ?>
 
 <?php
 $ocultar_buscador = true; // Variable bandera para ocultar el buscador
