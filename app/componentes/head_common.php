@@ -10,12 +10,36 @@ define('NUBIRA_HEAD_COMMON_LOADED', true);
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <link rel="apple-touch-icon" sizes="192x192" href="/img/icon-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="/img/icon-512.png">
+<!-- [PWA] Splash screens iOS (apple-touch-startup-image) -->
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="/img/splash/apple-splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 <meta name="theme-color" content="#54A6D8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Nubira">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
+<script type="application/ld+json">
+<?php
+echo json_encode([
+    '@context'    => 'https://schema.org',
+    '@type'       => 'Organization',
+    'name'        => 'Nubira',
+    'alternateName' => 'Nubira.cl',
+    'url'         => 'https://nubira.cl',
+    'logo'        => 'https://nubira.cl/img/logo.webp',
+    'sameAs'      => [
+        'https://instagram.com/nubira.cl',
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+?>
+</script>
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -34,5 +58,23 @@ OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({ appId: "ae684576-e9b6-491e-a7e0-e2033e423ea4", serviceWorkerPath: "/sw.js" });
     await OneSignal.login("<?= (int)$_SESSION['usuario_id'] ?>");
 });
+</script>
+<?php endif; ?>
+<?php if (!empty($_SESSION['usuario_id'])): ?>
+<script>
+// [NUBIRA 2.0] Poller centralizado de alertas — reemplaza los 3 timers
+// independientes de header.php/sidebar.php/nav_bottom.php por 1 solo fetch,
+// difundido como evento custom a quien esté escuchando en la página.
+function pollAlertasNubira() {
+    if (document.hidden) return;
+    fetch('/app/contar_alertas_sistema.php?v=' + Date.now())
+        .then(res => res.json())
+        .then(data => window.dispatchEvent(new CustomEvent('nubira:alertas', { detail: data })))
+        .catch(() => {});
+}
+const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 600));
+document.addEventListener('DOMContentLoaded', () => scheduleIdle(pollAlertasNubira));
+setInterval(pollAlertasNubira, 45000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollAlertasNubira(); });
 </script>
 <?php endif; ?>
