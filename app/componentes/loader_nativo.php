@@ -25,3 +25,12 @@
     }
 </style>
 <div id="loader-nativo"><div class="progress-nativo"><div class="progress-nativo-bar"></div></div></div>
+<script>
+(function () {
+    if (sessionStorage.getItem('nubira_loader_visto')) {
+        document.body.classList.remove('fouc-lock');
+        var l = document.getElementById('loader-nativo');
+        if (l) l.style.display = 'none';
+    }
+})();
+</script>

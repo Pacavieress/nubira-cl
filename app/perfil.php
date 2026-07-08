@@ -1533,6 +1533,7 @@ setInterval(async () => {
     var dismissLoader = function() {
         var l = document.getElementById('loader-nativo');
         var b = document.body;
+        sessionStorage.setItem('nubira_loader_visto', '1');
         if (b) b.classList.remove('fouc-lock');
         if (l && l.style.display !== 'none') { l.style.opacity = '0'; setTimeout(function() { l.style.display = 'none'; }, 300); }
     };

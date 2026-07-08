@@ -1931,10 +1931,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const NubiraUI = {
         init() {
-            const dismissLoader = () => { 
-                const l = document.getElementById('loader-nativo'); 
+            const dismissLoader = () => {
+                const l = document.getElementById('loader-nativo');
                 const b = document.body;
-                
+                sessionStorage.setItem('nubira_loader_visto', '1');
+
                 // 1. Quitamos el candado visual
                 if (b) b.classList.remove('fouc-lock');
                 
