@@ -1,5 +1,5 @@
 <?php
-// Bottom sheet de compartir. Hereda $url_servicio_masked, $share_txt, $token_seguro, $id de detalle_servicio.
+// Bottom sheet de compartir. Hereda $url_canonical, $share_txt, $token_seguro, $id de detalle_servicio.
 // Las acciones de "Copiar enlace" (#btn-copiar-enlace) y "Compartir imagen" (#btn-compartir-imagen)
 // conservan sus ids para que el JS existente (línea ~1280) y modal_compartir_servicio.php sigan cableando.
 ?>
@@ -10,22 +10,22 @@
       <button id="sheet-close" type="button" aria-label="Cerrar" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100"><?= icon('x-mark','w-5 h-5') ?></button>
     </div>
     <div class="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-1 space-y-2">
-      <a href="https://api.whatsapp.com/send?text=<?= $share_txt ?>%20<?= urlencode($url_servicio_masked) ?>" target="_blank"
+      <a href="https://api.whatsapp.com/send?text=<?= $share_txt ?>%20<?= urlencode($url_canonical) ?>" target="_blank"
          class="flex items-center gap-4 px-4 min-h-[52px] rounded-xl hover:bg-gray-50 transition" data-track-click="share:whatsapp">
         <span class="w-10 h-10 rounded-full bg-[#25D366]/10 text-[#25D366] flex items-center justify-center"><i class="fab fa-whatsapp text-lg"></i></span>
         <span class="font-semibold text-gray-800 text-sm">WhatsApp</span>
       </a>
-      <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($url_servicio_masked) ?>" target="_blank"
+      <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($url_canonical) ?>" target="_blank"
          class="flex items-center gap-4 px-4 min-h-[52px] rounded-xl hover:bg-gray-50 transition" data-track-click="share:facebook">
         <span class="w-10 h-10 rounded-full bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center"><i class="fab fa-facebook-f text-lg"></i></span>
         <span class="font-semibold text-gray-800 text-sm">Facebook</span>
       </a>
-      <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode($url_servicio_masked) ?>" target="_blank"
+      <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode($url_canonical) ?>" target="_blank"
          class="flex items-center gap-4 px-4 min-h-[52px] rounded-xl hover:bg-gray-50 transition" data-track-click="share:linkedin">
         <span class="w-10 h-10 rounded-full bg-[#0A66C2]/10 text-[#0A66C2] flex items-center justify-center"><i class="fab fa-linkedin-in text-lg"></i></span>
         <span class="font-semibold text-gray-800 text-sm">LinkedIn</span>
       </a>
-      <button id="btn-copiar-enlace" data-url="<?= htmlspecialchars($url_servicio_masked) ?>" type="button"
+      <button id="btn-copiar-enlace" data-url="<?= htmlspecialchars($url_canonical) ?>" type="button"
               class="w-full flex items-center gap-4 px-4 min-h-[52px] rounded-xl hover:bg-gray-50 transition text-left" data-track-click="share:copy">
         <span class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center"><i class="fas fa-link text-lg" id="copy-icon"></i></span>
         <span class="font-semibold text-gray-800 text-sm">Copiar enlace</span>

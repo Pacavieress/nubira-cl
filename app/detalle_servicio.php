@@ -356,7 +356,7 @@ session_write_close();
     <meta property="og:image:type" content="<?= $og_mime ?>" />
     <meta property="og:image:width" content="<?= $og_w ?>" />
     <meta property="og:image:height" content="<?= $og_h ?>" />
-    <meta property="og:url" content="<?= $url_servicio_masked ?>" />
+    <meta property="og:url" content="<?= $url_canonical ?>" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="<?= $og_image ?>" />
 
@@ -373,7 +373,7 @@ session_write_close();
         '@type'       => 'Service',
         'name'        => $servicio['titulo'],
         'description' => mb_strimwidth(strip_tags($servicio['descripcion']), 0, 300, '…'),
-        'url'         => $url_servicio_masked,
+        'url'         => $url_canonical,
         'provider'    => $ld_provider,
         'areaServed'  => 'Chile',
         'offers'      => [
