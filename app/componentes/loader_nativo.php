@@ -10,10 +10,18 @@
         display: flex; align-items: center; justify-content: center;
         transition: opacity 0.3s ease-out;
     }
-    .spinner-nativo {
-        width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3); border-top-color: #ffffff;
-        border-radius: 50%; animation: spin-nativo 0.8s linear infinite;
+    .progress-nativo {
+        width: 160px; height: 4px; border-radius: 999px;
+        background: rgba(255, 255, 255, 0.25); overflow: hidden; position: relative;
     }
-    @keyframes spin-nativo { 100% { transform: rotate(360deg); } }
+    .progress-nativo-bar {
+        position: absolute; top: 0; left: 0; height: 100%; width: 40%;
+        background: #ffffff; border-radius: 999px;
+        animation: progress-nativo-slide 1.2s ease-in-out infinite;
+    }
+    @keyframes progress-nativo-slide {
+        0%   { left: -40%; }
+        100% { left: 100%; }
+    }
 </style>
-<div id="loader-nativo"><div class="spinner-nativo"></div></div>
+<div id="loader-nativo"><div class="progress-nativo"><div class="progress-nativo-bar"></div></div></div>
