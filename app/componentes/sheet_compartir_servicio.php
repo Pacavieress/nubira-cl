@@ -6,7 +6,7 @@
 <div id="sheet-compartir" class="hidden fixed inset-0 z-[110] flex items-end justify-center bg-gray-900/50 backdrop-blur-sm">
   <div id="sheet-card" class="bg-white w-full sm:max-w-[480px] rounded-t-3xl sm:rounded-3xl sm:mb-6 shadow-xl translate-y-full transition-transform duration-300">
     <div class="flex items-center justify-between px-5 pt-4 pb-2">
-      <h3 class="text-base font-bold text-gray-900">Compartir este servicio</h3>
+      <h3 class="text-base font-bold text-gray-900"><?= $es_propietario ? 'Comparte tu servicio' : 'Compartir este servicio' ?></h3>
       <button id="sheet-close" type="button" aria-label="Cerrar" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100"><?= icon('x-mark','w-5 h-5') ?></button>
     </div>
     <div class="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-1 space-y-2">

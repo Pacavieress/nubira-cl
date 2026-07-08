@@ -504,7 +504,7 @@ session_write_close();
                       <button type="button"
                               class="js-abrir-sheet-compartir hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200 text-sm font-bold transition-all shrink-0"
                               aria-label="Compartir" data-track-click="share:abrir_sheet">
-                          <?= icon('paper-airplane','w-4 h-4') ?> Compartir
+                          <?= icon('share-outline','w-4 h-4') ?> Compartir
                       </button>
                     </div>
 
@@ -654,6 +654,18 @@ function reproducirVideoTutor() {
     v.addEventListener('ended', function () { btn.style.display = 'flex'; });
 }());
 </script>
+<?php elseif ($es_propietario): ?>
+<div class="mt-6 pt-6 border-t border-gray-50">
+    <div class="border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-video text-gray-300 text-lg shrink-0"></i>
+            <span class="text-sm text-gray-500">Los servicios con video reciben más contactos</span>
+        </div>
+        <a href="/app/editar_servicio.php?id=<?= $id ?>#seccion-video" class="text-[11px] font-bold text-[#54A6D8] hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
+            <i class="fa-solid fa-pen-to-square mr-1"></i> Agregar video
+        </a>
+    </div>
+</div>
 <?php endif; ?>
 
                    <div class="mt-8 pt-8 border-t border-gray-50">
