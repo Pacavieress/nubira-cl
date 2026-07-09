@@ -506,6 +506,39 @@ if (!function_exists('nb_fingerprint_servicio')) {
     }
 }
 
+if (!function_exists('nb_version_imagen_servicio')) {
+    // Versión ligera para cache-busting de URL (?v=): mismo fingerprint que decide si el
+    // archivo en disco se regenera, pero con una query mínima (sin traer la fila completa
+    // ni generar nada). Cambia si y solo si algo visualmente relevante en la imagen cambió
+    // (precio, oferta, foto, categoría, institución, rating) — NO con visitas/contrataciones.
+    function nb_version_imagen_servicio(int $servicio_id): string {
+        global $conn;
+        if (!isset($conn) || !($conn instanceof mysqli) || $servicio_id <= 0) return '0';
+
+        $sql = "SELECT s.id, s.titulo, s.precio, s.precio_oferta, s.categoria, a.foto_perfil,
+                       COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
+                       COALESCE((SELECT ROUND(AVG(v.calificacion),1) FROM valoraciones v
+                                 WHERE v.servicio_id = s.id AND v.calificacion > 0
+                                   AND v.rol_evaluado = 'vendedor'), 0) AS rating_prom,
+                       (SELECT COUNT(*) FROM valoraciones v
+                        WHERE v.servicio_id = s.id AND v.calificacion > 0
+                          AND v.rol_evaluado = 'vendedor') AS rating_votos
+                FROM servicios s
+                LEFT JOIN alumnos a ON s.alumno_id = a.id
+                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+                WHERE s.id = ? LIMIT 1";
+        $st = $conn->prepare($sql);
+        if (!$st) return '0';
+        $st->bind_param('i', $servicio_id);
+        $st->execute();
+        $s = $st->get_result()->fetch_assoc();
+        $st->close();
+        if (!$s) return '0';
+
+        return nb_fingerprint_servicio($s);
+    }
+}
+
 if (!function_exists('nb_obtener_imagen_compartir')) {
     // Devuelve la RUTA FÍSICA del JPG (cache hit o recién generado), o '' si falla.
     function nb_obtener_imagen_compartir(int $servicio_id, string $formato): string {

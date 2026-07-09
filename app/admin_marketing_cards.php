@@ -31,6 +31,7 @@ if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
 // 3. CONEXIÓN Y HELPERS
 if (!isset($conn)) require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/seguridad_url.php'; // nubira_encriptar_id()
+require_once $app_dir . '/helpers/imagen_compartir.php'; // nb_version_imagen_servicio()
 
 // 4. FILTROS (GET, sin AJAX — panel de bajo tráfico, mismo criterio que admin_cuentas.php)
 $filtro_categoria   = trim($_GET['categoria'] ?? '');
@@ -89,7 +90,8 @@ $total_servicios = count($servicios);
 // 5. Preparar hash + URL de imagen por servicio (mismo endpoint que ya usa el sheet de compartir)
 foreach ($servicios as &$s) {
     $hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id((int)$s['id']) : (string)$s['id'];
-    $s['img_url'] = "/api/img/servicio/{$hash}/post.jpg";
+    $v = nb_version_imagen_servicio((int)$s['id']);
+    $s['img_url'] = "/api/img/servicio/{$hash}/post.jpg?v={$v}";
 }
 unset($s);
 
@@ -110,6 +112,7 @@ if ($resInst) { while ($r = $resInst->fetch_assoc()) $instituciones_disponibles[
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; }

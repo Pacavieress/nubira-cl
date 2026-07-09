@@ -2,6 +2,7 @@
 // Modal de compartir imagen (POST/HISTORY). Hereda $servicio, $id, $token_seguro de detalle_servicio.
 require_once __DIR__ . '/../helpers/nombre_publico.php';
 require_once __DIR__ . '/../helpers/link_corto.php';
+require_once __DIR__ . '/../helpers/imagen_compartir.php'; // nb_version_imagen_servicio()
 
 if (!function_exists('nb_title_institucion')) {
     // Title Case con conectores (de/la/del/...) en minúscula. "Tutor Particular" pasa intacto.
@@ -17,8 +18,9 @@ if (!function_exists('nb_title_institucion')) {
 
 $cmp_hash   = $token_seguro;
 $cmp_codigo = generar_link_corto((int)$id);                 // reusa el código existente
-$cmp_post   = "/api/img/servicio/{$cmp_hash}/post.jpg";
-$cmp_hist   = "/api/img/servicio/{$cmp_hash}/history.jpg";
+$cmp_v      = nb_version_imagen_servicio((int)$id);
+$cmp_post   = "/api/img/servicio/{$cmp_hash}/post.jpg?v={$cmp_v}";
+$cmp_hist   = "/api/img/servicio/{$cmp_hash}/history.jpg?v={$cmp_v}";
 
 $cmp_nombre = nombre_publico_tutor((string)($servicio['nombre_alumno'] ?? ''));
 $cmp_inst_raw = trim((string)($servicio['institucion_maestra'] ?? ''));
