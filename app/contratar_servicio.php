@@ -34,6 +34,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/helpers/institucion.php'; // institucion_tutor()
+require_once $app_dir . '/helpers/horarios.php';
 
 // 2. DATOS DE USUARIO Y SERVICIO
 $usuario_id = (int)$_SESSION['usuario_id'];
@@ -252,34 +253,10 @@ $page_title = "Confirmar Contrato";
     
     <?php
     // Procesar horarios del tutor (mismo formato que detalle_servicio.php)
-    $horarios_tutor = null;
-    $tiene_horarios = false;
-    $dias_disponibles = [];
-    $dia_proximo = null;
-
-    if (!empty($serv['horarios_json'])) {
-        $horarios_tutor = json_decode($serv['horarios_json'], true);
-        if (is_array($horarios_tutor)) {
-            $orden_dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-            foreach ($orden_dias as $dia) {
-                if (!empty($horarios_tutor[$dia]) && count($horarios_tutor[$dia]) > 0) {
-                    $dias_disponibles[$dia] = $horarios_tutor[$dia];
-                }
-            }
-            if (count($dias_disponibles) > 0) {
-                $tiene_horarios = true;
-                date_default_timezone_set('America/Santiago');
-                $hoy_index = (int)date('N') - 1;
-                for ($i = 0; $i < 7; $i++) {
-                    $check_dia = $orden_dias[($hoy_index + $i) % 7];
-                    if (isset($dias_disponibles[$check_dia])) {
-                        $dia_proximo = $check_dia;
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    $horarios_info    = parsear_horarios_servicio($serv['horarios_json'] ?? null);
+    $tiene_horarios   = $horarios_info['tiene_horarios'];
+    $dias_disponibles = $horarios_info['dias'];
+    $dia_proximo      = $horarios_info['dia_proximo'];
     ?>
 
     <?php if (!$tiene_horarios): ?>
