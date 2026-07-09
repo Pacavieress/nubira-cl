@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v13');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v14');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -84,13 +84,18 @@ if (!function_exists('nb_dibujar_precio_centrado')) {
     function nb_dibujar_precio_centrado($img, array $s, string $fBold, string $fSemi, string $fReg, float $szBig, float $szCLP, int $W, int $yBase, int $cTxt, int $cTxt2): void {
         $of = (float)($s['precio_oferta'] ?? 0);
         $pr = (float)($s['precio'] ?? 0);
+        // Mismo criterio que "Precios de última hora" en vitrina.php: is_subvencionado=1
+        // y oferta_termino sin vencer (NULL o >= hoy). Evita el badge OFERTA en ofertas
+        // ya expiradas que no se limpiaron manualmente en admin_ofertas.php.
+        $ofertaVigente = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
+            && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'));
 
         if ($of <= 0 && $pr <= 0) {
             nb_texto_centrado($img, $fBold, $szBig, $cTxt, 'Gratis', $W, $yBase);
             return;
         }
 
-        if ($of > 0) {
+        if ($of > 0 && $ofertaVigente) {
             // Badge OFERTA verde centrado, 115px encima del baseline del precio
             $badge   = 'OFERTA';
             $bw      = nb_ancho_texto($fBold, 22, $badge);
@@ -389,8 +394,12 @@ if (!function_exists('nb_precio_history')) {
         $of = (float)($s['precio_oferta'] ?? 0);
         $pr = (float)($s['precio'] ?? 0);
         $szBig = 52; $szCLP = 36;
+        // Mismo criterio que "Precios de última hora" en vitrina.php: is_subvencionado=1
+        // y oferta_termino sin vencer (NULL o >= hoy).
+        $ofertaVigente = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
+            && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'));
 
-        if ($of > 0) {
+        if ($of > 0 && $ofertaVigente) {
             // Badge OFERTA (pill azul + texto blanco) encima del precio
             $badge = 'OFERTA';
             $bw  = nb_ancho_texto($fBold, 22, $badge);
