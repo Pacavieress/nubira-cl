@@ -58,11 +58,17 @@
         <button type="button" class="carrusel-mkt-up w-6 h-5 flex items-center justify-center text-gray-400 hover:text-[#54A6D8]" title="Subir" aria-label="Subir"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
         <button type="button" class="carrusel-mkt-down w-6 h-5 flex items-center justify-center text-gray-400 hover:text-[#54A6D8]" title="Bajar" aria-label="Bajar"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
       </div>
-      <a href="${item.url}" download="nubira-${item.id}-post.jpg"
-         class="shrink-0 w-9 h-9 rounded-full bg-white border border-gray-200 text-[#54A6D8] hover:bg-blue-50 flex items-center justify-center transition-colors"
-         title="Descargar" aria-label="Descargar">
-        <i class="fa-solid fa-download text-xs"></i>
-      </a>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" class="carrusel-mkt-compartir w-9 h-9 rounded-full bg-white border border-gray-200 text-[#54A6D8] hover:bg-blue-50 flex items-center justify-center transition-colors"
+                title="Compartir" aria-label="Compartir">
+          <i class="fa-solid fa-share-nodes text-xs"></i>
+        </button>
+        <a href="${item.url}" download="nubira-${item.id}-post.jpg"
+           class="w-9 h-9 rounded-full bg-white border border-gray-200 text-[#54A6D8] hover:bg-blue-50 flex items-center justify-center transition-colors"
+           title="Descargar" aria-label="Descargar">
+          <i class="fa-solid fa-download text-xs"></i>
+        </a>
+      </div>
     `;
     return li;
   }
@@ -108,6 +114,46 @@
     } else if (btnDown && li.nextElementSibling) {
       lista.insertBefore(li.nextElementSibling, li);
     }
+  });
+
+  // Compartir: intercepta con fetch() + Blob (mismo origen, sin problema de CORS, reutiliza
+  // la imagen ya cacheada por img_servicio.php) para armar el File que exige navigator.share().
+  // Si no es compatible (Firefox, desktop sin soporte de archivos, error de red, etc.) cae
+  // automáticamente a la descarga, sin mostrar error al admin. Si el admin cancela el selector
+  // nativo (AbortError), no hace nada.
+  lista.addEventListener('click', async (e) => {
+    const btnCompartir = e.target.closest('.carrusel-mkt-compartir');
+    if (!btnCompartir) return;
+
+    const li = btnCompartir.closest('li');
+    const linkDescarga = li.querySelector('a[download]');
+    const urlImg = li.dataset.imgUrl;
+    const tituloImg = li.dataset.titulo;
+    const filename = linkDescarga.getAttribute('download');
+
+    function descargarFallback() {
+      linkDescarga.click();
+    }
+
+    if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
+      descargarFallback();
+      return;
+    }
+
+    try {
+      const resp = await fetch(urlImg);
+      const blob = await resp.blob();
+      const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: tituloImg });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+
+    descargarFallback();
   });
 
   // Descargar todas: dispara cada link de descarga en secuencia con un pequeño delay
