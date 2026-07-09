@@ -195,9 +195,9 @@ $page_title = "Confirmar Contrato";
 <div class="hidden md:block">
     <?php if(file_exists($app_dir . '/componentes/header.php')) require_once $app_dir . '/componentes/header.php'; ?>
 </div>
-<?php if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '/componentes/sidebar.php'; ?>
+<!-- [NUBIRA 2.0] Sidebar de escritorio eliminado intencionalmente para extender el "Modo Túnel" del Checkout también a desktop -->
 
-<main class="pt-4 md:pt-20 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8">
+<main class="pt-4 md:pt-20 pb-32 md:pb-16 px-4 md:px-8">
     <!-- [NUBIRA 2.0] Topbar Nativo Móvil (Checkout Mode) -->
     <div class="md:hidden flex items-center justify-between mb-6 mt-1 max-w-[1000px] mx-auto">
         <button type="button" 
@@ -414,7 +414,13 @@ $page_title = "Confirmar Contrato";
                                     <span>Categoría</span>
                                     <span class="font-medium text-gray-900"><?= htmlspecialchars($serv['categoria'], ENT_QUOTES, 'UTF-8') ?></span>
                                 </div>
-                                
+                                <?php if ($tiene_horarios): ?>
+                                <div id="resumen-fecha-row" class="hidden justify-between items-center text-sm text-gray-600 mb-2">
+                                    <span>Fecha y hora</span>
+                                    <span id="resumen-fecha-texto" class="font-medium text-gray-900 text-right"></span>
+                                </div>
+                                <?php endif; ?>
+
                                 <?php if ($cupon_id): ?>
                                     <div class="space-y-2 mb-6">
                                         <div class="flex justify-between items-center text-sm text-gray-500 mt-4">
@@ -524,6 +530,8 @@ if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_d
         const btnSubmit = document.getElementById('btn-submit');
         const slotConf = document.getElementById('slot-confirmado');
         const slotConfTxt = document.getElementById('slot-confirmado-texto');
+        const resumenFechaRow = document.getElementById('resumen-fecha-row');
+        const resumenFechaTexto = document.getElementById('resumen-fecha-texto');
 
         const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         const diasMap = { 'Lunes':1,'Martes':2,'Miércoles':3,'Jueves':4,'Viernes':5,'Sábado':6,'Domingo':0 };
@@ -667,6 +675,11 @@ if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_d
             const txt = `${diasL[fObj.getDay()]} ${fObj.getDate()} de ${mesesL[fObj.getMonth()]} a las ${btn.dataset.hora}`;
             slotConfTxt.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
             slotConf.classList.remove('hidden');
+            if (resumenFechaTexto) resumenFechaTexto.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
+            if (resumenFechaRow) {
+                resumenFechaRow.classList.remove('hidden');
+                resumenFechaRow.classList.add('flex');
+            }
         }
     })();
 
