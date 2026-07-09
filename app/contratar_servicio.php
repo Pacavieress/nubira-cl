@@ -34,6 +34,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/helpers/institucion.php'; // institucion_tutor()
+require_once $app_dir . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 require_once $app_dir . '/helpers/horarios.php';
 
 // 2. DATOS DE USUARIO Y SERVICIO
@@ -43,10 +44,11 @@ $servicio_id = (int)($_GET['servicio_id'] ?? 0);
 if ($servicio_id <= 0) { header("Location: /vitrina"); exit; }
 
 // Consulta optimizada [INYECCIÓN NUBIRA SUBSIDIOS]
-$stmt = $conn->prepare("SELECT s.id, s.titulo, s.alumno_id, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.modalidad, s.categoria, s.imagen, s.horarios_json,
-                        a.nombre as nombre_vendedor, a.institucion 
-                        FROM servicios s 
-                        JOIN alumnos a ON s.alumno_id = a.id 
+$stmt = $conn->prepare("SELECT s.id, s.titulo, s.alumno_id, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.modalidad, s.categoria, s.imagen, s.imagen_banco_id, s.horarios_json,
+                        a.nombre as nombre_vendedor, a.institucion, bi.archivo AS banco_archivo
+                        FROM servicios s
+                        JOIN alumnos a ON s.alumno_id = a.id
+                        LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                         WHERE s.id = ? AND s.estado = 'aprobado' LIMIT 1");
 $stmt->bind_param("i", $servicio_id);
 $stmt->execute();
@@ -142,12 +144,8 @@ if (!empty($codigo_beca) && $montoInicial > 0) {
     }
 }
 
-// Imagen con fallback corregido
-$img_nombre = basename($serv['imagen'] ?? '');
-$ruta_img = '/upload/servicios/' . $img_nombre;
-$imgSrc = (file_exists($_SERVER['DOCUMENT_ROOT'] . $ruta_img) && !empty($img_nombre)) 
-          ? $ruta_img 
-          : '/upload/servicios/default_clases.webp'; 
+// [BANCO] portada vía helper unificado (banco → legacy → placeholder), mismo mecanismo que detalle_servicio.php
+$imgSrc = url_portada($serv);
 
 // CSRF Token
 if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
