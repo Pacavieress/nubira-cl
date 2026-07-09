@@ -253,6 +253,7 @@ RewriteRule ^admin/avisos/?$            app/admin_avisos.php [L,QSA]
 RewriteRule ^admin/campanas$           app/admin_campanas.php [L,QSA]
 RewriteRule ^admin/leads-gmail$        app/admin_leads_gmail.php [L,QSA]
 RewriteRule ^admin/despertar-dormidos$ app/enviar_despertar_dormidos.php [L,QSA]
+RewriteRule ^admin/marketing-cards$    app/admin_marketing_cards.php [L,QSA]
 
 
 
