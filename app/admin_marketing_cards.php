@@ -266,6 +266,7 @@ require_once $app_dir . '/componentes/modal_carrusel_marketing.php';
     const barCount   = document.getElementById('mkt-bar-count');
     const barPlural  = document.getElementById('mkt-bar-plural');
     const btnCarrusel = document.getElementById('mkt-btn-carrusel');
+    const navBottom  = document.getElementById('nav-bottom');
 
     function syncBar() {
         const marcados = rowChecks().filter(c => c.checked);
@@ -273,6 +274,10 @@ require_once $app_dir . '/componentes/modal_carrusel_marketing.php';
         barCount.textContent = n;
         barPlural.textContent = n === 1 ? 'servicio' : 'servicios';
         actionBar.classList.toggle('hidden', n === 0);
+        // Evita que nav_bottom (z-[60]) tape la barra de selección (z-40) en móvil —
+        // ambas son fixed bottom-0 de ancho completo y compiten por el mismo espacio.
+        // Se oculta solo mientras hay selección activa; navegación normal intacta el resto del tiempo.
+        if (navBottom) navBottom.classList.toggle('hidden', n > 0);
     }
 
     if (checkAll) {
