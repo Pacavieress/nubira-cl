@@ -38,6 +38,14 @@ LOGIN EXITOSO
       └─ verificacion_estado = 'aprobado' → /vitrina normal
       └─ verificacion_estado = 'rechazado' → página de aviso
 
+## Pendiente: Contratación de múltiples horas consecutivas con precio proporcional
+
+Nueva funcionalidad: contratación de múltiples horas consecutivas con precio proporcional (precio pasa a ser precio/hora). Investigación de alcance completa hecha el 09/07/2026 — toca: contratos.duracion_horas (columna nueva), contratar_servicio.php (selector de duración), crear_contrato.php (extender lock anti-race a N bloques consecutivos, todo-o-nada), iniciar_pago_servicio.php (corregir monto fijo en preapproval de MercadoPago — usar precio dinámico), UI de precio en tarjetas/detalle (aclarar "/hora"). Requiere sesión dedicada, no es un fix rápido.
+
+## Pendiente: Fase 2 de admin_marketing_cards.php — cards de novedades/anuncios de plataforma
+
+Fase 2 de admin_marketing_cards.php: agregar generador de cards de NOVEDADES/anuncios de plataforma (no solo servicios existentes) — nuevo generador de imagen tipo GD con plantilla propia (título, ícono, branding), a diferencia de img_servicio.php que dibuja datos de un servicio real. Fuente del contenido: admin redacta manualmente el texto de la novedad (Claude Code no tiene memoria propia entre sesiones; puede ayudar a redactar leyendo el historial de commits recientes o este mismo CLAUDE.md si se le pide explícitamente). Mantener los mismos 2 formatos que ya existen (POST 1:1 e HISTORY 9:16) — cubren Instagram Feed/Facebook (post) e Instagram Story/TikTok (history) sin necesitar un formato por cada red social, que multiplicaría el trabajo sin agregar valor proporcional. Diseñado el 09/07/2026, tras completar la v1 de Marketing/Cards para servicios.
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
