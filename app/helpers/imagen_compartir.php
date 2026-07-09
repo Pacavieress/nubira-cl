@@ -47,7 +47,7 @@ if (!function_exists('nb_wrap_texto')) {
     // Word-wrap a $maxLineas; la última línea se trunca con … si sobra.
     function nb_wrap_texto(string $font, float $size, string $txt, int $maxW, int $maxLineas): array {
         $palabras = preg_split('/\s+/', trim($txt));
-        $lineas = []; $actual = '';
+        $lineas = []; $actual = ''; $truncado = false;
         foreach ($palabras as $p) {
             $prueba = $actual === '' ? $p : "$actual $p";
             if (nb_ancho_texto($font, $size, $prueba) <= $maxW) {
@@ -55,13 +55,27 @@ if (!function_exists('nb_wrap_texto')) {
             } else {
                 if ($actual !== '') $lineas[] = $actual;
                 $actual = $p;
-                if (count($lineas) === $maxLineas) break;
+                if (count($lineas) === $maxLineas) { $truncado = true; break; }
             }
         }
-        if ($actual !== '' && count($lineas) < $maxLineas) $lineas[] = $actual;
+        if ($actual !== '' && count($lineas) < $maxLineas) {
+            $lineas[] = $actual;
+        } elseif ($actual !== '') {
+            // Quedó texto sin ubicar y ya no hay líneas disponibles: se pierde contenido real.
+            $truncado = true;
+        }
         if (count($lineas) >= $maxLineas) {
             $lineas = array_slice($lineas, 0, $maxLineas);
-            $lineas[$maxLineas - 1] = nb_truncar_una_linea($font, $size, $lineas[$maxLineas - 1], $maxW);
+        }
+        // Solo forzamos "…" cuando de verdad se perdió contenido (antes, si la última línea
+        // ya entraba en $maxW, nb_truncar_una_linea() la devolvía intacta sin avisar del corte).
+        if ($truncado && !empty($lineas)) {
+            $i = count($lineas) - 1;
+            $base = rtrim($lineas[$i]);
+            while ($base !== '' && nb_ancho_texto($font, $size, $base . '…') > $maxW) {
+                $base = mb_substr($base, 0, mb_strlen($base, 'UTF-8') - 1, 'UTF-8');
+            }
+            $lineas[$i] = $base . '…';
         }
         return $lineas;
     }
@@ -270,6 +284,23 @@ if (!function_exists('nb_dibujar_avatar')) {
     }
 }
 
+/* ---------- Paleta de marca (compartida entre todos los generadores) ---------- */
+
+if (!function_exists('nb_paleta_marca')) {
+    // Aloca los 5 colores de marca una sola vez por $img. Fondo #F0F6FA, acento #54A6D8,
+    // texto #1a1a1a, texto secundario #6B7280, blanco. Reutilizado por servicios y novedades
+    // para garantizar la misma identidad visual sin duplicar los imagecolorallocate() en cada plantilla.
+    function nb_paleta_marca($img): array {
+        return [
+            'bg'     => imagecolorallocate($img, 240, 246, 250),
+            'acento' => imagecolorallocate($img, 84, 166, 216),
+            'txt'    => imagecolorallocate($img, 26, 26, 26),
+            'txt2'   => imagecolorallocate($img, 107, 114, 128),
+            'blanco' => imagecolorallocate($img, 255, 255, 255),
+        ];
+    }
+}
+
 /* ---------- Generador POST 1080x1080 ---------- */
 
 if (!function_exists('nb_generar_imagen_post')) {
@@ -281,11 +312,8 @@ if (!function_exists('nb_generar_imagen_post')) {
         foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
 
         $img = imagecreatetruecolor($W, $H);
-        $cBg     = imagecolorallocate($img, 240, 246, 250);
-        $cAcento = imagecolorallocate($img, 84, 166, 216);
-        $cTxt    = imagecolorallocate($img, 26, 26, 26);
-        $cTxt2   = imagecolorallocate($img, 107, 114, 128);
-        $cBlanco = imagecolorallocate($img, 255, 255, 255);
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2']; $cBlanco = $pal['blanco'];
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
         // Avatar — fotoTop=80: ring arranca en y=76 (≥60 zona segura).
@@ -445,11 +473,8 @@ if (!function_exists('nb_generar_imagen_history')) {
         foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
 
         $img = imagecreatetruecolor($W, $H);
-        $cBg     = imagecolorallocate($img, 240, 246, 250); // #F0F6FA fondo (igual que POST)
-        $cAzul   = imagecolorallocate($img, 84, 166, 216);   // #54A6D8 acento
-        $cBlanco = imagecolorallocate($img, 255, 255, 255);
-        $cTxt    = imagecolorallocate($img, 26, 26, 26);
-        $cTxt2   = imagecolorallocate($img, 107, 114, 128);
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAzul = $pal['acento']; $cBlanco = $pal['blanco']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2'];
         $cAcento = $cAzul;
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
