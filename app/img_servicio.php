@@ -13,6 +13,8 @@ require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/seguridad_url.php';
 require_once __DIR__ . '/helpers/imagen_compartir.php';
 
+if (session_status() === PHP_SESSION_NONE) session_start();
+
 ini_set('display_errors', '0'); // que un warning no corrompa el binario
 
 function nb_servir_placeholder(int $code = 404): void {
@@ -20,7 +22,18 @@ function nb_servir_placeholder(int $code = 404): void {
     header('Content-Type: image/jpeg');
     header('Cache-Control: no-store');
     $ph = ($_SERVER['DOCUMENT_ROOT'] ?? dirname(__DIR__)) . '/upload/compartir/placeholder.jpg';
-    if (is_file($ph)) readfile($ph);
+    if (is_file($ph)) {
+        readfile($ph);
+    } else {
+        // Fallback en memoria si el estático no está en disco (ej. no se subió en un
+        // deploy manual a Hostinger) — nunca responder con body vacío bajo
+        // Content-Type: image/jpeg, eso rompe el <img> silenciosamente (recuadro gris).
+        $img = imagecreatetruecolor(1080, 1080);
+        $bg = imagecolorallocate($img, 240, 246, 250);
+        imagefilledrectangle($img, 0, 0, 1080, 1080, $bg);
+        imagejpeg($img, null, 85);
+        imagedestroy($img);
+    }
     exit;
 }
 
@@ -28,6 +41,13 @@ function nb_servir_placeholder(int $code = 404): void {
 // Sin lista de User-Agents (a propósito, ver comentario de arriba). Tabla auto-migrada
 // (mismo patrón que video_thumb_path): CREATE TABLE IF NOT EXISTS embebido acá.
 function check_img_servicio_rate_limit(mysqli $conn): void {
+    // Excepción: admin autenticado no cuenta contra el rate-limit. Sin esto,
+    // /admin/marketing-cards se autobloquea solo — carga N imágenes de golpe desde
+    // la misma IP del admin, y el límite (pensado para tráfico público/scraping)
+    // se dispara con la propia grilla del panel. El límite sigue igual para todo
+    // el tráfico anónimo (incluidos los crawlers de preview de WhatsApp/Telegram).
+    if (($_SESSION['rol'] ?? '') === 'admin') return;
+
     $conn->query("CREATE TABLE IF NOT EXISTS img_servicio_rate_limit (
         ip VARCHAR(45) NOT NULL PRIMARY KEY,
         contador INT NOT NULL DEFAULT 1,
