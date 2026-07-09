@@ -530,6 +530,174 @@ if (!function_exists('nb_generar_imagen_history')) {
     }
 }
 
+/* ============================================================
+   PASO 4 — NOVEDAD (Fase 2 Marketing/Cards): POST + HISTORY
+   Plantilla genérica (título + cuerpo), sin datos de servicio real.
+   Sin ícono/emoji: GD+Inter no puede dibujar glifos de emoji reales
+   (probado — 3 emojis distintos generan el mismo glyph .notdef).
+   ============================================================ */
+
+if (!function_exists('nb_generar_imagen_novedad_post')) {
+    function nb_generar_imagen_novedad_post(array $n, string $output_path): bool {
+        $W = 1080; $H = 1080;
+        $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
+        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
+        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
+        foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
+
+        $img = imagecreatetruecolor($W, $H);
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2'];
+        imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
+
+        $padX = 100; $maxW = $W - ($padX * 2); // 880
+        $szTit = 48; $lhTit = 60;
+        $szCuerpo = 28; $lhCuerpo = 42;
+        $szLogo = 28;
+        $gapTitCuerpo = 40; $gapCuerpoLogo = 70;
+
+        $titulo = trim((string)($n['titulo'] ?? ''));
+        $lineasTit = nb_wrap_texto($fBold, $szTit, $titulo, $maxW, 2);
+
+        $cuerpo = trim((string)($n['cuerpo'] ?? ''));
+        $lineasCuerpo = nb_wrap_texto($fSemi, $szCuerpo, $cuerpo, $maxW, 5);
+
+        // Sin avatar: título + cuerpo + logo se centran como un solo bloque en el canvas
+        // completo, según cuántas líneas tenga cada uno — nada de $yTit fijo.
+        $altoTit = count($lineasTit) * $lhTit;
+        $altoCuerpo = count($lineasCuerpo) * $lhCuerpo;
+        $altoBloque = $altoTit + $gapTitCuerpo + $altoCuerpo + $gapCuerpoLogo + $szLogo;
+        $yBloque = (int)(($H - $altoBloque) / 2);
+
+        $yTit = $yBloque + (int)($szTit * 0.75);
+        foreach ($lineasTit as $i => $ln) {
+            nb_texto_centrado($img, $fBold, $szTit, $cTxt, $ln, $W, $yTit + $i * $lhTit);
+        }
+
+        $yCuerpo = $yTit + (count($lineasTit) - 1) * $lhTit + $gapTitCuerpo;
+        foreach ($lineasCuerpo as $i => $ln) {
+            nb_texto_centrado($img, $fSemi, $szCuerpo, $cTxt2, $ln, $W, $yCuerpo + $i * $lhCuerpo);
+        }
+
+        $yLogo = $yCuerpo + (count($lineasCuerpo) - 1) * $lhCuerpo + $gapCuerpoLogo;
+        nb_texto_derecha($img, $fBold, $szLogo, $cAcento, 'Nubira.cl', (int)($W * 0.75), $yLogo);
+
+        $ok = imagejpeg($img, $output_path, 90);
+        imagedestroy($img);
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('nb_generar_imagen_novedad_history')) {
+    function nb_generar_imagen_novedad_history(array $n, string $output_path): bool {
+        $W = 1080; $H = 1920;
+        $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
+        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
+        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
+        foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
+
+        $img = imagecreatetruecolor($W, $H);
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAzul = $pal['acento']; $cBlanco = $pal['blanco']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2'];
+        imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
+
+        // Mismo card "sticker" + marco interno que nb_generar_imagen_history(), para
+        // mantener identidad visual entre novedades y servicios.
+        $cardX1 = 90; $cardX2 = 990; $cardY1 = 460; $cardY2 = 1460; $cardR = 40;
+        $cBorde = imagecolorallocate($img, 229, 231, 235);
+        nb_rect_redondeado($img, $cardX1, $cardY1, $cardX2, $cardY2, $cardR, $cBorde);
+        nb_rect_redondeado($img, $cardX1 + 2, $cardY1 + 2, $cardX2 - 2, $cardY2 - 2, $cardR - 2, $cBlanco);
+
+        $inX1 = 130; $inX2 = 950; $inY1 = 500; $inY2 = 1300; $inR = 30;
+        nb_rect_redondeado($img, $inX1, $inY1, $inX2, $inY2, $inR, $cBorde);
+        nb_rect_redondeado($img, $inX1 + 2, $inY1 + 2, $inX2 - 2, $inY2 - 2, $inR - 2, $cBlanco);
+
+        $maxTxt = ($inX2 - 40) - ($inX1 + 40); // 740
+        $szTit = 44; $lhTit = 54;
+        $szCuerpo = 28; $lhCuerpo = 40;
+        $gapTitCuerpo = 50;
+
+        $titulo = trim((string)($n['titulo'] ?? ''));
+        $lineasTit = nb_wrap_texto($fBold, $szTit, $titulo, $maxTxt, 2);
+
+        $cuerpo = trim((string)($n['cuerpo'] ?? ''));
+        $lineasCuerpo = nb_wrap_texto($fSemi, $szCuerpo, $cuerpo, $maxTxt, 6);
+
+        // Sin avatar: título + cuerpo se centran DENTRO del marco interno (inY1..inY2),
+        // no en un $yTit=720 fijo — ese valor era el hueco que en servicios ocupan
+        // avatar/nombre/institución/rating antes del título.
+        $altoTit = count($lineasTit) * $lhTit;
+        $altoCuerpo = count($lineasCuerpo) * $lhCuerpo;
+        $altoBloque = $altoTit + $gapTitCuerpo + $altoCuerpo;
+        $yBloque = $inY1 + (int)((($inY2 - $inY1) - $altoBloque) / 2);
+
+        $yTit = $yBloque + (int)($szTit * 0.75);
+        foreach ($lineasTit as $i => $ln) {
+            nb_texto_centrado($img, $fBold, $szTit, $cTxt, $ln, $W, $yTit + $i * $lhTit);
+        }
+
+        $yCuerpo = $yTit + (count($lineasTit) - 1) * $lhTit + $gapTitCuerpo;
+        foreach ($lineasCuerpo as $i => $ln) {
+            nb_texto_centrado($img, $fSemi, $szCuerpo, $cTxt2, $ln, $W, $yCuerpo + $i * $lhCuerpo);
+        }
+
+        // Nubira.cl fuera del marco interno, abajo-izquierda dentro de la card (igual que servicio HISTORY)
+        nb_texto_izquierda($img, $fBold, 28, $cAzul, 'Nubira.cl', $cardX1 + 50, $cardY2 - 60);
+
+        $ok = imagejpeg($img, $output_path, 90);
+        imagedestroy($img);
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('nb_fingerprint_novedad')) {
+    function nb_fingerprint_novedad(array $n): string {
+        $base = NB_IMG_VERSION . '|' . ($n['id'] ?? '') . '|' . ($n['titulo'] ?? '') . '|' . ($n['cuerpo'] ?? '');
+        return substr(md5($base), 0, 10);
+    }
+}
+
+if (!function_exists('nb_novedades_dir')) {
+    function nb_novedades_dir(): string {
+        $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
+        if ($root === '') $root = dirname(__DIR__, 2);
+        return rtrim($root, '/\\') . '/upload/novedades/';
+    }
+}
+
+if (!function_exists('nb_obtener_imagen_novedad')) {
+    // Devuelve la RUTA FÍSICA del JPG (cache hit o recién generado), o '' si falla/no existe.
+    function nb_obtener_imagen_novedad(int $novedad_id, string $formato): string {
+        global $conn;
+        $formato = ($formato === 'history') ? 'history' : 'post';
+        if (!isset($conn) || !($conn instanceof mysqli) || $novedad_id <= 0) return '';
+
+        $st = $conn->prepare("SELECT id, titulo, cuerpo FROM novedades WHERE id = ? LIMIT 1");
+        if (!$st) return '';
+        $st->bind_param('i', $novedad_id);
+        $st->execute();
+        $n = $st->get_result()->fetch_assoc();
+        $st->close();
+        if (!$n) return '';
+
+        require_once __DIR__ . '/../seguridad_url.php';
+        $hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($novedad_id) : (string)$novedad_id;
+        $fp   = nb_fingerprint_novedad($n);
+
+        $dir = nb_novedades_dir();
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $file = $dir . $hash . '_' . $formato . '_' . $fp . '.jpg';
+
+        if (is_file($file)) return $file; // cache hit
+
+        $ok = ($formato === 'history')
+            ? nb_generar_imagen_novedad_history($n, $file)
+            : nb_generar_imagen_novedad_post($n, $file);
+
+        return $ok && is_file($file) ? $file : '';
+    }
+}
+
 if (!function_exists('nb_fingerprint_servicio')) {
     function nb_fingerprint_servicio(array $s): string {
         $base = NB_IMG_VERSION . '|' . ($s['id'] ?? '') . '|' . ($s['titulo'] ?? '') . '|' . ($s['precio'] ?? '')
