@@ -35,7 +35,7 @@ $ov_cls_titulo  = ($ov_size === 'sm') ? 'text-sm md:text-base'   : 'text-base md
 <div class="absolute bottom-3 left-3 z-10 pr-2 flex items-center gap-2 text-white <?= $ov_cls_titulo ?> font-bold" style="max-width:80%; text-shadow:0 1px 3px rgba(0,0,0,0.6);">
         <img src="<?= htmlspecialchars($ov_foto) ?>"
              alt="<?= htmlspecialchars($ov_nombre) ?>"
-             class="w-7 h-7 rounded-full object-cover ring-1 ring-white/30 avatar-tutor"
+             class="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-1 ring-white/30 avatar-tutor"
              loading="lazy"
              onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($ov_nombre) ?>&background=54A6D8&color=fff&size=128'">
         <span class="truncate min-w-0"><?= htmlspecialchars($ov_nombre) ?></span>
