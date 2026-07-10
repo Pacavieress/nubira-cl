@@ -218,8 +218,8 @@ try {
                INNER JOIN alumnos a ON s.alumno_id = a.id
                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-               WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) ";
-               
+               WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0 ";
+
  // [NUBIRA 2.0] Título fijo. La afinidad sigue activa en el ORDER BY (sin frases variables en UI).
 $titulo_servicios = "Tutorías recomendadas";
 
@@ -259,7 +259,7 @@ try {
                    INNER JOIN alumnos a ON s.alumno_id = a.id
                    LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                    LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL)
+WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
                    AND s.id NOT IN ($placeholders_nuevos)
                    ORDER BY {$orden_institucion_sql} s.id DESC LIMIT 8";
     $stmt_nuevos = $conn->prepare($sql_nuevos);
@@ -287,6 +287,7 @@ try {
                         FROM alumnos a
                         WHERE EXISTS (SELECT 1 FROM servicios s
                                       WHERE s.alumno_id = a.id AND s.estado = 'aprobado' AND s.visible = 1)
+                          AND a.bloqueado = 0
                           AND (SELECT AVG(rt.minutos_respuesta)
                                FROM respuestas_tutor rt
                                WHERE rt.tutor_id = a.id
@@ -312,7 +313,7 @@ try {
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                        WHERE s.estado = 'aprobado' AND s.visible = 1
+                        WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0
                           AND s.id NOT IN ($placeholders_rapidos)
                         HAVING tiempo_resp_calculado IS NOT NULL AND tiempo_resp_calculado < 60
                         ORDER BY tiempo_resp_calculado ASC, RAND($seed)
@@ -349,7 +350,7 @@ try {
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                        WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL)
+                        WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
                           AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ?)
                           AND s.id NOT IN ($placeholders_paes_cl)
                         ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 12";
@@ -465,7 +466,7 @@ try {
                     INNER JOIN alumnos a ON s.alumno_id = a.id
                     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                     LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                    WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1
+                    WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1 AND a.bloqueado = 0
                       AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
                       AND s.id NOT IN ($placeholders_ofertas)
                     ORDER BY (s.cupos_oferta > 0) DESC, RAND($seed) LIMIT 12";
@@ -496,7 +497,7 @@ try {
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                        WHERE s.estado = 'aprobado' AND s.id NOT IN ($placeholders)
+                        WHERE s.estado = 'aprobado' AND a.bloqueado = 0 AND s.id NOT IN ($placeholders)
                         ORDER BY s.id ASC LIMIT ?";
         $stmt_relleno = $conn->prepare($sql_relleno);
         if ($stmt_relleno) {
