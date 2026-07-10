@@ -244,7 +244,7 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
             LEFT JOIN alumnos a ON s.alumno_id = a.id
             LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-            WHERE s.estado='aprobado' AND ($where_s) $sql_mod_s
+            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s) $sql_mod_s
             ORDER BY $order_sql_servicios LIMIT 20");
             
     if ($stmtS) {
@@ -262,7 +262,7 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
             FROM apuntes ap 
             LEFT JOIN alumnos a ON ap.id_alumno = a.id
             LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-            WHERE ap.publico=1 AND ($where_a) 
+            WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a)
             ORDER BY $order_sql_apuntes LIMIT 20");
             
 if ($stmtA) {
