@@ -73,7 +73,7 @@ if (!empty($ids_servicios)) {
         FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-        WHERE s.id IN ($ids_in)
+        WHERE s.id IN ($ids_in) AND s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
     ");
     if($res) while ($r = $res->fetch_assoc()) $data_servicios[$r['id']] = $r;
 }
@@ -85,7 +85,7 @@ if (!empty($ids_apuntes)) {
                a.nombre as tutor_nombre, a.foto_perfil
         FROM apuntes ap
         LEFT JOIN alumnos a ON ap.id_alumno = a.id
-        WHERE ap.id IN ($ids_in)
+        WHERE ap.id IN ($ids_in) AND ap.estado = 'aprobado' AND ap.visible = 1 AND a.bloqueado = 0
     ");
     if($res) while ($r = $res->fetch_assoc()) $data_apuntes[$r['id']] = $r;
 }
