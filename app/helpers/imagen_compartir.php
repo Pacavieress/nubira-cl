@@ -46,7 +46,28 @@ if (!function_exists('nb_truncar_una_linea')) {
 if (!function_exists('nb_wrap_texto')) {
     // Word-wrap a $maxLineas; la última línea se trunca con … si sobra.
     function nb_wrap_texto(string $font, float $size, string $txt, int $maxW, int $maxLineas): array {
-        $palabras = preg_split('/\s+/', trim($txt));
+        $crudo = preg_split('/\s+/', trim($txt));
+        // Fallback: una "palabra" sin espacios más ancha que $maxW se corta por caracteres
+        // (sin guion) para que nunca se desborde del margen, sin importar el contenido.
+        $palabras = [];
+        foreach ($crudo as $p) {
+            if ($p === '') continue;
+            if (nb_ancho_texto($font, $size, $p) <= $maxW) {
+                $palabras[] = $p;
+                continue;
+            }
+            $trozo = '';
+            foreach (mb_str_split($p, 1, 'UTF-8') as $ch) {
+                $prueba = $trozo . $ch;
+                if ($trozo !== '' && nb_ancho_texto($font, $size, $prueba) > $maxW) {
+                    $palabras[] = $trozo;
+                    $trozo = $ch;
+                } else {
+                    $trozo = $prueba;
+                }
+            }
+            if ($trozo !== '') $palabras[] = $trozo;
+        }
         $lineas = []; $actual = ''; $truncado = false;
         foreach ($palabras as $p) {
             $prueba = $actual === '' ? $p : "$actual $p";
@@ -553,8 +574,7 @@ if (!function_exists('nb_generar_imagen_novedad_post')) {
         $padX = 100; $maxW = $W - ($padX * 2); // 880
         $szTit = 48; $lhTit = 60;
         $szCuerpo = 28; $lhCuerpo = 42;
-        $szLogo = 28;
-        $gapTitCuerpo = 40; $gapCuerpoLogo = 70;
+        $gapTitCuerpo = 40;
 
         $titulo = trim((string)($n['titulo'] ?? ''));
         $lineasTit = nb_wrap_texto($fBold, $szTit, $titulo, $maxW, 2);
@@ -562,12 +582,22 @@ if (!function_exists('nb_generar_imagen_novedad_post')) {
         $cuerpo = trim((string)($n['cuerpo'] ?? ''));
         $lineasCuerpo = nb_wrap_texto($fSemi, $szCuerpo, $cuerpo, $maxW, 5);
 
-        // Sin avatar: título + cuerpo + logo se centran como un solo bloque en el canvas
-        // completo, según cuántas líneas tenga cada uno — nada de $yTit fijo.
+        // Sin avatar: título + cuerpo se centran como bloque dentro del área disponible
+        // ARRIBA del logo. El logo queda FIJO en y=990 — misma altura que
+        // nb_generar_imagen_post() (servicios) — para mantener consistencia visual
+        // entre ambos tipos de card, en vez de moverse según el largo del contenido.
+        $alturaDisponible = 900;
         $altoTit = count($lineasTit) * $lhTit;
         $altoCuerpo = count($lineasCuerpo) * $lhCuerpo;
-        $altoBloque = $altoTit + $gapTitCuerpo + $altoCuerpo + $gapCuerpoLogo + $szLogo;
-        $yBloque = (int)(($H - $altoBloque) / 2);
+        $altoBloque = $altoTit + $gapTitCuerpo + $altoCuerpo;
+        $yBloque = (int)(($alturaDisponible - $altoBloque) / 2);
+
+        // Placeholder visual: círculo reservado para un futuro ícono/imagen de la novedad
+        // (subida manual por el admin — funcionalidad pendiente, ver CLAUDE.md). Por ahora
+        // solo ocupa el espacio, sin lógica de carga.
+        $diamIcono = 90; $gapIconoTit = 30;
+        $cyIcono = $yBloque - $gapIconoTit - (int)($diamIcono / 2);
+        imagefilledellipse($img, (int)($W / 2), $cyIcono, $diamIcono, $diamIcono, $cAcento);
 
         $yTit = $yBloque + (int)($szTit * 0.75);
         foreach ($lineasTit as $i => $ln) {
@@ -579,8 +609,8 @@ if (!function_exists('nb_generar_imagen_novedad_post')) {
             nb_texto_centrado($img, $fSemi, $szCuerpo, $cTxt2, $ln, $W, $yCuerpo + $i * $lhCuerpo);
         }
 
-        $yLogo = $yCuerpo + (count($lineasCuerpo) - 1) * $lhCuerpo + $gapCuerpoLogo;
-        nb_texto_derecha($img, $fBold, $szLogo, $cAcento, 'Nubira.cl', (int)($W * 0.75), $yLogo);
+        // Marca — misma posición Y que nb_generar_imagen_post() (servicios): y=990.
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', (int)($W * 0.75), 990);
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
@@ -601,14 +631,17 @@ if (!function_exists('nb_generar_imagen_novedad_history')) {
         $cBg = $pal['bg']; $cAzul = $pal['acento']; $cBlanco = $pal['blanco']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2'];
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
-        // Mismo card "sticker" + marco interno que nb_generar_imagen_history(), para
-        // mantener identidad visual entre novedades y servicios.
-        $cardX1 = 90; $cardX2 = 990; $cardY1 = 460; $cardY2 = 1460; $cardR = 40;
+        // Card "sticker" + marco interno, repositionado dentro de la zona segura real de
+        // Instagram Stories/TikTok: ~250px libres arriba (perfil/username/barra de progreso)
+        // y ~340px libres abajo (barra de respuesta IG + caption/nav de TikTok) — en vez de
+        // los 460px/460px que dejaba fija la card heredada de nb_generar_imagen_history()
+        // (servicios). Mismos gaps internos card->marco (40 arriba, 160 abajo).
+        $cardX1 = 90; $cardX2 = 990; $cardY1 = 250; $cardY2 = 1580; $cardR = 40;
         $cBorde = imagecolorallocate($img, 229, 231, 235);
         nb_rect_redondeado($img, $cardX1, $cardY1, $cardX2, $cardY2, $cardR, $cBorde);
         nb_rect_redondeado($img, $cardX1 + 2, $cardY1 + 2, $cardX2 - 2, $cardY2 - 2, $cardR - 2, $cBlanco);
 
-        $inX1 = 130; $inX2 = 950; $inY1 = 500; $inY2 = 1300; $inR = 30;
+        $inX1 = 130; $inX2 = 950; $inY1 = 290; $inY2 = 1420; $inR = 30;
         nb_rect_redondeado($img, $inX1, $inY1, $inX2, $inY2, $inR, $cBorde);
         nb_rect_redondeado($img, $inX1 + 2, $inY1 + 2, $inX2 - 2, $inY2 - 2, $inR - 2, $cBlanco);
 
@@ -630,6 +663,13 @@ if (!function_exists('nb_generar_imagen_novedad_history')) {
         $altoCuerpo = count($lineasCuerpo) * $lhCuerpo;
         $altoBloque = $altoTit + $gapTitCuerpo + $altoCuerpo;
         $yBloque = $inY1 + (int)((($inY2 - $inY1) - $altoBloque) / 2);
+
+        // Placeholder visual: círculo reservado para un futuro ícono/imagen de la novedad
+        // (subida manual por el admin — funcionalidad pendiente, ver CLAUDE.md). Por ahora
+        // solo ocupa el espacio, sin lógica de carga.
+        $diamIcono = 90; $gapIconoTit = 30;
+        $cyIcono = $yBloque - $gapIconoTit - (int)($diamIcono / 2);
+        imagefilledellipse($img, (int)($W / 2), $cyIcono, $diamIcono, $diamIcono, $cAzul);
 
         $yTit = $yBloque + (int)($szTit * 0.75);
         foreach ($lineasTit as $i => $ln) {

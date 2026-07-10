@@ -1,4 +1,8 @@
 
+## Pendiente: subir imagen/ícono real en cards de novedades (admin_marketing_cards.php, tab Novedades)
+
+`nb_generar_imagen_novedad_post()` y `nb_generar_imagen_novedad_history()` (`app/helpers/imagen_compartir.php`) ya reservan el espacio arriba del título con un círculo placeholder liso color acento (`$diamIcono=90`, sin lógica de carga). Falta la funcionalidad real: que el admin pueda subir una imagen/ícono al crear la novedad (nuevo input file en el formulario de `admin_marketing_cards.php?tab=novedades`, guardarla en disco/BD, y que el generador dibuje esa imagen recortada en círculo en vez del placeholder liso — mismo patrón que `nb_dibujar_avatar()` usa para la foto del tutor en servicios). Diseñado el 09/07/2026, sin implementar — mejora para otra sesión.
+
 ## Pendiente: bug de z-index en admin_leads_gmail.php (barra de selección tapada por nav_bottom en móvil)
 
 Mismo bug que encontramos y arreglamos hoy en admin_marketing_cards.php: `#action-bar` (admin_leads_gmail.php:373-374, z-50) queda por debajo de `nav_bottom.php:152` (z-[60]) — ambos son `fixed bottom-0` de ancho completo en móvil, así que nav_bottom tapa la barra de selección "Ver como carrusel"/acción al seleccionar filas. admin_marketing_cards.php copió este patrón de admin_leads_gmail.php y heredó el problema (ahí lo arreglamos ocultando nav_bottom vía JS solo mientras la barra de selección esté visible, sincronizado con syncBar()). Aplicar el mismo fix acá cuando se retome este archivo — no se tocó ahora a pedido explícito del usuario, fuera de alcance de la sesión del 09/07/2026.
