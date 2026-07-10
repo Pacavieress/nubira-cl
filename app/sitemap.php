@@ -53,7 +53,8 @@ $sql = "SELECT s.id, s.slug, s.fecha_publicacion
         JOIN alumnos a ON a.id = s.alumno_id
         WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
           AND s.visible = 1
-          AND COALESCE(a.visible, 1) = 1";
+          AND COALESCE(a.visible, 1) = 1
+          AND a.bloqueado = 0";
 $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
     echo url_xml($BASE . url_servicio((int)$row['id'], $row['slug'] ?? null),
@@ -66,7 +67,8 @@ $sql = "SELECT ap.id, ap.fecha_subida
         JOIN alumnos al ON al.id = ap.id_alumno
         WHERE ap.publico = 1
           AND ap.visible = 1
-          AND al.visible = 1";
+          AND al.visible = 1
+          AND al.bloqueado = 0";
 $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
     echo url_xml($BASE . '/apunte/' . nubira_encriptar_id($row['id']),
@@ -80,6 +82,7 @@ foreach (nubira_categorias_seo() as $slug => $nombre) {
                           WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
                             AND s.visible = 1
                             AND COALESCE(a.visible, 1) = 1
+                            AND a.bloqueado = 0
                             AND s.categoria = ?");
     if (!$st) continue;
     $st->bind_param("s", $nombre);
