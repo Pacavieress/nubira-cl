@@ -7,9 +7,9 @@
 
 Mismo bug que encontramos y arreglamos hoy en admin_marketing_cards.php: `#action-bar` (admin_leads_gmail.php:373-374, z-50) queda por debajo de `nav_bottom.php:152` (z-[60]) — ambos son `fixed bottom-0` de ancho completo en móvil, así que nav_bottom tapa la barra de selección "Ver como carrusel"/acción al seleccionar filas. admin_marketing_cards.php copió este patrón de admin_leads_gmail.php y heredó el problema (ahí lo arreglamos ocultando nav_bottom vía JS solo mientras la barra de selección esté visible, sincronizado con syncBar()). Aplicar el mismo fix acá cuando se retome este archivo — no se tocó ahora a pedido explícito del usuario, fuera de alcance de la sesión del 09/07/2026.
 
-## Implementado: sistema de registro híbrido / verificación (verificado 10/07/2026)
+## Implementado: sello "Verificado" automático por dominio institucional (simplificado 10/07/2026)
 
-Ya NO es un plan pendiente — está implementado y funcionando. Verificado leyendo el código real (no solo esta nota) el 10/07/2026.
+Ya NO es un plan pendiente — está implementado y funcionando, y hoy se simplificó: se eliminó el paso de revisión manual del admin (confirmado que nunca discriminaba — aprobaba a todos en la cola), así que el sello depende 100% del cálculo automático en `register.php`, sin intervención humana.
 
 CASO DETONANTE (histórico, 03/06/2026): Paulina (licenciada en matemáticas, profesora PAES) se registró con Gmail y su perfil mostraba "Estudiante Universitario" sin serlo. Motivó este sistema.
 
@@ -17,7 +17,7 @@ Flujo real, con archivo:línea:
 - `register.php:58-72` — al registrarse, 3 ramas deciden `tipo`/`verificacion_estado` en el INSERT mismo: dominio institucional → `aprobado`; excepción VIP (`excepciones_email`) → `aprobado`; cualquier otro caso (default) → `particular` + `pendiente`. No depende de ninguna acción posterior del usuario.
 - `login.php:92,211-213` — si `verificacion_estado='pendiente'` y no hay `bio` cargada, redirige una vez a `/completar_perfil`. Con `bio` ya cargada, entra normal a `/vitrina` (con `?aviso=verificacion_pendiente`, ver nota de limpieza abajo).
 - `app/completar_perfil.php` — formulario real (tipo + carrera/universidad/año egreso/años experiencia + bio ≥100 caracteres), existe y funciona.
-- `app/admin_usuarios.php:257,277,476` — tab "Pendientes" (`WHERE verificacion_estado='pendiente'`) con acciones aprobar/rechazar.
+- `app/admin_usuarios.php` — **ya NO tiene** pestaña de revisión manual (eliminada 10/07/2026: tab "Pendientes", query, botones aprobar/rechazar, badge de alerta en `contar_alertas_sistema.php`, y las funciones `enviarCorreoVerificacionAprobada`/`Rechazada` en `correo.php`). En su lugar, la tabla "Todos" tiene un filtro de inspección "Verificado: Sí/No" (`?verificado=si|no`), sin ninguna acción de aprobar/rechazar — solo lectura.
 - `perfil.php:186-187,524-526`, `ver_apunte.php:242-243,763`, `detalle_servicio.php:523` — badge ✓ "Verificado" condicionado a `verificacion_estado='aprobado'`.
 
 **Diferencia importante respecto al plan original**: el punto "Restricción: si pendiente/rechazado, NO puede publicar servicios ni apuntes" **no se implementó así**. Confirmado por grep: `publicar_servicio.php` y `formulario_subir_apunte.php` no tienen ninguna referencia a `verificacion_estado` — un usuario pendiente puede publicar y comprar/vender sin restricción. El único efecto real de quedar "pendiente" sin revisar es que no aparece el badge ✓. Si en algún momento se quiere bloquear publicación de verdad, es trabajo nuevo, no algo que ya esté y haya que destrabar.
@@ -27,6 +27,9 @@ DOMINIOS INSTITUCIONALES: se gestionan en tabla `dominios_permitidos`. Lista act
 
 ### Limpieza menor pendiente (candidato para sesión de limpieza futura)
 `login.php:212` genera la URL `/vitrina?aviso=verificacion_pendiente` para mostrar un banner de aviso — pero ningún archivo en `app/` lee ese parámetro `aviso`. Código muerto sin efecto visible; candidato a eliminar (o a implementar el banner, si se decide que vale la pena) en una sesión dedicada.
+
+### Bug menor preexistente: `dominio`/`verificacion_estado` no se recalculan si un admin cambia el correo de un usuario
+`admin_usuarios.php:146-156` (acción `editar_usuario`, modal "Editar Usuario") permite a un admin cambiar el `correo` de cualquier usuario, pero el `UPDATE` solo toca `nombre`/`correo` — no recalcula `dominio` ni `verificacion_estado` contra `dominios_permitidos`. Si un admin le pone un correo institucional a alguien ahí, no queda verificado automáticamente. Nota: **no** existe este caso vía autoservicio — `editar_datos.php` tiene el campo `correo` en `readonly` (línea 238), un usuario no puede cambiar su propio correo. Candidato a fix en otra sesión (recalcular `dominio`/`verificacion_estado` en ese mismo `UPDATE`, igual que hace `register.php`).
 
 ## Pendiente: Contratación de múltiples horas consecutivas con precio proporcional
 

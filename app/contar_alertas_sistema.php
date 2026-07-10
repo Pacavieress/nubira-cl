@@ -52,7 +52,6 @@ try {
         'admin_solicitudes' => 0,
         'admin_login_fallos' => 0,
         'admin_accesos' => 0,
-        'admin_pendientes_verificacion' => 0,
         'admin_perfil_incompleto' => 0,
         'admin_videos' => 0,
         'admin_anuncio_video' => 0,
@@ -202,12 +201,6 @@ try {
             try {
                 $res = $conn->query("SELECT COUNT(id) AS total FROM dlp_intentos WHERE revisado_admin = 0");
                 if ($res) { $alertas['admin_chats'] = (int)$res->fetch_assoc()['total']; }
-            } catch (Exception $e) {}
-
-            // 11. Usuarios pendientes de verificación (registro híbrido)
-            try {
-                $res = $conn->query("SELECT COUNT(id) AS total FROM alumnos WHERE verificacion_estado = 'pendiente' AND visible = 1");
-                if ($res) { $alertas['admin_pendientes_verificacion'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
 
             // 12. Tutores con perfil incompleto (sin foto, bio, tipo o servicios sin horario)

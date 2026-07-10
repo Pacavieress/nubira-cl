@@ -394,34 +394,4 @@ function enviarCorreoRecordatorioClase($correoDestino, $nombreDestino, $nombreOt
     return _enviarEmailBase($correoDestino, $asunto, $cuerpo);
 }
 
-// ==========================================================
-// VERIFICACIÓN DE CUENTA (REGISTRO HÍBRIDO)
-// ==========================================================
-
-function enviarCorreoVerificacionAprobada($correo, $nombre) {
-    $html = "
-        <p>Hola <strong>" . htmlspecialchars($nombre) . "</strong>,</p>
-        <p>Revisamos tu información y tu cuenta ahora muestra el sello de <strong style='color:#10B981;'>Verificado</strong> en Nubira.</p>
-        <p>Esto le da más confianza a otros estudiantes cuando ven tu perfil, tus servicios o tus apuntes.</p>
-        <p style='font-size:14px; color:#6B7280; margin-top:20px;'>
-            Si tienes preguntas, escríbenos a <a href='mailto:soporte@nubira.cl' style='color:#54A6D8;'>soporte@nubira.cl</a>.
-        </p>
-    ";
-    $cuerpo = plantillaMaestra("¡Tu cuenta fue verificada!", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
-    return _enviarEmailBase($correo, "Tu cuenta fue verificada en Nubira", $cuerpo);
-}
-
-function enviarCorreoVerificacionRechazada($correo, $nombre) {
-    $html = "
-        <p>Hola <strong>" . htmlspecialchars($nombre) . "</strong>,</p>
-        <p>Revisamos la información de tu cuenta y por ahora no obtuviste el sello de <strong>Verificado</strong> en Nubira.</p>
-        <p>Esto no afecta tu acceso a la plataforma — puedes seguir comprando, publicando y contactando tutores con normalidad.</p>
-        <p style='font-size:14px; color:#6B7280; margin-top:20px;'>
-            Si crees que esto es un error o tienes documentación que respalde tu perfil, escríbenos a
-            <a href='mailto:soporte@nubira.cl' style='color:#54A6D8;'>soporte@nubira.cl</a> y lo revisamos contigo.
-        </p>
-    ";
-    $cuerpo = plantillaMaestra("Revisamos tu solicitud de verificación", $html, "Ir a Nubira", "https://nubira.cl/vitrina");
-    return _enviarEmailBase($correo, "Revisamos tu solicitud de verificación en Nubira", $cuerpo);
-}
 ?>
