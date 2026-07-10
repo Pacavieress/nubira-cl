@@ -52,7 +52,8 @@ $compacto  = !empty($_GET['compacto']);
 $filtros = [
     "s.estado = 'aprobado'",
     "s.visible = 1",
-    "COALESCE(a.visible, 1) = 1"
+    "COALESCE(a.visible, 1) = 1",
+    "COALESCE(a.bloqueado, 0) = 0"
 ];
 $params  = [];
 $tipos   = "";
