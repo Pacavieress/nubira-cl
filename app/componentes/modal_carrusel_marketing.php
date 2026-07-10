@@ -45,6 +45,17 @@
   const btnTodas = document.getElementById('carrusel-mkt-btn-todas');
   if (!modal || !lista) return;
 
+  // iOS Safari rompe la descarga múltiple encadenada (setTimeout + .click() en loop pierde
+  // el gesto de usuario confiable, solo la primera imagen se descarga). En táctil+Web Share
+  // usamos un solo navigator.share() con todos los archivos a la vez — un solo gesto real,
+  // sin loop. Desktop/Android siguen con la descarga encadenada de siempre (ahí sí funciona).
+  const esTactilConShare = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window)
+    && typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+
+  if (esTactilConShare) {
+    btnTodas.innerHTML = '<i class="fa-solid fa-share-nodes"></i> Compartir todas';
+  }
+
   function crearItem(item, index) {
     const li = document.createElement('li');
     li.className = 'flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-2.5';
@@ -158,8 +169,27 @@
 
   // Descargar todas: dispara cada link de descarga en secuencia con un pequeño delay
   // (descargas simultáneas suelen ser bloqueadas/limitadas por el navegador)
-  btnTodas.addEventListener('click', () => {
+  btnTodas.addEventListener('click', async () => {
     const links = [...lista.querySelectorAll('a[download]')];
+
+    if (esTactilConShare) {
+      try {
+        const archivos = await Promise.all(links.map(async (a) => {
+          const resp = await fetch(a.href);
+          const blob = await resp.blob();
+          return new File([blob], a.getAttribute('download'), { type: blob.type || 'image/jpeg' });
+        }));
+        // Sin title/text junto a files — en iOS Safari eso puede hacer fallar el share
+        // de archivos silenciosamente (ver investigación).
+        if (navigator.canShare({ files: archivos })) {
+          await navigator.share({ files: archivos });
+          return;
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+
     links.forEach((a, i) => {
       setTimeout(() => a.click(), i * 400);
     });
