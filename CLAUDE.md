@@ -7,44 +7,26 @@
 
 Mismo bug que encontramos y arreglamos hoy en admin_marketing_cards.php: `#action-bar` (admin_leads_gmail.php:373-374, z-50) queda por debajo de `nav_bottom.php:152` (z-[60]) — ambos son `fixed bottom-0` de ancho completo en móvil, así que nav_bottom tapa la barra de selección "Ver como carrusel"/acción al seleccionar filas. admin_marketing_cards.php copió este patrón de admin_leads_gmail.php y heredó el problema (ahí lo arreglamos ocultando nav_bottom vía JS solo mientras la barra de selección esté visible, sincronizado con syncBar()). Aplicar el mismo fix acá cuando se retome este archivo — no se tocó ahora a pedido explícito del usuario, fuera de alcance de la sesión del 09/07/2026.
 
-## Pendiente CRÍTICO 03/06/2026 - tarde
+## Implementado: sistema de registro híbrido / verificación (verificado 10/07/2026)
 
-### Sistema de registro híbrido (Plan B aprobado)
+Ya NO es un plan pendiente — está implementado y funcionando. Verificado leyendo el código real (no solo esta nota) el 10/07/2026.
 
-CASO DETONANTE: Paulina (licenciada en matemáticas, profesora PAES) se registró con Gmail. Su perfil muestra "Estudiante Universitario" cuando NO es estudiante.
+CASO DETONANTE (histórico, 03/06/2026): Paulina (licenciada en matemáticas, profesora PAES) se registró con Gmail y su perfil mostraba "Estudiante Universitario" sin serlo. Motivó este sistema.
 
-PLAN APROBADO (NO el minimalista):
-- register.php queda IGUAL
-- Detección post-login: si correo NO institucional Y tipo IS NULL → redirigir a /completar_perfil
-- Nuevo archivo: app/completar_perfil.php con formulario extendido (tipo + carrera/área + bio)
-- Nueva columna: verificacion_estado VARCHAR(20) en alumnos (auto-migración)
-- Restricción: si pendiente/rechazado, NO puede publicar servicios ni apuntes
-- Panel admin con tab "Pendientes" para aprobar/rechazar
-- perfil.php muestra el subtítulo según tipo (Estudiante / Egresado / Profesor / Particular)
+Flujo real, con archivo:línea:
+- `register.php:58-72` — al registrarse, 3 ramas deciden `tipo`/`verificacion_estado` en el INSERT mismo: dominio institucional → `aprobado`; excepción VIP (`excepciones_email`) → `aprobado`; cualquier otro caso (default) → `particular` + `pendiente`. No depende de ninguna acción posterior del usuario.
+- `login.php:92,211-213` — si `verificacion_estado='pendiente'` y no hay `bio` cargada, redirige una vez a `/completar_perfil`. Con `bio` ya cargada, entra normal a `/vitrina` (con `?aviso=verificacion_pendiente`, ver nota de limpieza abajo).
+- `app/completar_perfil.php` — formulario real (tipo + carrera/universidad/año egreso/años experiencia + bio ≥100 caracteres), existe y funciona.
+- `app/admin_usuarios.php:257,277,476` — tab "Pendientes" (`WHERE verificacion_estado='pendiente'`) con acciones aprobar/rechazar.
+- `perfil.php:186-187,524-526`, `ver_apunte.php:242-243,763`, `detalle_servicio.php:523` — badge ✓ "Verificado" condicionado a `verificacion_estado='aprobado'`.
 
-ARCHIVOS A TOCAR (~153 líneas, 7 archivos):
-- login.php (~20 líneas): detección post-login
-- app/completar_perfil.php (NUEVO ~80 líneas)
-- editar_datos.php (~15 líneas)
-- perfil.php (~8 líneas)
-- app/admin_usuarios.php (~20 líneas): tab Pendientes
-- app/publicar_servicio.php (~5 líneas): bloqueo si no aprobado
-- app/formulario_subir_apunte.php (~5 líneas): bloqueo si no aprobado
+**Diferencia importante respecto al plan original**: el punto "Restricción: si pendiente/rechazado, NO puede publicar servicios ni apuntes" **no se implementó así**. Confirmado por grep: `publicar_servicio.php` y `formulario_subir_apunte.php` no tienen ninguna referencia a `verificacion_estado` — un usuario pendiente puede publicar y comprar/vender sin restricción. El único efecto real de quedar "pendiente" sin revisar es que no aparece el badge ✓. Si en algún momento se quiere bloquear publicación de verdad, es trabajo nuevo, no algo que ya esté y haya que destrabar.
 
-PARCHE INMEDIATO PARA PAULINA (mientras no esté implementado):
-UPDATE alumnos SET tipo = 'profesor', verificacion_estado = 'aprobado' WHERE correo = '<correo_paulina>';
+DOMINIOS INSTITUCIONALES: se gestionan en tabla `dominios_permitidos`. Lista actual via:
+`SELECT dominio, institucion FROM dominios_permitidos ORDER BY institucion ASC;`
 
-DOMINIOS INSTITUCIONALES: se gestionan en tabla dominios_permitidos. Lista actual via:
-SELECT dominio, institucion FROM dominios_permitidos ORDER BY institucion ASC;
-
-LÓGICA DE DETECCIÓN POST-LOGIN:
-LOGIN EXITOSO
-  └─ ¿dominio en dominios_permitidos? → SÍ → /vitrina (institucional verificado)
-  └─ NO institucional:
-      └─ tipo IS NULL → /completar_perfil
-      └─ verificacion_estado = 'pendiente' → /vitrina con banner
-      └─ verificacion_estado = 'aprobado' → /vitrina normal
-      └─ verificacion_estado = 'rechazado' → página de aviso
+### Limpieza menor pendiente (candidato para sesión de limpieza futura)
+`login.php:212` genera la URL `/vitrina?aviso=verificacion_pendiente` para mostrar un banner de aviso — pero ningún archivo en `app/` lee ese parámetro `aviso`. Código muerto sin efecto visible; candidato a eliminar (o a implementar el banner, si se decide que vale la pena) en una sesión dedicada.
 
 ## Pendiente: Contratación de múltiples horas consecutivas con precio proporcional
 
