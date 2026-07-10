@@ -8,13 +8,15 @@
 //   $ov_categoria string  nombre de categoría ("Matemáticas", "Clase", ...)
 //   $ov_foto      string  URL de la foto del tutor (fallback ui-avatars ya resuelto)
 //   $ov_nombre    string  nombre del tutor (abreviado "Ángel R.")
-//   $ov_size      string  'lg' (default) | 'sm'  → tamaño de texto según el tipo de card
+//   $ov_size      string  'lg' (default) | 'sm'  → tamaño de texto y avatar según el tipo de card
+//                         ('sm' = cards angostas 150/170px: cargar_vistos.php, render_card.php)
 //
 // Reemplaza el bloque inline duplicado en: cargar_servicios.php, componentes/card_servicio_grid.php,
 // componentes/render_card.php, cargar_vistos.php y vitrina.php (x4).
 $ov_size        = (($ov_size ?? 'lg') === 'sm') ? 'sm' : 'lg';
 $ov_cls_prefijo = ($ov_size === 'sm') ? 'text-[10px] md:text-xs' : 'text-xs md:text-sm';
 $ov_cls_titulo  = ($ov_size === 'sm') ? 'text-sm md:text-base'   : 'text-base md:text-lg';
+$ov_cls_avatar  = ($ov_size === 'sm') ? 'w-6 h-6 md:w-7 md:h-7'  : 'w-10 h-10 md:w-12 md:h-12';
 ?>
 <!-- [OVERLAY NUBIRA] gradient + avatar tutor + categoría (partial) -->
 <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.08) 32%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.10) 70%, rgba(0,0,0,0.48) 100%);"></div>
@@ -35,7 +37,7 @@ $ov_cls_titulo  = ($ov_size === 'sm') ? 'text-sm md:text-base'   : 'text-base md
 <div class="absolute bottom-3 left-3 z-10 pr-2 flex items-center gap-2 text-white <?= $ov_cls_titulo ?> font-bold" style="max-width:80%; text-shadow:0 1px 3px rgba(0,0,0,0.6);">
         <img src="<?= htmlspecialchars($ov_foto) ?>"
              alt="<?= htmlspecialchars($ov_nombre) ?>"
-             class="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-1 ring-white/30 avatar-tutor"
+             class="<?= $ov_cls_avatar ?> rounded-full object-cover ring-1 ring-white/30 avatar-tutor"
              loading="lazy"
              onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($ov_nombre) ?>&background=54A6D8&color=fff&size=128'">
         <span class="truncate min-w-0"><?= htmlspecialchars($ov_nombre) ?></span>
