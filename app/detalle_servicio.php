@@ -257,7 +257,7 @@ $sql_recs = "SELECT s.id, s.slug, s.titulo, s.precio, s.imagen, s.imagen_banco_i
              LEFT JOIN alumnos a ON s.alumno_id = a.id
              LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
              LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-             WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 AND s.id != ?
+             WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 AND a.bloqueado = 0 AND s.id != ?
              ORDER BY
                 CASE WHEN s.categoria = ? THEN 1 ELSE 2 END,
                 CASE WHEN s.categoria = ? THEN 1 ELSE 2 END,
