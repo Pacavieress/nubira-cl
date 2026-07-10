@@ -359,26 +359,13 @@ if (!function_exists('nb_generar_imagen_post')) {
         $yCat = $yNombre + 120;  // = 555
         nb_dibujar_cat_rating_centrado($img, $cat, $fBold, $fSemi, 28, $prom, $votos, $W, $yCat, $cAcento);
 
-        // Título: word-wrap con límite de 40 caracteres por línea, máx 2 líneas.
-        // Si una línea excede el ancho en píxeles igual se trunca con …
+        // Título: word-wrap por ancho real en píxeles (nb_wrap_texto), máx 2 líneas —
+        // mismo helper que usa el título de novedades, evita truncar de más en títulos
+        // con letras anchas que el conteo de caracteres no detectaba.
         $yTit = $yCat + 70;  // = 625
         $tituloSrc = trim((string)($s['titulo'] ?? ''));
-        $palabras  = preg_split('/\s+/u', $tituloSrc);
-        $lineas    = [];  $linea = '';
-        foreach ($palabras as $p) {
-            $prueba = $linea === '' ? $p : "$linea $p";
-            if (mb_strlen($prueba, 'UTF-8') <= 32) {
-                $linea = $prueba;
-            } else {
-                if ($linea !== '') $lineas[] = $linea;
-                $linea = $p;
-                if (count($lineas) >= 2) { $linea = ''; break; }
-            }
-        }
-        if ($linea !== '' && count($lineas) < 2) $lineas[] = $linea;
-        $lineas = array_slice($lineas, 0, 2);
+        $lineas = nb_wrap_texto($fSemi, 32, $tituloSrc, $W - 160, 2);
         foreach ($lineas as $i => $ln) {
-            $ln = nb_truncar_una_linea($fSemi, 32, $ln, $W - 160);
             nb_texto_centrado($img, $fSemi, 32, $cTxt, $ln, $W, $yTit + $i * 48);
         }
 
