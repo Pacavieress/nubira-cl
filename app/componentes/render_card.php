@@ -35,7 +35,7 @@ if ($tipo === 'servicio') {
             FROM servicios s
             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
             LEFT JOIN alumnos a ON s.alumno_id = a.id
-            WHERE s.id=? LIMIT 1";
+            WHERE s.id=? AND s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 AND a.bloqueado = 0 LIMIT 1";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
     $stmt->execute();
@@ -99,7 +99,11 @@ if ($tipo === 'servicio') {
         $html_stars = '';
     }
 } elseif ($tipo === 'apunte') {
-    $sql = "SELECT titulo, precio, portada, archivo, asignatura FROM apuntes WHERE id=? LIMIT 1";
+    $sql = "SELECT ap.titulo, ap.precio, ap.portada, ap.archivo, ap.asignatura
+            FROM apuntes ap
+            LEFT JOIN alumnos a ON ap.id_alumno = a.id
+            WHERE ap.id=? AND ap.estado = 'aprobado' AND ap.visible = 1 AND a.bloqueado = 0
+            LIMIT 1";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
     $stmt->execute();
