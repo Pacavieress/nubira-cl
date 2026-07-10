@@ -62,7 +62,8 @@ if ($tipo === 'clases') {
             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
             WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
               AND s.visible = 1
-              AND COALESCE(a.visible, 1) = 1";
+              AND COALESCE(a.visible, 1) = 1
+              AND a.bloqueado = 0";
     if ($filtro_like) {
         $sql  = $sql_select . " AND s.titulo LIKE ? ORDER BY s.fecha_publicacion DESC";
         $stmt = $conn->prepare($sql);
