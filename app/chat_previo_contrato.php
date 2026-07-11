@@ -109,7 +109,7 @@ if (!empty($raw_foto)) {
 // C. ESTADO ONLINE DEL INTERLOCUTOR
 $id_otro = $esVendedor ? (int)$chat['comprador_id'] : (int)$chat['vendedor_id'];
 $otro_online = false;
-$stmt_online = $conn->prepare("SELECT ultima_sesion FROM alumnos WHERE id = ? LIMIT 1");
+$stmt_online = $conn->prepare("SELECT ultima_sesion, bloqueado FROM alumnos WHERE id = ? LIMIT 1");
 if ($stmt_online) {
     $stmt_online->bind_param("i", $id_otro);
     $stmt_online->execute();
@@ -118,6 +118,7 @@ if ($stmt_online) {
     $ultima_sesion_otro = $row_online['ultima_sesion'] ?? null;
     $otro_online = ($ultima_sesion_otro && strtotime($ultima_sesion_otro) > (time() - 300));
 }
+$destinatario_suspendido = !empty($row_online['bloqueado']);
 
 // ========================================================================
 // NUBIRA 2.0: CAPTURA DE INTENCIÓN (SMART DISCOVERY)
@@ -484,7 +485,20 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
             </div>
         <?php endif; ?>
 
-        <form id="form-chat" class="flex items-end gap-2 max-w-4xl mx-auto w-full relative <?= $tutor_inactivo ? 'opacity-50 pointer-events-none grayscale-[50%]' : '' ?>">
+        <?php if ($destinatario_suspendido): ?>
+            <div class="max-w-4xl mx-auto w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 flex items-center gap-3 text-center md:text-left mb-3">
+                <div class="w-8 h-8 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center shrink-0">
+                    <?= icon('user', 'w-4 h-4') ?>
+                </div>
+                <div>
+                    <h4 class="text-[12px] font-bold text-gray-700 tracking-tight">Cuenta no disponible</h4>
+                    <p class="text-[11px] text-gray-500 mt-0.5">Esta persona no está disponible temporalmente.</p>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php $chat_bloqueado = $tutor_inactivo || $destinatario_suspendido; ?>
+        <form id="form-chat" class="flex items-end gap-2 max-w-4xl mx-auto w-full relative <?= $chat_bloqueado ? 'opacity-50 pointer-events-none grayscale-[50%]' : '' ?>">
     <input type="hidden" name="conversacion_id" value="<?= $chat_id ?>">
     
     <!-- ============================================ -->
@@ -519,8 +533,8 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
                     name="mensaje" 
                     id="input-msg"
                     rows="1" 
-                    <?= $tutor_inactivo ? 'disabled placeholder="Chat pausado por inactividad..."' : 'placeholder="Escribe un mensaje..."' ?> 
-                    class="w-full bg-transparent text-gray-900 text-sm focus:outline-none resize-none max-h-32 py-1 leading-relaxed <?= $tutor_inactivo ? 'placeholder-gray-500 font-medium' : 'placeholder-gray-400' ?>"
+                    <?= $chat_bloqueado ? 'disabled placeholder="' . ($destinatario_suspendido ? 'Esta persona no está disponible...' : 'Chat pausado por inactividad...') . '"' : 'placeholder="Escribe un mensaje..."' ?>
+                    class="w-full bg-transparent text-gray-900 text-sm focus:outline-none resize-none max-h-32 py-1 leading-relaxed <?= $chat_bloqueado ? 'placeholder-gray-500 font-medium' : 'placeholder-gray-400' ?>"
                 ></textarea>
             </div>
 
