@@ -155,7 +155,7 @@ $sql_user = "SELECT a.*,
              FROM alumnos a 
              LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio 
              LEFT JOIN datos_pago_usuario dpu ON a.id = dpu.usuario_id
-             WHERE a.id = ? AND a.visible = 1";
+             WHERE a.id = ? AND a.visible = 1 AND a.bloqueado = 0";
 
 $stmt = $conn->prepare($sql_user);
 if (!$stmt) { die("Error interno del sistema."); }
