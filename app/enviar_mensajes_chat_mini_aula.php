@@ -48,6 +48,17 @@ if (empty($mensaje)) {
     exit;
 }
 
+// BLOQUEO POR SUSPENSIÓN DEL REMITENTE (asimétrico: no bloquea si el OTRO participante está suspendido)
+$stmt_susp = $conn->prepare("SELECT bloqueado FROM alumnos WHERE id = ? LIMIT 1");
+$stmt_susp->bind_param("i", $usuario_id);
+$stmt_susp->execute();
+$fila_susp = $stmt_susp->get_result()->fetch_assoc();
+$stmt_susp->close();
+if (!empty($fila_susp['bloqueado'])) {
+    echo json_encode(['success' => false, 'error' => 'Tu cuenta está suspendida temporalmente y no puede enviar mensajes.']);
+    exit;
+}
+
 // =========================================================================================
 // MODIFICACIÓN 1: FILTRO DE CONTACTOS Y REDES SOCIALES
 // =========================================================================================
