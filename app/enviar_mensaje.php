@@ -141,6 +141,30 @@ if ($stmt->get_result()->num_rows === 0) {
     exit;
 }
 
+// 5.5 BLOQUEO POR SUSPENSIÓN DEL DESTINATARIO (solo chat previo al contrato)
+if ($contexto === 'conversacion') {
+    $sqlOtro = "SELECT CASE WHEN comprador_id = ? THEN vendedor_id ELSE comprador_id END as id_otro FROM $tabla_padre WHERE id = ? LIMIT 1";
+    $stmt_otro = $conn->prepare($sqlOtro);
+    $stmt_otro->bind_param("ii", $my_id, $id_ref);
+    $stmt_otro->execute();
+    $row_otro = $stmt_otro->get_result()->fetch_assoc();
+    $stmt_otro->close();
+
+    $id_destinatario = (int)($row_otro['id_otro'] ?? 0);
+    if ($id_destinatario > 0) {
+        $stmt_bloq = $conn->prepare("SELECT bloqueado FROM alumnos WHERE id = ? LIMIT 1");
+        $stmt_bloq->bind_param("i", $id_destinatario);
+        $stmt_bloq->execute();
+        $bloq_otro = $stmt_bloq->get_result()->fetch_assoc();
+        $stmt_bloq->close();
+
+        if (!empty($bloq_otro['bloqueado'])) {
+            echo json_encode(['success' => false, 'error' => 'Esta persona no está disponible temporalmente.']);
+            exit;
+        }
+    }
+}
+
 // 6. INSERCIÓN DEL MENSAJE
 $sqlInsert = "INSERT INTO $tabla ($col_id, remitente_id, mensaje, $col_fecha, $col_visto) VALUES (?, ?, ?, NOW(), 0)";
 $stmt_ins = $conn->prepare($sqlInsert);
