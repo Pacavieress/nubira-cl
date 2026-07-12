@@ -37,9 +37,10 @@ if ($usuario_id > 0) {
 // Si tenemos categoría favorita, sacamos los 3 mejores servicios y 3 mejores apuntes
 if ($cat_favorita) {
     // Servicios de la categoría
-    $sql_fav_serv = "SELECT id FROM servicios 
-                     WHERE estado = 'aprobado' AND categoria = ? AND (visible = 1 OR visible IS NULL) 
-                     ORDER BY score_nubira DESC LIMIT 3";
+    $sql_fav_serv = "SELECT s.id FROM servicios s
+                     INNER JOIN alumnos a ON s.alumno_id = a.id
+                     WHERE s.estado = 'aprobado' AND s.categoria = ? AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
+                     ORDER BY s.score_nubira DESC LIMIT 3";
     if ($stmt_fs = $conn->prepare($sql_fav_serv)) {
         $stmt_fs->bind_param("s", $cat_favorita);
         $stmt_fs->execute();
@@ -52,9 +53,10 @@ if ($cat_favorita) {
     }
 
     // Apuntes de la categoría
-    $sql_fav_ap = "SELECT id FROM apuntes 
-                   WHERE estado = 'aprobado' AND categoria = ? 
-                   ORDER BY descargas DESC LIMIT 3";
+    $sql_fav_ap = "SELECT ap.id FROM apuntes ap
+                   INNER JOIN alumnos a ON ap.id_alumno = a.id
+                   WHERE ap.estado = 'aprobado' AND ap.categoria = ? AND a.bloqueado = 0
+                   ORDER BY ap.descargas DESC LIMIT 3";
     if ($stmt_fa = $conn->prepare($sql_fav_ap)) {
         $stmt_fa->bind_param("s", $cat_favorita);
         $stmt_fa->execute();
@@ -89,7 +91,7 @@ if ($faltan > 0) {
                              FROM servicios s
                              INNER JOIN alumnos a ON s.alumno_id = a.id
                              LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-                             WHERE s.estado = 'aprobado' AND s.id NOT IN ($placeholders_serv)";
+                             WHERE s.estado = 'aprobado' AND a.bloqueado = 0 AND s.id NOT IN ($placeholders_serv)";
         
         // Boost institucional
         if (!empty($institucion_usuario)) {
@@ -122,7 +124,7 @@ if ($faltan > 0) {
                            FROM apuntes ap
                            INNER JOIN alumnos a ON ap.id_alumno = a.id
                            LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-                           WHERE ap.estado = 'aprobado' AND ap.id NOT IN ($placeholders_ap)";
+                           WHERE ap.estado = 'aprobado' AND a.bloqueado = 0 AND ap.id NOT IN ($placeholders_ap)";
         
         // Boost institucional
         if (!empty($institucion_usuario)) {
