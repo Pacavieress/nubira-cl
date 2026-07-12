@@ -132,7 +132,8 @@ if (!$no_banners) {
 $filtros = [
     "ap.publico = 1",
     "ap.visible = 1",
-    "al.visible = 1"
+    "al.visible = 1",
+    "al.bloqueado = 0"
 ];
 $params  = [];
 $tipos   = "";
