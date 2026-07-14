@@ -21,10 +21,8 @@ if (file_exists($ruta_raiz . '/seguridad_url.php')) {
     require_once dirname($ruta_raiz) . '/seguridad_url.php';
 }
 
-if (!function_exists('nubira_encriptar_id')) {
-    function nubira_encriptar_id($id) { return $id; }
-}
 require_once $ruta_raiz . '/helpers/seo.php';
+require_once $ruta_raiz . '/helpers/horarios.php';
 
 // 2. Verificación de sesión
 if (!isset($_SESSION['usuario_id'])) {
@@ -49,29 +47,38 @@ if (!$servicio || $servicio['alumno_id'] != $uid) {
 
 // 4. Lógica POST
 $mensaje = '';
+$mensaje_detalle = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['horarios_json'])) {
     $nuevo_json = trim($_POST['horarios_json']);
-    
-    json_decode($nuevo_json);
-    if (json_last_error() === JSON_ERROR_NONE) {
+
+    $error_validacion = validar_horarios_json($nuevo_json);
+    if ($error_validacion === null) {
         $upd = $conn->prepare("UPDATE servicios SET horarios_json = ? WHERE id = ? AND alumno_id = ?");
         $upd->bind_param("sii", $nuevo_json, $servicio_id, $uid);
         if ($upd->execute()) {
-            $mensaje = 'ok';
-            $servicio['horarios_json'] = $nuevo_json; 
+            if (parsear_horarios_servicio($nuevo_json)['tiene_horarios']) {
+                $stmt_restore = $conn->prepare("UPDATE servicios SET visible = 1, oculto_por_falta_horario = 0 WHERE id = ? AND oculto_por_falta_horario = 1");
+                $stmt_restore->bind_param("i", $servicio_id);
+                $stmt_restore->execute();
+                $stmt_restore->close();
+            }
+            header("Location: /app/editar_horarios.php?id=$servicio_id&guardado=1");
+            exit;
         } else {
             $mensaje = 'error';
         }
     } else {
-        $mensaje = 'error_json';
+        $mensaje = 'error_validacion';
+        $mensaje_detalle = $error_validacion;
     }
+}
+if ($mensaje === '' && isset($_GET['guardado']) && $_GET['guardado'] === '1') {
+    $mensaje = 'ok';
 }
 
 // 5. Preparar datos para la UI
-$horarios_db = !empty($servicio['horarios_json']) ? json_decode($servicio['horarios_json'], true) : [];
-if (!is_array($horarios_db)) $horarios_db = [];
-
-$dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+$horarios_info = parsear_horarios_servicio($servicio['horarios_json'] ?? null);
+$dias_semana   = dias_semana_nubira();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -120,10 +127,15 @@ if(file_exists($ruta_comp . '/sidebar.php')) require_once $ruta_comp . '/sidebar
             <i class="fa-solid fa-circle-check text-lg"></i>
             <span class="text-sm font-bold">¡Tus horarios se han guardado correctamente!</span>
         </div>
-    <?php elseif ($mensaje === 'error' || $mensaje === 'error_json'): ?>
+    <?php elseif ($mensaje === 'error'): ?>
         <div class="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
             <i class="fa-solid fa-triangle-exclamation text-lg"></i>
             <span class="text-sm font-bold">Hubo un problema al guardar. Inténtalo de nuevo.</span>
+        </div>
+    <?php elseif ($mensaje === 'error_validacion'): ?>
+        <div class="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+            <span class="text-sm font-bold"><?= htmlspecialchars($mensaje_detalle, ENT_QUOTES, 'UTF-8') ?></span>
         </div>
     <?php endif; ?>
 
@@ -134,8 +146,8 @@ if(file_exists($ruta_comp . '/sidebar.php')) require_once $ruta_comp . '/sidebar
             <input type="hidden" name="horarios_json" id="input-horarios-json">
 
             <div class="space-y-4" id="dias-container">
-                <?php foreach ($dias_semana as $dia): 
-                    $bloques = (isset($horarios_db[$dia]) && is_array($horarios_db[$dia])) ? $horarios_db[$dia] : [];
+                <?php foreach ($dias_semana as $dia):
+                    $bloques = $horarios_info['dias'][$dia] ?? [];
                     $activo = count($bloques) > 0;
                 ?>
                     <div class="dia-block border border-gray-200 rounded-2xl p-4 transition-all <?= $activo ? 'bg-white' : 'bg-gray-50 opacity-70' ?>" data-dia="<?= $dia ?>">
@@ -271,24 +283,40 @@ if(file_exists($ruta_comp . '/nav_bottom.php')) require_once $ruta_comp . '/nav_
         const data = {};
         let hayError = false;
 
+        const aMinutos = (hhmm) => {
+            const [h, m] = hhmm.split(':').map(Number);
+            return h * 60 + m;
+        };
+
         document.querySelectorAll('.dia-block').forEach(block => {
             const dia = block.getAttribute('data-dia');
             const activo = block.querySelector('.toggle-checkbox').checked;
-            
+
             if (activo) {
                 const horarios = [];
+                const rangos = [];
                 block.querySelectorAll('.slot-row').forEach(row => {
                     const desde = row.querySelector('.time-desde').value;
                     const hasta = row.querySelector('.time-hasta').value;
-                    
+
                     if (desde && hasta) {
                         if (desde >= hasta) {
                             alert(`Error en el día ${dia}: La hora de inicio (${desde}) debe ser menor a la hora de fin (${hasta}).`);
                             hayError = true;
                         }
                         horarios.push(`${desde} - ${hasta}`);
+                        rangos.push([aMinutos(desde), aMinutos(hasta), desde, hasta]);
                     }
                 });
+
+                rangos.sort((a, b) => a[0] - b[0]);
+                for (let i = 1; i < rangos.length; i++) {
+                    if (rangos[i][0] < rangos[i - 1][1]) {
+                        alert(`Error en el día ${dia}: el bloque ${rangos[i][2]} - ${rangos[i][3]} se solapa con ${rangos[i-1][2]} - ${rangos[i-1][3]}.`);
+                        hayError = true;
+                    }
+                }
+
                 data[dia] = horarios;
             } else {
                 data[dia] = [];
