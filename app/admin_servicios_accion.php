@@ -44,6 +44,18 @@ try {
 
     // --- APROBAR ---
     if ($accion === 'aprobar') {
+        // Gate: no se puede aprobar sin horario de disponibilidad cargado
+        require_once __DIR__ . '/helpers/horarios.php';
+        $stmt_h = $conn->prepare("SELECT horarios_json FROM servicios WHERE id=?");
+        $stmt_h->bind_param("i", $id_servicio);
+        $stmt_h->execute();
+        $horarios_json_actual = $stmt_h->get_result()->fetch_assoc()['horarios_json'] ?? null;
+        $stmt_h->close();
+
+        if (!parsear_horarios_servicio($horarios_json_actual)['tiene_horarios']) {
+            throw new Exception("Este servicio no puede aprobarse: el tutor no ha configurado su horario de disponibilidad.");
+        }
+
         // Actualizar BD
         $stmt = $conn->prepare("UPDATE servicios SET estado='aprobado', motivo_rechazo=NULL, fecha_revision=NOW() WHERE id=?");
         $stmt->bind_param("i", $id_servicio);
