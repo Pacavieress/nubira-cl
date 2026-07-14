@@ -338,7 +338,7 @@ require_once $app_dir . '/componentes/sidebar.php';
   </div>
 </div>
 
-<div id="toast" class="fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl hidden text-white text-sm font-bold z-[90] flex items-center gap-3 animate-bounce"></div>
+<div id="toast" class="fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl hidden text-white text-sm font-bold z-[90] flex items-center gap-3 animate-bounce max-w-[90vw] sm:max-w-sm break-words"></div>
 
 <?php 
 require_once $app_dir . '/componentes/nav_bottom.php'; 
@@ -352,7 +352,7 @@ window.onload = () => { const l = document.getElementById('loader'); if(l){ l.cl
 function mostrarToast(msg, tipo='ok') {
   const toast = document.getElementById('toast');
   toast.innerHTML = (tipo==='ok' ? '<i class="fa-solid fa-circle-check text-emerald-400"></i> ' : '<i class="fa-solid fa-circle-exclamation text-red-400"></i> ') + msg;
-  toast.className = 'fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl text-white z-[90] flex items-center gap-3 animate-bounce ' + (tipo==='ok' ? 'bg-slate-800' : 'bg-slate-800');
+  toast.className = 'fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl text-white z-[90] flex items-center gap-3 animate-bounce max-w-[90vw] sm:max-w-sm break-words ' + (tipo==='ok' ? 'bg-slate-800' : 'bg-slate-800');
   toast.classList.remove('hidden');
   setTimeout(() => { toast.classList.add('hidden'); }, 3000);
 }
