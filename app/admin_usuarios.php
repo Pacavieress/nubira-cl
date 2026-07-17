@@ -335,6 +335,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt_l->execute();
                         $stmt_l->close();
 
+                        // Restaurar visibilidad del contenido aprobado que haya quedado oculto
+                        // durante la suspensión (no toca rechazado/pendiente, ni lo oculto por otro motivo).
+                        $stmt_sv = $conn->prepare("UPDATE servicios SET visible = 1 WHERE alumno_id = ? AND estado = 'aprobado' AND visible = 0");
+                        $stmt_sv->bind_param("i", $id_usuario);
+                        $stmt_sv->execute();
+                        $stmt_sv->close();
+
+                        $stmt_ap = $conn->prepare("UPDATE apuntes SET visible = 1 WHERE id_alumno = ? AND estado = 'aprobado' AND visible = 0");
+                        $stmt_ap->bind_param("i", $id_usuario);
+                        $stmt_ap->execute();
+                        $stmt_ap->close();
+
                         $admin_id         = (int)$_SESSION['usuario_id'];
                         $meta_lev         = json_encode(['motivo_anterior' => $afectado['motivo_suspension'], 'suspendido_hasta_anterior' => $afectado['suspendido_hasta']]);
                         $motivo_lev_param = $motivo_lev !== '' ? $motivo_lev : null;
