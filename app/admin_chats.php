@@ -44,6 +44,16 @@ try {
     // Migración opcional — continúa si falla
 }
 
+// AUTO-MIGRACIÓN: columna liberado para distinguir "revisado" de "insertado en la conversación real"
+try {
+    $check_col_liberado = $conn->query("SHOW COLUMNS FROM dlp_intentos LIKE 'liberado'");
+    if ($check_col_liberado && $check_col_liberado->num_rows === 0) {
+        $conn->query("ALTER TABLE dlp_intentos ADD COLUMN liberado TINYINT(1) DEFAULT 0");
+    }
+} catch (Exception $e) {
+    // Migración opcional — continúa si falla
+}
+
 $orden_param = $_GET['orden'] ?? 'desc';
 $orden_sql = ($orden_param === 'asc') ? 'ASC' : 'DESC';
 $filtros_validos = ['activos', 'cerrados', 'contrato', 'cotizacion', 'inactivos', 'alertas_dlp', 'moderacion'];
@@ -200,7 +210,7 @@ if (isset($_POST['ajax_accion'])) {
     $chat_id = (int)($_POST['chat_id'] ?? 0);
 
     // Acciones de moderación usan msg_id, no chat_id — saltar el guard
-    $acciones_sin_chat_id = ['aprobar_archivo', 'rechazar_archivo'];
+    $acciones_sin_chat_id = ['aprobar_archivo', 'rechazar_archivo', 'liberar_mensaje_dlp'];
     if ($chat_id <= 0 && !in_array($accion, $acciones_sin_chat_id, true)) {
         echo json_encode(['ok' => false, 'msg' => 'ID inválido']);
         exit;
@@ -227,6 +237,83 @@ if (isset($_POST['ajax_accion'])) {
         $stmt->bind_param("i", $chat_id);
         $ok = $stmt->execute();
         echo json_encode(['success' => $ok]);
+        exit;
+    }
+
+    if ($accion === 'liberar_mensaje_dlp') {
+        $dlp_id = (int)($_POST['dlp_id'] ?? 0);
+        if ($dlp_id <= 0) {
+            echo json_encode(['ok' => false, 'msg' => 'ID inválido']);
+            exit;
+        }
+
+        // Claim atómico: WHERE liberado = 0 hace que, ante un doble clic o dos
+        // requests casi simultáneas, solo una gane (affected_rows > 0). La otra
+        // llega con affected_rows = 0 y se corta acá, antes del INSERT.
+        $stmt_claim = $conn->prepare("UPDATE dlp_intentos SET liberado = 1, revisado_admin = 1 WHERE id = ? AND liberado = 0");
+        $stmt_claim->bind_param("i", $dlp_id);
+        $stmt_claim->execute();
+        $claimed = $stmt_claim->affected_rows > 0;
+        $stmt_claim->close();
+
+        if (!$claimed) {
+            echo json_encode(['ok' => false, 'msg' => 'Este mensaje ya fue liberado o no existe']);
+            exit;
+        }
+
+        $stmt_get = $conn->prepare("
+            SELECT d.conversacion_id, d.remitente_id, d.texto_intentado, a.nombre AS remitente_nombre
+            FROM dlp_intentos d
+            LEFT JOIN alumnos a ON d.remitente_id = a.id
+            WHERE d.id = ?
+            LIMIT 1
+        ");
+        $stmt_get->bind_param("i", $dlp_id);
+        $stmt_get->execute();
+        $dlp_row = $stmt_get->get_result()->fetch_assoc();
+        $stmt_get->close();
+
+        $conv_id = (int)$dlp_row['conversacion_id'];
+        $remitente_id = (int)$dlp_row['remitente_id'];
+        $remitente_nombre = $dlp_row['remitente_nombre'] ?: 'Usuario';
+        $texto = $dlp_row['texto_intentado'];
+
+        // 1. Insertar el mensaje real en la conversación
+        $stmt_ins = $conn->prepare("INSERT INTO mensajes (conversacion_id, remitente_id, mensaje, enviado_en, leido) VALUES (?, ?, ?, NOW(), 0)");
+        $stmt_ins->bind_param("iis", $conv_id, $remitente_id, $texto);
+        $ok = $stmt_ins->execute();
+        $stmt_ins->close();
+
+        if (!$ok) {
+            // Revertir el claim: el mensaje no llegó a insertarse, permitir reintento
+            $stmt_unclaim = $conn->prepare("UPDATE dlp_intentos SET liberado = 0 WHERE id = ?");
+            $stmt_unclaim->bind_param("i", $dlp_id);
+            $stmt_unclaim->execute();
+            $stmt_unclaim->close();
+
+            echo json_encode(['ok' => false, 'msg' => 'Error al insertar el mensaje']);
+            exit;
+        }
+
+        // 2. Resucitar la conversación si estaba oculta para alguna de las partes
+        $stmt_res = $conn->prepare("UPDATE conversaciones SET oculto_comprador = 0, oculto_vendedor = 0, ultima_interaccion = NOW() WHERE id = ?");
+        $stmt_res->bind_param("i", $conv_id);
+        $stmt_res->execute();
+        $stmt_res->close();
+
+        // 3. Notificar al destinatario igual que un mensaje nuevo normal.
+        //    El mensaje ya quedó insertado y liberado arriba — un fallo acá
+        //    (Exception o Error fatal de PHP) no debe revertir nada de eso.
+        try {
+            require_once __DIR__ . '/helpers/notificaciones_chat.php';
+            nb_notificar_nuevo_mensaje($conn, $conv_id, $remitente_id, $remitente_nombre, $texto);
+        } catch (\Throwable $e) {
+            @file_put_contents(__DIR__ . '/../logs/push.log',
+                "[" . date('Y-m-d H:i:s') . "] ERROR notificacion liberar_mensaje_dlp #$dlp_id: " . $e->getMessage() . "\n",
+                FILE_APPEND);
+        }
+
+        echo json_encode(['ok' => true]);
         exit;
     }
 
@@ -458,7 +545,7 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
 
     // Intentos DLP bloqueados para esta conversación
     $stmt_dlp = $conn->prepare("
-        SELECT d.id, d.categoria, d.texto_intentado, d.fecha, d.revisado_admin,
+        SELECT d.id, d.categoria, d.texto_intentado, d.fecha, d.revisado_admin, d.liberado,
                a.nombre AS remitente_nombre
         FROM dlp_intentos d
         LEFT JOIN alumnos a ON d.remitente_id = a.id
@@ -490,6 +577,7 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
             echo '</div>';
             foreach ($dlp_rows as $dlp) {
                 $revisado = (bool)$dlp['revisado_admin'];
+                $liberado = (bool)$dlp['liberado'];
                 $fecha_dlp = $dlp['fecha'] ? date('d/m/Y H:i', strtotime($dlp['fecha'])) : '--';
                 $nombre_rem = htmlspecialchars($dlp['remitente_nombre'] ?? 'Desconocido', ENT_QUOTES, 'UTF-8');
                 $texto = htmlspecialchars($dlp['texto_intentado'], ENT_QUOTES, 'UTF-8');
@@ -503,6 +591,11 @@ if (isset($_GET['ajax_messages']) && isset($_GET['id'])) {
                 if ($revisado) echo '<span class="text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Revisado</span>';
                 echo '</div>';
                 echo '<div class="bg-white border border-red-100 rounded-xl px-3 py-2 text-xs text-gray-700 font-mono leading-relaxed break-all">' . $texto . '</div>';
+                if ($liberado) {
+                    echo '<div class="mt-2"><span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Liberado ✓ — enviado al destinatario</span></div>';
+                } else {
+                    echo '<div class="mt-2"><button class="btn-liberar-dlp bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all shadow-sm" data-dlp-id="' . (int)$dlp['id'] . '">Liberar y enviar al destinatario</button></div>';
+                }
                 echo '</div>';
             }
             if ($hay_pendientes) {
@@ -1107,6 +1200,42 @@ if ($chat_seleccionado) {
                         showToast('Error de conexión', 'error');
                         btn.disabled = false;
                         btn.textContent = 'Marcar todos como revisados';
+                    });
+            });
+        }
+
+        // ==========================================
+        // DLP: liberar mensaje individual (event delegation sobre chatContainer)
+        // ==========================================
+        if (chatContainer) {
+            chatContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.btn-liberar-dlp');
+                if (!btn) return;
+
+                if (!confirm('¿Liberar este mensaje? Se insertará en la conversación real y se notificará al destinatario (push/email), igual que un mensaje nuevo.')) return;
+
+                const dlpId = btn.dataset.dlpId;
+                btn.disabled = true;
+                btn.textContent = 'Liberando...';
+                const fd = new FormData();
+                fd.append('ajax_accion', 'liberar_mensaje_dlp');
+                fd.append('dlp_id', dlpId);
+                fetch(requestUri, { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.ok) {
+                            showToast('Mensaje liberado y enviado', 'ok');
+                            fetchMensajes(true);
+                        } else {
+                            showToast(data.msg || 'Error al liberar', 'error');
+                            btn.disabled = false;
+                            btn.textContent = 'Liberar y enviar al destinatario';
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Error de conexión', 'error');
+                        btn.disabled = false;
+                        btn.textContent = 'Liberar y enviar al destinatario';
                     });
             });
         }
