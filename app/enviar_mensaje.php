@@ -50,12 +50,16 @@ if ($es_express && $contexto === 'conversacion') {
 // 4. CAPA DLP NUBIRA (DATA LOSS PREVENTION) - ESTRICTO Y EDUCATIVO
 // =========================================================================================
 $mensaje_lower = mb_strtolower($mensaje, 'UTF-8');
+
+// Núcleo reutilizado del patrón 'telefono': 7+ dígitos consecutivos con separadores opcionales
+$nucleo_digitos_tel = '(?:\d[\s\-\.]*){7,}';
+
 $patrones_bloqueo = [
     // 1. CORREOS ELECTRÓNICOS (Normales y Ofuscados)
     'email'              => '/[a-z0-9._%+-]+(?:@|\s+arroba\s+|\[arroba\]|\(arroba\))[a-z0-9.-]+(?:\.|\s+punto\s+|\[punto\])[a-z]{2,}/i',
 
     // 2. TELÉFONOS (Atrapa +569, 9, espacios, guiones y puntos)
-    'telefono'           => '/(?:\+?56\s*9|9)?[\s\-\.]*(?:\d[\s\-\.]*){7,}/',
+    'telefono'           => '/(?:\+?56\s*9|9)?[\s\-\.]*' . $nucleo_digitos_tel . '/',
 
     // 3. REDES SOCIALES (Nombres, siglas y variaciones fonéticas)
     'redes'              => '/\b(wh?a[ts]+s?[aá]pp?|wasap|watsap|whsatap|guatsap|wsp|wa\.me|instagram|insta|ig|face|fb|tiktok|tk|telegram|tg|t\.me|discord|dc|linktree|x\.com|twitter|tw|linkedin|in)\b/i',
@@ -64,7 +68,11 @@ $patrones_bloqueo = [
     'banco'              => '/\b(transferencia|transferir|cuenta rut|cta rut|banco|santander|bci|estado|scotiabank|itau|tenpo|mach|mercadopago|mp|pago rut|datos de mi cuenta|mi rut|rut:)\b/i',
 
     // 5. INTENCIÓN DE CONTACTO Y UBICACIÓN
-    'intencion_contacto' => '/\b(contacto|celular|fono|tel[eé]fono|ll[aá]mame|llamada|mi n[uú]mero|correo|email|direcci[oó]n|calle|pasaje|vives en|vivo en|mi casa|junt[eé]monos|reunámonos|zoom|meet|teams|skype)\b/i',
+    // 'celular', 'correo', 'email', 'juntémonos'/'reunámonos' se sacaron de esta lista:
+    // - 'celular' ahora exige contexto (choca con "biología/división/membrana celular") — ver 5b más abajo
+    // - 'correo'/'email' eran redundantes con la categoría 1, que ya detecta correos reales
+    // - 'juntémonos'/'reunámonos' ahora exigen mención de plataforma externa — ver 5c más abajo
+    'intencion_contacto' => '/\b(contacto|fono|tel[eé]fono|ll[aá]mame|llamada|mi n[uú]mero|direcci[oó]n|calle|pasaje|vives en|vivo en|mi casa|zoom|meet|teams|skype)\b/i',
 
     // 6. IDENTIDAD Y BÚSQUEDA (Evita que se busquen por fuera)
     'identidad'          => '/\b(mi nombre es|me llamo|mi apellido|me dicen|puedes decirme|b[úu]scame|encontrarme|encontrame|soy el de|mi perfil|mi cuenta)\b/i',
@@ -73,28 +81,57 @@ $patrones_bloqueo = [
     'urls'               => '/(http|https|www\.)/i'
 ];
 
+// Bloquea el mensaje y registra el intento en dlp_intentos (no debe romper el flujo si falla)
+function nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, $categoria, $pattern_desc) {
+    try {
+        $stmt_dlp = $conn->prepare(
+            "INSERT INTO dlp_intentos (conversacion_id, remitente_id, categoria, patron_matched, texto_intentado)
+             VALUES (?, ?, ?, ?, ?)"
+        );
+        if ($stmt_dlp) {
+            $patron_safe = mb_substr($pattern_desc, 0, 200);
+            $stmt_dlp->bind_param("iisss", $id_ref, $my_id, $categoria, $patron_safe, $mensaje);
+            $stmt_dlp->execute();
+            $stmt_dlp->close();
+        }
+    } catch (Exception $e) {}
+
+    // Enfoque Nubira 2.0: No damos pistas. Recordamos la regla.
+    echo json_encode([
+        'success' => false,
+        'error' => "⚠️ Por tu seguridad y la garantía de Nubira, no permitimos compartir identidad, redes ni medios de pago en el chat. Reescribe tu mensaje sin información externa."
+    ]);
+    exit;
+}
+
 foreach ($patrones_bloqueo as $categoria => $pattern) {
     if (preg_match($pattern, $mensaje_lower)) {
-        // Registrar intento DLP silenciosamente — no debe romper el flujo si falla
-        try {
-            $stmt_dlp = $conn->prepare(
-                "INSERT INTO dlp_intentos (conversacion_id, remitente_id, categoria, patron_matched, texto_intentado)
-                 VALUES (?, ?, ?, ?, ?)"
-            );
-            if ($stmt_dlp) {
-                $patron_safe = mb_substr($pattern, 0, 200);
-                $stmt_dlp->bind_param("iisss", $id_ref, $my_id, $categoria, $patron_safe, $mensaje);
-                $stmt_dlp->execute();
-                $stmt_dlp->close();
-            }
-        } catch (Exception $e) {}
+        nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, $categoria, $pattern);
+    }
+}
 
-        // Enfoque Nubira 2.0: No damos pistas. Recordamos la regla.
-        echo json_encode([
-            'success' => false,
-            'error' => "⚠️ Por tu seguridad y la garantía de Nubira, no permitimos compartir identidad, redes ni medios de pago en el chat. Reescribe tu mensaje sin información externa."
-        ]);
-        exit;
+// 5b. "celular" con contexto: solo bloquea si aparece junto a una frase explícita de compartir número
+//     o cerca (±25 caracteres, en unidades de caracteres UTF-8 — no bytes, para evitar desalinear la
+//     ventana con tildes/ñ) de una secuencia de 7+ dígitos, reutilizando el núcleo de 'telefono'.
+//     Evita el falso positivo de "biología celular" / "división celular" / "membrana celular".
+$pos_celular = mb_stripos($mensaje_lower, 'celular', 0, 'UTF-8');
+if ($pos_celular !== false) {
+    $inicio_ventana = max(0, $pos_celular - 25);
+    $ventana = mb_substr($mensaje_lower, $inicio_ventana, 25 + mb_strlen('celular', 'UTF-8') + 25, 'UTF-8');
+    $celular_frase = '/\b(mi|tu|su)\s+celular\b|\bn[uú]mero\s+celular\b/i';
+
+    if (preg_match($celular_frase, $ventana) || preg_match('/' . $nucleo_digitos_tel . '/', $ventana)) {
+        nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, 'intencion_contacto', 'celular (con contexto)');
+    }
+}
+
+// 5c. "juntémonos"/"reunámonos" con contexto: solo bloquea si el mensaje también menciona una
+//     plataforma externa (Zoom/Meet/Teams/Skype/WhatsApp/Telegram/Discord). La palabra sola no
+//     debe bloquear la coordinación normal de horario de clase dentro de Nubira.
+if (preg_match('/\b(junt[eé]monos|reun[aá]monos)\b/i', $mensaje_lower)) {
+    $patron_plataformas = '/\b(zoom|meet|teams|skype|wh?a[ts]+s?[aá]pp?|wasap|watsap|whsatap|guatsap|wsp|wa\.me|telegram|tg|t\.me|discord)\b/i';
+    if (preg_match($patron_plataformas, $mensaje_lower)) {
+        nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, 'intencion_contacto', 'juntemonos/reunamonos + plataforma externa');
     }
 }
 // =========================================================================================
