@@ -21,6 +21,7 @@ if (file_exists(__DIR__ . '/init_sesion.php')) {
 
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/helpers/usuario_helper.php';
+require_once $app_dir . '/helpers/horarios.php';
 
 // 2. CANDADO ESTRICTO (Visitantes fuera)
 if (function_exists('proteger_ruta')) {
@@ -31,6 +32,12 @@ if (function_exists('proteger_ruta')) {
 
 // 3. CONEXIÓN
 if (!isset($conn)) require_once $app_dir . '/conexion.php';
+
+// AUTO-MIGRACIÓN: columna es_paes (etiqueta "Prepara para la PAES")
+$check_col_paes = $conn->query("SHOW COLUMNS FROM servicios LIKE 'es_paes'");
+if ($check_col_paes && $check_col_paes->num_rows === 0) {
+    $conn->query("ALTER TABLE servicios ADD COLUMN es_paes TINYINT(1) NOT NULL DEFAULT 0");
+}
 
 // =========================================================================
 // 🛡️ [NUBIRA SHIELD] MIDDLEWARE ANTI-BOT (Nivel Arquitectura)
@@ -137,6 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
 
     if (!$titulo || !$descripcion || !$categoria || !$modalidad) {
         if (empty($mensaje)) $mensaje = "Faltan campos obligatorios.";
+    } elseif ($precio < 10000) {
+        $mensaje = "El precio mínimo es \$10.000.";
     } elseif (contiene_contacto($titulo) || contiene_contacto($descripcion)) {
         $mensaje = "Por seguridad, no incluyas teléfonos ni correos.";
     } else {
@@ -155,11 +164,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
         } else {
             // Servicios nuevos: imagen legacy vacía; el resolver prioriza imagen_banco_id.
             $imagen_legacy = '';
-            $sql = "INSERT INTO servicios (alumno_id, institucion, titulo, descripcion, nombre_oferente, categoria, modalidad, ubicacion, precio, correo, imagen, imagen_banco_id, estado, fecha_publicacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', NOW())";
+            $es_paes = isset($_POST['es_paes']) ? 1 : 0;
+            $sql = "INSERT INTO servicios (alumno_id, institucion, titulo, descripcion, nombre_oferente, categoria, modalidad, ubicacion, precio, correo, imagen, imagen_banco_id, estado, fecha_publicacion, es_paes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', NOW(), ?)";
             $stmt = $conn->prepare($sql);
 
             if ($stmt) {
-                $stmt->bind_param("isssssssdssi", $usuario_id, $institucion, $titulo, $descripcion, $nombre_oferente, $categoria, $modalidad, $ubicacion, $precio, $correo, $imagen_legacy, $imagen_banco_id);
+                $stmt->bind_param("isssssssdssii", $usuario_id, $institucion, $titulo, $descripcion, $nombre_oferente, $categoria, $modalidad, $ubicacion, $precio, $correo, $imagen_legacy, $imagen_banco_id, $es_paes);
 
                 if ($stmt->execute()) {
                     $nuevo_servicio_id = $stmt->insert_id;
@@ -313,7 +323,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                         <?php endif; ?>
                     <?php endif; ?>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 md:mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4 md:mb-6">
                         <div>
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Categoría</label>
                             <div class="relative">
@@ -335,6 +345,13 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Modalidad</label>
                             <div class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl block p-3.5">Online</div>
                             <input type="hidden" name="modalidad" id="modalidad" value="Online">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">PAES</label>
+                            <label title="Márcalo si este servicio ayuda a rendir la prueba de admisión" class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3.5 cursor-pointer select-none h-[50px]">
+                                <input type="checkbox" name="es_paes" id="es_paes" value="1" class="w-4 h-4 rounded border-gray-300 text-[#54A6D8] focus:ring-[#54A6D8] shrink-0">
+                                <span class="text-sm font-bold text-gray-900">Prepara para la PAES</span>
+                            </label>
                         </div>
                     </div>
 
@@ -370,17 +387,18 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold pointer-events-none">$</span>
                             
                             <!-- Input visible: formato chileno con puntos -->
-                            <input type="text" 
-                                   id="precio_visible" 
+                            <input type="text"
+                                   id="precio_visible"
                                    inputmode="numeric"
                                    autocomplete="off"
-                                   placeholder="0 = A convenir"
+                                   placeholder="Mínimo $10.000"
                                    class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-lg font-bold rounded-xl pl-8 p-3.5 focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent transition outline-none">
-                            
+
                             <!-- Input real que viaja al backend (siempre numérico puro) -->
-                            <input type="hidden" name="precio" id="precio" value="0">
+                            <input type="hidden" name="precio" id="precio" value="">
                         </div>
-                        <p class="text-xs text-gray-400 mt-1 ml-1">Pon "0" si el precio es a convenir o gratuito.</p>
+                        <p class="text-xs text-gray-400 mt-1 ml-1">El precio mínimo es $10.000.</p>
+                        <p id="precio-error" class="hidden text-xs font-bold text-red-600 mt-1 ml-1">El precio debe ser al menos $10.000.</p>
                     </div>
 
                 </div>
@@ -399,6 +417,19 @@ require_once $app_dir . '/componentes/sidebar.php';
 </div>
 
             </form>
+
+            <!-- [NUBIRA 2.0] Horario de disponibilidad — FUERA del <form>, se guarda por AJAX
+                 inmediatamente después de crear el servicio (mismo patrón que el video). -->
+            <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm mt-6" id="seccion-horario">
+                <div class="mb-5">
+                    <h2 class="text-base font-bold text-gray-900">Horario de disponibilidad</h2>
+                    <p class="text-xs text-gray-400 leading-relaxed max-w-lg mt-1">
+                        Define al menos un bloque en el que estés disponible. Es obligatorio para poder aprobar tu servicio.
+                    </p>
+                </div>
+
+                <?php require_once __DIR__ . '/componentes/grilla_horarios.php'; ?>
+            </div>
 
             <!-- Video de presentación (se sube DESPUÉS de crear el servicio vía XHR) -->
             <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm mt-6" id="seccion-video">
@@ -671,6 +702,10 @@ function calcQuality() {
             formateando = false;
         }
     });
+
+    window.precioEsValido = function() {
+        return parseInt(hidden.value || '0', 10) >= 10000;
+    };
 })();
 
 // Listeners de calidad para los demás campos
@@ -814,17 +849,44 @@ if (window.innerWidth < 768) {
         ocultarError();
     };
 
-    // Intercepta submit SOLO cuando hay video + consent válidos.
-    // La validación del banco corre primero (listener registrado antes en setupBancoCarrusel).
+    // Intercepta submit SIEMPRE: precio y horario son obligatorios, con o sin video.
     elForm && elForm.addEventListener('submit', function (e) {
-        if (!archivoListo || !elConsent.checked) return; // sin video → submit normal
-
-        // Si el banco no está seleccionado, dejar que su listener muestre el error
-        const bancoId = document.getElementById('imagen_banco_id')?.value;
-        if (!bancoId) return;
-
         e.preventDefault();
 
+        function mostrarToastErrorTop(msg) {
+            const prev = document.getElementById('toast');
+            if (prev) prev.remove();
+            const t = document.createElement('div');
+            t.id = 'toast';
+            t.className = 'mb-6 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm bg-red-50 text-red-700 border border-red-200';
+            t.innerHTML = '<span class="text-sm font-bold flex-1">' + msg + '</span><button type="button" onclick="this.parentElement.remove()" class="text-sm opacity-70">✕</button>';
+            const card = elForm.querySelector('.bg-white');
+            if (card) card.prepend(t);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Si hay video pero falta consentimiento o banco, dejar que esos listeners muestren su propio error.
+        const bancoId = document.getElementById('imagen_banco_id')?.value;
+        if (archivoListo && (!elConsent.checked || !bancoId)) return;
+
+        // 1. Validar precio y horario ANTES de enviar nada.
+        if (!window.precioEsValido || !window.precioEsValido()) {
+            document.getElementById('precio-error')?.classList.remove('hidden');
+            document.getElementById('precio_visible')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        document.getElementById('precio-error')?.classList.add('hidden');
+
+        const horario = window.serializarHorarioGrilla ? window.serializarHorarioGrilla() : { json: null, error: 'No se pudo leer el horario.' };
+        if (horario.error) {
+            const errEl = document.getElementById('horario-error');
+            if (errEl) { errEl.textContent = horario.error; errEl.classList.remove('hidden'); }
+            document.getElementById('seccion-horario')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
+        document.getElementById('horario-error')?.classList.add('hidden');
+
+        // 2. Ambas validaciones pasaron → deshabilitar botón y crear el servicio.
         elBtnSubmit.disabled = true;
         if (elBtnText) elBtnText.textContent = 'Publicando...';
 
@@ -843,81 +905,116 @@ if (window.innerWidth < 768) {
                     const errMsg  = toastEl ? toastEl.textContent.trim() : 'Error al publicar el servicio. Intenta de nuevo.';
                     elBtnSubmit.disabled = false;
                     if (elBtnText) elBtnText.textContent = 'Publicar Servicio';
-                    const prev = document.getElementById('toast');
-                    if (prev) prev.remove();
-                    const t = document.createElement('div');
-                    t.id = 'toast';
-                    t.className = 'mb-6 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm bg-red-50 text-red-700 border border-red-200';
-                    t.innerHTML = '<span class="text-sm font-bold flex-1">' + errMsg + '</span><button type="button" onclick="this.parentElement.remove()" class="text-sm opacity-70">✕</button>';
-                    const card = elForm.querySelector('.bg-white');
-                    if (card) card.prepend(t);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    mostrarToastErrorTop(errMsg);
                     return;
                 }
 
-                // Servicio creado → mostrar toast verde del server antes de subir
-                const toastOk = doc.querySelector('#toast');
-                if (toastOk) {
-                    const prev = document.getElementById('toast');
-                    if (prev) prev.remove();
-                    const t = document.createElement('div');
-                    t.id = 'toast';
-                    t.className = toastOk.className;
-                    t.innerHTML = toastOk.innerHTML;
-                    const card = elForm.querySelector('.bg-white');
-                    if (card) card.prepend(t);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
+                // 3. Servicio creado → guardar horario inmediatamente vía AJAX.
+                if (elBtnText) elBtnText.textContent = 'Guardando horario...';
 
-                // Subir video
-                if (elBtnText) elBtnText.textContent = 'Subiendo video...';
-                if (elProgressWrap) elProgressWrap.classList.remove('hidden');
+                const hfd = new FormData();
+                hfd.append('servicio_id', svcId);
+                hfd.append('horarios_json', horario.json);
 
-                const vfd = new FormData();
-                vfd.append('video',               elInput.files[0]);
-                vfd.append('servicio_id',         svcId);
-                vfd.append('csrf_token',          CSRF_VIDEO);
-                vfd.append('consentimiento_rrss', '1');
-                if (capturaThumbBlob) {
-                    vfd.append('thumb', capturaThumbBlob, 'thumb.jpg');
-                }
+                return fetch('/app/guardar_horario_servicio.php', { method: 'POST', body: hfd })
+                    .then(function (r) { return r.json(); })
+                    .then(function (resHorario) {
+                        if (resHorario.success) {
+                            // 5. Todo salió bien → continuar (video si corresponde, o éxito directo).
+                            return continuarTrasHorario(doc, svcId, bancoId);
+                        }
 
-                const xhr = new XMLHttpRequest();
-
-                xhr.upload.addEventListener('progress', function (ev) {
-                    if (!ev.lengthComputable) return;
-                    const pct = Math.round((ev.loaded / ev.total) * 100);
-                    if (elProgressBar) elProgressBar.style.width = pct + '%';
-                    if (elProgressPct) elProgressPct.textContent = pct + '%';
-                });
-
-                function redirigir(ok, id) {
-                    if (ok) {
-                        if (elProgressBar) { elProgressBar.style.width = '100%'; elProgressBar.style.background = '#10b981'; }
-                        if (elProgressPct) elProgressPct.textContent = '100%';
-                        setTimeout(function () { window.location.href = '/clases-servicios'; }, 700);
-                    } else {
-                        // Servicio creado pero video falló: ir a editar para reintentar
-                        setTimeout(function () { window.location.href = '/editar-servicio?id=' + id; }, 700);
-                    }
-                }
-
-                xhr.addEventListener('load', function () {
-                    let res = {};
-                    try { res = JSON.parse(xhr.responseText); } catch (ex) {}
-                    redirigir(xhr.status === 200 && res.ok, svcId);
-                });
-                xhr.addEventListener('error',   function () { redirigir(false, svcId); });
-                xhr.addEventListener('timeout', function () { redirigir(false, svcId); });
-
-                xhr.timeout = 120000;
-                xhr.open('POST', '/subir-video-servicio');
-                xhr.send(vfd);
+                        // 4. Guardado de horario falló → rollback.
+                        const rfd = new FormData();
+                        rfd.append('servicio_id', svcId);
+                        return fetch('/app/eliminar_servicio_incompleto.php', { method: 'POST', body: rfd })
+                            .then(function (r) { return r.json(); })
+                            .then(function (resRollback) {
+                                elBtnSubmit.disabled = false;
+                                if (elBtnText) elBtnText.textContent = 'Publicar Servicio';
+                                if (resRollback && resRollback.success) {
+                                    mostrarToastErrorTop('No se pudo guardar el horario (' + (resHorario.error || 'error desconocido') + '). Tu servicio NO quedó publicado — completa el formulario de nuevo.');
+                                } else {
+                                    mostrarToastErrorTop('Hubo un problema al publicar tu servicio y no pudimos revertirlo automáticamente. Contacta a soporte con este ID para que lo revisemos: #' + svcId);
+                                }
+                            })
+                            .catch(function () {
+                                elBtnSubmit.disabled = false;
+                                if (elBtnText) elBtnText.textContent = 'Publicar Servicio';
+                                mostrarToastErrorTop('Hubo un problema al publicar tu servicio y no pudimos revertirlo automáticamente. Contacta a soporte con este ID para que lo revisemos: #' + svcId);
+                            });
+                    });
             })
             .catch(function () {
                 elBtnSubmit.disabled = false;
                 if (elBtnText) elBtnText.textContent = 'Publicar Servicio';
             });
+
+        function continuarTrasHorario(doc, svcId, bancoId) {
+            // Horario guardado. Si no hay video, terminamos con el mensaje de éxito normal.
+            if (!archivoListo || !elConsent.checked || !bancoId) {
+                setTimeout(function () { window.location.href = '/clases-servicios'; }, 700);
+                return;
+            }
+
+            // Servicio + horario listos → mostrar el toast verde de éxito del server antes de subir video
+            const toastOk = doc.querySelector('#toast');
+            if (toastOk) {
+                const prev = document.getElementById('toast');
+                if (prev) prev.remove();
+                const t = document.createElement('div');
+                t.id = 'toast';
+                t.className = toastOk.className;
+                t.innerHTML = toastOk.innerHTML;
+                const card = elForm.querySelector('.bg-white');
+                if (card) card.prepend(t);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            if (elBtnText) elBtnText.textContent = 'Subiendo video...';
+            if (elProgressWrap) elProgressWrap.classList.remove('hidden');
+
+            const vfd = new FormData();
+            vfd.append('video',               elInput.files[0]);
+            vfd.append('servicio_id',         svcId);
+            vfd.append('csrf_token',          CSRF_VIDEO);
+            vfd.append('consentimiento_rrss', '1');
+            if (capturaThumbBlob) {
+                vfd.append('thumb', capturaThumbBlob, 'thumb.jpg');
+            }
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function (ev) {
+                if (!ev.lengthComputable) return;
+                const pct = Math.round((ev.loaded / ev.total) * 100);
+                if (elProgressBar) elProgressBar.style.width = pct + '%';
+                if (elProgressPct) elProgressPct.textContent = pct + '%';
+            });
+
+            function redirigir(ok, id) {
+                if (ok) {
+                    if (elProgressBar) { elProgressBar.style.width = '100%'; elProgressBar.style.background = '#10b981'; }
+                    if (elProgressPct) elProgressPct.textContent = '100%';
+                    setTimeout(function () { window.location.href = '/clases-servicios'; }, 700);
+                } else {
+                    // Servicio y horario ya quedaron guardados; solo el video falló → reintentar en editar
+                    setTimeout(function () { window.location.href = '/editar-servicio?id=' + id; }, 700);
+                }
+            }
+
+            xhr.addEventListener('load', function () {
+                let res = {};
+                try { res = JSON.parse(xhr.responseText); } catch (ex) {}
+                redirigir(xhr.status === 200 && res.ok, svcId);
+            });
+            xhr.addEventListener('error',   function () { redirigir(false, svcId); });
+            xhr.addEventListener('timeout', function () { redirigir(false, svcId); });
+
+            xhr.timeout = 120000;
+            xhr.open('POST', '/subir-video-servicio');
+            xhr.send(vfd);
+        }
     });
 
     function mostrarError(msg) {
