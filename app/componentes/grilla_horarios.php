@@ -2,10 +2,13 @@
 /**
  * PARTIAL: Grilla semanal de horario de disponibilidad.
  * El includer debe haber hecho require_once helpers/horarios.php antes.
- * Variable opcional antes de incluir: $horarios_info (array{tiene_horarios,dias,dia_proximo}).
+ * Variables opcionales antes de incluir:
+ *   $horarios_info         array{tiene_horarios,dias,dia_proximo}
+ *   $horario_accion_texto  string  verbo a mostrar en el mensaje de error ("publicar" por defecto, "guardar" en editar_servicio.php)
  */
-$horarios_info = $horarios_info ?? ['tiene_horarios' => false, 'dias' => [], 'dia_proximo' => null];
-$dias_semana   = dias_semana_nubira();
+$horarios_info        = $horarios_info ?? ['tiene_horarios' => false, 'dias' => [], 'dia_proximo' => null];
+$horario_accion_texto  = $horario_accion_texto ?? 'publicar';
+$dias_semana           = dias_semana_nubira();
 ?>
 <div class="space-y-4" id="dias-container">
     <?php foreach ($dias_semana as $dia):
@@ -61,7 +64,7 @@ $dias_semana   = dias_semana_nubira();
 </div>
 
 <div id="horario-error" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-    Marca al menos un bloque de disponibilidad antes de publicar.
+    Marca al menos un bloque de disponibilidad antes de <?= htmlspecialchars($horario_accion_texto) ?>.
 </div>
 
 <script>
@@ -158,7 +161,7 @@ $dias_semana   = dias_semana_nubira();
 
         const tieneAlMenosUnBloque = Object.values(data).some(bloques => bloques.length > 0);
         if (!error && !tieneAlMenosUnBloque) {
-            error = 'Marca al menos un bloque de disponibilidad antes de publicar.';
+            error = 'Marca al menos un bloque de disponibilidad antes de <?= htmlspecialchars($horario_accion_texto) ?>.';
         }
 
         return { json: JSON.stringify(data), error };

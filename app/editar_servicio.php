@@ -43,6 +43,7 @@ if (file_exists($app_dir . '/iconos.php')) {
 }
 require_once $app_dir . '/helpers/seo.php';
 require_once $app_dir . '/helpers/usuario_helper.php';
+require_once $app_dir . '/helpers/horarios.php';
 
 // 3. SEGURIDAD DE SESIÓN
 if (!isset($_SESSION['usuario_id'])) { header("Location: /login"); exit; }
@@ -79,6 +80,7 @@ $imagen_actual   = $servicio['imagen'];
 $institucion     = $servicio['institucion'];
 $correo          = $servicio['correo'];
 $nombre_oferente = $servicio['nombre_oferente'];
+$horarios_info   = parsear_horarios_servicio($servicio['horarios_json'] ?? null);
 
 // [NUBIRA 2.0] CSRF TOKEN — Protección contra Cross-Site Request Forgery
 if (empty($_SESSION['csrf_token_editar'])) {
@@ -126,6 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $categoria   = trim(strip_tags($_POST['categoria'] ?? ''));
     $modalidad   = trim(strip_tags($_POST['modalidad'] ?? ''));
     $precio      = (float)($_POST['precio'] ?? 0);
+    $es_paes     = isset($_POST['es_paes']) ? 1 : 0;
+    $horarios_json = trim($_POST['horarios_json'] ?? '');
     $preview     = mb_substr($descripcion, 0, 80) . (mb_strlen($descripcion) > 80 ? "..." : "");
 
     // Validación defensiva de longitud en backend
@@ -136,6 +140,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$titulo || !$descripcion || !$categoria || !$modalidad) {
         if (empty($mensaje)) $mensaje = "Faltan campos obligatorios.";
+    } elseif ($precio < 10000) {
+        $mensaje = "El precio mínimo es \$10.000.";
+    } elseif (($err_horario = validar_horarios_json($horarios_json)) !== null) {
+        $mensaje = $err_horario;
+    } elseif (!parsear_horarios_servicio($horarios_json)['tiene_horarios']) {
+        $mensaje = "Debes marcar al menos un bloque de disponibilidad en tu horario.";
     } elseif (mb_strlen($descripcion) < 50) {
         $mensaje = "Descripción muy corta (mínimo 50 caracteres).";
     } elseif (contiene_contacto($titulo) || contiene_contacto($descripcion)) {
@@ -157,12 +167,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Se mantiene la columna imagen (legacy) SIN tocar; el resolver prioriza imagen_banco_id.
             $sql = "UPDATE servicios SET
                     titulo=?, preview=?, descripcion=?, categoria=?, modalidad=?,
-                    precio=?, imagen_banco_id=?,
+                    precio=?, imagen_banco_id=?, horarios_json=?, es_paes=?,
                     estado='pendiente', fecha_revision=NOW()
                     WHERE id=?";
 
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sssssdii", $titulo, $preview, $descripcion, $categoria, $modalidad, $precio, $imagen_banco_id, $id_servicio);
+            $stmt->bind_param("sssssdisii", $titulo, $preview, $descripcion, $categoria, $modalidad, $precio, $imagen_banco_id, $horarios_json, $es_paes, $id_servicio);
 
             if ($stmt->execute()) {
                 $mensaje = "Cambios guardados. Pendiente de revisión.";
@@ -308,7 +318,10 @@ if (!function_exists('nav_class')) {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 md:mb-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Categoría</label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide">Categoría</label>
+                                <span class="text-[10px] font-semibold text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5">Modalidad: Online</span>
+                            </div>
                             <div class="relative">
                                 <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
                                     <option value="">Selecciona...</option>
@@ -326,11 +339,14 @@ if (!function_exists('nav_class')) {
                                     <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
                                 </div>
                             </div>
+                            <input type="hidden" name="modalidad" id="modalidad" value="Online">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Modalidad</label>
-                            <div class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl block p-3.5">Online</div>
-                            <input type="hidden" name="modalidad" id="modalidad" value="Online">
+                            <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">PAES</label>
+                            <label title="Márcalo si este servicio ayuda a rendir la prueba de admisión" class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3.5 cursor-pointer select-none h-[50px]">
+                                <input type="checkbox" name="es_paes" id="es_paes" value="1" <?= !empty($servicio['es_paes']) ? 'checked' : '' ?> class="w-4 h-4 rounded border-gray-300 text-[#54A6D8] focus:ring-[#54A6D8] shrink-0">
+                                <span class="text-sm font-bold text-gray-900">Prepara para la PAES</span>
+                            </label>
                         </div>
                     </div>
 
@@ -365,32 +381,44 @@ if (!function_exists('nav_class')) {
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold pointer-events-none">$</span>
                             
-                            <input type="text" 
-                                   id="precio_visible" 
+                            <input type="text"
+                                   id="precio_visible"
                                    inputmode="numeric"
                                    autocomplete="off"
-                                   placeholder="0 = A convenir"
+                                   placeholder="Mínimo $10.000"
                                    value="<?= $precio > 0 ? number_format($precio, 0, ',', '.') : '' ?>"
                                    class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-lg font-bold rounded-xl pl-8 p-3.5 focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent transition outline-none">
-                            
+
                             <input type="hidden" name="precio" id="precio" value="<?= (int)$precio ?>">
                         </div>
-                        <p class="text-xs text-gray-400 mt-1 ml-1">Pon "0" si el precio es a convenir o gratuito.</p>
+                        <p class="text-xs text-gray-400 mt-1 ml-1">El precio mínimo es $10.000.</p>
+                        <p id="precio-error" class="hidden text-xs font-bold text-red-600 mt-1 ml-1">El precio debe ser al menos $10.000.</p>
                     </div>
 
                 </div>
 
-                <!-- [NUBIRA 2.0] Wrapper sticky solo en móvil -->
-                <div class="md:static md:bg-transparent md:p-0 md:border-0 
-                            fixed bottom-0 left-0 right-0 z-40 
-                            bg-white/95 backdrop-blur-md 
-                            px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
-                            border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
-<button id="btn-submit" type="submit" 
-        class="w-full text-white bg-[#54A6D8] hover:bg-sky-600 font-bold rounded-2xl text-base px-5 py-4 text-center shadow-lg shadow-blue-200 hover:shadow-blue-300 transform active:scale-[0.99] transition-all flex items-center justify-center gap-2 [&>*]:pointer-events-none">
-    <span id="btn-text">Guardar Cambios</span> 
-    <?= icon('arrow-right', 'w-5 h-5') ?>
-</button>
+                <!-- [NUBIRA 2.0] Horario de disponibilidad — DENTRO del <form>: se guarda en el mismo UPDATE,
+                     no necesita AJAX aparte porque el servicio ya existe. -->
+                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm mt-6 overflow-hidden" id="seccion-horario">
+                    <button type="button" onclick="toggleAcordeonEditar('horario')" class="w-full flex items-start justify-between gap-3 p-4 md:p-8 text-left">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h2 class="text-base font-bold text-gray-900">Horario de disponibilidad</h2>
+                                <span class="text-[10px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 uppercase tracking-widest">Requerido</span>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-relaxed max-w-lg">
+                                Define al menos un bloque en el que estés disponible. Es obligatorio para poder aprobar tu servicio.
+                            </p>
+                        </div>
+                        <span id="acordeon-chevron-horario" class="shrink-0 text-gray-400 transition-transform duration-200 <?= $horarios_info['tiene_horarios'] ? 'rotate-180' : '' ?>">
+                            <?= icon('chevron-down', 'w-5 h-5') ?>
+                        </span>
+                    </button>
+
+                    <div id="acordeon-body-horario" class="<?= $horarios_info['tiene_horarios'] ? '' : 'hidden' ?> px-4 md:px-8 pb-4 md:pb-8 pt-4 border-t border-gray-100">
+                        <?php $horario_accion_texto = 'guardar'; require_once __DIR__ . '/componentes/grilla_horarios.php'; ?>
+                        <input type="hidden" name="horarios_json" id="input-horarios-json">
+                    </div>
                 </div>
 
             </form>
@@ -403,10 +431,8 @@ if (!function_exists('nav_class')) {
             $mostrar_form_upload = in_array($video_estado, ['sin_video', 'rechazado']);
             ?>
 
-            <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm mt-6" id="seccion-video">
-
-                <!-- Cabecera -->
-                <div class="flex items-start justify-between gap-3 mb-5">
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm mt-6 overflow-hidden" id="seccion-video">
+                <button type="button" onclick="toggleAcordeonEditar('video')" class="w-full flex items-start justify-between gap-3 p-4 md:p-8 text-left">
                     <div>
                         <div class="flex items-center gap-2 mb-1">
                             <h2 class="text-base font-bold text-gray-900">Video de presentación</h2>
@@ -417,20 +443,27 @@ if (!function_exists('nav_class')) {
                         </p>
                     </div>
 
-                    <?php if ($video_estado === 'aprobado'): ?>
-                        <span class="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 whitespace-nowrap">
-                            <?= icon('check-circle', 'w-3.5 h-3.5') ?> Publicado
+                    <div class="flex items-center gap-2 shrink-0">
+                        <?php if ($video_estado === 'aprobado'): ?>
+                            <span class="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 whitespace-nowrap">
+                                <?= icon('check-circle', 'w-3.5 h-3.5') ?> Publicado
+                            </span>
+                        <?php elseif ($video_estado === 'pendiente'): ?>
+                            <span class="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100 whitespace-nowrap">
+                                <?= icon('clock', 'w-3.5 h-3.5') ?> En revisión
+                            </span>
+                        <?php elseif ($video_estado === 'rechazado'): ?>
+                            <span class="flex items-center gap-1.5 text-[11px] font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 whitespace-nowrap">
+                                <?= icon('exclamation-triangle', 'w-3.5 h-3.5') ?> Rechazado
+                            </span>
+                        <?php endif; ?>
+                        <span id="acordeon-chevron-video" class="text-gray-400 transition-transform duration-200 <?= ($video_estado !== 'sin_video') ? 'rotate-180' : '' ?>">
+                            <?= icon('chevron-down', 'w-5 h-5') ?>
                         </span>
-                    <?php elseif ($video_estado === 'pendiente'): ?>
-                        <span class="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100 whitespace-nowrap">
-                            <?= icon('clock', 'w-3.5 h-3.5') ?> En revisión
-                        </span>
-                    <?php elseif ($video_estado === 'rechazado'): ?>
-                        <span class="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 whitespace-nowrap">
-                            <?= icon('exclamation-triangle', 'w-3.5 h-3.5') ?> Rechazado
-                        </span>
-                    <?php endif; ?>
-                </div>
+                    </div>
+                </button>
+
+                <div id="acordeon-body-video" class="<?= ($video_estado !== 'sin_video') ? '' : 'hidden' ?> px-4 md:px-8 pb-4 md:pb-8 pt-4 border-t border-gray-100">
 
                 <!-- Estado APROBADO: player + opción reemplazar -->
                 <?php if ($video_estado === 'aprobado' && $video_path): ?>
@@ -603,7 +636,23 @@ if (!function_exists('nav_class')) {
 
                 </div><!-- /video-upload-form -->
 
+                </div><!-- /acordeon-body-video -->
             </div><!-- /seccion-video -->
+
+            <!-- [NUBIRA 2.0] Wrapper sticky solo en móvil. Movido al final visual (después de
+                 Horario y Video); usa form="form-servicio" para seguir disparando el submit
+                 del form aunque ya no sea descendiente suyo. -->
+            <div class="md:static md:bg-transparent md:p-0 md:border-0
+                        fixed bottom-0 left-0 right-0 z-40
+                        bg-white/95 backdrop-blur-md
+                        px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
+                        border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] mt-6">
+                <button id="btn-submit" type="submit" form="form-servicio"
+                        class="w-full text-white bg-[#54A6D8] hover:bg-sky-600 font-bold rounded-2xl text-base px-5 py-4 text-center shadow-lg shadow-blue-200 hover:shadow-blue-300 transform active:scale-[0.99] transition-all flex items-center justify-center gap-2 [&>*]:pointer-events-none">
+                    <span id="btn-text">Guardar Cambios</span>
+                    <?= icon('arrow-right', 'w-5 h-5') ?>
+                </button>
+            </div>
 
             <script>
             (function () {
@@ -901,7 +950,52 @@ ui.titulo?.dispatchEvent(new Event('input'));
             formateando = false;
         }
     });
+
+    window.precioEsValido = function() {
+        return parseInt(hidden.value || '0', 10) >= 10000;
+    };
 })();
+
+window.toggleAcordeonEditar = function(nombre, forzarAbierto) {
+    const body = document.getElementById('acordeon-body-' + nombre);
+    const chevron = document.getElementById('acordeon-chevron-' + nombre);
+    if (!body) return;
+    const abrir = forzarAbierto === true ? true : body.classList.contains('hidden');
+    if (abrir) {
+        body.classList.remove('hidden');
+        chevron?.classList.add('rotate-180');
+    } else {
+        body.classList.add('hidden');
+        chevron?.classList.remove('rotate-180');
+    }
+};
+
+// Intercepta submit: precio y horario deben validarse antes de enviar.
+// El servicio ya existe (no hay AJAX de horario aparte ni rollback): si ambas
+// validaciones pasan, el submit sigue su curso normal con horarios_json ya
+// serializado en el hidden input, dentro del mismo POST/UPDATE.
+document.getElementById('form-servicio')?.addEventListener('submit', function (e) {
+    if (!window.precioEsValido || !window.precioEsValido()) {
+        e.preventDefault();
+        document.getElementById('precio-error')?.classList.remove('hidden');
+        document.getElementById('precio_visible')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+    document.getElementById('precio-error')?.classList.add('hidden');
+
+    const horario = window.serializarHorarioGrilla ? window.serializarHorarioGrilla() : { json: null, error: 'No se pudo leer el horario.' };
+    if (horario.error) {
+        e.preventDefault();
+        const errEl = document.getElementById('horario-error');
+        if (errEl) { errEl.textContent = horario.error; errEl.classList.remove('hidden'); }
+        window.toggleAcordeonEditar('horario', true);
+        document.getElementById('seccion-horario')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
+    document.getElementById('horario-error')?.classList.add('hidden');
+
+    document.getElementById('input-horarios-json').value = horario.json;
+});
 
 // Scroll into view en focus (móvil)
 if (window.innerWidth < 768) {

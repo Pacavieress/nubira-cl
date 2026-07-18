@@ -402,19 +402,6 @@ require_once $app_dir . '/componentes/sidebar.php';
 
                 </div>
 
-                <!-- [NUBIRA 2.0] Wrapper sticky solo en móvil. En escritorio queda inline. -->
-<div class="md:static md:bg-transparent md:p-0 md:border-0 
-            fixed bottom-0 left-0 right-0 z-40 
-            bg-white/95 backdrop-blur-md 
-            px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
-            border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
-    <button id="btn-submit" type="submit" 
-        class="w-full text-white bg-[#54A6D8] hover:bg-sky-600 font-bold rounded-2xl text-base px-5 py-4 text-center shadow-lg shadow-blue-200 hover:shadow-blue-300 transform active:scale-[0.99] transition-all flex items-center justify-center gap-2 [&>*]:pointer-events-none">
-    <span id="btn-text">Publicar Servicio</span> 
-    <?= icon('arrow-right', 'w-5 h-5') ?>
-</button>
-</div>
-
             </form>
 
             <!-- [NUBIRA 2.0] Horario de disponibilidad — FUERA del <form>, se guarda por AJAX
@@ -550,6 +537,21 @@ require_once $app_dir . '/componentes/sidebar.php';
                 </p>
                 </div><!-- /acordeon-body-video -->
             </div><!-- /seccion-video -->
+
+            <!-- [NUBIRA 2.0] Wrapper sticky solo en móvil. Movido al final visual (después de
+                 Horario y Video); usa form="form-servicio" para seguir disparando el submit
+                 del form aunque ya no sea descendiente suyo. -->
+            <div class="md:static md:bg-transparent md:p-0 md:border-0
+                        fixed bottom-0 left-0 right-0 z-40
+                        bg-white/95 backdrop-blur-md
+                        px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
+                        border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] mt-6">
+                <button id="btn-submit" type="submit" form="form-servicio"
+                    class="w-full text-white bg-[#54A6D8] hover:bg-sky-600 font-bold rounded-2xl text-base px-5 py-4 text-center shadow-lg shadow-blue-200 hover:shadow-blue-300 transform active:scale-[0.99] transition-all flex items-center justify-center gap-2 [&>*]:pointer-events-none">
+                    <span id="btn-text">Publicar Servicio</span>
+                    <?= icon('arrow-right', 'w-5 h-5') ?>
+                </button>
+            </div>
 
         </div>
     </div>
