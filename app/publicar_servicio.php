@@ -323,9 +323,12 @@ require_once $app_dir . '/componentes/sidebar.php';
                         <?php endif; ?>
                     <?php endif; ?>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4 md:mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 md:mb-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Categoría</label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide">Categoría</label>
+                                <span class="text-[10px] font-semibold text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5">Modalidad: Online</span>
+                            </div>
                             <div class="relative">
                                 <select name="categoria" id="categoria" class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent block p-3.5 pr-10 transition outline-none appearance-none cursor-pointer">
                                     <option value="">Selecciona una opción...</option>
@@ -340,10 +343,6 @@ require_once $app_dir . '/componentes/sidebar.php';
                                     <?= icon('chevron-down', 'w-4 h-4 text-gray-400') ?>
                                 </div>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-900 mb-1.5 uppercase tracking-wide">Modalidad</label>
-                            <div class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-base md:text-sm rounded-xl block p-3.5">Online</div>
                             <input type="hidden" name="modalidad" id="modalidad" value="Online">
                         </div>
                         <div>
@@ -420,20 +419,30 @@ require_once $app_dir . '/componentes/sidebar.php';
 
             <!-- [NUBIRA 2.0] Horario de disponibilidad — FUERA del <form>, se guarda por AJAX
                  inmediatamente después de crear el servicio (mismo patrón que el video). -->
-            <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm mt-6" id="seccion-horario">
-                <div class="mb-5">
-                    <h2 class="text-base font-bold text-gray-900">Horario de disponibilidad</h2>
-                    <p class="text-xs text-gray-400 leading-relaxed max-w-lg mt-1">
-                        Define al menos un bloque en el que estés disponible. Es obligatorio para poder aprobar tu servicio.
-                    </p>
-                </div>
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm mt-6 overflow-hidden" id="seccion-horario">
+                <button type="button" onclick="toggleAcordeonPublicar('horario')" class="w-full flex items-start justify-between gap-3 p-4 md:p-8 text-left">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 class="text-base font-bold text-gray-900">Horario de disponibilidad</h2>
+                            <span class="text-[10px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 uppercase tracking-widest">Requerido</span>
+                        </div>
+                        <p class="text-xs text-gray-400 leading-relaxed max-w-lg">
+                            Define al menos un bloque en el que estés disponible. Es obligatorio para poder aprobar tu servicio.
+                        </p>
+                    </div>
+                    <span id="acordeon-chevron-horario" class="shrink-0 text-gray-400 transition-transform duration-200">
+                        <?= icon('chevron-down', 'w-5 h-5') ?>
+                    </span>
+                </button>
 
-                <?php require_once __DIR__ . '/componentes/grilla_horarios.php'; ?>
+                <div id="acordeon-body-horario" class="hidden px-4 md:px-8 pb-4 md:pb-8 pt-4 border-t border-gray-100">
+                    <?php require_once __DIR__ . '/componentes/grilla_horarios.php'; ?>
+                </div>
             </div>
 
             <!-- Video de presentación (se sube DESPUÉS de crear el servicio vía XHR) -->
-            <div class="bg-white border border-gray-100 rounded-2xl p-4 md:p-8 shadow-sm mt-6" id="seccion-video">
-                <div class="flex items-start gap-3 mb-5">
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm mt-6 overflow-hidden" id="seccion-video">
+                <button type="button" onclick="toggleAcordeonPublicar('video')" class="w-full flex items-start justify-between gap-3 p-4 md:p-8 text-left">
                     <div>
                         <div class="flex items-center gap-2 mb-1">
                             <h2 class="text-base font-bold text-gray-900">Video de presentación</h2>
@@ -443,8 +452,12 @@ require_once $app_dir . '/componentes/sidebar.php';
                             Los alumnos eligen primero a los tutores que pueden ver antes de escribirles. Video vertical (9:16), máx. 45 seg.
                         </p>
                     </div>
-                </div>
+                    <span id="acordeon-chevron-video" class="shrink-0 text-gray-400 transition-transform duration-200">
+                        <?= icon('chevron-down', 'w-5 h-5') ?>
+                    </span>
+                </button>
 
+                <div id="acordeon-body-video" class="hidden px-4 md:px-8 pb-4 md:pb-8 pt-4 border-t border-gray-100">
                 <!-- Reglas del video -->
                 <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3 mb-4">
                     <span class="shrink-0 mt-0.5 text-amber-500">
@@ -535,6 +548,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                 <p class="mt-4 text-[11px] text-gray-400 text-center">
                     El video se sube automáticamente al publicar. Si no lo subes ahora, puedes hacerlo después desde "Mis Publicaciones".
                 </p>
+                </div><!-- /acordeon-body-video -->
             </div><!-- /seccion-video -->
 
         </div>
@@ -707,6 +721,20 @@ function calcQuality() {
         return parseInt(hidden.value || '0', 10) >= 10000;
     };
 })();
+
+window.toggleAcordeonPublicar = function(nombre, forzarAbierto) {
+    const body = document.getElementById('acordeon-body-' + nombre);
+    const chevron = document.getElementById('acordeon-chevron-' + nombre);
+    if (!body) return;
+    const abrir = forzarAbierto === true ? true : body.classList.contains('hidden');
+    if (abrir) {
+        body.classList.remove('hidden');
+        chevron?.classList.add('rotate-180');
+    } else {
+        body.classList.add('hidden');
+        chevron?.classList.remove('rotate-180');
+    }
+};
 
 // Listeners de calidad para los demás campos
 ['titulo', 'descripcion'].forEach(id =>
@@ -881,6 +909,7 @@ if (window.innerWidth < 768) {
         if (horario.error) {
             const errEl = document.getElementById('horario-error');
             if (errEl) { errEl.textContent = horario.error; errEl.classList.remove('hidden'); }
+            window.toggleAcordeonPublicar('horario', true);
             document.getElementById('seccion-horario')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             return;
         }
