@@ -1,4 +1,8 @@
 
+## Mejora futura: restringir el checkbox "Prepara para la PAES" a categorías relevantes
+
+Evaluar si el checkbox "Prepara para la PAES" debería estar restringido a ciertas categorías relevantes (Matemáticas, Lenguaje, Ciencias, Historia), en vez de estar disponible para cualquier categoría sin restricción. Detectado el 10/07/2026 al trabajar el SEO de PAES en detalle_servicio.php.
+
 ## Pendiente: subir imagen/ícono real en cards de novedades (admin_marketing_cards.php, tab Novedades)
 
 `nb_generar_imagen_novedad_post()` y `nb_generar_imagen_novedad_history()` (`app/helpers/imagen_compartir.php`) ya reservan el espacio arriba del título con un círculo placeholder liso color acento (`$diamIcono=90`, sin lógica de carga). Falta la funcionalidad real: que el admin pueda subir una imagen/ícono al crear la novedad (nuevo input file en el formulario de `admin_marketing_cards.php?tab=novedades`, guardarla en disco/BD, y que el generador dibuje esa imagen recortada en círculo en vez del placeholder liso — mismo patrón que `nb_dibujar_avatar()` usa para la foto del tutor en servicios). Diseñado el 09/07/2026, sin implementar — mejora para otra sesión.

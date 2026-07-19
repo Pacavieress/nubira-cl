@@ -277,15 +277,17 @@ $page_title = htmlspecialchars($servicio['titulo']);
 $_inst = !empty($servicio['institucion_maestra'])
     ? $servicio['institucion_maestra']
     : (!empty($servicio['institucion']) ? $servicio['institucion'] : 'Chile');
-$_seo_titulo_raw = $servicio['titulo'] . ' en ' . $_inst . ' | Nubira';
+$_paes_sufijo_titulo = !empty($servicio['es_paes']) ? ' (PAES)' : '';
+$_seo_titulo_raw = $servicio['titulo'] . $_paes_sufijo_titulo . ' en ' . $_inst . ' | Nubira';
 $seo_title = htmlspecialchars(mb_strlen($_seo_titulo_raw) > 65
     ? mb_substr($_seo_titulo_raw, 0, 62) . '...'
     : $_seo_titulo_raw);
 $_nombre_tutor = explode(' ', trim($servicio['nombre_alumno'] ?? ''))[0];
 $_nombre_tutor = !empty($_nombre_tutor) ? $_nombre_tutor : 'tu tutor';
 $_desc_corta = mb_strimwidth(strip_tags($servicio['descripcion'] ?? ''), 0, 100, '');
+$_paes_sufijo_desc = !empty($servicio['es_paes']) ? ' (Preparación PAES)' : '';
 $_meta_desc_raw = ucfirst($servicio['modalidad'] ?? '') . ' de ' . ($servicio['categoria'] ?? '')
-    . ' con ' . $_nombre_tutor . '. ' . $_desc_corta . '. Contrata en Nubira.';
+    . ' con ' . $_nombre_tutor . '. ' . $_desc_corta . '. Contrata en Nubira.' . $_paes_sufijo_desc;
 $og_desc = htmlspecialchars(mb_strlen($_meta_desc_raw) > 155
     ? mb_substr($_meta_desc_raw, 0, 152) . '...'
     : $_meta_desc_raw);

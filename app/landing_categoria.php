@@ -48,6 +48,11 @@ try {
 
 // 3. CONSULTA PÚBLICA POR CATEGORÍA (o por título LIKE si filtro_like está definido)
 $filas = [];
+// [PAES] Solo en la landing de PAES específicamente (no contamina otras categorías):
+// suma servicios/apuntes marcados es_paes/nivel_academico='paes' aunque su categoría
+// de materia sea otra (ej. un servicio de Matemáticas marcado "Prepara para la PAES").
+$paes_extra_s  = ($categoria === 'PAES') ? ' OR s.es_paes = 1' : '';
+$paes_extra_ap = ($categoria === 'PAES') ? " OR ap.nivel_academico = 'paes'" : '';
 if ($tipo === 'clases') {
     $sql_select = "SELECT s.*,
                    COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
@@ -65,25 +70,31 @@ if ($tipo === 'clases') {
               AND COALESCE(a.visible, 1) = 1
               AND a.bloqueado = 0";
     if ($filtro_like) {
-        $sql  = $sql_select . " AND s.titulo LIKE ? ORDER BY s.fecha_publicacion DESC";
+        $sql  = $sql_select . " AND (s.titulo LIKE ?$paes_extra_s) ORDER BY s.fecha_publicacion DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $filtro_like);
     } else {
-        $sql  = $sql_select . " AND s.categoria = ? ORDER BY s.fecha_publicacion DESC";
+        $sql  = $sql_select . " AND (s.categoria = ?$paes_extra_s) ORDER BY s.fecha_publicacion DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $categoria);
     }
-} else { // apuntes — diferido (no ruteado). TODO: card propia de apunte al activar.
-    $sql = "SELECT ap.*
+} else { // apuntes
+    $sql_select_ap = "SELECT ap.*
             FROM apuntes ap
             JOIN alumnos al ON al.id = ap.id_alumno
             WHERE ap.publico = 1
               AND ap.visible = 1
               AND al.visible = 1
-              AND ap.categoria = ?
-            ORDER BY ap.fecha_subida DESC";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $categoria);
+              AND al.bloqueado = 0";
+    if ($filtro_like) {
+        $sql  = $sql_select_ap . " AND (ap.titulo LIKE ?$paes_extra_ap) ORDER BY ap.fecha_subida DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $filtro_like);
+    } else {
+        $sql  = $sql_select_ap . " AND (ap.categoria = ?$paes_extra_ap) ORDER BY ap.fecha_subida DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $categoria);
+    }
 }
 $stmt->execute();
 $res = $stmt->get_result();
@@ -100,6 +111,21 @@ $seo_desc  = $meta_desc_db
     ?: "Encuentra $tipo_servicio de $categoria en universidades chilenas (PUC, USACH, U. de Chile, UNAB y más). Pago protegido con Garantía Nubira.";
 $h1    = $titulo_h1 ?: "$tipo_palabra de $categoria en Chile";
 $intro = $parrafo_intro ?: "Próximamente más información sobre $categoria en Nubira.";
+
+// FAQ curado por categoría (Fase quick-win: solo Tesis por ahora)
+$FAQS_POR_CATEGORIA = [
+    'Tesis' => [
+        ['q' => '¿Cuánto cuesta una asesoría de tesis en Chile?',
+         'a' => 'El precio varía según el alcance (revisión metodológica, corrección de estilo, apoyo estadístico, etc.) y lo define cada tutor en su perfil. En Nubira puedes comparar precios y elegir la asesoría que se ajuste a tu presupuesto, siempre con pago protegido.'],
+        ['q' => '¿Qué incluye una asesoría de tesis en Nubira?',
+         'a' => 'Acompañamiento académico: revisión de metodología, corrección de redacción y estilo, apoyo en análisis estadístico y orientación en la estructura del trabajo. El estudiante mantiene siempre la autoría de su tesis.'],
+        ['q' => '¿Asesoría de tesis o tesis por encargo?',
+         'a' => 'Nubira no permite ni promueve la elaboración de tesis por encargo. Los tutores ofrecen acompañamiento, corrección y orientación metodológica; la investigación y redacción final son siempre responsabilidad del estudiante.'],
+        ['q' => '¿Es seguro pagar por una asesoría de tesis en Nubira?',
+         'a' => 'Sí. Todos los pagos quedan protegidos con la Garantía Nubira: el dinero se libera al tutor solo cuando confirmas que recibiste el servicio acordado.'],
+    ],
+];
+$faqs = $FAQS_POR_CATEGORIA[$categoria] ?? [];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -111,6 +137,20 @@ $intro = $parrafo_intro ?: "Próximamente más información sobre $categoria en 
     echo nubira_seo_meta($seo_title, $seo_desc) . "\n  ";
     echo nubira_canonical_tag("/$tipo/$slug") . "\n  ";
     if ($noindex) echo '<meta name="robots" content="noindex,follow" />' . "\n  ";
+    if (!empty($faqs)) {
+        $faq_ld = [
+            '@context'   => 'https://schema.org',
+            '@type'      => 'FAQPage',
+            'mainEntity' => array_map(fn($f) => [
+                '@type'          => 'Question',
+                'name'           => $f['q'],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']],
+            ], $faqs),
+        ];
+        echo '<script type="application/ld+json">'
+           . json_encode($faq_ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+           . '</script>' . "\n  ";
+    }
   ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -155,6 +195,20 @@ require_once __DIR__ . '/componentes/sidebar.php';
       <p class="font-medium">Aún no hay <?= htmlspecialchars(strtolower($tipo_palabra)) ?> de <?= htmlspecialchars($categoria) ?> publicados.</p>
       <a href="/explorar" class="inline-block mt-4 text-[#54A6D8] font-semibold hover:underline">Explorar todo &rarr;</a>
     </div>
+  <?php endif; ?>
+
+  <?php if (!empty($faqs)): ?>
+    <section class="mt-10 max-w-3xl">
+      <h2 class="text-xl md:text-2xl font-bold text-gray-900 mb-4">Preguntas frecuentes</h2>
+      <div class="space-y-3">
+        <?php foreach ($faqs as $f): ?>
+          <details class="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+            <summary class="font-semibold text-gray-900 cursor-pointer"><?= htmlspecialchars($f['q']) ?></summary>
+            <p class="text-sm text-gray-600 mt-2 leading-relaxed"><?= htmlspecialchars($f['a']) ?></p>
+          </details>
+        <?php endforeach; ?>
+      </div>
+    </section>
   <?php endif; ?>
 
 </main>

@@ -112,7 +112,7 @@ $orden_usuario = trim($_GET['orden'] ?? '');
 
 // [NUBIRA 2.0] WHITELIST SEGURA DE FILTROS
 $ORDENES_VALIDOS = ['', 'precio_asc', 'precio_desc', 'calificacion'];
-$MODALIDADES_VALIDAS = ['', 'Presencial', 'Remoto', 'Híbrido'];
+$MODALIDADES_VALIDAS = ['', 'Presencial', 'Online', 'Híbrido'];
 
 if (!in_array($orden_usuario, $ORDENES_VALIDOS, true)) $orden_usuario = '';
 if (!in_array($mod_filtro, $MODALIDADES_VALIDAS, true)) $mod_filtro = '';
@@ -162,11 +162,7 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
     $params_mod = [];
     $tipos_mod = "";
     if (!empty($mod_filtro)) {
-        if ($mod_filtro === 'Remoto') {
-            $sql_mod_s = " AND (s.modalidad LIKE ? OR s.modalidad LIKE ? OR s.modalidad LIKE ?)";
-            $params_mod = ['%Remoto%', '%Online%', '%Virtual%'];
-            $tipos_mod = "sss";
-        } elseif ($mod_filtro === 'Híbrido') {
+        if ($mod_filtro === 'Híbrido') {
             $sql_mod_s = " AND (s.modalidad LIKE ? OR s.modalidad LIKE ?)";
             $params_mod = ['%Híbrido%', '%Hibrido%'];
             $tipos_mod = "ss";
@@ -244,7 +240,7 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
             LEFT JOIN alumnos a ON s.alumno_id = a.id
             LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s) $sql_mod_s
+            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s OR s.es_paes = 1) $sql_mod_s
             ORDER BY $order_sql_servicios LIMIT 20");
             
     if ($stmtS) {
@@ -262,7 +258,7 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
             FROM apuntes ap 
             LEFT JOIN alumnos a ON ap.id_alumno = a.id
             LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-            WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a)
+            WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a OR ap.nivel_academico = 'paes')
             ORDER BY $order_sql_apuntes LIMIT 20");
             
 if ($stmtA) {
@@ -379,7 +375,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                 <a href="?q=<?= urlencode($q) ?>&orden=calificacion" class="shrink-0 px-3 py-1.5 bg-white border <?= $orden_usuario=='calificacion' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
                     Mejor Calificados
                 </a>
-                <a href="?q=<?= urlencode($q) ?>&modalidad=Remoto" class="shrink-0 px-3 py-1.5 bg-white border <?= $mod_filtro=='Remoto' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                <a href="?q=<?= urlencode($q) ?>&modalidad=Online" class="shrink-0 px-3 py-1.5 bg-white border <?= $mod_filtro=='Online' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
                     100% Online
                 </a>
             </div>
