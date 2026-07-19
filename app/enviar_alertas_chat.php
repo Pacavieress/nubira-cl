@@ -25,9 +25,11 @@ SELECT a.id AS alerta_id, a.conversacion_id, a.mensaje_id, a.comprador_id, a.ven
        m.mensaje, m.enviado_en
 FROM chat_alertas a
 JOIN mensajes m ON a.mensaje_id = m.id
+JOIN alumnos al ON al.id = a.vendedor_id
 WHERE a.enviado = 0
   AND a.disparo_en <= NOW()
   AND (a.fecha_envio IS NULL OR a.fecha_envio < NOW() - INTERVAL 15 MINUTE)
+  AND al.bloqueado = 0
 LIMIT 100
 ";
 $res = $conn->query($sql);
