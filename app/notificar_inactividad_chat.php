@@ -1,4 +1,22 @@
 <?php
+/**
+ * CRON: recordatorio de mensaje sin responder (comprador → vendedor, ≥15 min)
+ */
+if (php_sapi_name() !== 'cli' && !isset($_GET['cron_secret'])) {
+    http_response_code(403);
+    die('Forbidden');
+}
+
+require_once __DIR__ . '/env_loader.php';
+
+$CRON_SECRET = getenv('INACTIVIDAD_CHAT_CRON_SECRET') ?: '';
+if (php_sapi_name() !== 'cli' && ($_GET['cron_secret'] ?? '') !== $CRON_SECRET) {
+    http_response_code(403);
+    die('Forbidden');
+}
+
+ini_set('display_errors', 0);
+
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/correo.php'; // ya tienes PHPMailer aquí
 
@@ -15,6 +33,7 @@ JOIN alumnos a_comprador ON a_comprador.id = c.comprador_id
 WHERE m.notificado = 0
   AND m.remitente_id = c.comprador_id
   AND TIMESTAMPDIFF(MINUTE, m.enviado_en, NOW()) >= 15
+  AND a_vendedor.bloqueado = 0
   AND NOT EXISTS (
       SELECT 1 FROM mensajes r
       WHERE r.conversacion_id = m.conversacion_id
@@ -24,24 +43,22 @@ WHERE m.notificado = 0
 LIMIT 10;
 ";
 
+require_once __DIR__ . '/helpers/notificaciones_chat.php';
+
 $res = $conn->query($sql);
 
 while ($row = $res->fetch_assoc()) {
-    $mensaje = "
-    Hola {$row['nombre_vendedor']}, 👋<br><br>
-    Tienes un mensaje sin responder en tu servicio <b>“{$row['servicio_titulo']}”</b>.<br>
-    <blockquote style='border-left:3px solid #54A6D8;padding-left:8px;color:#555'>
-      {$row['nombre_comprador']} te escribió:<br><i>“{$row['mensaje']}”</i>
-    </blockquote>
-    <br>
-    Responde cuanto antes desde <a href='https://nubira.cl/chat.php?id={$row['chat_id']}'>este chat</a> para no perder el interés del estudiante.
-    <br><br>💙 El equipo Nubira.cl
-    ";
-
-    enviarCorreo(
-        $row['correo_vendedor'],
-        "Tienes un mensaje pendiente en Nubira.cl",
-        $mensaje
+    nb_notificar_nuevo_mensaje(
+        $conn,
+        $row['conversacion_id'],
+        $row['comprador_id'],
+        $row['nombre_comprador'],
+        $row['mensaje'],
+        'conversaciones',
+        'mensajes',
+        'conversacion_id',
+        'enviado_en',
+        'Recordatorio: tienes un mensaje sin responder'
     );
 
     // Marcar como notificado

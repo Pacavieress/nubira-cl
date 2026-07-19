@@ -6,7 +6,7 @@
  */
 
 if (!function_exists('nb_notificar_nuevo_mensaje')) {
-    function nb_notificar_nuevo_mensaje($conn, $id_ref, $remitente_id, $remitente_nombre, $mensaje, $tabla_padre = 'conversaciones', $tabla = 'mensajes', $col_id = 'conversacion_id', $col_fecha = 'enviado_en') {
+    function nb_notificar_nuevo_mensaje($conn, $id_ref, $remitente_id, $remitente_nombre, $mensaje, $tabla_padre = 'conversaciones', $tabla = 'mensajes', $col_id = 'conversacion_id', $col_fecha = 'enviado_en', $contexto_texto = null) {
         try {
             // Obtener ID del destinatario
             $sqlDest = "SELECT CASE WHEN comprador_id = ? THEN vendedor_id ELSE comprador_id END as id_otro FROM $tabla_padre WHERE id = ? LIMIT 1";
@@ -33,7 +33,7 @@ if (!function_exists('nb_notificar_nuevo_mensaje')) {
                     if (mb_strlen($mensaje) > 120) $preview_msg .= '…';
 
                     $nombreEmisor = explode(' ', trim($remitente_nombre))[0];
-                    $titulo_notif = "💬 Mensaje de " . $nombreEmisor;
+                    $titulo_notif = $contexto_texto ?? ("💬 Mensaje de " . $nombreEmisor);
 
                     // URL de destino (directo al chat)
                     $url_chat = "/app/chat_previo_contrato.php?id=" . $id_ref;
@@ -70,7 +70,7 @@ if (!function_exists('nb_notificar_nuevo_mensaje')) {
                                 $userDat['correo'],
                                 $nombreDestino,
                                 $nombreEmisor,
-                                "Nuevo mensaje en Nubira",
+                                $contexto_texto ?? "Nuevo mensaje en Nubira",
                                 $mensaje,
                                 $id_ref
                             );
@@ -78,7 +78,7 @@ if (!function_exists('nb_notificar_nuevo_mensaje')) {
                     }
                 }
             }
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             // Silencioso: no queremos que un fallo de notificación rompa el flujo que la llamó
             @file_put_contents(__DIR__ . '/../../logs/push.log',
                 "[" . date('Y-m-d H:i:s') . "] ERROR notificacion msg: " . $e->getMessage() . "\n",
