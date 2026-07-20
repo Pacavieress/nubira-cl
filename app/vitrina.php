@@ -391,14 +391,14 @@ try {
                    WHERE ap.estado = 'aprobado' AND ap.nivel_academico != 'paes' ";
                     
     if ($cat_favorita) {
-        $sql_apuntes .= "ORDER BY CASE WHEN ap.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 8";
+        $sql_apuntes .= "ORDER BY CASE WHEN ap.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 10";
         $stmt_ap = $conn->prepare($sql_apuntes);
         $stmt_ap->bind_param("s", $cat_favorita);
         $stmt_ap->execute();
         $res_apuntes = $stmt_ap->get_result();
     } else {
         // Fallback: lo más popular de todo Nubira
-        $sql_apuntes .= "ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 8";
+        $sql_apuntes .= "ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 10";
         $res_apuntes = $conn->query($sql_apuntes);
     }
 } catch (Exception $e) {
