@@ -126,7 +126,13 @@ $seo_title = "$tipo_palabra de $categoria universidad Chile | Nubira";
 $seo_desc  = $meta_desc_db
     ?: "Encuentra $tipo_servicio de $categoria en universidades chilenas (PUC, USACH, U. de Chile, UNAB y más). Pago protegido con Garantía Nubira.";
 $h1    = $titulo_h1 ?: "$tipo_palabra de $categoria en Chile";
-$intro = $parrafo_intro ?: "Próximamente más información sobre $categoria en Nubira.";
+// [PAES] Sin fallback genérico: si no hay parrafo_intro real, no se muestra ningún texto.
+// Todas las demás categorías conservan el fallback genérico exactamente igual que hoy.
+if ($categoria === 'PAES') {
+    $intro = $parrafo_intro ?: null;
+} else {
+    $intro = $parrafo_intro ?: "Próximamente más información sobre $categoria en Nubira.";
+}
 
 // FAQ curado por categoría (Fase quick-win: solo Tesis por ahora)
 $FAQS_POR_CATEGORIA = [
@@ -194,7 +200,9 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
   <header class="mb-4">
     <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
+    <?php if (!empty($intro)): ?>
     <p class="text-sm md:text-base text-gray-600 mt-2 max-w-3xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
+    <?php endif; ?>
     <?php if ($total > 0): ?>
       <p class="text-xs text-gray-400 mt-2 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
     <?php endif; ?>
