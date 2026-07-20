@@ -351,7 +351,7 @@ try {
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                         WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
-                          AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ?)
+                          AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1)
                           AND s.id NOT IN ($placeholders_paes_cl)
                         ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 12";
     $stmt_clases_paes = $conn->prepare($sql_clases_paes);
@@ -1202,10 +1202,116 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
     </div>
 </section>
 
+<section class="mb-3 md:mb-5 relative">
+<div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_apuntes ?></h2>
+        <a href="/apuntes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+    </div>
+
+    <div class="relative group">
+        <button onclick="scrollCarrusel('sec-apuntes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+
+<div id="sec-apuntes" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
+            <?php if (isset($res_apuntes) && $res_apuntes && $res_apuntes->num_rows > 0):
+                $idx_ap = 0; // [NUBIRA 2.0] Contador para priorizar LCP en primeras cards
+            ?>
+                <?php while ($row_ap = $res_apuntes->fetch_assoc()):
+                    $idx_ap++;
+                    $es_lcp_ap = ($idx_ap <= 2); // Primeras 2 cards = prioridad alta
+                    $link_hash_ap = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_ap['id']) : (int)$row_ap['id'];
+                    $portada_url_ap = resolver_portada_apunte($row_ap);
+                    $promo_gratis = (int)($row_ap['promo_gratis'] ?? 0);
+                    $promo_limite = (int)($row_ap['promo_limite'] ?? 0);
+                    $promo_contador = (int)($row_ap['promo_contador'] ?? 0);
+                    $es_promo_activa = ($promo_gratis === 1 && $promo_contador < $promo_limite);
+                    $descargas_restantes = $promo_limite - $promo_contador;
+                    $ventas_totales = (int)($row_ap['ventas_totales'] ?? 0);
+                    $ventas_txt = abreviar_conteo($ventas_totales);
+
+                    // --- LÓGICA DE AVATAR Y NOMBRE PARA APUNTES ---
+                    $nombre_completo = !empty($row_ap['nombre_tutor']) ? $row_ap['nombre_tutor'] : 'Estudiante';
+                    $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
+                    $tutor_nombre = "Estudiante";
+                    if (!empty($partes_nombre[0])) {
+                        $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
+                        if (count($partes_nombre) >= 2) {
+                            $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
+                        }
+                    }
+                    $foto_tutor = !empty($row_ap['foto_perfil']) ? '/app/perfil/fotos/' . $row_ap['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b";
+
+                    $es_nuevo_ap = false;
+                    if (!empty($row_ap['fecha_subida']) && $row_ap['fecha_subida'] !== '0000-00-00 00:00:00' && $row_ap['fecha_subida'] !== '0000-00-00') {
+                        try { $es_nuevo_ap = (new DateTime())->diff(new DateTime($row_ap['fecha_subida']))->days <= 7; } catch (Throwable $e) {}
+                    }
+
+                    $precio_val_ap = $row_ap['precio'] ?? 0;
+                    if ($es_promo_activa) {
+                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
+                        $precio_class_ap = "text-gray-900 font-semibold flex items-center";
+                    } else if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
+                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-gray-700 font-semibold";
+                    } else {
+                        $precio_ap = "Gratis"; $precio_class_ap = "text-gray-700 font-semibold";
+                    }
+                    $inst_text_ap = abreviar_institucion($row_ap['institucion_maestra'] ?? ($row_ap['institucion'] ?? ''));
+                ?>
+
+                <a href="/apunte/<?= $link_hash_ap ?>" onclick="registrarClick(<?= (int)$row_ap['id'] ?>, 'apunte')"
+                   class="block flex flex-col cursor-pointer group snap-center w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
+
+                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                       <img src="<?= htmlspecialchars($portada_url_ap) ?>"
+     alt="<?= htmlspecialchars($row_ap['titulo']) ?>"
+     class="w-full h-full object-cover"
+     loading="<?= $es_lcp_ap ? 'eager' : 'lazy' ?>"
+     decoding="async"
+     <?= $es_lcp_ap ? 'fetchpriority="high"' : '' ?>
+     width="170" height="128"
+     sizes="(max-width: 640px) 150px, 170px"
+     onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
+                        <div class="absolute top-2.5 left-2.5 z-10">
+                            <?php if ($es_promo_activa): ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                    Quedan <?= $descargas_restantes ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                    </div>
+
+                    <div class="pt-2.5 flex flex-col flex-1 text-left">
+                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_ap['titulo']) ?></h3>
+
+                        <div class="text-[14px] <?= $precio_class_ap ?> mt-auto mb-1.5 leading-none"><?= $precio_ap ?></div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                                <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
+                            </div>
+                            <?php if ($ventas_totales > 0): ?>
+                            <div class="shrink-0 flex items-center">
+                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </a>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <div class="p-4 text-sm text-gray-400 font-medium">No hay apuntes disponibles en este momento.</div>
+            <?php endif; ?>
+        </div>
+
+        <button onclick="scrollCarrusel('sec-apuntes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+    </div>
+</section>
+
 <?php if ($res_clases_paes && $res_clases_paes->num_rows > 0): ?>
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
- <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+ <div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
     <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">PAES</h2>
+    <a href="/clases/paes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
 </div>
     <div class="relative group">
         <button onclick="scrollCarrusel('sec-clases-paes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
@@ -1295,111 +1401,6 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
     </div>
 </section>
 <?php endif; ?>
-
-<section class="mb-3 md:mb-5 relative">
-<div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_apuntes ?></h2>
-        <a href="/apuntes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
-    </div>
-    
-    <div class="relative group">
-        <button onclick="scrollCarrusel('sec-apuntes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-        
-<div id="sec-apuntes" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
-            <?php if (isset($res_apuntes) && $res_apuntes && $res_apuntes->num_rows > 0): 
-                $idx_ap = 0; // [NUBIRA 2.0] Contador para priorizar LCP en primeras cards
-            ?>
-                <?php while ($row_ap = $res_apuntes->fetch_assoc()): 
-                    $idx_ap++;
-                    $es_lcp_ap = ($idx_ap <= 2); // Primeras 2 cards = prioridad alta
-                    $link_hash_ap = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($row_ap['id']) : (int)$row_ap['id'];
-                    $portada_url_ap = resolver_portada_apunte($row_ap);
-                    $promo_gratis = (int)($row_ap['promo_gratis'] ?? 0);
-                    $promo_limite = (int)($row_ap['promo_limite'] ?? 0);
-                    $promo_contador = (int)($row_ap['promo_contador'] ?? 0);
-                    $es_promo_activa = ($promo_gratis === 1 && $promo_contador < $promo_limite);
-                    $descargas_restantes = $promo_limite - $promo_contador;
-                    $ventas_totales = (int)($row_ap['ventas_totales'] ?? 0);
-                    $ventas_txt = abreviar_conteo($ventas_totales);
-                    
-                    // --- LÓGICA DE AVATAR Y NOMBRE PARA APUNTES ---
-                    $nombre_completo = !empty($row_ap['nombre_tutor']) ? $row_ap['nombre_tutor'] : 'Estudiante';
-                    $partes_nombre = array_values(array_filter(explode(' ', trim((string)$nombre_completo))));
-                    $tutor_nombre = "Estudiante";
-                    if (!empty($partes_nombre[0])) {
-                        $tutor_nombre = ucwords(strtolower($partes_nombre[0]));
-                        if (count($partes_nombre) >= 2) {
-                            $tutor_nombre .= ' ' . strtoupper(substr($partes_nombre[count($partes_nombre)-1], 0, 1)) . '.';
-                        }
-                    }
-                    $foto_tutor = !empty($row_ap['foto_perfil']) ? '/app/perfil/fotos/' . $row_ap['foto_perfil'] : "https://ui-avatars.com/api/?name=".urlencode($tutor_nombre)."&background=f1f5f9&color=64748b";
-
-                    $es_nuevo_ap = false;
-                    if (!empty($row_ap['fecha_subida']) && $row_ap['fecha_subida'] !== '0000-00-00 00:00:00' && $row_ap['fecha_subida'] !== '0000-00-00') {
-                        try { $es_nuevo_ap = (new DateTime())->diff(new DateTime($row_ap['fecha_subida']))->days <= 7; } catch (Throwable $e) {}
-                    }
-                    
-                    $precio_val_ap = $row_ap['precio'] ?? 0;
-                    if ($es_promo_activa) {
-                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
-                        $precio_class_ap = "text-gray-900 font-semibold flex items-center";
-                    } else if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
-                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-gray-700 font-semibold";
-                    } else { 
-                        $precio_ap = "Gratis"; $precio_class_ap = "text-gray-700 font-semibold";
-                    }
-                    $inst_text_ap = abreviar_institucion($row_ap['institucion_maestra'] ?? ($row_ap['institucion'] ?? ''));
-                ?>
-                
-                <a href="/apunte/<?= $link_hash_ap ?>" onclick="registrarClick(<?= (int)$row_ap['id'] ?>, 'apunte')" 
-                   class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
-                    
-                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
-                       <img src="<?= htmlspecialchars($portada_url_ap) ?>"
-     alt="<?= htmlspecialchars($row_ap['titulo']) ?>" 
-     class="w-full h-full object-cover" 
-     loading="<?= $es_lcp_ap ? 'eager' : 'lazy' ?>" 
-     decoding="async" 
-     <?= $es_lcp_ap ? 'fetchpriority="high"' : '' ?> 
-     width="240" height="180"
-     sizes="(max-width: 640px) 220px, 240px"
-     onerror="this.onerror=null;this.src='https://nubira.cl/upload/servicios/default_clases.webp';">
-                        <div class="absolute top-2.5 left-2.5 z-10">
-                            <?php if ($es_promo_activa): ?>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-                                    Quedan <?= $descargas_restantes ?>
-                                </span>
-                            <?php endif; ?>
-                        </div>
-
-                    </div>
-                    
-                    <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_ap['titulo']) ?></h3>
-                        
-                        <div class="text-[14px] <?= $precio_class_ap ?> mt-auto mb-1.5 leading-none"><?= $precio_ap ?></div>
-                        
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
-                                <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
-                            </div>
-                            <?php if ($ventas_totales > 0): ?>
-                            <div class="shrink-0 flex items-center">
-                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </a>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="p-4 text-sm text-gray-400 font-medium">No hay apuntes disponibles en este momento.</div>
-            <?php endif; ?>
-        </div>
-        
-        <button onclick="scrollCarrusel('sec-apuntes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
-    </div>
-</section>
 
  <?php if ($tiene_ofertas_activas): ?>
      <section class="mb-3 md:mb-5 relative">
