@@ -82,6 +82,10 @@ $patrones_bloqueo = [
 ];
 
 // Bloquea el mensaje y registra el intento en dlp_intentos (no debe romper el flujo si falla)
+// Enfoque Nubira 2.0 (actualizado): antes el mensaje era genérico a propósito para "no dar
+// pistas". Ahora es específico por categoría (nombra el tipo de dato detectado: correo,
+// teléfono, etc.) sin revelar el patrón/regex exacto que lo disparó — el usuario entiende
+// qué pasó sin obtener un manual de cómo evadir el filtro la próxima vez.
 function nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, $categoria, $pattern_desc) {
     try {
         $stmt_dlp = $conn->prepare(
@@ -96,10 +100,21 @@ function nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, $categoria, $pattern_
         }
     } catch (Exception $e) {}
 
-    // Enfoque Nubira 2.0: No damos pistas. Recordamos la regla.
+    $mensajes_dlp = [
+        'email'              => '⚠️ Detectamos que intentaste compartir un correo electrónico. Por tu seguridad y la garantía de pago protegido, todo contacto debe quedar dentro de Nubira. Los intentos repetidos pueden derivar en la suspensión de tu cuenta.',
+        'telefono'           => '⚠️ Detectamos que intentaste compartir un número de teléfono. Por tu seguridad y la garantía de pago protegido, todo contacto debe quedar dentro de Nubira. Los intentos repetidos pueden derivar en la suspensión de tu cuenta.',
+        'redes'              => '⚠️ Detectamos que intentaste compartir una red social o app de mensajería externa. Por tu seguridad y la garantía de pago protegido, todo contacto debe quedar dentro de Nubira. Los intentos repetidos pueden derivar en la suspensión de tu cuenta.',
+        'banco'              => '⚠️ Detectamos que intentaste compartir datos bancarios o coordinar un pago fuera de Nubira. Los pagos solo deben hacerse a través de la plataforma para mantener tu Garantía Nubira. Los intentos repetidos pueden derivar en la suspensión de tu cuenta.',
+        'intencion_contacto' => '⚠️ Detectamos que intentaste coordinar contacto o encuentros fuera de Nubira. Por tu seguridad y la garantía de pago protegido, todo debe quedar dentro de la plataforma. Los intentos repetidos pueden derivar en la suspensión de tu cuenta.',
+        'identidad'          => '⚠️ Detectamos que intentaste compartir datos que permitirían identificarte o ser encontrado fuera de Nubira. Por tu seguridad, mantén la conversación dentro de la plataforma. Los intentos repetidos pueden derivar en la suspensión de tu cuenta.',
+        'urls'               => '⚠️ Detectamos que intentaste compartir un enlace externo. Por tu seguridad y la garantía de pago protegido, todo contacto debe quedar dentro de Nubira. Los intentos repetidos pueden derivar en la suspensión de tu cuenta.',
+    ];
+    $mensaje_error = $mensajes_dlp[$categoria]
+        ?? '⚠️ Por tu seguridad y la garantía de Nubira, no permitimos compartir identidad, redes ni medios de pago en el chat. Reescribe tu mensaje sin información externa.';
+
     echo json_encode([
         'success' => false,
-        'error' => "⚠️ Por tu seguridad y la garantía de Nubira, no permitimos compartir identidad, redes ni medios de pago en el chat. Reescribe tu mensaje sin información externa."
+        'error' => $mensaje_error
     ]);
     exit;
 }
