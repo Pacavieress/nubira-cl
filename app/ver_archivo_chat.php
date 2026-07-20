@@ -78,9 +78,10 @@ if ($es_admin) {
         WHERE m.id = ?
           AND m.archivo_ruta IS NOT NULL
           AND (c.comprador_id = ? OR c.vendedor_id = ?)
+          AND (m.visible = 1 OR m.remitente_id = ?)
         LIMIT 1
     ");
-    $stmt->bind_param("iii", $mensaje_id, $my_id, $my_id);
+    $stmt->bind_param("iiii", $mensaje_id, $my_id, $my_id, $my_id);
 }
 $stmt->execute();
 $row = $stmt->get_result()->fetch_assoc();
