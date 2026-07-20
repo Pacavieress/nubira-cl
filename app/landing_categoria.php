@@ -51,8 +51,6 @@ $filas = [];
 // [PAES] Solo en la landing de PAES específicamente (no contamina otras categorías):
 // suma servicios/apuntes marcados es_paes/nivel_academico='paes' aunque su categoría
 // de materia sea otra (ej. un servicio de Matemáticas marcado "Prepara para la PAES").
-$paes_extra_s  = ($categoria === 'PAES') ? ' OR s.es_paes = 1' : '';
-$paes_extra_ap = ($categoria === 'PAES') ? " OR ap.nivel_academico = 'paes'" : '';
 if ($tipo === 'clases') {
     $sql_select = "SELECT s.*,
                    COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
@@ -69,12 +67,21 @@ if ($tipo === 'clases') {
               AND s.visible = 1
               AND COALESCE(a.visible, 1) = 1
               AND a.bloqueado = 0";
-    if ($filtro_like) {
-        $sql  = $sql_select . " AND (s.titulo LIKE ?$paes_extra_s) ORDER BY s.fecha_publicacion DESC";
+    if ($categoria === 'PAES') {
+        // [PAES] Mismo criterio amplio que busqueda.php: LIKE sobre 6 campos + es_paes=1,
+        // en vez de categoria exacta — cubre servicios de otras categorías que mencionan PAES
+        // sin tener el flag es_paes marcado. Usa la palabra completa "PAES" (no la raíz
+        // recortada de plurales que usa busqueda.php para texto libre de usuario).
+        $like_paes = '%PAES%';
+        $sql  = $sql_select . " AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1) ORDER BY s.fecha_publicacion DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssssss", $like_paes, $like_paes, $like_paes, $like_paes, $like_paes, $like_paes);
+    } elseif ($filtro_like) {
+        $sql  = $sql_select . " AND (s.titulo LIKE ?) ORDER BY s.fecha_publicacion DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $filtro_like);
     } else {
-        $sql  = $sql_select . " AND (s.categoria = ?$paes_extra_s) ORDER BY s.fecha_publicacion DESC";
+        $sql  = $sql_select . " AND (s.categoria = ?) ORDER BY s.fecha_publicacion DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $categoria);
     }
@@ -86,12 +93,21 @@ if ($tipo === 'clases') {
               AND ap.visible = 1
               AND al.visible = 1
               AND al.bloqueado = 0";
-    if ($filtro_like) {
-        $sql  = $sql_select_ap . " AND (ap.titulo LIKE ?$paes_extra_ap) ORDER BY ap.fecha_subida DESC";
+    if ($categoria === 'PAES') {
+        // [PAES] Mismo criterio que busqueda.php usa para apuntes: LIKE sobre
+        // titulo/descripcion/asignatura/materia + nivel_academico='paes'. Apuntes no
+        // tiene columna 'area', y busqueda.php tampoco incluye 'categoria' en su LIKE
+        // de apuntes pese a que la columna existe — replicamos ese mismo criterio, no uno más ancho.
+        $like_paes_ap = '%PAES%';
+        $sql  = $sql_select_ap . " AND (ap.titulo LIKE ? OR ap.descripcion LIKE ? OR ap.asignatura LIKE ? OR ap.materia LIKE ? OR ap.nivel_academico = 'paes') ORDER BY ap.fecha_subida DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssss", $like_paes_ap, $like_paes_ap, $like_paes_ap, $like_paes_ap);
+    } elseif ($filtro_like) {
+        $sql  = $sql_select_ap . " AND (ap.titulo LIKE ?) ORDER BY ap.fecha_subida DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $filtro_like);
     } else {
-        $sql  = $sql_select_ap . " AND (ap.categoria = ?$paes_extra_ap) ORDER BY ap.fecha_subida DESC";
+        $sql  = $sql_select_ap . " AND (ap.categoria = ?) ORDER BY ap.fecha_subida DESC";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $categoria);
     }
