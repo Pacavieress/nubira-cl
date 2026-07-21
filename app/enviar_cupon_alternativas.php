@@ -54,13 +54,12 @@ function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $catego
 
     return "
         <p>Hola <strong>{$nombre_safe}</strong>,</p>
-        <p>Notamos que hace un tiempo escribiste a un tutor en Nubira y no llegaste a recibir respuesta — sabemos que eso puede ser frustrante, y queremos invitarte a darle otra oportunidad a la plataforma.</p>
+        <p>Vimos que hace poco estuviste buscando tutor en Nubira para <strong>{$categoria_safe}</strong>. Te dejamos un cupón de descuento — puedes usarlo con ese mismo tutor o con otras opciones disponibles:</p>
         <div style='background:#F0F9FF; border:1px dashed #54A6D8; border-radius:12px; padding:20px; margin:20px 0; text-align:center;'>
             <p style='margin:0 0 8px 0; font-size:13px; color:#0c4a6e; font-weight:bold;'>Tu código de descuento</p>
             <p style='margin:0; font-size:22px; font-weight:bold; letter-spacing:1px; color:#111;'>{$codigo_safe}</p>
             <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>15% de descuento, válido por 7 días desde hoy.</p>
         </div>
-        <p>Te dejamos algunas opciones en <strong>{$categoria_safe}</strong> que suelen responder rápido:</p>
         <div style='margin:20px 0;'>{$cardsHtml}</div>
     ";
 }
@@ -80,12 +79,6 @@ $sql_base = "
     ) t
     JOIN alumnos a_comprador ON a_comprador.id = t.comprador_id
     JOIN servicios s ON s.id = t.servicio_id
-    WHERE NOT EXISTS (
-        SELECT 1 FROM mensajes r
-        WHERE r.conversacion_id = t.conversacion_id
-          AND r.remitente_id = t.vendedor_id
-          AND r.enviado_en > t.ultimo_mensaje_comprador
-    )
 ";
 
 // ── POST: envío ───────────────────────────────────────────────
