@@ -22,6 +22,12 @@ if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['rol']) || $_SESSION['ro
 $flash = $_SESSION['flash'] ?? '';
 unset($_SESSION['flash']);
 
+// CSRF para el borrado (mismo patrón que enviar_despertar_dormidos.php / enviar_cupon_alternativas.php)
+if (!isset($_SESSION['csrf_cupones'])) {
+    $_SESSION['csrf_cupones'] = bin2hex(random_bytes(32));
+}
+$csrf_token_cupones = $_SESSION['csrf_cupones'];
+
 // 2. Obtener todos los cupones existentes
 $query = "SELECT id, codigo, porcentaje_descuento, usos_actuales, usos_maximos, fecha_expiracion, servicio_id FROM cupones ORDER BY creado_en DESC";
 $resultado = $conn->query($query);
@@ -108,7 +114,7 @@ $servicios_db = $conn->query($query_servicios);
                                         Usos: <span class="text-slate-700"><?= (int)$c['usos_actuales'] ?></span> / <?= (int)$c['usos_maximos'] ?>
                                     </span>
                                 </div>
-                                <button onclick="if(confirm('¿Eliminar beca permanentemente?')) window.location.href='/app/admin_procesar_cupon.php?del=<?= $c['id'] ?>'" 
+                                <button onclick="if(confirm('¿Eliminar beca permanentemente?')) window.location.href='/app/admin_procesar_cupon.php?del=<?= $c['id'] ?>&csrf_token=<?= urlencode($csrf_token_cupones) ?>'"
                                         class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-gray-100 text-slate-400 transition-all hover:scale-[1.01] hover:shadow-md hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50 shrink-0" title="Eliminar beca">
                                     <?= function_exists('icon') ? icon('trash') : 'X' ?>
                                 </button>

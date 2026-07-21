@@ -20,6 +20,11 @@ $url_redireccion = "/app/cupones.php";
 
 // 3. LÓGICA DE ELIMINACIÓN
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['del'])) {
+    if (!isset($_SESSION['csrf_cupones']) || !hash_equals($_SESSION['csrf_cupones'], $_GET['csrf_token'] ?? '')) {
+        $_SESSION['flash'] = "Token de seguridad inválido o expirado. Intenta de nuevo.";
+        header("Location: $url_redireccion");
+        exit;
+    }
     try {
         $id_eliminar = (int)$_GET['del'];
         $sql_del = "DELETE FROM cupones WHERE id = ?";
