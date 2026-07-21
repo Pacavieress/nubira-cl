@@ -21,7 +21,7 @@ if (!isset($_SESSION['csrf_cupon_alternativas'])) {
 }
 $csrf_token   = $_SESSION['csrf_cupon_alternativas'];
 $admin_nombre = 'cupon_alternativas_jul2026';
-$asunto       = 'Un 15% de descuento para volver a intentarlo en Nubira';
+$asunto       = 'Un 15% de descuento para tu próxima clase en Nubira';
 
 function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $categoria, array $alternativas, string $codigo): string {
     $nombre_safe    = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $html          = generarHtmlEmailCuponAlternativas($primer_nombre, $row['categoria'], $alternativas, $codigo);
         $primera       = $alternativas[0];
         $link_cupon    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera['id'] . "&codigo_beca=" . rawurlencode($codigo);
-        $html_full     = plantillaMaestra($asunto, $html, 'Usar mi descuento', $link_cupon, 'Un 15% de descuento para volver a intentarlo en Nubira.');
+        $html_full     = plantillaMaestra($asunto, $html, 'Usar mi descuento', $link_cupon, 'Un 15% de descuento para tu próxima clase en Nubira.');
         $exito         = _enviarEmailBase($correo, $asunto, $html_full, '', false);
         $exito_int     = $exito ? 1 : 0;
 
@@ -231,7 +231,7 @@ if (isset($_GET['preview'])) {
     $html_pv    = generarHtmlEmailCuponAlternativas($primer_nombre_pv, $row_pv['categoria'], $alternativas_pv, $codigo_preview);
     $primera_pv = $alternativas_pv[0];
     $link_pv    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera_pv['id'] . "&codigo_beca=" . rawurlencode($codigo_preview);
-    echo plantillaMaestra($asunto, $html_pv, 'Usar mi descuento', $link_pv, 'Un 15% de descuento para volver a intentarlo en Nubira.');
+    echo plantillaMaestra($asunto, $html_pv, 'Usar mi descuento', $link_pv, 'Un 15% de descuento para tu próxima clase en Nubira.');
     exit;
 }
 
