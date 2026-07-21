@@ -21,9 +21,8 @@ if (!isset($_SESSION['csrf_cupon_alternativas'])) {
 }
 $csrf_token   = $_SESSION['csrf_cupon_alternativas'];
 $admin_nombre = 'cupon_alternativas_jul2026';
-$asunto       = 'Un 15% de descuento para tu próxima clase en Nubira';
 
-function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $categoria, array $alternativas, string $codigo): string {
+function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $categoria, array $alternativas, string $codigo, int $porcentaje = 15): string {
     $nombre_safe    = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     $categoria_safe = htmlspecialchars($categoria, ENT_QUOTES, 'UTF-8');
     $codigo_safe    = htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8');
@@ -58,7 +57,7 @@ function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $catego
         <div style='background:#F0F9FF; border:1px dashed #54A6D8; border-radius:12px; padding:20px; margin:20px 0; text-align:center;'>
             <p style='margin:0 0 8px 0; font-size:13px; color:#0c4a6e; font-weight:bold;'>Tu código de descuento</p>
             <p style='margin:0; font-size:22px; font-weight:bold; letter-spacing:1px; color:#111;'>{$codigo_safe}</p>
-            <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>15% de descuento, válido por 7 días desde hoy.</p>
+            <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>{$porcentaje}% de descuento, válido por 7 días desde hoy.</p>
         </div>
         <div style='margin:20px 0;'>{$cardsHtml}</div>
     ";
@@ -101,12 +100,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $mapa_codigos = [];
     $mapa_tutores = [];
+    $mapa_porcentajes = [];
     foreach ($envios_raw as $item) {
         $aid = (int)($item['alumno_id'] ?? 0);
         $cod = trim((string)($item['codigo'] ?? ''));
         if ($aid > 0 && $cod !== '') $mapa_codigos[$aid] = $cod;
         if ($aid > 0 && !empty($item['tutor_ids']) && is_array($item['tutor_ids'])) {
             $mapa_tutores[$aid] = array_map('intval', $item['tutor_ids']);
+        }
+        if ($aid > 0) {
+            $pct = (int)($item['porcentaje'] ?? 15);
+            $mapa_porcentajes[$aid] = max(1, min(100, $pct ?: 15));
         }
     }
     if (empty($mapa_codigos)) {
@@ -170,10 +174,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $primer_nombre = explode(' ', trim($row['nombre']))[0];
-        $html          = generarHtmlEmailCuponAlternativas($primer_nombre, $row['categoria'], $alternativas, $codigo);
+        $porcentaje    = $mapa_porcentajes[$aid] ?? 15;
+        $asunto        = "Un {$porcentaje}% de descuento para tu próxima clase en Nubira";
+        $html          = generarHtmlEmailCuponAlternativas($primer_nombre, $row['categoria'], $alternativas, $codigo, $porcentaje);
         $primera       = $alternativas[0];
         $link_cupon    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera['id'] . "&codigo_beca=" . rawurlencode($codigo);
-        $html_full     = plantillaMaestra($asunto, $html, 'Usar mi descuento', $link_cupon, 'Un 15% de descuento para tu próxima clase en Nubira.');
+        $html_full     = plantillaMaestra($asunto, $html, 'Usar mi descuento', $link_cupon, "Un {$porcentaje}% de descuento para tu próxima clase en Nubira.");
         $exito         = _enviarEmailBase($correo, $asunto, $html_full, '', false);
         $exito_int     = $exito ? 1 : 0;
 
@@ -196,6 +202,7 @@ if (isset($_GET['preview'])) {
     $aid_preview    = (int)($_GET['alumno_id'] ?? 0);
     $codigo_preview = trim((string)($_GET['codigo'] ?? ''));
     $tutor_ids_raw  = trim((string)($_GET['tutor_ids'] ?? ''));
+    $porcentaje_pv  = max(1, min(100, (int)($_GET['porcentaje'] ?? 15) ?: 15));
 
     if ($aid_preview <= 0 || $codigo_preview === '') {
         echo '<p style="font-family:sans-serif;padding:20px;color:#999;">Falta alumno o código para generar el preview.</p>';
@@ -228,10 +235,11 @@ if (isset($_GET['preview'])) {
     }
 
     $primer_nombre_pv = explode(' ', trim($row_pv['nombre']))[0];
-    $html_pv    = generarHtmlEmailCuponAlternativas($primer_nombre_pv, $row_pv['categoria'], $alternativas_pv, $codigo_preview);
+    $html_pv    = generarHtmlEmailCuponAlternativas($primer_nombre_pv, $row_pv['categoria'], $alternativas_pv, $codigo_preview, $porcentaje_pv);
     $primera_pv = $alternativas_pv[0];
     $link_pv    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera_pv['id'] . "&codigo_beca=" . rawurlencode($codigo_preview);
-    echo plantillaMaestra($asunto, $html_pv, 'Usar mi descuento', $link_pv, 'Un 15% de descuento para tu próxima clase en Nubira.');
+    $asunto_pv = "Un {$porcentaje_pv}% de descuento para tu próxima clase en Nubira";
+    echo plantillaMaestra($asunto_pv, $html_pv, 'Usar mi descuento', $link_pv, "Un {$porcentaje_pv}% de descuento para tu próxima clase en Nubira.");
     exit;
 }
 
@@ -397,6 +405,11 @@ require_once __DIR__ . '/componentes/sidebar.php';
                 </button>
                 <?php endif; ?>
               </div>
+              <div class="flex items-center gap-1.5 mt-1">
+                <input type="number" class="row-porcentaje w-14 px-1.5 py-1 border border-gray-200 rounded-lg text-xs text-center focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none"
+                       min="1" max="100" step="1" value="15" <?= $enviado ? 'disabled' : '' ?>>
+                <span class="text-[10px] text-gray-400">% descuento</span>
+              </div>
               <?php if (!$enviado): ?>
               <span class="row-tutores-estado text-[10px] text-gray-400 mt-1 block" data-alumno-id="<?= (int)$fila['comprador_id'] ?>">Automático</span>
               <?php endif; ?>
@@ -538,7 +551,8 @@ btnEnviar?.addEventListener('click', async () => {
     const codigoInput = r.querySelector('.row-codigo');
     const codigo = codigoInput.value.trim();
     if (!codigo) { faltaCodigo = true; codigoInput.classList.add('border-red-400'); return; }
-    envios.push({ alumno_id: parseInt(cb.value, 10), codigo, tutor_ids: seleccionesTutores[cb.value] || [] });
+    const porcentaje = parseInt(r.querySelector('.row-porcentaje').value, 10) || 15;
+    envios.push({ alumno_id: parseInt(cb.value, 10), codigo, porcentaje, tutor_ids: seleccionesTutores[cb.value] || [] });
   });
 
   if (faltaCodigo) { mostrarToast('Falta pegar el código de cupón en alguna fila seleccionada', 'error'); return; }
@@ -587,10 +601,11 @@ document.querySelectorAll('.btn-preview-fila').forEach(btn => {
     const codigo = tr.querySelector('.row-codigo').value.trim();
     if (!codigo) { mostrarToast('Escribe el código de cupón antes de ver el preview', 'error'); return; }
     const alumnoId = btn.dataset.alumnoId;
+    const porcentaje = tr.querySelector('.row-porcentaje').value || 15;
     const tutorIds = seleccionesTutores[alumnoId];
     const extraTutores = (tutorIds && tutorIds.length > 0) ? `&tutor_ids=${tutorIds.join(',')}` : '';
     document.getElementById('preview-iframe').src =
-      `${window.location.pathname}?preview=1&alumno_id=${alumnoId}&codigo=${encodeURIComponent(codigo)}${extraTutores}`;
+      `${window.location.pathname}?preview=1&alumno_id=${alumnoId}&codigo=${encodeURIComponent(codigo)}&porcentaje=${encodeURIComponent(porcentaje)}${extraTutores}`;
     document.getElementById('modal-preview').classList.remove('hidden');
   });
 });
