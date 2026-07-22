@@ -1,4 +1,16 @@
 
+## Pendiente: badge de nombre del tutor puede desbordar el lienzo en cards de marketing
+
+Pendiente: el badge de nombre del tutor en las cards de marketing (nb_generar_imagen_post()) puede desbordar el lienzo con nombres muy largos — colMaxW=590px hoy, sin manejo explícito de overflow/truncado. Riesgo detectado en varias rondas de rediseño del 21/07/2026, sin resolver por estar fuera de alcance de cada sesión. Evaluar truncado o reducción de tamaño de fuente dinámico para nombres largos.
+
+## Pendiente: aplicar el rediseño de card de marketing a nb_generar_imagen_history()
+
+Aplicar el mismo rediseño de card (foto grande, badge disponible, categoría+rating separados, título genérico, bio condicional, features fijas) a `nb_generar_imagen_history()` — hoy solo se rediseñó POST 1:1, HISTORY 9:16 sigue con el diseño viejo, generando inconsistencia visual entre ambos formatos hasta que se aplique el mismo trabajo ahí.
+
+## Pendiente: definir relación entre notificar_alternativas_chat.php (cron) y enviar_cupon_alternativas.php (panel manual)
+
+Definir la relación entre `notificar_alternativas_chat.php` (cron automático, 20 min sin respuesta, sin cupón) y `enviar_cupon_alternativas.php` (panel manual, con cupón). Duda pendiente: ¿el panel manual debería ampliar su criterio de "nunca respondió" a "no respondió el mismo día calendario" para casos como Maura (conversación 156, escribió 18/07 20:48, vendedor respondió 20/07 13:56 — casi 2 días después, pero técnicamente "sí respondió" así que hoy no calificaría)? Riesgo identificado: si se amplía el criterio, se generaría superposición con el cron automático (mismo estudiante recibiría 2 correos: el automático a los 20 min sin cupón, y después el manual con cupón si el admin decide enviarlo). Recomendación pendiente de decidir: mantener el panel manual enfocado en casos que el cron nunca cubrió (conversaciones de más de 30 días, o períodos donde el cron estuvo inactivo), no como refuerzo de casos ya atendidos por el automático. Pendiente desde el 20/07/2026.
+
 ## Mejora futura: restringir el checkbox "Prepara para la PAES" a categorías relevantes
 
 Evaluar si el checkbox "Prepara para la PAES" debería estar restringido a ciertas categorías relevantes (Matemáticas, Lenguaje, Ciencias, Historia), en vez de estar disponible para cualquier categoría sin restricción. Detectado el 10/07/2026 al trabajar el SEO de PAES en detalle_servicio.php.
