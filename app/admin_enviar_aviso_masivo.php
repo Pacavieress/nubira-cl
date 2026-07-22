@@ -28,6 +28,7 @@ if (empty($csrf_post) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_post)
 
 // 4. SANITIZACIÓN
 $admin_id  = (int)($_SESSION['usuario_id'] ?? 0);
+$es_rapido = !empty($_POST['es_rapido']);
 $titulo    = trim((string)($_POST['titulo'] ?? ''));
 $mensaje   = trim((string)($_POST['mensaje'] ?? ''));
 $tipo      = (string)($_POST['tipo'] ?? 'info');
@@ -35,6 +36,13 @@ $segmento  = (string)($_POST['segmento'] ?? 'todos');
 $imagenes  = $_POST['imagenes'] ?? [];
 $imagenes_origen = $_POST['imagenes_origen'] ?? [];
 if (!is_array($imagenes_origen)) $imagenes_origen = [];
+
+// Modo rápido (atajo desde perfil.php u otros accesos directos): si no viene
+// título, se completa con un valor por defecto para que la campaña quede
+// consistente y visible en el historial de /admin/avisos.
+if ($es_rapido && $titulo === '') {
+    $titulo = 'Mensaje directo';
+}
 
 // Validar imágenes: máx 3, solo nombres seguros
 if (!is_array($imagenes)) $imagenes = [];

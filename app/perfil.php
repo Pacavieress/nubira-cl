@@ -1104,8 +1104,8 @@ function actualizarContadorAdmin() {
     else if (total >= 700) counter.className = 'text-[11px] font-medium text-orange-500 ml-auto';
     else counter.className = 'text-[11px] font-medium text-gray-400 ml-auto';
     
-    // Botón habilitado solo si >= 3 chars
-    btn.disabled = (len < 3);
+    // Botón habilitado solo si >= 5 chars
+    btn.disabled = (len < 5);
     
     // Ocultar error al escribir
     err.classList.add('hidden');
@@ -1116,22 +1116,25 @@ async function enviarMensajeAdmin(destinoId, btn) {
     const err = document.getElementById('msg-admin-error');
     const texto = input.value.trim();
     
-    if (texto.length < 3) {
-        err.textContent = 'Escribe al menos 3 caracteres.';
+    if (texto.length < 5) {
+        err.textContent = 'Escribe al menos 5 caracteres.';
         err.classList.remove('hidden');
         return;
     }
-    
+
     btn.disabled = true;
     btn.innerText = 'ENVIANDO...';
     err.classList.add('hidden');
-    
+
     try {
         const fd = new FormData();
-        fd.append('destino_id', destinoId);
+        fd.append('es_rapido', '1');
+        fd.append('segmento', 'usuario');
+        fd.append('usuario_id', destinoId);
         fd.append('mensaje', texto);
+        fd.append('tipo', 'info');
         fd.append('csrf_token', CSRF_TOKEN);
-        const r = await fetch('/app/admin_enviar_mensaje.php', { method: 'POST', body: fd });
+        const r = await fetch('/app/admin_enviar_aviso_masivo.php', { method: 'POST', body: fd });
         const d = await r.json();
         
         if (d.success) {
