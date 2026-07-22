@@ -25,8 +25,8 @@ try {
     if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
     $uid = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : 0;
     
-    // Validar si el usuario actual es admin (Idealmente usar una variable de sesión real como $_SESSION['es_admin'])
-    $es_admin = true; // 🔥 MODO NUBIRA 2.0 ADMIN (Asegúrate de conectar esto a tu lógica real de sesión)
+    // Validar si el usuario actual es admin
+    $es_admin = (($_SESSION['rol'] ?? '') === 'admin');
 
     // Array por defecto (AHORA INCLUYE TODAS LAS LLAVES DEL FRONTEND)
     $alertas = [
@@ -47,6 +47,7 @@ try {
         'admin_servicios' => 0,
         'admin_apuntes' => 0,
         'admin_chats' => 0,
+        'admin_chats_moderacion' => 0,
         'admin_soporte' => 0,
         'admin_reclamos' => 0,
         'admin_solicitudes' => 0,
@@ -203,6 +204,12 @@ try {
                 if ($res) { $alertas['admin_chats'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
 
+            // 10b. Archivos adjuntos de chat pendientes de moderación (visible=0)
+            try {
+                $res = $conn->query("SELECT COUNT(*) AS total FROM mensajes WHERE visible = 0 AND archivo_ruta IS NOT NULL");
+                if ($res) { $alertas['admin_chats_moderacion'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
             // 12. Tutores con perfil incompleto (sin foto, bio, tipo o servicios sin horario)
             try {
                 $res = $conn->query("SELECT COUNT(*) AS total FROM (
@@ -266,6 +273,16 @@ try {
                 ");
                 if ($res) { $alertas['admin_despertar_dormidos'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
+        }
+    }
+
+    // Defensa en profundidad: si no es admin, nunca exponer las métricas admin_* en el JSON
+    // aunque una regresión futura vuelva a encender $es_admin por error.
+    if (!$es_admin) {
+        foreach ($alertas as $clave => $valor) {
+            if (strpos($clave, 'admin_') === 0) {
+                unset($alertas[$clave]);
+            }
         }
     }
 
