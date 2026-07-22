@@ -15,9 +15,11 @@ foreach($rutas_conexion as $rc) {
 if (!$conn_found) die("Error Crítico [Nubira Shield]: No se encontró conexion.php.");
 
 $rutas_iconos = [__DIR__.'/iconos.php', __DIR__.'/../iconos.php', $_SERVER['DOCUMENT_ROOT'].'/app/iconos.php', $_SERVER['DOCUMENT_ROOT'].'/iconos.php'];
-foreach($rutas_iconos as $ri) { 
-    if(file_exists($ri)){ require_once $ri; break; } 
+foreach($rutas_iconos as $ri) {
+    if(file_exists($ri)){ require_once $ri; break; }
 }
+
+require_once __DIR__ . '/seguridad_url.php';
 
 if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') { 
     header("Location: /login"); 
@@ -407,7 +409,7 @@ function detectarDispositivo($ua) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <title>Monitor Analítico | Nubira</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1001,14 +1003,22 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                         else $badge_eventos = 'text-gray-500';
                     }
                 ?>
-               <a href="<?= $url_detalle ?>" 
+               <?php
+                    $tiene_perfil_real = ($u['usuario_id'] > 0 && !empty($u['nombre']));
+                    $url_perfil = $tiene_perfil_real ? '/perfil/' . nubira_encriptar_id($u['usuario_id']) : '';
+               ?>
+               <div onclick="location.href='<?= $url_detalle ?>'"
                    data-ip="<?= $ip_str ?>"
-                   data-tipo="<?= $tipo_usuario ?>" 
-                   data-online="<?= $is_online ?>" 
+                   data-tipo="<?= $tipo_usuario ?>"
+                   data-online="<?= $is_online ?>"
                    data-region="pendiente"
-                   class="monitor-card block rounded-2xl p-5 border <?= $card_bg ?> transition-all hover:shadow-md shadow-sm hover:scale-[1.01] relative flex flex-col h-full group bg-white">
+                   class="monitor-card block rounded-2xl p-5 border <?= $card_bg ?> transition-all hover:shadow-md shadow-sm hover:scale-[1.01] relative flex flex-col h-full group bg-white cursor-pointer">
                     <div class="flex items-start gap-4 mb-4">
+                        <?php if ($tiene_perfil_real): ?>
+                        <a href="<?= $url_perfil ?>" target="_blank" onclick="event.stopPropagation()" class="w-12 h-12 rounded-xl <?= $es_invitado ? 'bg-gray-200 text-gray-500' : 'bg-gray-100 text-gray-400' ?> relative flex items-center justify-center border border-transparent group-hover:border-[#54A6D8] transition-colors shrink-0 mt-1 avatar-container">
+                        <?php else: ?>
                         <div class="w-12 h-12 rounded-xl <?= $es_invitado ? 'bg-gray-200 text-gray-500' : 'bg-gray-100 text-gray-400' ?> relative flex items-center justify-center border border-transparent group-hover:border-[#54A6D8] transition-colors shrink-0 mt-1 avatar-container">
+                        <?php endif; ?>
                             <?php if (!empty($u['foto_perfil']) && !$es_invitado): ?>
                                 <img src="/app/perfil/fotos/<?= htmlspecialchars($u['foto_perfil']) ?>" class="w-full h-full object-cover rounded-xl">
                             <?php elseif ($es_invitado): ?>
@@ -1017,9 +1027,13 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                                 <div class="font-bold text-lg"><?= strtoupper(substr($u['nombre']??'U',0,1)) ?></div>
                             <?php endif; ?>
                             <?php if($online): ?><span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse z-10"></span><?php endif; ?>
-                        </div>
+                        <?= $tiene_perfil_real ? '</a>' : '</div>' ?>
                         <div class="min-w-0 flex-1">
+                            <?php if ($tiene_perfil_real): ?>
+                            <a href="<?= $url_perfil ?>" target="_blank" onclick="event.stopPropagation()" class="font-extrabold text-gray-900 group-hover:text-[#54A6D8] hover:underline transition-colors truncate text-sm title-text block"><?= htmlspecialchars($u['nombre']) ?></a>
+                            <?php else: ?>
                             <h3 class="font-extrabold <?= $es_invitado ? 'text-gray-600' : 'text-gray-900 group-hover:text-[#54A6D8]' ?> transition-colors truncate text-sm title-text"><?= $es_invitado ? $guest_id : htmlspecialchars($u['nombre']) ?></h3>
+                            <?php endif; ?>
                             
                             <p class="text-[10px] text-gray-500 font-medium truncate mt-0.5 flex items-center loc-text" title="<?= $ip_str ?>">
                                 <span class="animate-pulse bg-gray-200 h-2.5 w-20 rounded inline-block"></span>
@@ -1048,7 +1062,7 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                             <span class="text-lg font-black leading-none inline-block <?= $badge_eventos ?>"><?= $eventos ?></span>
                         </div>
                     </div>
-                </a>
+                </div>
                 <?php endwhile; ?>
             <?php else: ?>
                 <div class="col-span-full text-center py-16 text-gray-400">
