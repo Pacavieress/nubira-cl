@@ -6,10 +6,114 @@ if (!file_exists($app_dir . '/conexion.php')) $app_dir = __DIR__ . '/app';
 if (!file_exists($app_dir . '/conexion.php')) $app_dir = __DIR__;
 
 require_once $app_dir . '/conexion.php';
+require_once $app_dir . '/correo.php';
+require_once $app_dir . '/helpers/campanas.php';
 require_once $app_dir . '/iconos.php';
 
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
     header('Location: /vitrina'); exit;
+}
+
+date_default_timezone_set('America/Santiago');
+if (!defined('LOG_PATH')) define('LOG_PATH', $app_dir . '/log_correos.txt');
+
+if (!isset($_SESSION['csrf_leads_gmail'])) {
+    $_SESSION['csrf_leads_gmail'] = bin2hex(random_bytes(32));
+}
+$csrf_token   = $_SESSION['csrf_leads_gmail'];
+$admin_nombre = 'recuperar_gmails_jun2026';
+$asunto       = 'Ya puedes registrarte en Nubira con cualquier email';
+
+// ── POST: envío selectivo a leads marcados ─────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    set_time_limit(600);
+
+    if (!hash_equals($csrf_token, $_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Token inválido.']);
+        exit;
+    }
+
+    $correos_raw = $_POST['correos'] ?? [];
+    if (!is_array($correos_raw) || empty($correos_raw)) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Sin destinatarios seleccionados.']);
+        exit;
+    }
+
+    $candidatos = array_values(array_unique(array_filter(
+        array_map(fn($c) => strtolower(trim((string)$c)), $correos_raw),
+        fn($c) => filter_var($c, FILTER_VALIDATE_EMAIL)
+    )));
+    if (empty($candidatos)) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Correos inválidos.']);
+        exit;
+    }
+
+    // Re-validar contra la BD: misma regla de elegibilidad que enviar_recuperar_gmails.php.
+    // Nunca confiamos en el estado que venía marcado en el HTML del panel.
+    $placeholders = implode(',', array_fill(0, count($candidatos), '?'));
+    $tipos        = str_repeat('s', count($candidatos));
+    $sql_validos = "
+        SELECT DISTINCT LOWER(TRIM(ir.correo)) AS correo
+        FROM interesados_registro ir
+        WHERE LOWER(TRIM(ir.correo)) IN ($placeholders)
+          AND ir.correo LIKE '%@gmail.com'
+          AND LOWER(TRIM(ir.correo)) NOT IN (
+              SELECT LOWER(TRIM(correo)) FROM unsubscribed
+          )
+          AND LOWER(TRIM(ir.correo)) NOT IN (
+              SELECT LOWER(TRIM(correo)) FROM alumnos WHERE visible = 1
+          )
+          AND LOWER(TRIM(ir.correo)) NOT IN (
+              SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+               WHERE admin_nombre = ? AND exito = 1
+          )
+    ";
+    $params = $candidatos;
+    $params[] = $admin_nombre;
+    $stmt = $conn->prepare($sql_validos);
+    $stmt->bind_param($tipos . 's', ...$params);
+    $stmt->execute();
+    $validos = array_column($stmt->get_result()->fetch_all(MYSQLI_ASSOC), 'correo');
+    $stmt->close();
+
+    $omitidos = count($candidatos) - count($validos);
+
+    if (empty($validos)) {
+        echo json_encode(['ok' => true, 'enviados' => 0, 'fallidos' => 0, 'omitidos' => $omitidos]);
+        exit;
+    }
+
+    $admin_id = (int)$_SESSION['usuario_id'];
+    $stmt_log = $conn->prepare(
+        "INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito)
+         VALUES (?, ?, ?, ?, ?, ?)"
+    );
+
+    $enviados = 0; $fallidos = 0;
+
+    foreach ($validos as $correo) {
+        $unsubUrl  = generarUnsubUrl($correo);
+        $html      = generarHtmlEmailRecuperarGmail($unsubUrl);
+        $exito     = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply');
+        $exito_int = $exito ? 1 : 0;
+
+        $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
+        $stmt_log->execute();
+        logCampana('[RECUPERAR ' . ($exito ? 'OK' : 'FAIL') . '] ' . $correo);
+
+        if ($exito) $enviados++; else $fallidos++;
+        sleep(2);
+    }
+
+    $stmt_log->close();
+    $conn->close();
+
+    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos]);
+    exit;
 }
 
 // ── Filtro ────────────────────────────────────────────────────
@@ -78,7 +182,7 @@ $total = count($todos);
 <head>
   <meta charset="UTF-8">
   <title>Leads Gmail | Nubira Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <?php require_once $app_dir . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -182,6 +286,9 @@ require_once $app_dir . '/componentes/sidebar.php';
       <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs font-semibold uppercase tracking-wider">
           <tr>
+            <th class="px-4 py-3.5 w-10 text-center">
+              <input type="checkbox" id="check-all" class="w-4 h-4 rounded accent-[#54A6D8] cursor-pointer">
+            </th>
             <th class="px-5 py-3.5 text-left">Correo</th>
             <th class="px-5 py-3.5 text-left">Estado</th>
             <th class="px-5 py-3.5 text-left hidden md:table-cell">Intento original</th>
@@ -206,6 +313,15 @@ require_once $app_dir . '/componentes/sidebar.php';
                 : null;
           ?>
           <tr class="hover:bg-gray-50/70 transition-colors">
+
+            <td class="px-4 py-3.5 text-center">
+              <?php if (in_array($estado, ['sin_contacto', 'fallo'], true)): ?>
+                <input type="checkbox" class="row-check w-4 h-4 rounded accent-[#54A6D8] cursor-pointer"
+                       value="<?= htmlspecialchars($lead['correo']) ?>">
+              <?php else: ?>
+                <span class="text-gray-200">—</span>
+              <?php endif; ?>
+            </td>
 
             <td class="px-5 py-3.5 font-mono text-xs text-gray-800 font-medium">
               <?= htmlspecialchars($lead['correo']) ?>
@@ -253,6 +369,30 @@ require_once $app_dir . '/componentes/sidebar.php';
   </div>
 </main>
 
+<!-- Barra de acción fija -->
+<div id="action-bar"
+     class="fixed bottom-0 left-0 right-0 lg:left-64 z-50 bg-white border-t border-gray-200 shadow-xl
+            px-6 py-4 flex items-center justify-between gap-4
+            transform translate-y-full transition-transform duration-300">
+  <p class="text-sm font-bold text-gray-700">
+    <span id="bar-count">0</span> seleccionado<span id="bar-plural">s</span>
+  </p>
+  <button id="btn-enviar" disabled
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition
+                 bg-[#54A6D8] hover:bg-sky-500 text-white
+                 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+    </svg>
+    Enviar a seleccionados
+  </button>
+</div>
+
+<!-- Toast -->
+<div id="toast"
+     class="fixed bottom-24 right-6 px-5 py-3 rounded-xl shadow-xl text-white z-[90] hidden text-sm font-bold">
+</div>
+
 <?php
 require_once $app_dir . '/componentes/nav_bottom.php';
 require_once $app_dir . '/componentes/modal_publicar.php';
@@ -260,6 +400,92 @@ require_once $app_dir . '/componentes/modal_explora.php';
 ?>
 
 <script>
+const CSRF_TOKEN = <?= json_encode($csrf_token) ?>;
+
+const checkAll  = document.getElementById('check-all');
+const rowChecks = [...document.querySelectorAll('.row-check')];
+const actionBar = document.getElementById('action-bar');
+const barCount  = document.getElementById('bar-count');
+const barPlural = document.getElementById('bar-plural');
+const btnEnviar = document.getElementById('btn-enviar');
+
+function syncBar() {
+  const n = rowChecks.filter(c => c.checked).length;
+  barCount.textContent = n;
+  barPlural.textContent = n === 1 ? '' : 's';
+  btnEnviar.disabled = n === 0;
+  actionBar.classList.toggle('translate-y-full', n === 0);
+  actionBar.classList.toggle('translate-y-0',    n > 0);
+}
+
+checkAll?.addEventListener('change', () => {
+  rowChecks.forEach(cb => cb.checked = checkAll.checked);
+  checkAll.indeterminate = false;
+  syncBar();
+});
+
+rowChecks.forEach(cb => cb.addEventListener('change', () => {
+  const all  = rowChecks.every(c => c.checked);
+  const some = rowChecks.some(c => c.checked);
+  checkAll.checked       = all;
+  checkAll.indeterminate = !all && some;
+  syncBar();
+}));
+
+btnEnviar?.addEventListener('click', async () => {
+  const checked = rowChecks.filter(c => c.checked);
+  const n = checked.length;
+  if (!n) return;
+  if (!confirm(`¿Confirmas el envío del correo a ${n} lead${n !== 1 ? 's' : ''}?`)) return;
+
+  btnEnviar.disabled = true;
+  btnEnviar.innerHTML = `
+    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg> Enviando…`;
+
+  const body = new URLSearchParams();
+  body.append('csrf_token', CSRF_TOKEN);
+  checked.forEach(cb => body.append('correos[]', cb.value));
+
+  try {
+    const res  = await fetch(window.location.pathname + window.location.search, { method: 'POST', body });
+    const data = await res.json();
+    if (data.ok) {
+      let msg = `${data.enviados} enviado${data.enviados !== 1 ? 's' : ''}`;
+      if (data.fallidos > 0) msg += `, ${data.fallidos} fallido${data.fallidos !== 1 ? 's' : ''}`;
+      if (data.omitidos > 0) msg += `, ${data.omitidos} omitido${data.omitidos !== 1 ? 's' : ''} (ya no elegible)`;
+      mostrarToast(msg, 'ok');
+      setTimeout(() => location.reload(), 2500);
+    } else {
+      mostrarToast(data.error || 'Error al enviar', 'error');
+      resetBtn();
+    }
+  } catch {
+    mostrarToast('Error de conexión', 'error');
+    resetBtn();
+  }
+});
+
+function resetBtn() {
+  btnEnviar.disabled = false;
+  btnEnviar.innerHTML = `
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+    </svg> Enviar a seleccionados`;
+}
+
+function mostrarToast(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'fixed bottom-24 right-6 px-5 py-3 rounded-xl shadow-xl text-white z-[90] text-sm font-bold transition-all duration-300 '
+    + (tipo === 'ok' ? 'bg-green-600' : 'bg-red-600');
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 4000);
+}
+
 window.onload = () => {
   const l = document.getElementById('loader');
   if (l) { l.classList.add('opacity-0'); setTimeout(() => l.classList.add('hidden'), 300); }
