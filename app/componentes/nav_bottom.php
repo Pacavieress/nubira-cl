@@ -149,7 +149,7 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
     }
 </style>
 
-<nav class="nav-native-feel lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-gray-100/80 pb-[env(safe-area-inset-bottom)] pt-2 px-1" aria-label="Navegación principal">
+<nav id="nav-bottom" class="nav-native-feel lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-gray-100/80 pb-[env(safe-area-inset-bottom)] pt-2 px-1" aria-label="Navegación principal">
   <ul class="grid grid-cols-5 text-[11px] text-center pb-1 items-end relative">
 
     <li>
@@ -245,6 +245,30 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
   </ul>
 </nav>
 
+<script>
+(function fixTecladoNavBottom() {
+    // [NUBIRA 2.0] Oculta el nav bottom mientras el teclado de iOS está abierto.
+    // Evita que el elemento fixed quede flotando a mitad de pantalla cuando
+    // visualViewport se reduce (buscador, comentarios, chat, etc).
+    if (!('visualViewport' in window)) return;
+    const nav = document.getElementById('nav-bottom');
+    if (!nav) return;
+
+    const UMBRAL_TECLADO = 150; // px — por debajo de esto es solo el chrome del navegador, no el teclado
+
+    function ajustarNavPorTeclado() {
+        if (window.innerWidth >= 1024) return; // el nav ya está oculto por CSS (lg:hidden) en desktop
+        const alturaVisible  = window.visualViewport.height;
+        const alturaTotal    = window.innerHeight;
+        const tecladoAbierto = (alturaTotal - alturaVisible) > UMBRAL_TECLADO;
+        nav.style.display = tecladoAbierto ? 'none' : '';
+    }
+
+    window.visualViewport.addEventListener('resize', ajustarNavPorTeclado);
+    window.visualViewport.addEventListener('scroll', ajustarNavPorTeclado);
+})();
+</script>
+
 <?php if (!$es_visita_nb): ?>
 <script>
 (function() {
@@ -267,36 +291,7 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
         }
     }
 
-    if (typeof window.updateHeaderDot === 'function') {
-        const originalUpdate = window.updateHeaderDot;
-        window.updateHeaderDot = function(data) {
-            originalUpdate(data);
-            renderizarPuntoNav(data);
-        };
-    }
-
-    function checkNavAlerts() {
-        // [NUBIRA 2.0] No consultar si la pestaña está oculta (ahorra batería + servidor)
-        if (document.hidden) return;
-        
-        fetch('/app/contar_alertas_sistema.php?v=' + Date.now())
-            .then(res => res.json())
-            .then(data => renderizarPuntoNav(data))
-            .catch(() => {});
-    }
-
-    // [NUBIRA 2.0] Polling inteligente:
-    // - Primera consulta tras un pequeño delay (no competimos con el render inicial)
-    // - Intervalo 45s (antes 15s) alineado con el badge de chats
-    // - Al volver a la pestaña, refrescamos inmediato
-    const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 600));
-    scheduleIdle(checkNavAlerts);
-    
-    setInterval(checkNavAlerts, 45000);
-    
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) checkNavAlerts();
-    });
+    window.addEventListener('nubira:alertas', e => renderizarPuntoNav(e.detail));
 })();
 </script>
 <?php endif; ?>

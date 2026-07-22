@@ -51,27 +51,80 @@ if (!$es_visitante && isset($conn)) {
     }
 
     $foto_sesion = $_SESSION['foto_perfil'] ?? '';
-    
-    try {
-        $stmt_h = $conn->prepare("SELECT foto_perfil, bio FROM alumnos WHERE id = ? LIMIT 1");
-        if ($stmt_h) {
-            $stmt_h->bind_param("i", $uid_header);
-            $stmt_h->execute();
-            $stmt_h->bind_result($foto_db, $bio_db);
-            if ($stmt_h->fetch()) {
-                $_SESSION['foto_perfil'] = $foto_db; 
-                $foto_sesion = $foto_db;
-                if (empty($foto_db) || empty(trim((string)$bio_db))) { 
-                    $perfil_incompleto = true; 
-                    $alerta_encendida_php = true;
+
+    // [NUBIRA 2.0] Cache de sesión compartida con nav_bottom.php (mismo cache_key y TTL de 5 min):
+    // evita re-consultar alumnos/datos_pago_usuario en cada request. Si header.php corre primero
+    // (caso normal), deja la caché ya poblada para que nav_bottom.php/sidebar.php la reutilicen.
+    $cache_key = 'nav_cache_' . $uid_header;
+    $cache_ttl = 300; // 5 minutos
+    $ahora = time();
+
+    $cache_invalido = (
+        empty($_SESSION[$cache_key])
+        || ($ahora - ($_SESSION[$cache_key]['ts'] ?? 0)) > $cache_ttl
+        || !empty($_SESSION['nav_cache_invalidar'])
+    );
+
+    if ($cache_invalido) {
+        $alert_calc = false;
+        $foto_calc  = '';
+        $mtime_foto = 0;
+
+        try {
+            $stmt_h = $conn->prepare("SELECT foto_perfil, bio FROM alumnos WHERE id = ? LIMIT 1");
+            if ($stmt_h) {
+                $stmt_h->bind_param("i", $uid_header);
+                $stmt_h->execute();
+                $stmt_h->bind_result($foto_db, $bio_db);
+                if ($stmt_h->fetch()) {
+                    $_SESSION['foto_perfil'] = $foto_db;
+                    $foto_sesion = $foto_db;
+                    if (empty($foto_db) || empty(trim((string)$bio_db))) { $alert_calc = true; }
+                    if (!empty($foto_db)) {
+                        $foto_calc = "/app/perfil/fotos/" . $foto_db;
+                        $ruta_fis_foto = $_SERVER['DOCUMENT_ROOT'] . $foto_calc;
+                        if (file_exists($ruta_fis_foto)) {
+                            $mtime_foto = filemtime($ruta_fis_foto);
+                        }
+                    }
+                }
+                $stmt_h->close();
+            }
+
+            if (!$alert_calc) {
+                $stmt_banco = $conn->prepare("SELECT banco, numero_cuenta FROM datos_pago_usuario WHERE usuario_id = ? LIMIT 1");
+                if ($stmt_banco) {
+                    $stmt_banco->bind_param("i", $uid_header);
+                    $stmt_banco->execute();
+                    $stmt_banco->store_result();
+                    if ($stmt_banco->num_rows > 0) {
+                        $stmt_banco->bind_result($banco_db, $cuenta_db);
+                        $stmt_banco->fetch();
+                        if (empty(trim((string)$banco_db)) || empty(trim((string)$cuenta_db))) {
+                            $alert_calc = true;
+                        }
+                    } else {
+                        $alert_calc = true;
+                    }
+                    $stmt_banco->close();
                 }
             }
-            $stmt_h->close();
-        }
-    } catch (Throwable $e) {} 
+        } catch (Throwable $e) {}
+
+        $_SESSION[$cache_key] = [
+            'ts'         => $ahora,
+            'alerta'     => $alert_calc,
+            'foto_path'  => $foto_calc,
+            'foto_mtime' => $mtime_foto,
+        ];
+        unset($_SESSION['nav_cache_invalidar']);
+    }
+
+    $perfil_incompleto    = $_SESSION[$cache_key]['alerta'];
+    $alerta_encendida_php = $perfil_incompleto;
 }
 
-$titulo_seccion = $page_title ?? 'Vitrina'; 
+$titulo_seccion = $page_title ?? 'Vitrina';
 $n_sesion = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'U'));
 $iniciales = mb_strtoupper(mb_substr($n_sesion[0] ?? 'U', 0, 1) . (isset($n_sesion[1]) ? mb_substr($n_sesion[1], 0, 1) : ''));
 
@@ -82,8 +135,6 @@ if (!empty($foto_sesion)) {
     $foto_url_header = "/app/perfil/fotos/" . $foto_sesion . "?v=" . $foto_header_v;
 }
 
-$header_mod = $_GET['modalidad'] ?? '';
-$mostrar_filtro_modalidad = !isset($ocultar_modalidad) || $ocultar_modalidad === false;
 $mostrar_buscador = !isset($ocultar_buscador) || $ocultar_buscador === false;
 $mostrar_botones = !isset($ocultar_botones_publicar) || $ocultar_botones_publicar === false;
 
@@ -112,33 +163,19 @@ $url_perfil         = $es_visitante ? '/login?redir=' . $current_url : '/perfil/
 
         <div class="flex-1 max-w-xl mx-1 md:mx-4">
             <?php if ($mostrar_buscador): ?>
-            <form action="/busqueda" method="GET" role="search" 
-                  onsubmit="if(this.modalidad && this.modalidad.value === '') this.modalidad.disabled = true; if(this.q && this.q.value === '') this.q.disabled = true;"
+            <form action="/busqueda" method="GET" role="search"
+                  onsubmit="if(this.q && this.q.value === '') this.q.disabled = true;"
                   class="w-full flex items-center bg-gray-50 border border-gray-100 rounded-full focus-within:border-[#54A6D8] focus-within:bg-white transition-colors duration-200 overflow-hidden relative z-10 outline-none">
-                
+
                 <div class="pl-3 text-gray-400 shrink-0 pointer-events-none">
                     <?= icon('search', 'w-3.5 h-3.5 md:w-4 md:h-4') ?>
                 </div>
-                
+
                 <input type="search" name="q"
                        class="w-full py-1.5 md:py-2 pl-2 pr-4 bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-400 text-base md:text-sm cursor-pointer focus:cursor-text outline-none"
-                       placeholder="<?= $mostrar_filtro_modalidad ? '¿Qué buscas?' : 'Buscar apuntes...' ?>"
+                       placeholder="¿Qué buscas?"
                        autocomplete="off" enterkeyhint="search" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
 
-                <?php if ($mostrar_filtro_modalidad): ?>
-                <div class="hidden lg:block h-4 w-px bg-gray-200 shrink-0 mx-1"></div>
-                <div class="hidden lg:block relative shrink-0">
-                    <select name="modalidad" onchange="this.form.submit()" class="appearance-none bg-transparent border-none py-1.5 md:py-2 pl-2 pr-7 text-xs md:text-sm font-semibold text-gray-600 focus:ring-0 cursor-pointer hover:text-[#54A6D8] transition-colors duration-200 outline-none w-auto">
-                        <option value="">Modalidad</option>
-                        <option value="Presencial" <?= $header_mod==='Presencial'?'selected':'' ?>>Presencial</option>
-                        <option value="Remoto" <?= $header_mod==='Remoto'?'selected':'' ?>>Remoto</option>
-                        <option value="Híbrido" <?= $header_mod==='Híbrido'?'selected':'' ?>>Híbrido</option>
-                    </select>
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">
-                        <?= icon('chevron-down', 'w-2.5 h-2.5') ?>
-                    </div>
-                </div>
-                <?php endif; ?>
                 <button type="submit" class="sr-only"></button>
             </form>
             <?php endif; ?>
@@ -230,19 +267,7 @@ window.updateHeaderDot = function(data) {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    function checkHeaderAlerts() {
-        if (document.hidden) return;
-        fetch('/app/contar_alertas_sistema.php?v=' + Date.now())
-            .then(res => res.json())
-            .then(data => window.updateHeaderDot(data))
-            .catch(e => console.log('Error silente de badge:', e));
-    }
-    const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 600));
-    scheduleIdle(checkHeaderAlerts);
-    setInterval(checkHeaderAlerts, 45000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkHeaderAlerts(); });
-});
+window.addEventListener('nubira:alertas', e => window.updateHeaderDot(e.detail));
 </script>
 <?php endif; ?>
 

@@ -260,30 +260,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    if (typeof window.updateHeaderDot === 'function') {
-        const originalUpdate = window.updateHeaderDot;
-        window.updateHeaderDot = function(data) {
-            originalUpdate(data);          
-            renderizarPuntoSidebar(data);  
-        };
-    }
+    window.addEventListener('nubira:alertas', e => renderizarPuntoSidebar(e.detail));
 
-   function checkSidebarAlerts() {
-        // [NUBIRA 2.0] Coherente con nav_bottom y header
-        if (document.hidden) return;
-        
-        fetch('/app/contar_alertas_sistema.php?v=' + Date.now())
-            .then(res => res.json())
-            .then(data => renderizarPuntoSidebar(data))
-            .catch(e => {});
-    }
-
-    // Primera carga tras idle (no compite con render inicial)
-    const scheduleIdleSB = window.requestIdleCallback || ((cb) => setTimeout(cb, 700));
-    scheduleIdleSB(checkSidebarAlerts);
-    
-    setInterval(checkSidebarAlerts, 45000);
-    
     <?php endif; ?>
 });
 </script>
