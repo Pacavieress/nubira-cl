@@ -37,6 +37,18 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
 </p>
 
 <p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
+
+<p style=\"text-align:center;margin-top:26px;margin-bottom:6px;font-size:13px;color:#555;\">
+  Síguenos en redes sociales:
+</p>
+<p style=\"text-align:center;margin-bottom:24px;\">
+  <a href=\"https://instagram.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
+    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+  </a>
+  <a href=\"https://facebook.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
+    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+  </a>
+</p>
 ";
 }
 
@@ -351,7 +363,7 @@ $preview_html = plantillaMaestra($asunto, generarHtmlEmailDespertarDormidos('Est
 <head>
   <meta charset="UTF-8">
   <title>Campaña Despertar Dormidos | Nubira Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <?php require_once $app_dir . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>

@@ -36,51 +36,6 @@ $admin_id     = $_SESSION['usuario_id'] ?? 0;
 $admin_nombre = 'recuperar_gmails_jun2026';
 $asunto       = 'Ya puedes registrarte en Nubira con cualquier email';
 
-// ── HTML del email ────────────────────────────────────────────
-function generarHtmlEmailRecuperarGmail($unsubUrl) {
-    $unsub_safe = htmlspecialchars($unsubUrl, ENT_QUOTES, 'UTF-8');
-    return "
-<p>Hola,</p>
-
-<p>Hace un tiempo intentaste registrarte en <strong>Nubira.cl</strong> y no pudimos darte acceso
-porque en ese momento solo permitíamos correos institucionales.</p>
-
-<p><strong>Eso cambió. Ahora cualquier persona puede registrarse en Nubira.</strong></p>
-
-<p>Por si no conoces la plataforma, esto es lo que vas a encontrar:</p>
-
-<ul style=\"padding-left:20px; line-height:2;\">
-  <li><strong>Clase 100% online en Nubira</strong> — aula virtual integrada,
-      sin Meet, Zoom ni Teams.</li>
-  <li><strong>Chat anónimo antes de contratar</strong> — conversa con el tutor
-      sin compartir tu WhatsApp ni redes sociales.</li>
-  <li><strong>Horarios publicados por el tutor</strong> — sabes cuándo está
-      disponible antes de escribirle.</li>
-  <li><strong>Garantía Nubira</strong> — tu pago está protegido hasta que
-      confirmes que la clase se realizó.</li>
-</ul>
-
-<p style=\"text-align:center; margin:32px 0;\">
-  <a href=\"https://nubira.cl/registro\"
-     style=\"background:#54A6D8;color:white;padding:13px 28px;
-            text-decoration:none;border-radius:8px;font-weight:bold;
-            font-size:16px;display:inline-block;\">
-    Regístrate ahora
-  </a>
-</p>
-
-<p>Gracias por la paciencia. Esperamos verte pronto.</p>
-
-<p>Atentamente,<br>Equipo Nubira.cl</p>
-
-<hr style=\"margin:30px 0;border:none;border-top:1px solid #eee;\">
-<p style=\"font-size:11px;color:#888;\">
-  Si no quieres recibir más correos de Nubira,
-  <a href=\"{$unsub_safe}\" style=\"color:#888;\">puedes darte de baja aquí</a>.
-</p>
-";
-}
-
 // ── Query de destinatarios ────────────────────────────────────
 $sql_base = "
     SELECT DISTINCT LOWER(TRIM(ir.correo)) AS correo

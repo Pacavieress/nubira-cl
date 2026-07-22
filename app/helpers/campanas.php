@@ -49,6 +49,56 @@ Mientras tanto, nuestros tutores han ayudado a estudiantes en:</p>
 ";
 }
 
+function generarHtmlEmailRecuperarGmail($unsubUrl) {
+    $unsub_safe = htmlspecialchars($unsubUrl, ENT_QUOTES, 'UTF-8');
+    return "
+<p>Hola,</p>
+
+<p>Hace un tiempo intentaste registrarte en <strong>Nubira.cl</strong> y no pudimos darte acceso
+porque en ese momento solo permitíamos correos institucionales.</p>
+
+<p><strong>Eso cambió. Ahora cualquier persona puede registrarse en Nubira.</strong></p>
+
+<p><strong>Lo que hace distinta a Nubira:</strong></p>
+
+<ul style=\"padding-left:20px; line-height:2.2;\">
+  <li>Clases 100% online en la plataforma, sin instalar Meet, Zoom ni Teams.</li>
+  <li>Conversa con el tutor sin compartir tu WhatsApp ni contactos de redes sociales.</li>
+  <li>Ves los horarios publicados por el tutor antes de escribirle.</li>
+  <li>Tu pago queda protegido hasta que confirmes que la clase se realizó.</li>
+</ul>
+
+<p style=\"text-align:center; margin:32px 0;\">
+  <a href=\"https://nubira.cl/registro\"
+     style=\"background:#54A6D8;color:white;padding:13px 28px;
+            text-decoration:none;border-radius:8px;font-weight:bold;
+            font-size:16px;display:inline-block;\">
+    Regístrate ahora
+  </a>
+</p>
+
+<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
+
+<p style=\"text-align:center;margin-top:26px;margin-bottom:6px;font-size:13px;color:#555;\">
+  Síguenos en redes sociales:
+</p>
+<p style=\"text-align:center;margin-bottom:24px;\">
+  <a href=\"https://instagram.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
+    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+  </a>
+  <a href=\"https://facebook.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
+    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+  </a>
+</p>
+
+<hr style=\"margin:30px 0;border:none;border-top:1px solid #eee;\">
+<p style=\"font-size:11px;color:#888;\">
+  Si no quieres recibir más correos de Nubira,
+  <a href=\"{$unsub_safe}\" style=\"color:#888;\">puedes darte de baja aquí</a>.
+</p>
+";
+}
+
 function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsubUrl, $sender = 'contacto') {
     $cfg  = getSmtpConfig($sender);
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);

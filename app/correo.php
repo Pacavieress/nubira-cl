@@ -324,6 +324,48 @@ function enviarCorreoNuevoMensaje($correoDestino, $nombreDestino, $nombreEmisor,
     return _enviarEmailBase($correoDestino, "Tienes un nuevo mensaje de $nombreEmisor", $cuerpo);
 }
 
+function enviarCorreoAlternativasTutor($correoDestino, $nombreDestino, $categoria, array $alternativas, $conversacionId) {
+    $linkChat = "https://nubira.cl/app/chat_previo_contrato.php?id=" . $conversacionId;
+
+    $cardsHtml = '';
+    foreach ($alternativas as $alt) {
+        $nombreTutor = htmlspecialchars($alt['nombre_tutor'], ENT_QUOTES, 'UTF-8');
+        $tituloServ  = htmlspecialchars($alt['titulo'], ENT_QUOTES, 'UTF-8');
+        $fotoUrl = !empty($alt['foto_perfil'])
+            ? 'https://nubira.cl/app/perfil/fotos/' . $alt['foto_perfil']
+            : 'https://ui-avatars.com/api/?name=' . urlencode($alt['nombre_tutor']) . '&background=54A6D8&color=fff&size=128&bold=true';
+        $linkServicio = 'https://nubira.cl/servicios/' . $alt['slug'] . '-' . (int)$alt['id'];
+
+        $cardsHtml .= "
+        <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin-bottom:12px;'>
+          <tr>
+            <td width='60' style='vertical-align:top;'>
+              <img src='{$fotoUrl}' width='50' height='50' style='border-radius:50%; object-fit:cover; display:block;' alt='{$nombreTutor}'>
+            </td>
+            <td style='vertical-align:top; padding-left:12px;'>
+              <p style='margin:0; font-weight:bold; color:#111; font-size:14px;'>{$nombreTutor}</p>
+              <p style='margin:2px 0 6px 0; font-size:13px; color:#666;'>{$tituloServ}</p>
+              <a href='{$linkServicio}' style='font-size:13px; color:#54A6D8; font-weight:bold; text-decoration:none;'>Ver perfil →</a>
+            </td>
+          </tr>
+        </table>";
+    }
+
+    $html = "
+        <p>Hola <strong>{$nombreDestino}</strong>,</p>
+        <p>Sabemos que esperar respuesta puede ser un poco frustrante — tu tutor puede estar con clases, ocupado, o simplemente tardando un poco más de lo esperado.</p>
+        <p>Mientras tanto, te dejamos algunas opciones en <strong>{$categoria}</strong> que suelen responder rápido, por si quieres avanzar o simplemente comparar:</p>
+        <div style='margin:20px 0;'>{$cardsHtml}</div>
+        <p style='font-size:14px; color:#6B7280; margin-top:20px;'>
+            Tu conversación sigue abierta — no la pierdes por mirar otras opciones. Puedes seguir esperando su respuesta o escribirle a alguno de estos tutores, lo que prefieras.
+        </p>
+    ";
+
+    $cuerpo = plantillaMaestra("Mientras esperas, más tutores de {$categoria} para ti", $html, "Volver a mi conversación", $linkChat);
+
+    return _enviarEmailBase($correoDestino, "Mientras esperas respuesta, más tutores de {$categoria} para ti", $cuerpo);
+}
+
 // ==========================================================
 // NUEVA FUNCIÓN: RECORDATORIO DE CLASE AGENDADA (NUBIRA 2.0 AGENDA)
 // ==========================================================
