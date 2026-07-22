@@ -75,7 +75,7 @@
           <i class="fa-solid fa-share-nodes text-xs"></i>
         </button>
         <a href="${item.url}" download="nubira-${item.id}-post.jpg"
-           class="w-9 h-9 rounded-full bg-white border border-gray-200 text-[#54A6D8] hover:bg-blue-50 flex items-center justify-center transition-colors"
+           class="${esTactilConShare ? 'hidden ' : ''}w-9 h-9 rounded-full bg-white border border-gray-200 text-[#54A6D8] hover:bg-blue-50 flex items-center justify-center transition-colors"
            title="Descargar" aria-label="Descargar">
           <i class="fa-solid fa-download text-xs"></i>
         </a>

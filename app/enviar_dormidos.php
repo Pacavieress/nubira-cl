@@ -64,7 +64,7 @@ while ($row = $res->fetch_assoc()) {
     $unsubUrl = generarUnsubUrl($correo);
     $html     = generarHtmlEmailDormido($nombre, $dias, $unsubUrl);
 
-    $exito     = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl);
+    $exito     = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply');
     $exito_int = $exito ? 1 : 0;
 
     $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);

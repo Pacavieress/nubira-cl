@@ -52,6 +52,7 @@ if (!function_exists('nubira_canonical')) {
             'calculo'      => 'Cálculo',
             'ingles'       => 'Inglés',
             'tesis'        => 'Tesis',
+            'paes'         => 'PAES',
         ];
     }
 }

@@ -158,7 +158,7 @@ $servicios_db = $conn->query($query_servicios);
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 pl-1">Descuento (%)</label>
-                        <input type="number" name="porcentaje_descuento" value="100" min="1" max="100" required
+                        <input type="number" name="porcentaje_descuento" value="15" min="1" max="100" required
                                class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 outline-none font-bold text-slate-700 focus:bg-white focus:border-[#54A6D8] focus:ring-2 focus:ring-[#54A6D8]/20 transition-all">
                     </div>
                     <div>
