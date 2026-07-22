@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v14');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v16');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -322,6 +322,78 @@ if (!function_exists('nb_paleta_marca')) {
     }
 }
 
+if (!function_exists('nb_dibujar_badge_pill')) {
+    // Pill genérico (fondo sólido redondeado + texto) — reutilizado por
+    // "Disponible" y como base conceptual del badge de categoría.
+    function nb_dibujar_badge_pill($img, string $font, float $size, string $txt, int $x, int $yTop, int $cFondo, int $cTexto, int $padX = 16, int $padY = 10): array {
+        $w  = nb_ancho_texto($font, $size, $txt);
+        $bh = (int)($size * 1.15) + $padY * 2;
+        $bw = $w + $padX * 2;
+        nb_rect_redondeado($img, $x, $yTop, $x + $bw, $yTop + $bh, (int)($bh / 2), $cFondo);
+        imagettftext($img, $size, 0, $x + $padX, $yTop + $bh - $padY - (int)($size * 0.22), $cTexto, $font, $txt);
+        return [$bw, $bh];
+    }
+}
+
+if (!function_exists('nb_dibujar_badge_categoria')) {
+    // Badge de categoría con "ícono" genérico (punto sólido) + borde acento + relleno
+    // blanco — misma técnica de doble rect que la card "sticker" del HISTORY.
+    function nb_dibujar_badge_categoria($img, string $fSemi, string $cat, int $x, int $yTop, int $cBorde, int $cBlanco, int $cTexto): array {
+        $padX = 16; $padY = 9; $size = 24;
+        $w  = nb_ancho_texto($fSemi, $size, $cat);
+        $dotR = 6; $gapDot = 14;
+        $bh = (int)($size * 1.15) + $padY * 2;
+        $bw = $dotR * 2 + $gapDot + $w + $padX * 2;
+
+        nb_rect_redondeado($img, $x, $yTop, $x + $bw, $yTop + $bh, (int)($bh / 2), $cBorde);
+        nb_rect_redondeado($img, $x + 2, $yTop + 2, $x + $bw - 2, $yTop + $bh - 2, (int)($bh / 2) - 2, $cBlanco);
+
+        $cyDot = $yTop + (int)($bh / 2);
+        imagefilledellipse($img, $x + $padX + $dotR, $cyDot, $dotR * 2, $dotR * 2, $cTexto);
+        imagettftext($img, $size, 0, $x + $padX + $dotR * 2 + $gapDot, $yTop + $bh - $padY - (int)($size * 0.22), $cTexto, $fSemi, $cat);
+        return [$bw, $bh];
+    }
+}
+
+if (!function_exists('nb_dibujar_features_fijas')) {
+    // 4 features fijas (marketing genérico, iguales para todos los tutores — confirmado).
+    // Solo texto, sin dot decorativo (quitado tras feedback visual de producción).
+    function nb_dibujar_features_fijas($img, string $fSemi, int $W, int $yTop, int $cTxt2): int {
+        $features = ['Clases online', 'Material incluido', 'Responde rápido', 'Primera clase disponible'];
+        $n = count($features);
+        $padX = 100;
+        $usableW = $W - $padX * 2;
+        $colW = (int)($usableW / $n);
+        $size = 18;
+
+        foreach ($features as $i => $label) {
+            $colX = $padX + $colW * $i;
+            $lineas = nb_wrap_texto($fSemi, $size, $label, $colW - 10, 2);
+            foreach ($lineas as $j => $ln) {
+                $wLn = nb_ancho_texto($fSemi, $size, $ln);
+                $xLn = $colX + (int)(($colW - $wLn) / 2);
+                nb_texto_izquierda($img, $fSemi, $size, $cTxt2, $ln, $xLn, $yTop + 20 + $j * 24);
+            }
+        }
+        return $yTop + 20 + 24 + 16;
+    }
+}
+
+if (!function_exists('nb_dibujar_boton_agendar')) {
+    function nb_dibujar_boton_agendar($img, string $fBold, int $W, int $yTop, int $cAcento, int $cBlanco): int {
+        $txt = 'Agendar clase';
+        $size = 26;
+        $w = nb_ancho_texto($fBold, $size, $txt);
+        $padX = 40; $padY = 18;
+        $bw = $w + $padX * 2;
+        $bh = (int)($size * 1.15) + $padY * 2;
+        $x = (int)(($W - $bw) / 2);
+        nb_rect_redondeado($img, $x, $yTop, $x + $bw, $yTop + $bh, (int)($bh / 2), $cAcento);
+        imagettftext($img, $size, 0, $x + $padX, $yTop + $bh - $padY - (int)($size * 0.22), $cBlanco, $fBold, $txt);
+        return $bh;
+    }
+}
+
 /* ---------- Generador POST 1080x1080 ---------- */
 
 if (!function_exists('nb_generar_imagen_post')) {
@@ -335,47 +407,79 @@ if (!function_exists('nb_generar_imagen_post')) {
         $img = imagecreatetruecolor($W, $H);
         $pal = nb_paleta_marca($img);
         $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2']; $cBlanco = $pal['blanco'];
+        // #10B981 (emerald-500) — mismo verde que usa detalle_servicio.php para "Disponible",
+        // NO el #16A34A (green-600) del badge OFERTA (son conceptos y colores distintos).
+        $cVerdeDisp = imagecolorallocate($img, 16, 185, 129);
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
-        // Avatar — fotoTop=80: ring arranca en y=76 (≥60 zona segura).
-        $diam = 280; $fotoTop = 80;
-        nb_dibujar_avatar($img, $s, (int)($W / 2), $fotoTop, $diam, $cAcento, $cBlanco, $fBold);
+        /* ===== PARTE 1: avatar grande + badge Disponible + nombre + institución ===== */
+        $diamAv = 380; $avTop = 90; $avLeft = 70;
+        $avCx = $avLeft + (int)($diamAv / 2);
+        nb_dibujar_avatar($img, $s, $avCx, $avTop, $diamAv, $cAcento, $cBlanco, $fBold);
+        $avBottom = $avTop + $diamAv;
 
-        // Nombre tutor
-        $yNombre = $fotoTop + $diam + 75;  // = 435
-        $nombre = nb_truncar_una_linea($fBold, 38, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $W - 120);
-        nb_texto_centrado($img, $fBold, 38, $cTxt, $nombre, $W, $yNombre);
+        $colX = $avLeft + $diamAv + 40;
+        $colMaxW = $W - 40 - $colX;
 
-        // Institución (abreviada con el diccionario de la plataforma)
-        $instRaw = trim((string)($s['institucion_maestra'] ?? $s['institucion'] ?? ''));
-        $inst = $instRaw !== '' ? mb_strtoupper(html_entity_decode(abreviar_institucion($instRaw, 22)), 'UTF-8') : 'TUTOR PARTICULAR';
-        $inst = nb_truncar_una_linea($fReg, 24, $inst, $W - 160);
-        nb_texto_centrado($img, $fReg, 24, $cTxt2, $inst, $W, $yNombre + 44);
+        $nombre = nb_truncar_una_linea($fBold, 40, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $colMaxW);
+        $yNombre = 180;
+        nb_texto_izquierda($img, $fBold, 40, $cTxt, $nombre, $colX, $yNombre);
 
-        // Línea categoría · ★ rating (MAYÚSCULAS + estrella negra)
-        $prom  = (float)($s['rating_prom'] ?? 0);
-        $votos = (int)($s['rating_votos'] ?? 0);
-        $cat = mb_strtoupper(trim((string)($s['categoria'] ?? '')), 'UTF-8');
-        $yCat = $yNombre + 120;  // = 555
-        nb_dibujar_cat_rating_centrado($img, $cat, $fBold, $fSemi, 28, $prom, $votos, $W, $yCat, $cAcento);
-
-        // Título: word-wrap por ancho real en píxeles (nb_wrap_texto), máx 2 líneas —
-        // mismo helper que usa el título de novedades, evita truncar de más en títulos
-        // con letras anchas que el conteo de caracteres no detectaba.
-        $yTit = $yCat + 70;  // = 625
-        $tituloSrc = trim((string)($s['titulo'] ?? ''));
-        $lineas = nb_wrap_texto($fSemi, 32, $tituloSrc, $W - 160, 2);
-        foreach ($lineas as $i => $ln) {
-            nb_texto_centrado($img, $fSemi, 32, $cTxt, $ln, $W, $yTit + $i * 48);
+        if (!empty($s['disponible'])) {
+            $wNombre = nb_ancho_texto($fBold, 40, $nombre);
+            nb_dibujar_badge_pill($img, $fSemi, 20, 'Disponible', $colX + $wNombre + 20, $yNombre - 32, $cVerdeDisp, $cBlanco);
         }
 
-        // Precio — con oferta se agrega badge encima; aumentar gap para que no solape el título
-        $hayOferta = (float)($s['precio_oferta'] ?? 0) > 0;
-        $yPrecio = $yTit + count($lineas) * 48 + ($hayOferta ? 140 : 80);
-        nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 52, 36, $W, $yPrecio, $cTxt, $cTxt2);
+        $instRaw = trim((string)($s['institucion_maestra'] ?? $s['institucion'] ?? ''));
+        $inst = $instRaw !== '' ? mb_strtoupper(html_entity_decode(abreviar_institucion($instRaw, 22)), 'UTF-8') : 'TUTOR PARTICULAR';
+        $inst = nb_truncar_una_linea($fReg, 24, $inst, $colMaxW);
+        $yInst = $yNombre + 45;
+        nb_texto_izquierda($img, $fReg, 24, $cTxt2, $inst, $colX, $yInst);
 
-        // Marca centrada-derecha — y=920, borde derecho en W*0.75=810.
-        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', (int)($W * 0.75), 990);
+        /* ===== PARTE 2: badge categoría (separado) + línea de rating (separada) ===== */
+        $cat = mb_strtoupper(trim((string)($s['categoria'] ?? '')), 'UTF-8');
+        $yCatBadge = $yInst + 30;
+        [$bwCat, $bhCat] = nb_dibujar_badge_categoria($img, $fSemi, $cat, $colX, $yCatBadge, $cAcento, $cBlanco, $cAcento);
+
+        $prom  = (float)($s['rating_prom'] ?? 0);
+        $votos = (int)($s['rating_votos'] ?? 0);
+        $yRating = $yCatBadge + $bhCat + 34;
+        nb_dibujar_cat_rating_izquierda($img, '', $fBold, $fSemi, 26, $prom, $votos, $colX, $yRating, $cAcento);
+
+        /* ===== PARTE 3: título genérico + bio condicional ===== */
+        $y = max($avBottom, $yRating + 20) + 50;
+
+        $tituloGenerico = 'Clases particulares de ' . trim((string)($s['categoria'] ?? ''));
+        $lineasTit = nb_wrap_texto($fSemi, 34, $tituloGenerico, $W - 160, 1);
+        foreach ($lineasTit as $i => $ln) {
+            nb_texto_centrado($img, $fSemi, 34, $cTxt, $ln, $W, $y + $i * 46);
+        }
+        $y += count($lineasTit) * 46 + 30;
+
+        $bio = trim((string)($s['bio'] ?? ''));
+        if ($bio !== '') {
+            $lineasBio = nb_wrap_texto($fReg, 26, $bio, $W - 200, 2);
+            foreach ($lineasBio as $i => $ln) {
+                nb_texto_centrado($img, $fReg, 26, $cTxt2, $ln, $W, $y + $i * 36);
+            }
+            $y += count($lineasBio) * 36 + 40;
+        } else {
+            $y += 10;
+        }
+
+        /* ===== PARTE 4: features fijas + precio + botón + marca ===== */
+        $yFeaturesFin = nb_dibujar_features_fijas($img, $fSemi, $W, $y, $cTxt2);
+        $y = $yFeaturesFin + 40;
+
+        nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 48, 32, $W, $y, $cTxt, $cTxt2);
+        $y += 60;
+
+        $bhBoton = nb_dibujar_boton_agendar($img, $fBold, $W, $y, $cAcento, $cBlanco);
+        $y += $bhBoton + 35;
+
+        // Marca — mismo estilo que el diseño original (y que nb_generar_imagen_novedad_post()
+        // sigue usando hoy): Inter-Bold 28, borde derecho en W*0.75, color acento.
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', (int)($W * 0.75), $y);
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
@@ -730,7 +834,8 @@ if (!function_exists('nb_fingerprint_servicio')) {
         $base = NB_IMG_VERSION . '|' . ($s['id'] ?? '') . '|' . ($s['titulo'] ?? '') . '|' . ($s['precio'] ?? '')
               . '|' . ($s['precio_oferta'] ?? '') . '|' . ($s['foto_perfil'] ?? '')
               . '|' . ($s['categoria'] ?? '') . '|' . ($s['institucion_maestra'] ?? '')
-              . '|' . ($s['rating_prom'] ?? '') . '|' . ($s['rating_votos'] ?? '');
+              . '|' . ($s['rating_prom'] ?? '') . '|' . ($s['rating_votos'] ?? '')
+              . '|' . ($s['bio'] ?? '') . '|' . ($s['disponible'] ?? '');
         return substr(md5($base), 0, 10);
     }
 }
@@ -745,13 +850,18 @@ if (!function_exists('nb_version_imagen_servicio')) {
         if (!isset($conn) || !($conn instanceof mysqli) || $servicio_id <= 0) return '0';
 
         $sql = "SELECT s.id, s.titulo, s.precio, s.precio_oferta, s.categoria, a.foto_perfil,
+                       a.bio,
                        COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
                        COALESCE((SELECT ROUND(AVG(v.calificacion),1) FROM valoraciones v
                                  WHERE v.servicio_id = s.id AND v.calificacion > 0
                                    AND v.rol_evaluado = 'vendedor'), 0) AS rating_prom,
                        (SELECT COUNT(*) FROM valoraciones v
                         WHERE v.servicio_id = s.id AND v.calificacion > 0
-                          AND v.rol_evaluado = 'vendedor') AS rating_votos
+                          AND v.rol_evaluado = 'vendedor') AS rating_votos,
+                       (SELECT AVG(rt.minutos_respuesta) FROM respuestas_tutor rt
+                        WHERE rt.tutor_id = s.alumno_id
+                          AND rt.creado_en > (NOW() - INTERVAL 30 DAY)
+                          AND rt.minutos_respuesta <= 1440) AS tiempo_resp_calculado
                 FROM servicios s
                 LEFT JOIN alumnos a ON s.alumno_id = a.id
                 LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -763,6 +873,8 @@ if (!function_exists('nb_version_imagen_servicio')) {
         $s = $st->get_result()->fetch_assoc();
         $st->close();
         if (!$s) return '0';
+
+        $s['disponible'] = ($s['tiempo_resp_calculado'] !== null && (float)$s['tiempo_resp_calculado'] < 60) ? 1 : 0;
 
         return nb_fingerprint_servicio($s);
     }
@@ -776,13 +888,18 @@ if (!function_exists('nb_obtener_imagen_compartir')) {
         if (!isset($conn) || !($conn instanceof mysqli) || $servicio_id <= 0) return '';
 
         $sql = "SELECT s.*, a.nombre AS nombre_alumno, a.foto_perfil,
+                       a.bio,
                        COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
                        COALESCE((SELECT ROUND(AVG(v.calificacion),1) FROM valoraciones v
                                  WHERE v.servicio_id = s.id AND v.calificacion > 0
                                    AND v.rol_evaluado = 'vendedor'), 0) AS rating_prom,
                        (SELECT COUNT(*) FROM valoraciones v
                         WHERE v.servicio_id = s.id AND v.calificacion > 0
-                          AND v.rol_evaluado = 'vendedor') AS rating_votos
+                          AND v.rol_evaluado = 'vendedor') AS rating_votos,
+                       (SELECT AVG(rt.minutos_respuesta) FROM respuestas_tutor rt
+                        WHERE rt.tutor_id = s.alumno_id
+                          AND rt.creado_en > (NOW() - INTERVAL 30 DAY)
+                          AND rt.minutos_respuesta <= 1440) AS tiempo_resp_calculado
                 FROM servicios s
                 LEFT JOIN alumnos a ON s.alumno_id = a.id
                 LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -794,6 +911,8 @@ if (!function_exists('nb_obtener_imagen_compartir')) {
         $s = $st->get_result()->fetch_assoc();
         $st->close();
         if (!$s) return '';
+
+        $s['disponible'] = ($s['tiempo_resp_calculado'] !== null && (float)$s['tiempo_resp_calculado'] < 60) ? 1 : 0;
 
         require_once __DIR__ . '/../seguridad_url.php';
         $hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($servicio_id) : (string)$servicio_id;
