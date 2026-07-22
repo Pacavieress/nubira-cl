@@ -16,9 +16,14 @@ require_once $app_dir . '/iconos.php';
 
 // 2. CANDADO ESTRICTO DE SESIÓN
 if (function_exists('proteger_ruta')) {
-    proteger_ruta(); 
+    proteger_ruta();
 } else {
     die("Error de seguridad: No se pudo cargar el control de sesión.");
+}
+
+// 2.5 CANDADO DE ROL ADMIN
+if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
+    header("Location: /login"); exit;
 }
 
 // 3. CONEXIÓN A LA BASE DE DATOS

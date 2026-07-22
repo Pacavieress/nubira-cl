@@ -2,6 +2,13 @@
 require_once '../app/conexion.php';
 header('Content-Type: application/json; charset=UTF-8');
 
+session_start();
+if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
+    http_response_code(401);
+    echo json_encode(['error' => 'No autorizado']);
+    exit;
+}
+
 $institucion = strtolower(trim($_GET['institucion'] ?? ''));
 
 // --- Filtros dinámicos ---

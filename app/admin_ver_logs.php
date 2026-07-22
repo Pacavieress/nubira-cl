@@ -1,4 +1,9 @@
 <?php
+session_start();
+if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
+    header("Location: /login"); exit;
+}
+
 // Ruta del log
 $logFile = __DIR__ . '/../logs/errores.log';
 $errores = [];
