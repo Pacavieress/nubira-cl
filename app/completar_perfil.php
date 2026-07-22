@@ -68,7 +68,7 @@ $tipo_form = $_POST['tipo'] ?? $tipo_actual ?? '';
 <head>
   <meta charset="UTF-8">
   <title>Completar Perfil | Nubira</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>

@@ -20,7 +20,7 @@ header('Expires: 0');
 <head>
   <meta charset="UTF-8" />
   <title>Cuenta eliminada</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <meta name="robots" content="noindex, nofollow" />
   <script src="https://cdn.tailwindcss.com"></script>

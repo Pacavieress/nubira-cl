@@ -51,7 +51,7 @@ self.addEventListener('fetch', event => {
                         caches.open(CACHE_VERSION).then(cache => cache.put(event.request, clone));
                     }
                     return response;
-                });
+                }).catch(() => cached || Response.error());
             })
         );
         return;
@@ -60,7 +60,9 @@ self.addEventListener('fetch', event => {
     // NetworkFirst para HTML — páginas PHP siempre frescas
     if (event.request.method === 'GET' && event.request.headers.get('accept')?.includes('text/html')) {
         event.respondWith(
-            fetch(event.request).catch(() => caches.match(event.request))
+            fetch(event.request).catch(() =>
+                caches.match(event.request).then(cached => cached || Response.error())
+            )
         );
         return;
     }

@@ -29,7 +29,7 @@ function pagina_error(string $titulo, string $cuerpo, string $url_btn = '/vitrin
     $u  = htmlspecialchars($url_btn,   ENT_QUOTES, 'UTF-8');
     $bt = htmlspecialchars($texto_btn, ENT_QUOTES, 'UTF-8');
     echo '<!DOCTYPE html><html lang="es"><head>
-        <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+        <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
         <title>' . $t . ' | Nubira</title>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Spinner + auto-submit a iniciar_pago_servicio.php (idéntico a crear_contrato.php §6)
         $cid = (int)$contrato_id;
         echo '<!DOCTYPE html><html lang="es"><head>
-            <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+            <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
             <title>Procesando pago seguro | Nubira</title>
             <style>body{background:#f9fafb;display:flex;justify-content:center;align-items:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0}
             @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>

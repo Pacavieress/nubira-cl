@@ -151,7 +151,7 @@ if (!function_exists('nav_class')) {
 <head>
   <meta charset="UTF-8">
   <title>Admin Videos | Nubira</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <?php require_once $app_dir . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>

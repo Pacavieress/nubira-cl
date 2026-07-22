@@ -45,7 +45,7 @@ $ya_comprado = $stmt->get_result()->num_rows > 0;
 <head>
   <meta charset="UTF-8">
   <title>Pago de Apunte</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>

@@ -197,7 +197,7 @@ if (!$es_pre_clase) {
 <head>
     <meta charset="UTF-8">
     <title>Aula #<?= $contrato['id'] ?> | Nubira</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
