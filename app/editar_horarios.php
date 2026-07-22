@@ -29,7 +29,9 @@ if (!isset($_SESSION['usuario_id'])) {
     header("Location: /login?redir=" . urlencode($_SERVER['REQUEST_URI']));
     exit;
 }
-$uid = (int)$_SESSION['usuario_id'];
+$uid      = (int)$_SESSION['usuario_id'];
+$rol      = $_SESSION['rol'] ?? 'alumno';
+$es_admin = ($rol === 'admin');
 
 // 3. Validación de Servicio
 $servicio_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -40,7 +42,7 @@ $stmt->bind_param("i", $servicio_id);
 $stmt->execute();
 $servicio = $stmt->get_result()->fetch_assoc();
 
-if (!$servicio || $servicio['alumno_id'] != $uid) {
+if (!$servicio || (!$es_admin && $servicio['alumno_id'] != $uid)) {
     http_response_code(403);
     die("Acceso denegado. No eres el propietario de este servicio.");
 }
@@ -54,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['horarios_json'])) {
     $error_validacion = validar_horarios_json($nuevo_json);
     if ($error_validacion === null) {
         $upd = $conn->prepare("UPDATE servicios SET horarios_json = ? WHERE id = ? AND alumno_id = ?");
-        $upd->bind_param("sii", $nuevo_json, $servicio_id, $uid);
+        $upd->bind_param("sii", $nuevo_json, $servicio_id, $servicio['alumno_id']);
         if ($upd->execute()) {
             if (parsear_horarios_servicio($nuevo_json)['tiene_horarios']) {
                 $stmt_restore = $conn->prepare("UPDATE servicios SET visible = 1, oculto_por_falta_horario = 0 WHERE id = ? AND oculto_por_falta_horario = 1");

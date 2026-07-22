@@ -11,13 +11,13 @@ require_once __DIR__ . '/conexion.php';
 // Petición AJAX (Silenciosa)
 if (isset($_GET['ajax'])) {
     header('Content-Type: text/plain');
-    $total = $conn->query("SELECT COUNT(*) as c FROM alumnos")->fetch_assoc()['c'];
+    $total = $conn->query("SELECT COUNT(*) as c FROM alumnos WHERE visible = 1")->fetch_assoc()['c'];
     echo (int)$total;
     exit;
 }
 
 // Carga Inicial
-$total_inicial = (int)$conn->query("SELECT COUNT(*) as c FROM alumnos")->fetch_assoc()['c'];
+$total_inicial = (int)$conn->query("SELECT COUNT(*) as c FROM alumnos WHERE visible = 1")->fetch_assoc()['c'];
 ?>
 <!DOCTYPE html>
 <html lang="es">

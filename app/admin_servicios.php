@@ -244,6 +244,9 @@ require_once $app_dir . '/componentes/sidebar.php';
                      <a href="/admin/editar-servicio/<?= $row['id'] ?>" class="bg-violet-50 active:bg-violet-100 text-violet-600 p-2 rounded-xl transition-colors text-xs" title="Editar título / categoría / imagen">
                          <i class="fa-solid fa-pen-to-square"></i>
                      </a>
+                     <a href="/app/editar_horarios.php?id=<?= $row['id'] ?>" class="bg-cyan-50 active:bg-cyan-100 text-cyan-600 p-2 rounded-xl transition-colors text-xs" title="Editar horario de disponibilidad">
+                         <i class="fa-solid fa-calendar-days"></i>
+                     </a>
                      <a href="<?= url_servicio((int)$row['id'], $row['slug'] ?? null) ?>" target="_blank" class="bg-blue-50 active:bg-blue-100 text-[#54A6D8] p-2 rounded-xl transition-colors text-xs" title="Ver Detalle">
                          <i class="fa-solid fa-arrow-up-right-from-square"></i>
                      </a>
@@ -338,7 +341,7 @@ require_once $app_dir . '/componentes/sidebar.php';
   </div>
 </div>
 
-<div id="toast" class="fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl hidden text-white text-sm font-bold z-[90] flex items-center gap-3 animate-bounce max-w-[90vw] sm:max-w-sm break-words"></div>
+<div id="toast" class="fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl shadow-lg hidden text-white text-sm font-bold z-[90] flex items-center gap-3 max-w-[90vw] sm:max-w-sm break-words transition-all duration-200 ease-out opacity-0 scale-95"></div>
 
 <?php 
 require_once $app_dir . '/componentes/nav_bottom.php'; 
@@ -351,10 +354,19 @@ window.onload = () => { const l = document.getElementById('loader'); if(l){ l.cl
 
 function mostrarToast(msg, tipo='ok') {
   const toast = document.getElementById('toast');
-  toast.innerHTML = (tipo==='ok' ? '<i class="fa-solid fa-circle-check text-emerald-400"></i> ' : '<i class="fa-solid fa-circle-exclamation text-red-400"></i> ') + msg;
-  toast.className = 'fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl text-white z-[90] flex items-center gap-3 animate-bounce max-w-[90vw] sm:max-w-sm break-words ' + (tipo==='ok' ? 'bg-slate-800' : 'bg-slate-800');
+  toast.innerHTML = (tipo==='ok' ? '<i class="fa-solid fa-circle-check"></i> ' : '<i class="fa-solid fa-circle-exclamation"></i> ') + msg;
+  toast.className = 'fixed bottom-6 md:top-24 right-1/2 translate-x-1/2 md:translate-x-0 md:right-5 px-5 py-3 rounded-xl shadow-lg text-white z-[90] flex items-center gap-3 max-w-[90vw] sm:max-w-sm break-words transition-all duration-200 ease-out opacity-0 scale-95 ' + (tipo==='ok' ? 'bg-emerald-600' : 'bg-red-600');
   toast.classList.remove('hidden');
-  setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+  clearTimeout(toast._hideTimeout);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    toast.classList.remove('opacity-0', 'scale-95');
+    toast.classList.add('opacity-100', 'scale-100');
+  }));
+  toast._hideTimeout = setTimeout(() => {
+    toast.classList.remove('opacity-100', 'scale-100');
+    toast.classList.add('opacity-0', 'scale-95');
+    setTimeout(() => toast.classList.add('hidden'), 200);
+  }, 3000);
 }
 
 // LOGICA MODALES DEL NAV

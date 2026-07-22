@@ -40,7 +40,7 @@ if (!$es_visitante && isset($conn)) {
     }
 }
 
-$titulo_seccion = 'Aula Virtual'; // Fijo para dar contexto 
+$titulo_seccion = 'Aula Virtual'; // Fijo para dar contexto
 $n_sesion = explode(' ', trim($_SESSION['usuario_nombre'] ?? 'U'));
 $iniciales = mb_strtoupper(mb_substr($n_sesion[0] ?? 'U', 0, 1) . (isset($n_sesion[1]) ? mb_substr($n_sesion[1], 0, 1) : ''));
 
@@ -67,11 +67,11 @@ $url_perfil = $es_visitante ? '/login' : '/perfil/' . $usuario_id;
 <div class="w-full flex items-center justify-between px-6 md:px-10 h-full">
 
         <div class="flex items-center gap-4 flex-shrink-0">
-            <a href="/dashboard" class="flex items-center hover:opacity-80 transition-opacity">
-                <img src="/img/logo.webp" alt="Nubira" class="h-7 md:h-8 w-auto object-contain"> 
+            <a href="<?= $url_perfil ?>" class="flex items-center hover:opacity-80 transition-opacity">
+                <img src="/img/logo.webp" alt="Nubira" class="h-7 md:h-8 w-auto object-contain">
             </a>
             <div class="hidden md:flex items-center gap-3 text-sm text-gray-500">
-                 <a href="/dashboard" class="hover:text-[#54A6D8] transition-colors font-medium">Dashboard</a>
+                 <a href="<?= $url_perfil ?>" class="hover:text-[#54A6D8] transition-colors font-medium">Dashboard</a>
                  <span class="text-gray-300">/</span>
                  <span class="text-gray-900 font-bold flex items-center gap-2">
                     <i class="fa-solid fa-chalkboard-user text-[#54A6D8]"></i> <?= htmlspecialchars($titulo_seccion) ?>

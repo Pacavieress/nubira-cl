@@ -251,23 +251,6 @@ $portada_actual = $apunte['portada'] ?? '';
             animation: laser-move 2s ease-in-out infinite; z-index: 20; pointer-events: none;
         }
 
-        /* --- EFECTO GEMINI RING --- */
-        @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-        .ai-border-spin {
-            position: relative; background: white !important; color: #111827;
-            border-radius: 9999px; z-index: 1; display: inline-flex; align-items: center; justify-content: center;
-            border: 2px solid transparent; background-clip: padding-box !important;
-        }
-        .ai-border-spin::before {
-            content: ""; position: absolute; inset: -2px; border-radius: inherit; padding: 2px;
-            background: conic-gradient(from var(--angle), #54A6D8, #a855f7, #ec4899, #54A6D8);
-            animation: spin-border 2s linear infinite;
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; z-index: -1;
-        }
-        @keyframes spin-border { to { --angle: 360deg; } }
-
         /* [V3-1] Barra de progreso real */
         .upload-progress-track { height: 6px; border-radius: 999px; overflow: hidden; }
         .upload-progress-bar { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
@@ -487,35 +470,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                             <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide mb-0">Descripción <span class="text-red-400">*</span></label>
                         </div>
                         
-                        <!-- [NUBIRA 2.0] 3 botones de tono IA -->
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            <button type="button" data-tono="default" class="btn-tono ai-border-spin px-3 py-1 bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm cursor-pointer">
-                                <div class="flex items-center gap-1.5">
-                                    <?= icon('sparkles', 'w-3 h-3 text-indigo-500') ?>
-                                    <span class="text-[10px] font-bold text-indigo-600">Redactar con IA</span>
-                                </div>
-                            </button>
-                            <div class="feature-host">
-                                <button type="button" data-tono="academico" class="btn-tono ai-border-spin px-3 py-1 bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm cursor-pointer">
-                                    <div class="flex items-center gap-1.5">
-                                        <?= icon('sparkles', 'w-3 h-3 text-indigo-500') ?>
-                                        <span class="text-[10px] font-bold text-indigo-600">Redactar con IA Académico</span>
-                                    </div>
-                                </button>
-                                <span class="feature-badge" data-feature-key="redactar_academico_edit" data-feature-launch="2026-05-04">Nuevo</span>
-                            </div>
-                            <div class="feature-host">
-                                <button type="button" data-tono="vendedor" class="btn-tono ai-border-spin px-3 py-1 bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm cursor-pointer">
-                                    <div class="flex items-center gap-1.5">
-                                        <?= icon('sparkles', 'w-3 h-3 text-indigo-500') ?>
-                                        <span class="text-[10px] font-bold text-indigo-600">Redactar con IA Vendedor</span>
-                                    </div>
-                                </button>
-                                <span class="feature-badge" data-feature-key="redactar_vendedor_edit" data-feature-launch="2026-05-04">Nuevo</span>
-                            </div>
-                        </div>
-                        
-                        <textarea name="descripcion" id="descripcion" 
+                        <textarea name="descripcion" id="descripcion"
                                   class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-[#54A6D8] block p-4 resize-none transition-all outline-none h-32 leading-relaxed" 
                                   maxlength="1500" required><?= htmlspecialchars($apunte['descripcion']) ?></textarea>
                         
@@ -708,67 +663,6 @@ document.getElementById('portada').addEventListener('change', async function() {
         processedFile = await compressImage(currentFile);
         validateAll();
     }
-});
-
-// =============================================
-// IA NUBIRA LOCAL (Específico para Edición sin archivo nuevo)
-// =============================================
-const SERVICE_BRAIN = <?php 
-    $archivo_brain = $app_dir . '/datos/service_brain.php';
-    echo file_exists($archivo_brain) ? json_encode(require $archivo_brain, JSON_UNESCAPED_UNICODE) : "{}";
-?>;
-
-const NubiraAI = {
-    typingTimer: null,
-    detectArchetype: (text) => {
-        const t = text.toLowerCase(); const keywords = SERVICE_BRAIN.keywords || {};
-        for (const [arq, words] of Object.entries(keywords)) { if (words.some(w => t.includes(w))) return arq; }
-        return 'General';
-    },
-    getRandom: (arr) => (!arr || arr.length === 0) ? "" : arr[Math.floor(Math.random() * arr.length)],
-    replacer: (txt, tema, asignatura, nombre) => (txt || "").replace(/{TEMA}/g, tema).replace(/{ASIGNATURA}/g, asignatura || 'esta materia').replace(/{NOMBRE}/g, nombre).replace(/{SALUDO}/g, "¡Hola!"),
-    typeWriter: (text, element, index = 0) => {
-        if (index === 0) { element.value = ""; clearTimeout(NubiraAI.typingTimer); element.style.height = 'auto'; }
-        if (index < text.length) {
-            element.value += text.charAt(index); element.style.height = (element.scrollHeight) + 'px'; 
-            NubiraAI.typingTimer = setTimeout(() => NubiraAI.typeWriter(text, element, index + 1), 10);
-        } else {
-            document.querySelectorAll('.btn-tono').forEach(b => b.classList.remove('opacity-50', 'pointer-events-none'));
-            element.dispatchEvent(new Event('input')); 
-        }
-    },
-    generate: (tono = 'default') => {
-        const rawTitle = document.getElementById('titulo').value.trim();
-        const rawAsig = document.getElementById('asignatura').value.trim();
-        if (rawTitle.length < 4) { alert("⚠️ Escribe un Título primero para que la IA tenga contexto."); document.getElementById('titulo').focus(); return; }
-        document.querySelectorAll('.btn-tono').forEach(b => b.classList.add('opacity-50', 'pointer-events-none'));
-
-        const arquetipo = NubiraAI.detectArchetype(rawTitle + " " + rawAsig);
-        const brain = SERVICE_BRAIN[arquetipo] || SERVICE_BRAIN['General'];
-        const tema = rawTitle; const asignatura = rawAsig; const nombre = USER_CONTEXT.nombre.split(' ')[0];
-
-        if(!brain || !brain.hooks) { 
-            let fallback = `📚 Apunte de ${asignatura || 'la materia'}: "${tema}".\n\n⚡ Contiene información precisa para repasar rápido y preparar evaluaciones sin estrés.`;
-            if (tono === 'vendedor') fallback = `🔥 LO ÚNICO que necesitas para aprobar ${asignatura || 'esta materia'}: "${tema}".\n\n⚡ Descárgalo AHORA.`;
-            else if (tono === 'academico') fallback = `Documento de estudio enfocado en ${asignatura || 'la materia'}: "${tema}". Material estructurado para consolidar contenidos.`;
-            setTimeout(() => { NubiraAI.typeWriter(fallback, document.getElementById('descripcion')); }, 400);
-            return;
-        }
-
-        let hookPool = brain.hooks, bodyPool = brain.solutions || brain.problems, ctaPool = brain.cta;
-        if (tono === 'academico' && brain.hooks_academico) { hookPool = brain.hooks_academico; bodyPool = brain.solutions_academico || bodyPool; ctaPool = brain.cta_academico || ctaPool; }
-        else if (tono === 'vendedor' && brain.hooks_vendedor) { hookPool = brain.hooks_vendedor; bodyPool = brain.solutions_vendedor || bodyPool; ctaPool = brain.cta_vendedor || ctaPool; }
-
-        const hook = NubiraAI.replacer(NubiraAI.getRandom(hookPool), tema, asignatura, nombre);
-        const body = NubiraAI.replacer(NubiraAI.getRandom(bodyPool), tema, asignatura, nombre);
-        const cta  = NubiraAI.replacer(NubiraAI.getRandom(ctaPool), tema, asignatura, nombre);
-
-        setTimeout(() => { NubiraAI.typeWriter(`${hook}\n\n${body}\n\n${cta}`, document.getElementById('descripcion')); }, 400);
-    }
-};
-
-document.querySelectorAll('.btn-tono').forEach(btn => {
-    btn.onclick = function() { NubiraAI.generate(this.dataset.tono || 'default'); };
 });
 
 // Sincronizar hidden inputs con selects/inputs visibles

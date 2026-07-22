@@ -828,6 +828,10 @@ if ($chat_seleccionado) {
                 <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-50/50" id="mod-panel">
                     <h2 class="text-lg font-extrabold text-gray-900 mb-1 tracking-tight">Moderación de archivos</h2>
                     <p class="text-xs text-gray-400 font-medium mb-5">Archivos enviados por usuarios pendientes de revisión.</p>
+                    <div id="mod-aviso-nuevo" class="hidden mb-4 bg-sky-50 border border-sky-100 text-sky-700 text-xs font-bold rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                        <span id="mod-aviso-texto"></span>
+                        <button id="mod-aviso-btn" class="bg-[#54A6D8] hover:bg-sky-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shrink-0">Actualizar</button>
+                    </div>
                     <?php
                     $stmt_mod = $conn->prepare("
                         SELECT m.id, m.conversacion_id, m.archivo_ruta, m.archivo_nombre, m.archivo_tipo, m.archivo_peso, m.enviado_en,
@@ -878,6 +882,8 @@ if ($chat_seleccionado) {
                                 <button class="btn-aprobar flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold py-2 rounded-xl transition-all" data-msg-id="<?php echo (int)$pm['id']; ?>">Aprobar</button>
                                 <?php if ($es_imagen): ?>
                                 <a href="/app/admin_moderar_archivo.php?m=<?php echo (int)$pm['id']; ?>" target="_blank" class="flex-1 bg-amber-400 hover:bg-amber-500 text-white text-xs font-bold py-2 rounded-xl transition-all text-center">Censurar</a>
+                                <?php else: ?>
+                                <a href="<?php echo $url_img; ?>" target="_blank" rel="noopener" class="flex-1 bg-amber-400 hover:bg-amber-500 text-white text-xs font-bold py-2 rounded-xl transition-all text-center">Ver PDF</a>
                                 <?php endif; ?>
                                 <button class="btn-rechazar flex-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 rounded-xl transition-all" data-msg-id="<?php echo (int)$pm['id']; ?>">Rechazar</button>
                             </div>
@@ -1245,6 +1251,36 @@ if ($chat_seleccionado) {
         // ==========================================
         const modPanel = document.getElementById('mod-panel');
         if (modPanel) {
+            // Restaurar scroll si venimos de un reload disparado por el aviso de nuevo contenido
+            const scrollGuardado = sessionStorage.getItem('nb_mod_scroll');
+            if (scrollGuardado !== null) {
+                modPanel.scrollTop = parseInt(scrollGuardado, 10) || 0;
+                sessionStorage.removeItem('nb_mod_scroll');
+            }
+
+            // Aviso de contenido nuevo — reutiliza el poller central de head_common.php (cada 45s)
+            const cntModeracionInicial = <?php echo (int)$cnt_moderacion; ?>;
+            const avisoBox   = document.getElementById('mod-aviso-nuevo');
+            const avisoTexto = document.getElementById('mod-aviso-texto');
+            const avisoBtn   = document.getElementById('mod-aviso-btn');
+
+            if (avisoBox) {
+                window.addEventListener('nubira:alertas', (e) => {
+                    const nuevo = e.detail?.admin_chats_moderacion ?? 0;
+                    const diferencia = nuevo - cntModeracionInicial;
+                    if (diferencia > 0 && avisoBox.classList.contains('hidden')) {
+                        avisoTexto.textContent = diferencia === 1
+                            ? 'Hay 1 archivo nuevo pendiente de revisión.'
+                            : `Hay ${diferencia} archivos nuevos pendientes de revisión.`;
+                        avisoBox.classList.remove('hidden');
+                    }
+                });
+                avisoBtn.addEventListener('click', () => {
+                    sessionStorage.setItem('nb_mod_scroll', modPanel.scrollTop);
+                    window.location.reload();
+                });
+            }
+
             modPanel.addEventListener('click', (e) => {
                 const btnAprobar  = e.target.closest('.btn-aprobar');
                 const btnRechazar = e.target.closest('.btn-rechazar');
