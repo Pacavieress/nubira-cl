@@ -436,6 +436,18 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <?= nubira_canonical_tag($url_canonica_perfil) ?>
     <?= nubira_seo_meta($titulo_seo, $desc_seo) ?>
+    <!-- [Fix zoom foto de perfil] CSS crítico inline — garantiza el tamaño del contenedor
+         de la foto ANTES de que cargue/procese el CDN de Tailwind (que inyecta sus reglas
+         de forma asíncrona vía JIT en el navegador). Redundante una vez que Tailwind carga,
+         pero evita el destello de "caja sin tamaño" mientras tanto. -->
+    <style>
+        #foto-perfil-fila { display: flex; flex-direction: row; align-items: flex-start; gap: 0.75rem; }
+        #foto-perfil-wrapper { width: 104px; height: 104px; flex-shrink: 0; }
+        @media (min-width: 768px) {
+            #foto-perfil-fila { gap: 2rem; }
+            #foto-perfil-wrapper { width: 144px; height: 144px; }
+        }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -498,9 +510,9 @@ require_once __DIR__ . '/componentes/sidebar.php';
             <section class="bg-white rounded-[2rem] border border-gray-100 p-6 md:p-10 relative w-full">
                 <div class="flex flex-col gap-6 md:gap-8">
                     
-                    <div class="flex flex-row gap-3 md:gap-8 items-start w-full lg:pr-64">
+                    <div id="foto-perfil-fila" class="flex flex-row gap-3 md:gap-8 items-start w-full lg:pr-64">
 
-                        <div class="shrink-0 relative group w-[104px] h-[104px] md:w-36 md:h-36 md:mx-0">
+                        <div id="foto-perfil-wrapper" class="shrink-0 relative group w-[104px] h-[104px] md:w-36 md:h-36 md:mx-0">
                             <img id="img-perfil-visual" src="<?= $foto_url ?>" width="104" height="104" decoding="async" class="w-full h-full rounded-full object-cover border border-gray-200 transition-opacity duration-300 bg-white">
                             <?php if ($es_propio): ?>
                                 <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 backdrop-blur-[2px]">
@@ -1533,12 +1545,44 @@ setInterval(async () => {
 
 <script>
 (function() {
-    var dismissLoader = function() {
+    var yaDisparado = false;
+
+    var revelarPagina = function() {
         var l = document.getElementById('loader-nativo');
         var b = document.body;
         sessionStorage.setItem('nubira_loader_visto', '1');
         if (b) b.classList.remove('fouc-lock');
         if (l && l.style.display !== 'none') { l.style.opacity = '0'; setTimeout(function() { l.style.display = 'none'; }, 300); }
+    };
+
+    // [Fix zoom foto de perfil] Antes de revelar la página, esperar a que la foto grande
+    // termine de decodificar — evita que aparezca a medio decodificar justo cuando se
+    // quita fouc-lock (se percibía como un "zoom" al estabilizarse). Timeout corto: mejor
+    // mostrar sin decodificar que colgar el loader. No afecta páginas sin esta foto.
+    var dismissLoader = function() {
+        if (yaDisparado) return;
+        yaDisparado = true;
+
+        var img = document.getElementById('img-perfil-visual');
+        if (!img) { revelarPagina(); return; }
+
+        var resuelto = false;
+        var resolverUnaVez = function() {
+            if (resuelto) return;
+            resuelto = true;
+            revelarPagina();
+        };
+
+        if (typeof img.decode === 'function') {
+            img.decode().then(resolverUnaVez).catch(resolverUnaVez);
+        } else if (img.complete) {
+            resolverUnaVez();
+            return;
+        } else {
+            img.addEventListener('load', resolverUnaVez, { once: true });
+            img.addEventListener('error', resolverUnaVez, { once: true });
+        }
+        setTimeout(resolverUnaVez, 350);
     };
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', dismissLoader, { once: true });
