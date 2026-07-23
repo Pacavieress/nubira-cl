@@ -296,6 +296,7 @@ if (!defined('NUBIRA_TOAST_LOADED')) {
 // =========================================================================
 // [NUBIRA SHIELD] SISTEMA GLOBAL DE AVISOS OFICIALES BLINDADO
 // =========================================================================
+require_once __DIR__ . '/../helpers/avisos_bbcode.php';
 $avisos_oficiales = [];
 $debug_error_db = null;
 
@@ -378,7 +379,7 @@ $stmt_aviso = $conn->prepare("
 <!-- Contenido (scrolleable si pasa) -->
 <div class="px-4 pt-1 pb-4 overflow-y-auto flex-1">
 <p class="text-[15px] text-gray-700 leading-snug break-words whitespace-pre-line">
-    <?= htmlspecialchars($aviso_actual['mensaje'], ENT_QUOTES, 'UTF-8') ?>
+    <?= nb_renderizar_aviso_bbcode(htmlspecialchars($aviso_actual['mensaje'], ENT_QUOTES, 'UTF-8')) ?>
 </p>
 </div>
 

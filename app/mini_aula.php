@@ -240,7 +240,6 @@ if (!$es_pre_clase) {
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; overflow: hidden; height: 100dvh; }

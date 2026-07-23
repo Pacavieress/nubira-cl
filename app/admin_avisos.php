@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/init_sesion.php';
 require_once __DIR__ . '/iconos.php';
+require_once __DIR__ . '/helpers/avisos_bbcode.php';
 
 if (($_SESSION['rol'] ?? '') !== 'admin') {
     header("Location: /"); exit;
@@ -32,7 +33,6 @@ while ($r = $res->fetch_assoc()) $campanas[] = $r;
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <title>Avisos | Admin Nubira</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>body{font-family:'Inter',sans-serif;background:#f8fafc}</style>
 </head>
@@ -79,10 +79,30 @@ while ($r = $res->fetch_assoc()) $campanas[] = $r;
 
             <div>
               <label class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Mensaje al usuario</label>
+
+              <!-- Barra de formato: negrita + íconos curados (mini-sintaxis BBCode, sin HTML) -->
+              <div class="flex flex-wrap items-center gap-1.5 mt-1.5 mb-1.5">
+                  <button type="button" onclick="insertarNegrita()" title="Negrita"
+                          class="w-8 h-8 rounded-lg border border-gray-200 hover:border-[#54A6D8] hover:bg-sky-50 flex items-center justify-center text-xs font-bold text-gray-600 transition-colors">B</button>
+                  <span class="w-px h-5 bg-gray-200 mx-1"></span>
+                  <?php foreach (nb_avisos_iconos_whitelist() as $icono_key => $icono_clase): ?>
+                  <button type="button" onclick="insertarIcono('<?= htmlspecialchars($icono_key, ENT_QUOTES) ?>')" title="<?= htmlspecialchars($icono_key) ?>"
+                          class="w-8 h-8 rounded-lg border border-gray-200 hover:border-[#54A6D8] hover:bg-sky-50 flex items-center justify-center text-gray-600 transition-colors">
+                      <i class="<?= htmlspecialchars($icono_clase) ?>"></i>
+                  </button>
+                  <?php endforeach; ?>
+              </div>
+
 <textarea id="f-mensaje" maxlength="350" rows="4" placeholder="Escribe el mensaje que verán los usuarios..."
-          class="w-full mt-1 p-4 border border-gray-200 rounded-lg focus:border-[#54A6D8] focus:ring-2 focus:ring-[#54A6D8]/10 outline-none text-sm resize-none"
-          oninput="document.getElementById('f-counter').textContent=this.value.length+' / 350'"></textarea>
+          class="w-full p-4 border border-gray-200 rounded-lg focus:border-[#54A6D8] focus:ring-2 focus:ring-[#54A6D8]/10 outline-none text-sm resize-none"
+          oninput="actualizarContadorYPreview()"></textarea>
 <p id="f-counter" class="text-[11px] text-gray-400 text-right mt-1">0 / 350</p>
+
+              <!-- Vista previa en vivo -->
+              <div class="mt-2 border border-gray-200 rounded-xl p-4 bg-gray-50">
+                  <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Vista previa</p>
+                  <p id="f-preview-contenido" class="text-[15px] text-gray-700 leading-snug break-words whitespace-pre-line"></p>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -240,6 +260,60 @@ while ($r = $res->fetch_assoc()) $campanas[] = $r;
 
 <script>
 const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
+
+// ============================================
+// FORMATO DEL MENSAJE: negrita + íconos (mini-sintaxis BBCode)
+// Misma whitelist que usa el render real en header.php (nb_avisos_iconos_whitelist()),
+// inyectada acá para que la vista previa sea fiel a lo que verá el usuario final.
+// ============================================
+const ICONOS_AVISO = <?= json_encode(nb_avisos_iconos_whitelist()) ?>;
+
+function insertarEnTextarea(antes, despues, placeholder) {
+    const ta = document.getElementById('f-mensaje');
+    const inicio = ta.selectionStart;
+    const fin = ta.selectionEnd;
+    const valor = ta.value;
+    const seleccionado = valor.slice(inicio, fin) || placeholder;
+    ta.value = valor.slice(0, inicio) + antes + seleccionado + despues + valor.slice(fin);
+    const posInicio = inicio + antes.length;
+    const posFin = posInicio + seleccionado.length;
+    ta.focus();
+    ta.setSelectionRange(posInicio, posFin);
+    actualizarContadorYPreview();
+}
+
+function insertarNegrita() {
+    insertarEnTextarea('[b]', '[/b]', 'texto');
+}
+
+function insertarIcono(nombre) {
+    insertarEnTextarea('[icon:' + nombre + ']', '', '');
+}
+
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Réplica en JS de nb_renderizar_aviso_bbcode() — mismo orden (escapar primero, BBCode
+// después) y misma whitelist, para que la vista previa nunca muestre algo distinto de
+// lo que realmente va a renderizar header.php.
+function renderizarAvisoBBCode(textoEscapado) {
+    let texto = textoEscapado.replace(/\[b\]([\s\S]+?)\[\/b\]/g, '<strong>$1</strong>');
+    texto = texto.replace(/\[icon:([a-zA-Z0-9_]+)\]/g, (match, nombre) => {
+        const clase = ICONOS_AVISO[nombre.toLowerCase()];
+        return clase ? `<i class="${clase}" aria-hidden="true"></i>` : match;
+    });
+    return texto;
+}
+
+function actualizarContadorYPreview() {
+    const ta = document.getElementById('f-mensaje');
+    document.getElementById('f-counter').textContent = ta.value.length + ' / 350';
+    const preview = document.getElementById('f-preview-contenido');
+    if (preview) preview.innerHTML = renderizarAvisoBBCode(escapeHTML(ta.value));
+}
 
 // ============================================
 // BÚSQUEDA DE USUARIOS
@@ -586,10 +660,10 @@ async function duplicarCampana(id) {
         document.getElementById('f-tipo').value = d.campana.tipo;
         document.getElementById('f-segmento').value = 'todos'; // por defecto al duplicar va a todos
         
-        // Disparar evento para actualizar contadores
+        // Disparar evento para actualizar contadores + vista previa
         document.getElementById('f-counter-titulo').textContent = d.campana.titulo.length + ' / 40';
-        document.getElementById('f-counter').textContent = d.campana.mensaje.length + ' / 350';
-        
+        actualizarContadorYPreview();
+
         // Resetear buscador de usuario
         toggleBuscador();
         

@@ -440,7 +440,6 @@ require_once $app_dir . '/componentes/modal_publicar.php';
 require_once $app_dir . '/componentes/modal_explora.php'; 
 ?>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } };
 
