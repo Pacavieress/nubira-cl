@@ -7,6 +7,8 @@
 
 // Evitar caché para que los mensajes aparezcan al instante
 header("Cache-Control: no-cache, must-revalidate");
+// [NUBIRA 2.0] Exponer header custom al JS del cliente (necesario para typing indicator)
+header('Access-Control-Expose-Headers: X-Typing-Otro');
 ini_set('display_errors', 0);
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
@@ -47,6 +49,23 @@ $stmt_visto = $conn->prepare("UPDATE chat_aula SET visto = 1 WHERE contrato_id =
 $stmt_visto->bind_param("ii", $id_contrato, $usuario_id);
 $stmt_visto->execute();
 $stmt_visto->close();
+
+// 3.5 [NUBIRA 2.0 TYPING INDICATOR] Detectar si el otro está escribiendo
+$otro_escribiendo = 0;
+$stmt_typing = $conn->prepare("
+    SELECT 1 FROM chat_typing_aula
+    WHERE contrato_id = ?
+      AND usuario_id != ?
+      AND ultima_actividad > (NOW() - INTERVAL 4 SECOND)
+    LIMIT 1
+");
+if ($stmt_typing) {
+    $stmt_typing->bind_param("ii", $id_contrato, $usuario_id);
+    $stmt_typing->execute();
+    $otro_escribiendo = $stmt_typing->get_result()->num_rows > 0 ? 1 : 0;
+    $stmt_typing->close();
+}
+header('X-Typing-Otro: ' . $otro_escribiendo);
 
 // 4. CONSULTA
 $stmt_msgs = $conn->prepare("SELECT * FROM chat_aula WHERE contrato_id = ? ORDER BY fecha ASC");

@@ -121,24 +121,20 @@ session_write_close();
 
         /* ==================================================
          * [NUBIRA 2.0] FIX TECLADO MÓVIL EN IFRAME
-         * Técnica: html + body en position:fixed bloquean el scroll
-         * del viewport que iOS/Android intentan meter al enfocar inputs.
+         * Técnica calcada de chat_previo_contrato.php: la altura real del body
+         * se fuerza vía --vh (JS, actualizado desde postMessage del padre o desde
+         * el visualViewport propio), en vez de confiar en que position:fixed
+         * resuelva solo el tamaño bajo el teclado (inconsistente entre iOS/Safari).
          * ================================================== */
-        html {
-            height: 100%;
-            overflow: hidden;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            width: 100%;
-        }
-        body {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            width: 100%;
-            height: 100%;
+        html, body {
             overflow: hidden;
             overscroll-behavior: none;
             -webkit-overflow-scrolling: touch;
+            height: 100%;
+        }
+        body {
+            position: relative;
+            width: 100%;
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
         }
@@ -219,7 +215,7 @@ session_write_close();
     </style>
 </head>
 
-<body class="w-full flex flex-col text-gray-900 bg-[#EFEAE2] bg-opacity-30">
+<body class="w-full flex flex-col text-gray-900 bg-[#EFEAE2] bg-opacity-30" style="height: calc(var(--vh, 1vh) * 100);">
 
     <div id="toast-container" class="fixed top-20 left-1/2 z-50 hidden w-[90%] max-w-sm transform -translate-x-1/2 transition-all duration-300">
         <div class="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-xl flex items-start justify-between gap-3 border border-red-600">
@@ -255,6 +251,12 @@ session_write_close();
                 </p>
             </div>
         </div>
+
+        <button type="button" id="btn-colgar-chat" onclick="colgarDesdeChatPanel()"
+                class="hidden text-red-600 bg-red-50 hover:bg-red-600 hover:text-white w-10 h-10 flex items-center justify-center rounded-full transition-colors shrink-0 active:scale-95 z-50 ml-1"
+                title="Terminar clase">
+            <i class="fa-solid fa-phone-slash text-[16px]"></i>
+        </button>
 
         <button type="button" onclick="cerrarChatPanel()" class="text-gray-400 hover:text-[#54A6D8] w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-50 transition-colors shrink-0 active:scale-95 z-50 ml-2">
             <i class="fa-solid fa-arrow-right text-[18px]"></i>
@@ -292,11 +294,11 @@ session_write_close();
         <div id="scroll-anchor" class="h-1 w-full"></div>
     </main>
 
-    <footer class="bg-white px-3 py-3 border-t border-gray-100 shrink-0 w-full z-20 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+    <footer class="bg-white px-3 py-2 border-t border-gray-100 shrink-0 w-full z-20 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <form id="form-chat" class="flex items-end gap-2 max-w-4xl mx-auto w-full relative <?= $bloqueado ? 'opacity-50 pointer-events-none grayscale-[50%]' : '' ?>">
             <input type="hidden" name="id_contrato" value="<?= (int)$id_contrato ?>">
 
-            <div class="relative flex-1 bg-gray-100 rounded-[24px] flex items-center px-4 py-2 border border-transparent focus-within:border-blue-200 focus-within:bg-white focus-within:shadow-sm transition-all duration-200">
+            <div class="relative flex-1 bg-gray-100 rounded-[24px] flex items-center px-4 py-1 border border-transparent focus-within:border-blue-200 focus-within:bg-white focus-within:shadow-sm transition-all duration-200">
                 <textarea
                     name="mensaje"
                     id="input-msg"
@@ -310,10 +312,6 @@ session_write_close();
                 <i class="fa-solid fa-paper-plane text-sm ml-0.5"></i>
             </button>
         </form>
-
-        <div class="text-[10px] text-center text-gray-400 mt-2 select-none flex items-center justify-center gap-1.5 opacity-70 pb-1">
-            <i class="fa-solid fa-graduation-cap text-[8px]"></i> Aula virtual protegida por Nubira.
-        </div>
     </footer>
 
     <script>
@@ -355,6 +353,30 @@ session_write_close();
         }
 
         // ==========================================
+        // BOTÓN DE COLGAR DENTRO DEL PANEL DE CHAT
+        // El chat vive por encima de todo (z-index 99999 en móvil) y tapa el
+        // #btn-colgar del padre mientras está abierto — este botón evita tener
+        // que cerrar el chat primero para terminar la clase.
+        // ==========================================
+        function actualizarBotonColgarChat() {
+            const btn = document.getElementById('btn-colgar-chat');
+            if (!btn) return;
+            let activa = false;
+            try { activa = !!(window.parent && window.parent.enLlamada); } catch (e) { activa = false; }
+            btn.classList.toggle('hidden', !activa);
+        }
+        actualizarBotonColgarChat();
+
+        function colgarDesdeChatPanel() {
+            try {
+                if (window.parent && typeof window.parent.colgarLlamada === 'function') {
+                    window.parent.colgarLlamada();
+                }
+            } catch (e) {}
+            cerrarChatPanel();
+        }
+
+        // ==========================================
         // TYPING INDICATOR
         // ==========================================
         const typingIndicator = document.getElementById('typing-indicator');
@@ -367,8 +389,12 @@ session_write_close();
             typingLastPing = ahora;
             typingEnviando = true;
 
-            // TYPING DESACTIVADO — feature pendiente de backend, ver typing_set_mini_aula.php
-            typingEnviando = false;
+            const fd = new FormData();
+            fd.append('id_contrato', idContrato);
+
+            fetch('/app/typing_set_mini_aula.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+                .catch(() => {})
+                .finally(() => { typingEnviando = false; });
         }
 
         function mostrarTyping(visible) {
@@ -410,6 +436,46 @@ session_write_close();
         }
 
         // ==========================================
+        // [NUBIRA 2.0] CONTROL DE ALTURA REAL DEL VIEWPORT (--vh)
+        // Prioridad: postMessage del padre (mide desde el visualViewport de nivel
+        // superior, más confiable) > visualViewport propio del iframe (respaldo si
+        // el mensaje nunca llegó) > innerHeight (último recurso).
+        // ==========================================
+        let alturaDesdeParent = null;
+
+        function actualizarAlturaVH() {
+            const vh = (alturaDesdeParent !== null)
+                ? alturaDesdeParent * 0.01
+                : (window.visualViewport ? window.visualViewport.height * 0.01 : window.innerHeight * 0.01);
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        actualizarAlturaVH();
+
+        window.addEventListener('message', (event) => {
+            if (event.source !== window.parent) return;
+            if (!event.data || event.data.type !== 'nubira:keyboard-resize') return;
+            if (typeof event.data.height !== 'number') return;
+            alturaDesdeParent = event.data.height;
+            actualizarAlturaVH();
+            if (document.activeElement === input) scrollToBottom(false);
+            // Este mensaje ya llega justo al abrir el panel (ver mini_aula.php toggleChat) —
+            // aprovechamos el mismo evento para revalidar si hay una llamada activa.
+            actualizarBotonColgarChat();
+        });
+
+        if ('visualViewport' in window) {
+            window.visualViewport.addEventListener('resize', () => {
+                actualizarAlturaVH();
+                if (document.activeElement === input) scrollToBottom(false);
+            });
+            window.visualViewport.addEventListener('scroll', () => {
+                if (document.activeElement === input) scrollToBottom(false);
+            });
+        }
+
+        window.addEventListener('orientationchange', () => setTimeout(actualizarAlturaVH, 200));
+
+        // ==========================================
         // INPUT (auto-resize + typing)
         // ==========================================
         input.addEventListener('input', function() {
@@ -439,6 +505,7 @@ session_write_close();
             if (!toastContainer.classList.contains('hidden')) hideToast();
 
             const anclarTodo = () => {
+                actualizarAlturaVH();
                 bloquearScrollViewport();
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             };

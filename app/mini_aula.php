@@ -23,8 +23,13 @@ if ($id_contrato <= 0) {
 }
 
 // 2. CARGA DE DATOS
-$sql = "SELECT c.*, s.titulo AS servicio_titulo FROM contratos c 
-        JOIN servicios s ON s.id = c.servicio_id WHERE c.id = ?";
+$sql = "SELECT c.*, s.titulo AS servicio_titulo,
+               av.nombre AS nombre_vendedor, ac.nombre AS nombre_comprador
+        FROM contratos c
+        JOIN servicios s ON s.id = c.servicio_id
+        LEFT JOIN alumnos av ON av.id = c.vendedor_id
+        LEFT JOIN alumnos ac ON ac.id = c.comprador_id
+        WHERE c.id = ?";
 
 if (!$es_admin) {
     $sql .= " AND (c.comprador_id = ? OR c.vendedor_id = ?)";
@@ -94,7 +99,31 @@ if ($tiene_reserva) {
 $es_pre_clase    = ($ahora_ts < $ventana_apertura_ts);
 $es_aula_activa  = ($ahora_ts >= $ventana_apertura_ts && $ahora_ts <= $clase_fin_ts);
 $es_post_clase   = ($ahora_ts > $clase_fin_ts);
-$video_habilitado = $es_aula_activa;
+
+// [FASE 1 - hallazgo #2 INFORME-MINI-AULA.md] Ventana de gracia post-horario: no
+// bloquear el reingreso de inmediato si la clase se alargó o hubo un corte de señal
+// cerca del final. Gracia fija de 60 min + heartbeat de sala viva (ping_reunion.php)
+// hasta un tope duro de 90 min — pasado ese tope, el aula cierra igual aunque el
+// heartbeat siga vivo.
+$GRACIA_POST_CLASE_MIN   = 60;
+$HEARTBEAT_VENTANA_MIN   = 10;
+$TOPE_DURO_POST_CLASE_MIN = 90;
+
+$fin_gracia_ts = $clase_fin_ts + ($GRACIA_POST_CLASE_MIN * 60);
+$tope_duro_ts  = $clase_fin_ts + ($TOPE_DURO_POST_CLASE_MIN * 60);
+
+$hubo_actividad_reciente = false;
+$archivo_sala = __DIR__ . '/sala_activa_' . $id_contrato . '.txt';
+if (is_file($archivo_sala)) {
+    $partes_sala    = explode('|', (string)@file_get_contents($archivo_sala));
+    $ts_ultimo_ping = (int)($partes_sala[1] ?? 0);
+    $hubo_actividad_reciente = ($ahora_ts - $ts_ultimo_ping) < ($HEARTBEAT_VENTANA_MIN * 60);
+}
+
+$en_gracia_por_horario   = ($es_post_clase && $ahora_ts <= $fin_gracia_ts);
+$en_gracia_por_actividad = ($es_post_clase && $hubo_actividad_reciente && $ahora_ts <= $tope_duro_ts);
+
+$video_habilitado = $es_aula_activa || $en_gracia_por_horario || $en_gracia_por_actividad;
 
 if ($es_admin) {
     $es_pre_clase = false;
@@ -121,6 +150,15 @@ if (isset($_GET['ajax_status'])) {
 // 3. LÓGICA DE ESTADOS Y ROLES
 $es_vendedor_real = ($usuario_id === (int)$contrato['vendedor_id']);
 $es_comprador_real = ($usuario_id === (int)$contrato['comprador_id']);
+
+// [Toggle de vista] Primer nombre del otro participante — mismo criterio de anonimato
+// que chat_mini_aula.php. Usa los nombres ya traídos en la query principal (sin roundtrip nuevo).
+$nombre_otro_participante = 'el otro participante';
+if ($es_vendedor_real && !empty($contrato['nombre_comprador'])) {
+    $nombre_otro_participante = explode(' ', trim($contrato['nombre_comprador']))[0];
+} elseif ($es_comprador_real && !empty($contrato['nombre_vendedor'])) {
+    $nombre_otro_participante = explode(' ', trim($contrato['nombre_vendedor']))[0];
+}
 
 if ($es_vendedor_real) {
     $rol_en_contrato = 'vendedor';
@@ -178,7 +216,7 @@ if (!$es_pre_clase) {
             "properties" => [
                 "exp" => time() + (86400 * 30),
                 "enable_prejoin_ui" => false,
-                "enable_network_ui" => false,
+                "enable_network_ui" => true,
                 "enable_screenshare" => true,
                 "enable_chat" => false
             ]
@@ -244,10 +282,27 @@ if (!$es_pre_clase) {
         }
         @media (max-width: 767px) {
             .pip-mode { bottom: 80px !important; right: 16px !important; width: 140px !important; height: 190px !important; }
+            /* [FASE 1.5 - hallazgo B INFORME-MINI-AULA.md] En móvil, el botón de colgar queda
+               abajo-derecha pero con despeje generoso (6rem) respecto del borde inferior real,
+               ya que la bandeja de controles de Daily.co (cámara/mic/red) vive abajo dentro de
+               su propio iframe y no podemos medir su alto exacto (UI de terceros, cross-origin).
+               Suma el safe-area real del home indicator / notch lateral en landscape. */
+            #btn-colgar {
+                top: auto !important;
+                left: auto !important;
+                bottom: calc(0rem + env(safe-area-inset-bottom)) !important;
+                right: calc(1rem + env(safe-area-inset-right)) !important;
+            }
         }
     </style>
 </head>
 <body class="flex flex-col">
+
+<!-- [FASE 1 - hallazgo #1b INFORME-MINI-AULA.md] Banner de estado de conexión -->
+<div id="conn-banner" class="hidden fixed top-0 left-0 w-full z-[9999] text-center text-xs md:text-sm font-bold py-2 shadow-md transition-all duration-300"
+     style="padding-top: calc(0.5rem + env(safe-area-inset-top));">
+    <span id="conn-banner-text"></span>
+</div>
 
 <header id="app-header" class="fixed top-0 left-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-gray-100 shrink-0">
     <div class="hidden md:block h-20 w-full">
@@ -400,7 +455,7 @@ if (!$es_pre_clase) {
                 <?php endif; ?>
             </div>
 
-            <div id="view-archivos" class="view-section flex-1 p-4 md:p-6 mt-16 md:mt-12">
+            <div id="view-archivos" class="view-section flex-1 p-4 md:p-6 md:mt-12">
                 <div class="w-full h-full bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden relative">
                     <div id="skeleton-archivos" class="absolute inset-0 p-8 space-y-4 bg-white z-10">
                         <div class="h-8 w-48 skeleton rounded-lg"></div>
@@ -414,7 +469,7 @@ if (!$es_pre_clase) {
                 </div>
             </div>
 
-            <div id="view-video" class="view-section view-hidden flex-1 p-4 md:p-6 mt-16 md:mt-12">
+            <div id="view-video" class="view-section view-hidden flex-1 p-4 md:p-6 md:mt-12">
                 <div class="w-full h-full bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden relative flex items-center justify-center">
                     <?php if(!$es_finalizado): ?>
                         <div id="video-placeholder" class="text-center transition-opacity duration-300">
@@ -422,8 +477,10 @@ if (!$es_pre_clase) {
                                 <?= icon('video', 'w-8 h-8') ?>
                             </div>
                             <h2 class="text-xl font-bold mb-2 text-gray-800">Sala de Reunión</h2>
-                            <?php if ($es_post_clase): ?>
+                            <?php if ($es_post_clase && !$video_habilitado): ?>
                                 <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Esta clase ya finalizó.</p>
+                            <?php elseif ($es_post_clase && $video_habilitado): ?>
+                                <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">El horario programado terminó, pero la sala sigue disponible por si necesitas reconectarte.</p>
                             <?php elseif ($tiene_reserva): ?>
                                 <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Clase agendada: <strong class="text-gray-700"><?= htmlspecialchars($fecha_amigable) ?></strong></p>
                             <?php else: ?>
@@ -445,7 +502,7 @@ if (!$es_pre_clase) {
                         </div>
                         
                         <div id="video-container" class="hidden absolute inset-0 bg-black z-20"></div>
-                        <div id="video-timer" class="hidden absolute top-6 right-6 z-30 bg-black/60 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full flex items-center gap-2 font-mono text-sm shadow-lg border border-white/10 transition-all duration-500 opacity-0 -translate-y-2 pointer-events-none">
+                        <div id="video-timer" class="hidden absolute top-1 left-1/2 -translate-x-1/2 z-30 bg-black/60 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full flex items-center gap-2 font-mono text-sm shadow-lg border border-white/10 transition-all duration-500 opacity-0 -translate-y-2 pointer-events-none">
                             <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
                             <span id="timer-text" class="tracking-wider">00:00</span>
                         </div>
@@ -465,7 +522,7 @@ if (!$es_pre_clase) {
             <!-- ============================================ -->
             <!-- [NUBIRA 2.0] PIZARRA INTERACTIVA EXCALIDRAW -->
             <!-- ============================================ -->
-            <div id="view-pizarra" class="view-section view-hidden flex-1 p-4 md:p-6 mt-16 md:mt-12">
+            <div id="view-pizarra" class="view-section view-hidden flex-1 p-4 md:p-6 md:mt-12">
            <div class="w-full h-full bg-white rounded-3xl border-2 border-gray-200 shadow-md overflow-hidden relative">
                     <div id="skeleton-pizarra" class="absolute inset-0 flex items-center justify-center bg-white z-10">
                         <div class="text-center">
@@ -660,6 +717,27 @@ if (!$es_pre_clase) {
         setTimeout(() => placeholder.classList.remove('opacity-0'), 50);
     }
 
+    // [FASE 1.5 - hallazgo A INFORME-MINI-AULA.md] El SO puede suspender la cámara al
+    // mandar la app a background (frecuente en iOS); al volver, Daily no la reactiva sola.
+    // Guardamos si estaba encendida ANTES de ocultarse y, si sigue apagada al volver sin
+    // que el usuario la haya apagado él mismo, la reactivamos.
+    let camaraEncendidaAntesDeOcultar = null;
+    document.addEventListener('visibilitychange', () => {
+        if (!callFrame || !window.enLlamada) return;
+        if (document.hidden) {
+            try { camaraEncendidaAntesDeOcultar = callFrame.localVideo(); } catch (e) { camaraEncendidaAntesDeOcultar = null; }
+        } else if (camaraEncendidaAntesDeOcultar === true) {
+            setTimeout(() => {
+                try {
+                    if (callFrame && window.enLlamada && callFrame.localVideo() === false) {
+                        callFrame.setLocalVideo(true);
+                    }
+                } catch (e) {}
+            }, 300);
+            camaraEncendidaAntesDeOcultar = null;
+        }
+    });
+
     function toggleChat() {
         const p = document.getElementById('tools-panel');
         const f = document.getElementById('chat-iframe');
@@ -829,11 +907,89 @@ if (!$es_pre_clase) {
         const toggleOriginal = window.toggleChat;
         window.toggleChat = function() {
             toggleOriginal.apply(this, arguments);
-            setTimeout(() => { if (!panel.classList.contains('open')) resetearPanel(); }, 100);
+            // [Punto D] Al abrir, mandamos la altura real de una vez — así el iframe
+            // no depende de que su medición inicial coincida por casualidad con la del padre.
+            setTimeout(() => {
+                if (panel.classList.contains('open')) {
+                    ajustarPanelPorTeclado();
+                } else {
+                    resetearPanel();
+                }
+            }, 100);
         };
     })();
 </script>
 <?php endif; ?>
+
+<script>
+// [FASE 1 - hallazgo #1b INFORME-MINI-AULA.md] Banner de conexión: los eventos
+// online/offline del navegador a veces mienten (ej. wifi conectado pero sin salida a
+// internet real), así que 'online' solo dispara una VERIFICACIÓN real vía fetch;
+// el banner ámbar de "Reconectando..." se mantiene hasta que esa verificación tenga
+// éxito. Fuera del bloque !$es_pre_clase para que también cubra la sala de espera.
+(function conexionAula() {
+    const banner = document.getElementById('conn-banner');
+    const bannerText = document.getElementById('conn-banner-text');
+    if (!banner || !bannerText) return;
+
+    const idContratoConn = <?= (int)$id_contrato ?>;
+    let verificando = false;
+    let reintentoTimer = null;
+
+    function pintarBanner(estado) {
+        clearTimeout(reintentoTimer);
+        banner.classList.remove('bg-red-600', 'text-white', 'bg-amber-400', 'text-amber-900');
+        if (estado === 'offline') {
+            bannerText.textContent = 'Sin conexión — esperando señal...';
+            banner.classList.add('bg-red-600', 'text-white');
+            banner.classList.remove('hidden');
+        } else if (estado === 'reconectando') {
+            bannerText.textContent = 'Reconectando...';
+            banner.classList.add('bg-amber-400', 'text-amber-900');
+            banner.classList.remove('hidden');
+        } else {
+            banner.classList.add('hidden');
+        }
+    }
+
+    function refrescarTrasReconexion() {
+        // Refresco inmediato del chat del aula (si el iframe ya cargó) y del sondeo de materiales
+        try {
+            const chatIframe = document.getElementById('chat-iframe');
+            if (chatIframe && chatIframe.contentWindow && typeof chatIframe.contentWindow.actualizarChat === 'function') {
+                chatIframe.contentWindow.actualizarChat();
+            }
+        } catch (e) {}
+        if (typeof checkNewFiles === 'function') checkNewFiles();
+    }
+
+    async function verificarConexionReal() {
+        if (verificando) return;
+        verificando = true;
+        try {
+            const res = await fetch(`/app/ping_reunion.php?id=${idContratoConn}&accion=estado&_cb=${Date.now()}`, { cache: 'no-store' });
+            verificando = false;
+            if (res.ok) {
+                pintarBanner('online');
+                refrescarTrasReconexion();
+            } else {
+                reintentoTimer = setTimeout(verificarConexionReal, 3000);
+            }
+        } catch (e) {
+            verificando = false;
+            reintentoTimer = setTimeout(verificarConexionReal, 3000);
+        }
+    }
+
+    window.addEventListener('offline', () => pintarBanner('offline'));
+    window.addEventListener('online', () => {
+        pintarBanner('reconectando');
+        verificarConexionReal();
+    });
+
+    if (navigator.onLine === false) pintarBanner('offline');
+})();
+</script>
 
 </body>
 </html>
