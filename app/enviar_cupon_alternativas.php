@@ -24,6 +24,19 @@ if (!isset($_SESSION['csrf_cupon_alternativas'])) {
 $csrf_token   = $_SESSION['csrf_cupon_alternativas'];
 $admin_nombre = 'cupon_alternativas_jul2026';
 
+$CONFIG_REACT = [
+    'no_registrados' => [
+        'admin_nombre' => 'reactivacion_noregistrados_jul2026',
+        'asunto'       => 'Aún no has probado Nubira — tienes un descuento esperando',
+        'intro'        => 'Vimos que creaste tu cuenta en Nubira, pero todavía no la has usado.',
+    ],
+    'dormidos' => [
+        'admin_nombre' => 'reactivacion_dormidos_jul2026',
+        'asunto'       => 'Hace tiempo no te vemos — un descuento para tu próxima clase',
+        'intro'        => 'Hace tiempo no te vemos activo en Nubira.',
+    ],
+];
+
 $sql_base = "
     FROM (
         SELECT c.id AS conversacion_id, c.comprador_id, c.vendedor_id, c.servicio_id,
@@ -168,18 +181,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $CONFIG_REACT = [
-            'no_registrados' => [
-                'admin_nombre' => 'reactivacion_noregistrados_jul2026',
-                'asunto'       => 'Aún no has probado Nubira — tienes un descuento esperando',
-                'intro'        => 'Vimos que creaste tu cuenta en Nubira, pero todavía no la has usado.',
-            ],
-            'dormidos' => [
-                'admin_nombre' => 'reactivacion_dormidos_jul2026',
-                'asunto'       => 'Hace tiempo no te vemos — un descuento para tu próxima clase',
-                'intro'        => 'Hace tiempo no te vemos activo en Nubira.',
-            ],
-        ];
         $cfg_react = $CONFIG_REACT[$segmento_post];
 
         $codigo_react = strtoupper(trim($_POST['codigo'] ?? ''));
@@ -189,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stmt_c = $conn->prepare("SELECT porcentaje_descuento, servicio_id FROM cupones WHERE codigo = ? LIMIT 1");
+        $stmt_c = $conn->prepare("SELECT porcentaje_descuento, servicio_id, fecha_expiracion FROM cupones WHERE codigo = ? LIMIT 1");
         $stmt_c->bind_param('s', $codigo_react);
         $stmt_c->execute();
         $cupon_row = $stmt_c->get_result()->fetch_assoc();
@@ -205,7 +206,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['ok' => false, 'error' => 'Este código está restringido a un servicio específico — usa un código Global para esta campaña.']);
             exit;
         }
-        $porcentaje_react = (int)$cupon_row['porcentaje_descuento'];
+        $porcentaje_react       = (int)$cupon_row['porcentaje_descuento'];
+        $fecha_expiracion_react = $cupon_row['fecha_expiracion'];
 
         $ids_react = array_values(array_unique(
             array_filter(array_map('intval', $_POST['alumno_ids'] ?? []), fn($id) => $id > 0)
@@ -272,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
 
-            $html_react      = generarHtmlEmailCuponReactivacion($primer_nombre_react, $porcentaje_react, $codigo_react, $cfg_react['intro']);
+            $html_react      = generarHtmlEmailCuponReactivacion($primer_nombre_react, $porcentaje_react, $codigo_react, $cfg_react['intro'], $fecha_expiracion_react);
             $html_full_react = plantillaMaestra($cfg_react['asunto'], $html_react, 'Buscar tutor o servicio', 'https://nubira.cl/explorar', "{$porcentaje_react}% de descuento en tu próxima clase.");
             $exito_react     = _enviarEmailBase($correo_react, $cfg_react['asunto'], $html_full_react, '', false);
             $exito_int_react = $exito_react ? 1 : 0;
@@ -378,6 +380,75 @@ if (isset($_GET['listar_tutores'])) {
     foreach ($todos_tutores as &$t) { $t['auto_pick'] = in_array((int)$t['id'], $auto_ids, true); }
 
     echo json_encode(['ok' => true, 'categoria' => $row_lt['categoria'], 'tutores' => $todos_tutores]);
+    exit;
+}
+
+// ── GET: consultar datos reales de un cupón (para pestañas de reactivación) ────
+if (isset($_GET['consultar_cupon'])) {
+    header('Content-Type: application/json');
+    $codigo_cq = strtoupper(trim((string)($_GET['codigo'] ?? '')));
+    if ($codigo_cq === '') {
+        echo json_encode(['ok' => false, 'error' => 'Falta el código.']);
+        exit;
+    }
+
+    $stmt_cq = $conn->prepare("SELECT porcentaje_descuento, fecha_expiracion, servicio_id FROM cupones WHERE codigo = ? LIMIT 1");
+    $stmt_cq->bind_param('s', $codigo_cq);
+    $stmt_cq->execute();
+    $cupon_cq = $stmt_cq->get_result()->fetch_assoc();
+    $stmt_cq->close();
+
+    if (!$cupon_cq) {
+        echo json_encode(['ok' => false, 'error' => "El código '$codigo_cq' no existe."]);
+        exit;
+    }
+    if (!empty($cupon_cq['servicio_id'])) {
+        echo json_encode(['ok' => false, 'error' => 'Este código está restringido a un servicio específico — no sirve para esta campaña.']);
+        exit;
+    }
+
+    echo json_encode([
+        'ok'               => true,
+        'porcentaje'       => (int)$cupon_cq['porcentaje_descuento'],
+        'fecha_expiracion' => $cupon_cq['fecha_expiracion'],
+    ]);
+    exit;
+}
+
+// ── GET: preview de un correo real de reactivación (dormidos / no registrados) ────
+if (isset($_GET['preview_react'])) {
+    $codigo_pr   = strtoupper(trim((string)($_GET['codigo'] ?? '')));
+    $segmento_pr = $_GET['segmento'] ?? '';
+
+    if ($codigo_pr === '' || !isset($CONFIG_REACT[$segmento_pr])) {
+        echo '<p style="font-family:sans-serif;padding:20px;color:#999;">Falta código o segmento inválido para generar el preview.</p>';
+        exit;
+    }
+
+    $stmt_pr = $conn->prepare("SELECT porcentaje_descuento, fecha_expiracion, servicio_id FROM cupones WHERE codigo = ? LIMIT 1");
+    $stmt_pr->bind_param('s', $codigo_pr);
+    $stmt_pr->execute();
+    $cupon_pr = $stmt_pr->get_result()->fetch_assoc();
+    $stmt_pr->close();
+
+    if (!$cupon_pr) {
+        echo '<p style="font-family:sans-serif;padding:20px;color:#999;">El código \'' . htmlspecialchars($codigo_pr, ENT_QUOTES, 'UTF-8') . '\' no existe.</p>';
+        exit;
+    }
+    if (!empty($cupon_pr['servicio_id'])) {
+        echo '<p style="font-family:sans-serif;padding:20px;color:#999;">Este código está restringido a un servicio específico — no sirve para esta campaña.</p>';
+        exit;
+    }
+
+    $cfg_pr  = $CONFIG_REACT[$segmento_pr];
+    $html_pr = generarHtmlEmailCuponReactivacion(
+        'Estudiante',
+        (int)$cupon_pr['porcentaje_descuento'],
+        $codigo_pr,
+        $cfg_pr['intro'],
+        $cupon_pr['fecha_expiracion']
+    );
+    echo plantillaMaestra($cfg_pr['asunto'], $html_pr, 'Buscar tutor o servicio', 'https://nubira.cl/explorar', "{$cupon_pr['porcentaje_descuento']}% de descuento en tu próxima clase.");
     exit;
 }
 
@@ -562,8 +633,19 @@ require_once __DIR__ . '/componentes/sidebar.php';
       <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
         Código de cupón (ya creado en /admin/cupones para este segmento)
       </label>
-      <input type="text" id="input-codigo" placeholder="REACTIVACION-<?= strtoupper($segmento) ?>-JUL26"
-             class="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-mono uppercase text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+      <div class="flex items-center gap-2">
+        <input type="text" id="input-codigo" placeholder="REACTIVACION-<?= strtoupper($segmento) ?>-JUL26"
+               class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-mono uppercase text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+        <button type="button" id="btn-preview-react"
+                class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:border-[#54A6D8] hover:text-[#54A6D8] transition"
+                title="Ver preview del correo">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
+      <p id="info-cupon-react" class="text-xs text-gray-400 mt-2 hidden"></p>
     </div>
     <?php endif; ?>
 
@@ -689,22 +771,6 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
 <div id="toast" class="fixed bottom-24 right-6 px-5 py-3 rounded-xl shadow-xl text-white z-[90] hidden text-sm font-bold"></div>
 
-<div id="modal-preview" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-      <h3 class="text-base font-bold text-gray-900 tracking-tight">Preview del email</h3>
-      <button id="btn-cerrar-preview" class="text-gray-400 hover:text-gray-600 transition p-1 rounded-lg hover:bg-gray-100">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-    <div class="overflow-y-auto flex-1 p-4">
-      <iframe id="preview-iframe" class="w-full border-0 rounded-lg" style="height:580px;"></iframe>
-    </div>
-  </div>
-</div>
-
 <div id="modal-tutores" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
@@ -729,10 +795,34 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
 <?php endif; ?>
 
+<!-- Modal preview — compartido por las 3 pestañas -->
+<div id="modal-preview" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+      <h3 class="text-base font-bold text-gray-900 tracking-tight">Preview del email</h3>
+      <button id="btn-cerrar-preview" class="text-gray-400 hover:text-gray-600 transition p-1 rounded-lg hover:bg-gray-100">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-4">
+      <iframe id="preview-iframe" class="w-full border-0 rounded-lg" style="height:580px;"></iframe>
+    </div>
+  </div>
+</div>
+
 <?php require_once __DIR__ . '/componentes/nav_bottom.php'; ?>
 
 <script>
 const CSRF_TOKEN = <?= json_encode($csrf_token) ?>;
+
+document.getElementById('btn-cerrar-preview')?.addEventListener('click', () => {
+  document.getElementById('modal-preview').classList.add('hidden');
+});
+document.getElementById('modal-preview')?.addEventListener('click', e => {
+  if (e.target.id === 'modal-preview') document.getElementById('modal-preview').classList.add('hidden');
+});
 </script>
 
 <?php if ($segmento === 'sin_respuesta'): ?>
@@ -859,12 +949,6 @@ document.querySelectorAll('.btn-preview-fila').forEach(btn => {
     document.getElementById('modal-preview').classList.remove('hidden');
   });
 });
-document.getElementById('btn-cerrar-preview')?.addEventListener('click', () => {
-  document.getElementById('modal-preview').classList.add('hidden');
-});
-document.getElementById('modal-preview')?.addEventListener('click', e => {
-  if (e.target.id === 'modal-preview') document.getElementById('modal-preview').classList.add('hidden');
-});
 
 const STORAGE_KEY = 'cupon_alt_tutores';
 let seleccionesTutores = {};
@@ -949,6 +1033,33 @@ enviarCampanaMasiva({
         segmento: SEGMENTO_ACTUAL,
         codigo: document.getElementById('input-codigo').value.trim(),
     }),
+});
+
+document.getElementById('btn-preview-react')?.addEventListener('click', async () => {
+    const codigo = document.getElementById('input-codigo').value.trim();
+    if (!codigo) { mostrarToast('Escribe el código de cupón antes de ver el preview', 'error'); return; }
+
+    const infoEl = document.getElementById('info-cupon-react');
+    try {
+        const res = await fetch(`${window.location.pathname}?consultar_cupon=1&codigo=${encodeURIComponent(codigo)}`);
+        const data = await res.json();
+        if (!data.ok) {
+            mostrarToast(data.error || 'Código inválido', 'error');
+            infoEl.classList.add('hidden');
+            return;
+        }
+        const vigencia = data.fecha_expiracion
+            ? `Vence ${new Date(data.fecha_expiracion + 'T00:00:00').toLocaleDateString('es-CL')}`
+            : 'Sin fecha límite';
+        infoEl.textContent = `${data.porcentaje}% de descuento · ${vigencia}`;
+        infoEl.classList.remove('hidden');
+
+        document.getElementById('preview-iframe').src =
+            `${window.location.pathname}?preview_react=1&codigo=${encodeURIComponent(codigo)}&segmento=${encodeURIComponent(SEGMENTO_ACTUAL)}`;
+        document.getElementById('modal-preview').classList.remove('hidden');
+    } catch {
+        mostrarToast('Error de conexión', 'error');
+    }
 });
 </script>
 

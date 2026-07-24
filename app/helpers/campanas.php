@@ -231,15 +231,18 @@ function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $catego
     ";
 }
 
-function generarHtmlEmailCuponReactivacion(string $primer_nombre, int $porcentaje, string $codigo, string $intro): string {
+function generarHtmlEmailCuponReactivacion(string $primer_nombre, int $porcentaje, string $codigo, string $intro, ?string $fecha_expiracion = null): string {
     $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     $codigo_safe = htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8');
+    $vigencia = $fecha_expiracion
+        ? 'Válido hasta el ' . date('d/m/Y', strtotime($fecha_expiracion)) . '.'
+        : 'Sin fecha límite.';
     return "
     <p>Hola <strong>{$nombre_safe}</strong>,</p>
     <p>{$intro} Te dejamos un cupón de descuento para tu próxima clase:</p>
     <div style='background:#F0F9FF; border:1px dashed #54A6D8; border-radius:12px; padding:20px; margin:20px 0; text-align:center;'>
         <p style='margin:0 0 8px 0; font-size:13px; color:#0c4a6e; font-weight:bold;'>Tu código de descuento</p>
         <p style='margin:0; font-size:22px; font-weight:bold; letter-spacing:1px; color:#111;'>{$codigo_safe}</p>
-        <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>{$porcentaje}% de descuento en tu próxima clase.</p>
+        <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>{$porcentaje}% de descuento en tu próxima clase. {$vigencia}</p>
     </div>";
 }
