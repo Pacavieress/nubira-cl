@@ -352,9 +352,11 @@ $stmt_aviso = $conn->prepare("
 <script>console.error("NUBIRA DB ERROR: <?= htmlspecialchars(addslashes($debug_error_db)) ?>");</script>
 <?php endif; ?>
 
-<?php if (!empty($avisos_oficiales)): 
-    $aviso_actual = $avisos_oficiales[0]; // Mostramos solo el más antiguo (FIFO)
+<?php if (!empty($avisos_oficiales)):
     $total_avisos = count($avisos_oficiales);
+?>
+<?php if ($total_avisos === 1):
+    $aviso_actual = $avisos_oficiales[0]; // Mostramos solo el más antiguo (FIFO)
 ?>
 <div id="modal-aviso-oficial" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-md">
     <div id="aviso-card-<?= (int)$aviso_actual['id'] ?>" class="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-200 overflow-hidden transform transition-all duration-300 scale-95 opacity-0 max-h-[90vh] flex flex-col" data-aviso-id="<?= (int)$aviso_actual['id'] ?>">
@@ -513,6 +515,109 @@ async function marcarAvisoLeido(idAviso) {
     }
 }
 </script>
+<?php else: ?>
+<!-- Modal resumen: 2+ avisos pendientes, lista scrolleable + marcar todos como leídos -->
+<div id="modal-aviso-oficial" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-md">
+    <div id="aviso-resumen-card" class="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-200 overflow-hidden transform transition-all duration-300 scale-95 opacity-0 max-h-[90vh] flex flex-col">
+
+        <div class="px-4 pt-4 pb-0 shrink-0">
+            <h2 class="text-lg font-semibold text-gray-900 tracking-tight">
+                Tienes <?= (int)$total_avisos ?> avisos nuevos
+            </h2>
+        </div>
+
+        <div class="px-4 pt-2 pb-4 overflow-y-auto flex-1 space-y-3">
+            <?php foreach ($avisos_oficiales as $av_resumen):
+                $tipo_av_resumen = $av_resumen['tipo'] ?? 'info';
+                $color_punto_resumen = ['info' => 'bg-gray-400', 'novedad' => 'bg-[#54A6D8]', 'importante' => 'bg-rose-500'][$tipo_av_resumen] ?? 'bg-gray-400';
+            ?>
+            <div class="border border-gray-100 rounded-xl p-3 bg-gray-50/60">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="w-1.5 h-1.5 rounded-full <?= $color_punto_resumen ?> shrink-0"></span>
+                    <h3 class="text-sm font-semibold text-gray-900 truncate">
+                        <?= !empty($av_resumen['titulo']) ? htmlspecialchars($av_resumen['titulo']) : 'Nubira' ?>
+                    </h3>
+                </div>
+                <p id="msg-resumen-<?= (int)$av_resumen['id'] ?>" class="text-[13px] text-gray-600 leading-snug break-words whitespace-pre-line line-clamp-3">
+                    <?= nb_renderizar_aviso_bbcode(htmlspecialchars($av_resumen['mensaje'], ENT_QUOTES, 'UTF-8')) ?>
+                </p>
+                <button type="button"
+                        id="btn-vermas-<?= (int)$av_resumen['id'] ?>"
+                        onclick="toggleVerMasAviso(<?= (int)$av_resumen['id'] ?>)"
+                        class="hidden mt-1 text-[12px] font-medium text-[#54A6D8] hover:underline">
+                    Ver más
+                </button>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="px-4 pb-4 pt-3 flex items-center justify-end gap-4 shrink-0 border-t border-gray-100">
+            <button onclick="marcarTodosAvisosLeidos([<?= implode(',', array_map(fn($a) => (int)$a['id'], $avisos_oficiales)) ?>])"
+                    class="px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-[13px] font-medium rounded-lg transition-all active:scale-[0.98]">
+                Entendido
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const card = document.getElementById('aviso-resumen-card');
+    if (card) {
+        requestAnimationFrame(() => {
+            card.classList.remove('scale-95', 'opacity-0');
+            card.classList.add('scale-100', 'opacity-100');
+        });
+        document.body.style.overflow = 'hidden';
+    }
+});
+
+async function marcarTodosAvisosLeidos(ids) {
+    const modal = document.getElementById('modal-aviso-oficial');
+    const card = document.getElementById('aviso-resumen-card');
+    if (!modal || !card) return;
+
+    card.classList.add('scale-95', 'opacity-0');
+    modal.classList.add('opacity-0');
+    modal.style.transition = 'opacity 0.3s ease';
+
+    setTimeout(() => {
+        modal.remove();
+        document.body.style.overflow = '';
+    }, 300);
+
+    try {
+        const fd = new FormData();
+        ids.forEach(id => fd.append('aviso_ids[]', id));
+        fd.append('csrf_token', '<?= $_SESSION['csrf_token'] ?? '' ?>');
+        await fetch('/app/marcar_aviso_leido.php', { method: 'POST', body: fd });
+    } catch (error) {
+        console.error('Error al silenciar avisos:', error);
+    }
+}
+
+// "Ver más/menos" por item — solo muestra el botón si el texto realmente desborda 3 líneas
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[id^="msg-resumen-"]').forEach(p => {
+        if (p.scrollHeight > p.clientHeight + 1) {
+            const id = p.id.replace('msg-resumen-', '');
+            const btn = document.getElementById('btn-vermas-' + id);
+            if (btn) btn.classList.remove('hidden');
+        }
+    });
+});
+
+function toggleVerMasAviso(id) {
+    const p = document.getElementById('msg-resumen-' + id);
+    const btn = document.getElementById('btn-vermas-' + id);
+    if (!p || !btn) return;
+    const expandir = p.classList.contains('line-clamp-3');
+    p.classList.toggle('line-clamp-3', !expandir);
+    p.classList.toggle('line-clamp-none', expandir);
+    btn.textContent = expandir ? 'Ver menos' : 'Ver más';
+}
+</script>
+<?php endif; ?>
 <?php endif; ?>
 
 <?php
