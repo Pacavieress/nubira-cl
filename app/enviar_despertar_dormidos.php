@@ -77,6 +77,7 @@ if (php_sapi_name() === 'cli') {
           AND a.correo NOT LIKE 'testpablo%'
           AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
           AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
+          AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
           AND LOWER(TRIM(a.correo)) NOT IN (
               SELECT LOWER(TRIM(destinatario)) FROM correos_admin
               WHERE admin_nombre = 'despertar_dormidos_jun2026' AND exito = 1
@@ -320,6 +321,7 @@ $sql = "
       AND a.correo NOT LIKE 'testpablo%'
       AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
       AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
+      AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
     GROUP BY a.id
     ORDER BY {$order_clause}
 ";
