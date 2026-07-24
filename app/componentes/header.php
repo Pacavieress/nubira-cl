@@ -374,7 +374,7 @@ $stmt_aviso = $conn->prepare("
    <!-- Header minimalista -->
 <div class="px-4 pt-4 pb-0 shrink-0">
     <h2 class="text-lg font-semibold text-gray-900 tracking-tight">
-        <strong><?= !empty($aviso_actual['titulo']) ? htmlspecialchars($aviso_actual['titulo']) : 'Nubira' ?></strong>
+        <span class="font-semibold"><?= !empty($aviso_actual['titulo']) ? htmlspecialchars($aviso_actual['titulo']) : 'Nubira' ?></span>
     </h2>
 </div>
 
@@ -535,7 +535,7 @@ async function marcarAvisoLeido(idAviso) {
                 <div class="flex items-center gap-2 mb-1">
                     <span class="w-1.5 h-1.5 rounded-full <?= $color_punto_resumen ?> shrink-0"></span>
                     <h3 class="text-sm font-semibold text-gray-900 truncate">
-                        <strong><?= !empty($av_resumen['titulo']) ? htmlspecialchars($av_resumen['titulo']) : 'Nubira' ?></strong>
+                        <span class="font-semibold"><?= !empty($av_resumen['titulo']) ? htmlspecialchars($av_resumen['titulo']) : 'Nubira' ?></span>
                     </h3>
                 </div>
                 <p id="msg-resumen-<?= (int)$av_resumen['id'] ?>" class="text-[13px] text-gray-600 leading-snug break-words whitespace-pre-line line-clamp-3">
