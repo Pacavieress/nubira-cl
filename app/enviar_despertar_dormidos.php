@@ -198,12 +198,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         WHERE a.id IN ($placeholders)
           AND a.visible = 1
           AND a.confirmado = 1
+          AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
+          AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
+          AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
         ORDER BY a.id ASC
     ");
     $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
     $stmt->execute();
     $usuarios = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
+
+    $omitidos = count($ids) - count($usuarios);
 
     $admin_id = (int)$_SESSION['usuario_id'];
     $stmt_log = $conn->prepare(
@@ -247,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt_log->close();
     $conn->close();
 
-    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos]);
+    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos]);
     exit;
 }
 
@@ -714,7 +719,8 @@ btnEnviar?.addEventListener('click', async () => {
     const data = await res.json();
     if (data.ok) {
       const msg = `${data.enviados} enviado${data.enviados !== 1 ? 's' : ''}`
-        + (data.fallidos > 0 ? `, ${data.fallidos} fallido${data.fallidos !== 1 ? 's' : ''}` : '');
+        + (data.fallidos > 0 ? `, ${data.fallidos} fallido${data.fallidos !== 1 ? 's' : ''}` : '')
+        + (data.omitidos > 0 ? `, ${data.omitidos} omitido${data.omitidos !== 1 ? 's' : ''} (ya no calificaba)` : '');
       mostrarToast(msg, 'ok');
       setTimeout(() => location.reload(), 2500);
     } else {
