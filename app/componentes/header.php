@@ -599,11 +599,24 @@ async function marcarTodosAvisosLeidos(ids) {
 // "Ver más/menos" por item — solo muestra el botón si el texto realmente desborda 3 líneas
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[id^="msg-resumen-"]').forEach(p => {
-        if (p.scrollHeight > p.clientHeight + 1) {
-            const id = p.id.replace('msg-resumen-', '');
-            const btn = document.getElementById('btn-vermas-' + id);
-            if (btn) btn.classList.remove('hidden');
-        }
+        const id = p.id.replace('msg-resumen-', '');
+        const btn = document.getElementById('btn-vermas-' + id);
+        if (!btn) return;
+
+        // Reintenta en cada frame (no con un tiempo fijo) hasta que Tailwind JIT
+        // termine de inyectar el CSS de line-clamp-3 y el overflow real sea medible.
+        // Tope de 20 frames (~300ms a 60fps) solo como red de seguridad, no como apuesta de timing.
+        let intentos = 0;
+        const chequear = () => {
+            if (p.scrollHeight > p.clientHeight + 1) {
+                btn.classList.remove('hidden');
+                return;
+            }
+            if (intentos++ < 20) {
+                requestAnimationFrame(chequear);
+            }
+        };
+        requestAnimationFrame(chequear);
     });
 });
 
