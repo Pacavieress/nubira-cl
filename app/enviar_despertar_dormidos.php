@@ -8,7 +8,7 @@
  */
 
 // ── Función compartida (CLI + web) ────────────────────────────
-function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
+function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $bloqueCuponHtml = ''): string {
     $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     return "
 <p>Hola <strong>{$nombre_safe}</strong>,</p>
@@ -35,7 +35,7 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
     Buscar tutor o servicio
   </a>
 </p>
-
+{$bloqueCuponHtml}
 <p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
 
 <p style=\"text-align:center;margin-top:26px;margin-bottom:6px;font-size:13px;color:#555;\">
@@ -163,6 +163,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $codigo_cupon = strtoupper(trim($_POST['codigo'] ?? ''));
+    $cupon_info   = null;
+    if ($codigo_cupon !== '') {
+        $cupon_info = nb_consultar_cupon_global($conn, $codigo_cupon);
+        if (!$cupon_info['ok']) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => $cupon_info['error']]);
+            exit;
+        }
+    }
+
     $ids_raw = $_POST['alumno_ids'] ?? [];
     if (!is_array($ids_raw) || empty($ids_raw)) {
         http_response_code(400);
@@ -210,7 +221,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
-        $html      = generarHtmlEmailDespertarDormidos($primer_nombre);
+        $bloqueCupon = $cupon_info ? nb_bloque_cupon_html($codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion']) : '';
+        $html      = generarHtmlEmailDespertarDormidos($primer_nombre, $bloqueCupon);
         $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
         $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', false);
         $exito_int = $exito ? 1 : 0;
@@ -227,6 +239,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->close();
 
     echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos]);
+    exit;
+}
+
+// ── GET: consultar datos reales de un cupón ─────────────────────
+if (isset($_GET['consultar_cupon'])) {
+    header('Content-Type: application/json');
+    echo json_encode(nb_consultar_cupon_global($conn, (string)($_GET['codigo'] ?? '')));
+    exit;
+}
+
+// ── GET: preview del correo, con o sin cupón según el código dado ────
+if (isset($_GET['preview_cupon'])) {
+    $codigo_pv      = strtoupper(trim((string)($_GET['codigo'] ?? '')));
+    $bloqueCupon_pv = '';
+
+    if ($codigo_pv !== '') {
+        $cupon_pv = nb_consultar_cupon_global($conn, $codigo_pv);
+        if (!$cupon_pv['ok']) {
+            echo '<p style="font-family:sans-serif;padding:20px;color:#999;">' . htmlspecialchars($cupon_pv['error'], ENT_QUOTES, 'UTF-8') . '</p>';
+            exit;
+        }
+        $bloqueCupon_pv = nb_bloque_cupon_html($codigo_pv, $cupon_pv['porcentaje'], $cupon_pv['fecha_expiracion']);
+    }
+
+    $html_pv = generarHtmlEmailDespertarDormidos('Estudiante', $bloqueCupon_pv);
+    echo plantillaMaestra($asunto, $html_pv, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
     exit;
 }
 
@@ -356,7 +394,6 @@ $makeProvUrl = function(string $prov) use ($proveedores_activos, $proveedores_va
         : $base . '&proveedores=' . implode(',', $nueva);
 };
 
-$preview_html = plantillaMaestra($asunto, generarHtmlEmailDespertarDormidos('Estudiante'));
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -399,6 +436,22 @@ require_once $app_dir . '/componentes/sidebar.php';
         </svg>
         Ver preview del email
       </button>
+    </div>
+
+    <!-- Cupón opcional -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <label class="flex items-center gap-2 cursor-pointer mb-3">
+        <input type="checkbox" id="chk-incluir-cupon" class="w-4 h-4 rounded accent-[#54A6D8] cursor-pointer">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Incluir cupón de descuento</span>
+      </label>
+      <div id="bloque-cupon" class="hidden">
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+          Código de cupón (ya creado en /admin/cupones, Global)
+        </label>
+        <input type="text" id="input-codigo" placeholder="REACTIVACION-DORMIDOS-JUL26"
+               class="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-mono uppercase text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+        <p id="info-cupon" class="text-xs text-gray-400 mt-2 hidden"></p>
+      </div>
     </div>
 
     <!-- Stats -->
@@ -558,9 +611,7 @@ require_once $app_dir . '/componentes/sidebar.php';
       </button>
     </div>
     <div class="overflow-y-auto flex-1 p-4">
-      <iframe class="w-full border-0 rounded-lg" style="height:580px;"
-              srcdoc="<?= htmlspecialchars($preview_html, ENT_QUOTES, 'UTF-8') ?>">
-      </iframe>
+      <iframe id="preview-iframe" class="w-full border-0 rounded-lg" style="height:580px;"></iframe>
     </div>
   </div>
 </div>
@@ -590,6 +641,16 @@ const actionBar = document.getElementById('action-bar');
 const barCount  = document.getElementById('bar-count');
 const barPlural = document.getElementById('bar-plural');
 const btnEnviar = document.getElementById('btn-enviar');
+const chkIncluirCupon = document.getElementById('chk-incluir-cupon');
+const bloqueCupon = document.getElementById('bloque-cupon');
+
+chkIncluirCupon?.addEventListener('change', () => {
+  bloqueCupon.classList.toggle('hidden', !chkIncluirCupon.checked);
+  if (!chkIncluirCupon.checked) {
+    document.getElementById('input-codigo').value = '';
+    document.getElementById('info-cupon').classList.add('hidden');
+  }
+});
 
 function syncBar() {
   const n = rowChecks.filter(c => c.checked).length;
@@ -630,6 +691,8 @@ btnEnviar?.addEventListener('click', async () => {
   const body = new URLSearchParams();
   body.append('csrf_token', CSRF_TOKEN);
   checked.forEach(cb => body.append('alumno_ids[]', cb.value));
+  const codigoEnvio = chkIncluirCupon.checked ? document.getElementById('input-codigo').value.trim() : '';
+  if (codigoEnvio) body.append('codigo', codigoEnvio);
 
   try {
     const res  = await fetch(window.location.pathname, { method: 'POST', body });
@@ -667,7 +730,34 @@ function mostrarToast(msg, tipo = 'ok') {
   setTimeout(() => t.classList.add('hidden'), 4000);
 }
 
-document.getElementById('btn-preview')?.addEventListener('click', () => {
+document.getElementById('btn-preview')?.addEventListener('click', async () => {
+  const codigo = chkIncluirCupon.checked ? document.getElementById('input-codigo').value.trim() : '';
+  const infoEl = document.getElementById('info-cupon');
+
+  if (codigo) {
+    try {
+      const res = await fetch(`${window.location.pathname}?consultar_cupon=1&codigo=${encodeURIComponent(codigo)}`);
+      const data = await res.json();
+      if (!data.ok) {
+        mostrarToast(data.error || 'Código inválido', 'error');
+        infoEl.classList.add('hidden');
+        return;
+      }
+      const vigencia = data.fecha_expiracion
+        ? `Vence ${new Date(data.fecha_expiracion + 'T00:00:00').toLocaleDateString('es-CL')}`
+        : 'Sin fecha límite';
+      infoEl.textContent = `${data.porcentaje}% de descuento · ${vigencia}`;
+      infoEl.classList.remove('hidden');
+    } catch {
+      mostrarToast('Error de conexión', 'error');
+      return;
+    }
+  } else {
+    infoEl.classList.add('hidden');
+  }
+
+  document.getElementById('preview-iframe').src =
+    `${window.location.pathname}?preview_cupon=1&codigo=${encodeURIComponent(codigo)}`;
   document.getElementById('modal-preview').classList.remove('hidden');
 });
 document.getElementById('btn-cerrar-preview')?.addEventListener('click', () => {

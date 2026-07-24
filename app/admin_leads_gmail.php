@@ -35,6 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $codigo_cupon = strtoupper(trim($_POST['codigo'] ?? ''));
+    $cupon_info   = null;
+    if ($codigo_cupon !== '') {
+        $cupon_info = nb_consultar_cupon_global($conn, $codigo_cupon);
+        if (!$cupon_info['ok']) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => $cupon_info['error']]);
+            exit;
+        }
+    }
+
     $correos_raw = $_POST['correos'] ?? [];
     if (!is_array($correos_raw) || empty($correos_raw)) {
         http_response_code(400);
@@ -96,9 +107,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $enviados = 0; $fallidos = 0;
 
     foreach ($validos as $correo) {
-        $unsubUrl  = generarUnsubUrl($correo);
-        $html      = generarHtmlEmailRecuperarGmail($unsubUrl);
-        $exito     = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply');
+        $unsubUrl    = generarUnsubUrl($correo);
+        $bloqueCupon = $cupon_info ? nb_bloque_cupon_html($codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion']) : '';
+        $html        = generarHtmlEmailRecuperarGmail($unsubUrl, $bloqueCupon);
+        $exito       = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply');
         $exito_int = $exito ? 1 : 0;
 
         $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
@@ -113,6 +125,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->close();
 
     echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos]);
+    exit;
+}
+
+// ── GET: consultar datos reales de un cupón ─────────────────────
+if (isset($_GET['consultar_cupon'])) {
+    header('Content-Type: application/json');
+    echo json_encode(nb_consultar_cupon_global($conn, (string)($_GET['codigo'] ?? '')));
+    exit;
+}
+
+// ── GET: preview del correo, con o sin cupón según el código dado ────
+if (isset($_GET['preview_cupon'])) {
+    $codigo_pv      = strtoupper(trim((string)($_GET['codigo'] ?? '')));
+    $unsubUrl_pv    = generarUnsubUrl('preview@nubira.cl');
+    $bloqueCupon_pv = '';
+
+    if ($codigo_pv !== '') {
+        $cupon_pv = nb_consultar_cupon_global($conn, $codigo_pv);
+        if (!$cupon_pv['ok']) {
+            echo '<p style="font-family:sans-serif;padding:20px;color:#999;">' . htmlspecialchars($cupon_pv['error'], ENT_QUOTES, 'UTF-8') . '</p>';
+            exit;
+        }
+        $bloqueCupon_pv = nb_bloque_cupon_html($codigo_pv, $cupon_pv['porcentaje'], $cupon_pv['fecha_expiracion']);
+    }
+
+    $html_pv = generarHtmlEmailRecuperarGmail($unsubUrl_pv, $bloqueCupon_pv);
+    echo plantillaMaestra($asunto, $html_pv);
     exit;
 }
 
@@ -250,6 +289,32 @@ require_once $app_dir . '/componentes/sidebar.php';
         <p class="text-xs text-gray-400 mt-1">+ <?= $stats['fallo'] ?> con fallo SMTP</p>
       </div>
 
+    </div>
+
+    <!-- Cupón opcional -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <label class="flex items-center gap-2 cursor-pointer mb-3">
+        <input type="checkbox" id="chk-incluir-cupon" class="w-4 h-4 rounded accent-[#54A6D8] cursor-pointer">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Incluir cupón de descuento</span>
+      </label>
+      <div id="bloque-cupon" class="hidden">
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+          Código de cupón (ya creado en /admin/cupones, Global)
+        </label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="input-codigo" placeholder="REACTIVACION-LEADS-JUL26"
+                 class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-mono uppercase text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+          <button type="button" id="btn-preview-cupon"
+                  class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:border-[#54A6D8] hover:text-[#54A6D8] transition"
+                  title="Ver preview del correo">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
+        <p id="info-cupon" class="text-xs text-gray-400 mt-2 hidden"></p>
+      </div>
     </div>
 
     <!-- Filtros -->
@@ -393,6 +458,23 @@ require_once $app_dir . '/componentes/sidebar.php';
      class="fixed bottom-24 right-6 px-5 py-3 rounded-xl shadow-xl text-white z-[90] hidden text-sm font-bold">
 </div>
 
+<!-- Modal preview -->
+<div id="modal-preview" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+      <h3 class="text-base font-bold text-gray-900 tracking-tight">Preview del email</h3>
+      <button id="btn-cerrar-preview" class="text-gray-400 hover:text-gray-600 transition p-1 rounded-lg hover:bg-gray-100">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-4">
+      <iframe id="preview-iframe" class="w-full border-0 rounded-lg" style="height:580px;"></iframe>
+    </div>
+  </div>
+</div>
+
 <?php
 require_once $app_dir . '/componentes/nav_bottom.php';
 require_once $app_dir . '/componentes/modal_publicar.php';
@@ -448,6 +530,8 @@ btnEnviar?.addEventListener('click', async () => {
   const body = new URLSearchParams();
   body.append('csrf_token', CSRF_TOKEN);
   checked.forEach(cb => body.append('correos[]', cb.value));
+  const codigoEnvio = chkIncluirCupon.checked ? document.getElementById('input-codigo').value.trim() : '';
+  if (codigoEnvio) body.append('codigo', codigoEnvio);
 
   try {
     const res  = await fetch(window.location.pathname + window.location.search, { method: 'POST', body });
@@ -485,6 +569,55 @@ function mostrarToast(msg, tipo = 'ok') {
   t.classList.remove('hidden');
   setTimeout(() => t.classList.add('hidden'), 4000);
 }
+
+const chkIncluirCupon = document.getElementById('chk-incluir-cupon');
+const bloqueCupon = document.getElementById('bloque-cupon');
+
+chkIncluirCupon?.addEventListener('change', () => {
+    bloqueCupon.classList.toggle('hidden', !chkIncluirCupon.checked);
+    if (!chkIncluirCupon.checked) {
+        document.getElementById('input-codigo').value = '';
+        document.getElementById('info-cupon').classList.add('hidden');
+    }
+});
+
+document.getElementById('btn-preview-cupon')?.addEventListener('click', async () => {
+    const codigo = document.getElementById('input-codigo').value.trim();
+    const infoEl = document.getElementById('info-cupon');
+
+    if (codigo) {
+        try {
+            const res = await fetch(`${window.location.pathname}?consultar_cupon=1&codigo=${encodeURIComponent(codigo)}`);
+            const data = await res.json();
+            if (!data.ok) {
+                mostrarToast(data.error || 'Código inválido', 'error');
+                infoEl.classList.add('hidden');
+                return;
+            }
+            const vigencia = data.fecha_expiracion
+                ? `Vence ${new Date(data.fecha_expiracion + 'T00:00:00').toLocaleDateString('es-CL')}`
+                : 'Sin fecha límite';
+            infoEl.textContent = `${data.porcentaje}% de descuento · ${vigencia}`;
+            infoEl.classList.remove('hidden');
+        } catch {
+            mostrarToast('Error de conexión', 'error');
+            return;
+        }
+    } else {
+        infoEl.classList.add('hidden');
+    }
+
+    document.getElementById('preview-iframe').src =
+        `${window.location.pathname}?preview_cupon=1&codigo=${encodeURIComponent(codigo)}`;
+    document.getElementById('modal-preview').classList.remove('hidden');
+});
+
+document.getElementById('btn-cerrar-preview')?.addEventListener('click', () => {
+    document.getElementById('modal-preview').classList.add('hidden');
+});
+document.getElementById('modal-preview')?.addEventListener('click', e => {
+    if (e.target.id === 'modal-preview') document.getElementById('modal-preview').classList.add('hidden');
+});
 
 window.onload = () => {
   const l = document.getElementById('loader');

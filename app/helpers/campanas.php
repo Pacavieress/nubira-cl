@@ -49,7 +49,7 @@ Mientras tanto, nuestros tutores han ayudado a estudiantes en:</p>
 ";
 }
 
-function generarHtmlEmailRecuperarGmail($unsubUrl) {
+function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '') {
     $unsub_safe = htmlspecialchars($unsubUrl, ENT_QUOTES, 'UTF-8');
     return "
 <p>Hola,</p>
@@ -90,7 +90,7 @@ porque en ese momento solo permitíamos correos institucionales.</p>
     <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
   </a>
 </p>
-
+{$bloqueCuponHtml}
 <hr style=\"margin:30px 0;border:none;border-top:1px solid #eee;\">
 <p style=\"font-size:11px;color:#888;\">
   Si no quieres recibir más correos de Nubira,
@@ -190,56 +190,28 @@ function buildQueryDormidos($segmento, $limite, $universidad, $solo_count = fals
     return ['sql' => $sql, 'tipos' => $tipos, 'params' => $params];
 }
 
-function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $categoria, array $alternativas, string $codigo, int $porcentaje = 15): string {
-    $nombre_safe    = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
-    $categoria_safe = htmlspecialchars($categoria, ENT_QUOTES, 'UTF-8');
-    $codigo_safe    = htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8');
+function nb_consultar_cupon_global(mysqli $conn, string $codigo): array {
+    $codigo = strtoupper(trim($codigo));
+    if ($codigo === '') return ['ok' => false, 'error' => 'Falta el código.'];
 
-    $cardsHtml = '';
-    foreach ($alternativas as $alt) {
-        $nombreTutor = htmlspecialchars($alt['nombre_tutor'], ENT_QUOTES, 'UTF-8');
-        $tituloServ  = htmlspecialchars($alt['titulo'], ENT_QUOTES, 'UTF-8');
-        $fotoUrl = !empty($alt['foto_perfil'])
-            ? 'https://nubira.cl/app/perfil/fotos/' . $alt['foto_perfil']
-            : 'https://ui-avatars.com/api/?name=' . urlencode($alt['nombre_tutor']) . '&background=54A6D8&color=fff&size=128&bold=true';
-        $linkServicio = 'https://nubira.cl/servicios/' . $alt['slug'] . '-' . (int)$alt['id'];
+    $stmt = $conn->prepare("SELECT porcentaje_descuento, fecha_expiracion, servicio_id FROM cupones WHERE codigo = ? LIMIT 1");
+    $stmt->bind_param('s', $codigo);
+    $stmt->execute();
+    $cupon = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
 
-        $cardsHtml .= "
-        <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin-bottom:12px;'>
-          <tr>
-            <td width='60' style='vertical-align:top;'>
-              <img src='{$fotoUrl}' width='50' height='50' style='border-radius:50%; object-fit:cover; display:block;' alt='{$nombreTutor}'>
-            </td>
-            <td style='vertical-align:top; padding-left:12px;'>
-              <p style='margin:0; font-weight:bold; color:#111; font-size:14px;'>{$nombreTutor}</p>
-              <p style='margin:2px 0 6px 0; font-size:13px; color:#666;'>{$tituloServ}</p>
-              <a href='{$linkServicio}' style='font-size:13px; color:#54A6D8; font-weight:bold; text-decoration:none;'>Ver perfil →</a>
-            </td>
-          </tr>
-        </table>";
-    }
+    if (!$cupon) return ['ok' => false, 'error' => "El código '$codigo' no existe."];
+    if (!empty($cupon['servicio_id'])) return ['ok' => false, 'error' => 'Este código está restringido a un servicio específico.'];
 
-    return "
-        <p>Hola <strong>{$nombre_safe}</strong>,</p>
-        <p>Vimos que hace poco estuviste buscando tutor en Nubira para <strong>{$categoria_safe}</strong>. Te dejamos un cupón de descuento — puedes usarlo con ese mismo tutor o con otras opciones disponibles:</p>
-        <div style='background:#F0F9FF; border:1px dashed #54A6D8; border-radius:12px; padding:20px; margin:20px 0; text-align:center;'>
-            <p style='margin:0 0 8px 0; font-size:13px; color:#0c4a6e; font-weight:bold;'>Tu código de descuento</p>
-            <p style='margin:0; font-size:22px; font-weight:bold; letter-spacing:1px; color:#111;'>{$codigo_safe}</p>
-            <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>{$porcentaje}% de descuento, válido por 7 días desde hoy.</p>
-        </div>
-        <div style='margin:20px 0;'>{$cardsHtml}</div>
-    ";
+    return ['ok' => true, 'porcentaje' => (int)$cupon['porcentaje_descuento'], 'fecha_expiracion' => $cupon['fecha_expiracion']];
 }
 
-function generarHtmlEmailCuponReactivacion(string $primer_nombre, int $porcentaje, string $codigo, string $intro, ?string $fecha_expiracion = null): string {
-    $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
+function nb_bloque_cupon_html(string $codigo, int $porcentaje, ?string $fecha_expiracion): string {
     $codigo_safe = htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8');
     $vigencia = $fecha_expiracion
         ? 'Válido hasta el ' . date('d/m/Y', strtotime($fecha_expiracion)) . '.'
         : 'Sin fecha límite.';
     return "
-    <p>Hola <strong>{$nombre_safe}</strong>,</p>
-    <p>{$intro} Te dejamos un cupón de descuento para tu próxima clase:</p>
     <div style='background:#F0F9FF; border:1px dashed #54A6D8; border-radius:12px; padding:20px; margin:20px 0; text-align:center;'>
         <p style='margin:0 0 8px 0; font-size:13px; color:#0c4a6e; font-weight:bold;'>Tu código de descuento</p>
         <p style='margin:0; font-size:22px; font-weight:bold; letter-spacing:1px; color:#111;'>{$codigo_safe}</p>
