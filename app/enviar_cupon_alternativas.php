@@ -1,7 +1,6 @@
 <?php
 /**
- * Panel de campaña — Cupón + tutores alternativos para estudiantes sin respuesta (única ejecución, no cron).
- * Requiere que el admin haya creado manualmente cada cupón individual en /admin/cupones (Global, sin servicio_id).
+ * Panel de campaña — Cupón + tutores alternativos (sin respuesta) / Reactivación (dormidos, no registrados).
  */
 session_start();
 
@@ -13,55 +12,17 @@ require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/correo.php';
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/tutores_alternativos.php';
+require_once __DIR__ . '/helpers/campanas.php';
+require_once __DIR__ . '/helpers/campanas_tabla.php';
 
 date_default_timezone_set('America/Santiago');
+if (!defined('LOG_PATH')) define('LOG_PATH', __DIR__ . '/log_correos.txt');
 
 if (!isset($_SESSION['csrf_cupon_alternativas'])) {
     $_SESSION['csrf_cupon_alternativas'] = bin2hex(random_bytes(32));
 }
 $csrf_token   = $_SESSION['csrf_cupon_alternativas'];
 $admin_nombre = 'cupon_alternativas_jul2026';
-
-function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $categoria, array $alternativas, string $codigo, int $porcentaje = 15): string {
-    $nombre_safe    = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
-    $categoria_safe = htmlspecialchars($categoria, ENT_QUOTES, 'UTF-8');
-    $codigo_safe    = htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8');
-
-    $cardsHtml = '';
-    foreach ($alternativas as $alt) {
-        $nombreTutor = htmlspecialchars($alt['nombre_tutor'], ENT_QUOTES, 'UTF-8');
-        $tituloServ  = htmlspecialchars($alt['titulo'], ENT_QUOTES, 'UTF-8');
-        $fotoUrl = !empty($alt['foto_perfil'])
-            ? 'https://nubira.cl/app/perfil/fotos/' . $alt['foto_perfil']
-            : 'https://ui-avatars.com/api/?name=' . urlencode($alt['nombre_tutor']) . '&background=54A6D8&color=fff&size=128&bold=true';
-        $linkServicio = 'https://nubira.cl/servicios/' . $alt['slug'] . '-' . (int)$alt['id'];
-
-        $cardsHtml .= "
-        <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin-bottom:12px;'>
-          <tr>
-            <td width='60' style='vertical-align:top;'>
-              <img src='{$fotoUrl}' width='50' height='50' style='border-radius:50%; object-fit:cover; display:block;' alt='{$nombreTutor}'>
-            </td>
-            <td style='vertical-align:top; padding-left:12px;'>
-              <p style='margin:0; font-weight:bold; color:#111; font-size:14px;'>{$nombreTutor}</p>
-              <p style='margin:2px 0 6px 0; font-size:13px; color:#666;'>{$tituloServ}</p>
-              <a href='{$linkServicio}' style='font-size:13px; color:#54A6D8; font-weight:bold; text-decoration:none;'>Ver perfil →</a>
-            </td>
-          </tr>
-        </table>";
-    }
-
-    return "
-        <p>Hola <strong>{$nombre_safe}</strong>,</p>
-        <p>Vimos que hace poco estuviste buscando tutor en Nubira para <strong>{$categoria_safe}</strong>. Te dejamos un cupón de descuento — puedes usarlo con ese mismo tutor o con otras opciones disponibles:</p>
-        <div style='background:#F0F9FF; border:1px dashed #54A6D8; border-radius:12px; padding:20px; margin:20px 0; text-align:center;'>
-            <p style='margin:0 0 8px 0; font-size:13px; color:#0c4a6e; font-weight:bold;'>Tu código de descuento</p>
-            <p style='margin:0; font-size:22px; font-weight:bold; letter-spacing:1px; color:#111;'>{$codigo_safe}</p>
-            <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>{$porcentaje}% de descuento, válido por 7 días desde hoy.</p>
-        </div>
-        <div style='margin:20px 0;'>{$cardsHtml}</div>
-    ";
-}
 
 $sql_base = "
     FROM (
@@ -83,7 +44,7 @@ $sql_base = "
 // ── POST: envío ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    set_time_limit(300);
+    set_time_limit(600);
 
     if (!hash_equals($csrf_token, $_POST['csrf_token'] ?? '')) {
         http_response_code(403);
@@ -91,113 +52,248 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $envios_raw = json_decode($_POST['envios_json'] ?? '[]', true);
-    if (!is_array($envios_raw) || empty($envios_raw)) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Sin destinatarios seleccionados.']);
+    $segmento_post = $_POST['segmento'] ?? 'sin_respuesta';
+
+    if ($segmento_post === 'sin_respuesta') {
+
+        $envios_raw = json_decode($_POST['envios_json'] ?? '[]', true);
+        if (!is_array($envios_raw) || empty($envios_raw)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Sin destinatarios seleccionados.']);
+            exit;
+        }
+
+        $mapa_codigos = [];
+        $mapa_tutores = [];
+        $mapa_porcentajes = [];
+        foreach ($envios_raw as $item) {
+            $aid = (int)($item['alumno_id'] ?? 0);
+            $cod = trim((string)($item['codigo'] ?? ''));
+            if ($aid > 0 && $cod !== '') $mapa_codigos[$aid] = $cod;
+            if ($aid > 0 && !empty($item['tutor_ids']) && is_array($item['tutor_ids'])) {
+                $mapa_tutores[$aid] = array_map('intval', $item['tutor_ids']);
+            }
+            if ($aid > 0) {
+                $pct = (int)($item['porcentaje'] ?? 15);
+                $mapa_porcentajes[$aid] = max(1, min(100, $pct ?: 15));
+            }
+        }
+        if (empty($mapa_codigos)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Faltan códigos de cupón.']);
+            exit;
+        }
+
+        $ids = array_keys($mapa_codigos);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        $sql_re = "SELECT t.comprador_id, t.vendedor_id, t.servicio_id, s.categoria, a_comprador.nombre,
+                          LOWER(TRIM(a_comprador.correo)) AS correo " . sprintf($sql_base, "AND c.comprador_id IN ($placeholders)")
+                 . " ORDER BY t.comprador_id ASC, t.ultimo_mensaje_comprador DESC";
+        $stmt_re = $conn->prepare($sql_re);
+        $stmt_re->bind_param(str_repeat('i', count($ids)), ...$ids);
+        $stmt_re->execute();
+        $candidatos = $stmt_re->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt_re->close();
+
+        $usuarios = [];
+        foreach ($candidatos as $row) {
+            if (isset($usuarios[$row['comprador_id']])) continue;
+            $usuarios[$row['comprador_id']] = $row;
+        }
+
+        $stmt_ya = $conn->prepare("SELECT DISTINCT LOWER(TRIM(destinatario)) AS correo FROM correos_admin WHERE admin_nombre = ? AND exito = 1");
+        $stmt_ya->bind_param("s", $admin_nombre);
+        $stmt_ya->execute();
+        $ya_enviados = array_flip(array_column($stmt_ya->get_result()->fetch_all(MYSQLI_ASSOC), 'correo'));
+        $stmt_ya->close();
+
+        $admin_id = (int)$_SESSION['usuario_id'];
+        $stmt_log = $conn->prepare(
+            "INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito)
+             VALUES (?, ?, ?, ?, ?, ?)"
+        );
+
+        $enviados = 0; $fallidos = 0; $omitidos = 0;
+
+        foreach ($usuarios as $aid => $row) {
+            $correo = $row['correo'];
+            $codigo = $mapa_codigos[$aid] ?? null;
+
+            if (!$codigo || !filter_var($correo, FILTER_VALIDATE_EMAIL) || isset($ya_enviados[$correo])) {
+                $omitidos++;
+                continue;
+            }
+
+            $alternativas = [];
+            if (!empty($mapa_tutores[$aid])) {
+                $alternativas = obtener_tutores_por_ids($conn, $mapa_tutores[$aid], $row['categoria'], (int)$row['vendedor_id']);
+            }
+            if (empty($alternativas)) {
+                $alternativas = buscar_tutores_alternativos($conn, $row['categoria'], (int)$row['vendedor_id']);
+            }
+            if (empty($alternativas)) {
+                $omitidos++;
+                continue;
+            }
+
+            $primer_nombre = explode(' ', trim($row['nombre']))[0];
+            $porcentaje    = $mapa_porcentajes[$aid] ?? 15;
+            $asunto        = "Un {$porcentaje}% de descuento para tu próxima clase en Nubira";
+            $html          = generarHtmlEmailCuponAlternativas($primer_nombre, $row['categoria'], $alternativas, $codigo, $porcentaje);
+            $primera       = $alternativas[0];
+            $link_cupon    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera['id'] . "&codigo_beca=" . rawurlencode($codigo);
+            $html_full     = plantillaMaestra($asunto, $html, 'Usar mi descuento', $link_cupon, "Un {$porcentaje}% de descuento para tu próxima clase en Nubira.");
+            $exito         = _enviarEmailBase($correo, $asunto, $html_full, '', false);
+            $exito_int     = $exito ? 1 : 0;
+
+            $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
+            $stmt_log->execute();
+
+            if ($exito) $enviados++; else $fallidos++;
+            sleep(2);
+        }
+
+        $stmt_log->close();
+        $conn->close();
+
+        echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos]);
+        exit;
+
+    } else {
+
+        if (!in_array($segmento_post, ['no_registrados', 'dormidos'], true)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Segmento inválido.']);
+            exit;
+        }
+
+        $CONFIG_REACT = [
+            'no_registrados' => [
+                'admin_nombre' => 'reactivacion_noregistrados_jul2026',
+                'asunto'       => 'Aún no has probado Nubira — tienes un descuento esperando',
+                'intro'        => 'Vimos que creaste tu cuenta en Nubira, pero todavía no la has usado.',
+            ],
+            'dormidos' => [
+                'admin_nombre' => 'reactivacion_dormidos_jul2026',
+                'asunto'       => 'Hace tiempo no te vemos — un descuento para tu próxima clase',
+                'intro'        => 'Hace tiempo no te vemos activo en Nubira.',
+            ],
+        ];
+        $cfg_react = $CONFIG_REACT[$segmento_post];
+
+        $codigo_react = strtoupper(trim($_POST['codigo'] ?? ''));
+        if ($codigo_react === '') {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Falta el código de cupón.']);
+            exit;
+        }
+
+        $stmt_c = $conn->prepare("SELECT porcentaje_descuento, servicio_id FROM cupones WHERE codigo = ? LIMIT 1");
+        $stmt_c->bind_param('s', $codigo_react);
+        $stmt_c->execute();
+        $cupon_row = $stmt_c->get_result()->fetch_assoc();
+        $stmt_c->close();
+
+        if (!$cupon_row) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => "El código '$codigo_react' no existe. Créalo primero en /admin/cupones."]);
+            exit;
+        }
+        if (!empty($cupon_row['servicio_id'])) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Este código está restringido a un servicio específico — usa un código Global para esta campaña.']);
+            exit;
+        }
+        $porcentaje_react = (int)$cupon_row['porcentaje_descuento'];
+
+        $ids_react = array_values(array_unique(
+            array_filter(array_map('intval', $_POST['alumno_ids'] ?? []), fn($id) => $id > 0)
+        ));
+        if (empty($ids_react)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Sin destinatarios seleccionados.']);
+            exit;
+        }
+
+        $placeholders_react = implode(',', array_fill(0, count($ids_react), '?'));
+
+        if ($segmento_post === 'dormidos') {
+            $sql_criterio_react = "
+                EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id AND s.estado = 'aprobado')
+                AND (
+                      (SELECT MAX(h.fecha) FROM historial_actividad h WHERE h.usuario_id = a.id AND h.es_bot = 0) IS NULL
+                   OR (SELECT MAX(h.fecha) FROM historial_actividad h WHERE h.usuario_id = a.id AND h.es_bot = 0) < DATE_SUB(NOW(), INTERVAL 30 DAY)
+                )
+                AND LOWER(TRIM(a.correo)) NOT IN (
+                    SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+                    WHERE admin_nombre = 'reactivacion_dormidos_jul2026' AND exito = 1
+                )
+            ";
+        } else {
+            $sql_criterio_react = "
+                NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
+                AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
+                AND LOWER(TRIM(a.correo)) NOT IN (
+                    SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+                    WHERE admin_nombre IN ('reactivacion_noregistrados_jul2026','despertar_dormidos_jun2026','cupon_alternativas_jul2026')
+                      AND exito = 1
+                )
+            ";
+        }
+
+        $stmt_react = $conn->prepare("
+            SELECT a.id, a.nombre, LOWER(TRIM(a.correo)) AS correo
+            FROM alumnos a
+            WHERE a.id IN ($placeholders_react)
+              AND a.visible = 1 AND a.bloqueado = 0 AND a.confirmado = 1 AND a.recibir_emails = 1
+              AND $sql_criterio_react
+            ORDER BY a.id ASC
+        ");
+        $stmt_react->bind_param(str_repeat('i', count($ids_react)), ...$ids_react);
+        $stmt_react->execute();
+        $usuarios_react = $stmt_react->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt_react->close();
+
+        $admin_id = (int)$_SESSION['usuario_id'];
+        $stmt_log_react = $conn->prepare(
+            "INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito)
+             VALUES (?, ?, ?, ?, ?, ?)"
+        );
+
+        $enviados_react = 0; $fallidos_react = 0;
+
+        foreach ($usuarios_react as $row) {
+            $correo_react = $row['correo'];
+            $primer_nombre_react = explode(' ', trim($row['nombre']))[0];
+
+            if (!filter_var($correo_react, FILTER_VALIDATE_EMAIL)) {
+                logCampana('[REACTIVACION_' . strtoupper($segmento_post) . ' SKIP] correo inválido: ' . $correo_react);
+                continue;
+            }
+
+            $html_react      = generarHtmlEmailCuponReactivacion($primer_nombre_react, $porcentaje_react, $codigo_react, $cfg_react['intro']);
+            $html_full_react = plantillaMaestra($cfg_react['asunto'], $html_react, 'Buscar tutor o servicio', 'https://nubira.cl/explorar', "{$porcentaje_react}% de descuento en tu próxima clase.");
+            $exito_react     = _enviarEmailBase($correo_react, $cfg_react['asunto'], $html_full_react, '', false);
+            $exito_int_react = $exito_react ? 1 : 0;
+
+            $stmt_log_react->bind_param('issssi', $admin_id, $cfg_react['admin_nombre'], $correo_react, $cfg_react['asunto'], $html_react, $exito_int_react);
+            $stmt_log_react->execute();
+            logCampana('[REACTIVACION_' . strtoupper($segmento_post) . ' ' . ($exito_react ? 'OK' : 'FAIL') . '] ' . $correo_react . ' (' . $primer_nombre_react . ')');
+
+            if ($exito_react) $enviados_react++; else $fallidos_react++;
+            sleep(2);
+        }
+
+        $stmt_log_react->close();
+        $conn->close();
+
+        echo json_encode(['ok' => true, 'enviados' => $enviados_react, 'fallidos' => $fallidos_react]);
         exit;
     }
-
-    $mapa_codigos = [];
-    $mapa_tutores = [];
-    $mapa_porcentajes = [];
-    foreach ($envios_raw as $item) {
-        $aid = (int)($item['alumno_id'] ?? 0);
-        $cod = trim((string)($item['codigo'] ?? ''));
-        if ($aid > 0 && $cod !== '') $mapa_codigos[$aid] = $cod;
-        if ($aid > 0 && !empty($item['tutor_ids']) && is_array($item['tutor_ids'])) {
-            $mapa_tutores[$aid] = array_map('intval', $item['tutor_ids']);
-        }
-        if ($aid > 0) {
-            $pct = (int)($item['porcentaje'] ?? 15);
-            $mapa_porcentajes[$aid] = max(1, min(100, $pct ?: 15));
-        }
-    }
-    if (empty($mapa_codigos)) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Faltan códigos de cupón.']);
-        exit;
-    }
-
-    $ids = array_keys($mapa_codigos);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-
-    $sql_re = "SELECT t.comprador_id, t.vendedor_id, t.servicio_id, s.categoria, a_comprador.nombre,
-                      LOWER(TRIM(a_comprador.correo)) AS correo " . sprintf($sql_base, "AND c.comprador_id IN ($placeholders)")
-             . " ORDER BY t.comprador_id ASC, t.ultimo_mensaje_comprador DESC";
-    $stmt_re = $conn->prepare($sql_re);
-    $stmt_re->bind_param(str_repeat('i', count($ids)), ...$ids);
-    $stmt_re->execute();
-    $candidatos = $stmt_re->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt_re->close();
-
-    $usuarios = [];
-    foreach ($candidatos as $row) {
-        if (isset($usuarios[$row['comprador_id']])) continue;
-        $usuarios[$row['comprador_id']] = $row;
-    }
-
-    // Protección anti doble envío: excluir a quien ya recibió esta campaña con éxito
-    $stmt_ya = $conn->prepare("SELECT DISTINCT LOWER(TRIM(destinatario)) AS correo FROM correos_admin WHERE admin_nombre = ? AND exito = 1");
-    $stmt_ya->bind_param("s", $admin_nombre);
-    $stmt_ya->execute();
-    $ya_enviados = array_flip(array_column($stmt_ya->get_result()->fetch_all(MYSQLI_ASSOC), 'correo'));
-    $stmt_ya->close();
-
-    $admin_id = (int)$_SESSION['usuario_id'];
-    $stmt_log = $conn->prepare(
-        "INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito)
-         VALUES (?, ?, ?, ?, ?, ?)"
-    );
-
-    $enviados = 0; $fallidos = 0; $omitidos = 0;
-
-    foreach ($usuarios as $aid => $row) {
-        $correo = $row['correo'];
-        $codigo = $mapa_codigos[$aid] ?? null;
-
-        if (!$codigo || !filter_var($correo, FILTER_VALIDATE_EMAIL) || isset($ya_enviados[$correo])) {
-            $omitidos++;
-            continue;
-        }
-
-        $alternativas = [];
-        if (!empty($mapa_tutores[$aid])) {
-            $alternativas = obtener_tutores_por_ids($conn, $mapa_tutores[$aid], $row['categoria'], (int)$row['vendedor_id']);
-        }
-        if (empty($alternativas)) {
-            $alternativas = buscar_tutores_alternativos($conn, $row['categoria'], (int)$row['vendedor_id']);
-        }
-        if (empty($alternativas)) {
-            $omitidos++;
-            continue;
-        }
-
-        $primer_nombre = explode(' ', trim($row['nombre']))[0];
-        $porcentaje    = $mapa_porcentajes[$aid] ?? 15;
-        $asunto        = "Un {$porcentaje}% de descuento para tu próxima clase en Nubira";
-        $html          = generarHtmlEmailCuponAlternativas($primer_nombre, $row['categoria'], $alternativas, $codigo, $porcentaje);
-        $primera       = $alternativas[0];
-        $link_cupon    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera['id'] . "&codigo_beca=" . rawurlencode($codigo);
-        $html_full     = plantillaMaestra($asunto, $html, 'Usar mi descuento', $link_cupon, "Un {$porcentaje}% de descuento para tu próxima clase en Nubira.");
-        $exito         = _enviarEmailBase($correo, $asunto, $html_full, '', false);
-        $exito_int     = $exito ? 1 : 0;
-
-        $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
-        $stmt_log->execute();
-
-        if ($exito) $enviados++; else $fallidos++;
-        sleep(2);
-    }
-
-    $stmt_log->close();
-    $conn->close();
-
-    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos]);
-    exit;
 }
 
-// ── GET: preview de un correo real (por fila, con su código actual) ────
+// ── GET: preview de un correo real (por fila, con su código actual) ──── (SIN TOCAR, solo aplica a sin_respuesta)
 if (isset($_GET['preview'])) {
     $aid_preview    = (int)($_GET['alumno_id'] ?? 0);
     $codigo_preview = trim((string)($_GET['codigo'] ?? ''));
@@ -243,7 +339,7 @@ if (isset($_GET['preview'])) {
     exit;
 }
 
-// ── GET: listar candidatos de una categoría para elegir manualmente ────
+// ── GET: listar candidatos de una categoría para elegir manualmente ──── (SIN TOCAR, solo aplica a sin_respuesta)
 if (isset($_GET['listar_tutores'])) {
     header('Content-Type: application/json');
     $aid_lt = (int)($_GET['alumno_id'] ?? 0);
@@ -285,37 +381,135 @@ if (isset($_GET['listar_tutores'])) {
     exit;
 }
 
+// ── Segmento activo + conteos para pestañas ─────────────────────
+$segmento = $_GET['segmento'] ?? 'sin_respuesta';
+if (!in_array($segmento, ['sin_respuesta', 'no_registrados', 'dormidos'], true)) $segmento = 'sin_respuesta';
+
+$TABS = [
+    'sin_respuesta'  => 'Sin respuesta',
+    'dormidos'       => 'Dormidos',
+    'no_registrados' => 'No registrados',
+];
+
+$stmt_cnt = $conn->prepare("SELECT COUNT(DISTINCT t.comprador_id) AS total " . sprintf($sql_base, ""));
+$stmt_cnt->execute();
+$conteos = ['sin_respuesta' => (int)($stmt_cnt->get_result()->fetch_assoc()['total'] ?? 0)];
+$stmt_cnt->close();
+
+$r = $conn->query("
+    SELECT COUNT(*) AS total FROM alumnos a
+    WHERE a.visible = 1 AND a.bloqueado = 0 AND a.confirmado = 1 AND a.recibir_emails = 1
+      AND a.id != 1 AND a.correo NOT LIKE 'testpablo%'
+      AND EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id AND s.estado = 'aprobado')
+      AND (
+            (SELECT MAX(h.fecha) FROM historial_actividad h WHERE h.usuario_id = a.id AND h.es_bot = 0) IS NULL
+         OR (SELECT MAX(h.fecha) FROM historial_actividad h WHERE h.usuario_id = a.id AND h.es_bot = 0) < DATE_SUB(NOW(), INTERVAL 30 DAY)
+          )
+      AND LOWER(TRIM(a.correo)) NOT IN (
+          SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+          WHERE admin_nombre = 'reactivacion_dormidos_jul2026' AND exito = 1
+      )
+");
+$conteos['dormidos'] = (int)($r->fetch_assoc()['total'] ?? 0);
+
+$r = $conn->query("
+    SELECT COUNT(*) AS total FROM alumnos a
+    WHERE a.visible = 1 AND a.bloqueado = 0 AND a.confirmado = 1 AND a.recibir_emails = 1
+      AND a.id != 1 AND a.correo NOT LIKE 'testpablo%'
+      AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
+      AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
+      AND LOWER(TRIM(a.correo)) NOT IN (
+          SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+          WHERE admin_nombre IN ('reactivacion_noregistrados_jul2026','despertar_dormidos_jun2026','cupon_alternativas_jul2026')
+            AND exito = 1
+      )
+");
+$conteos['no_registrados'] = (int)($r->fetch_assoc()['total'] ?? 0);
+
 // ── GET: listado ──────────────────────────────────────────────
-$sql = "SELECT t.comprador_id, t.vendedor_id, t.servicio_id, t.ultimo_mensaje_comprador, s.categoria,
-               a_comprador.nombre, LOWER(TRIM(a_comprador.correo)) AS correo,
-               (SELECT MAX(ca.fecha_envio) FROM correos_admin ca
-                   WHERE LOWER(TRIM(ca.destinatario)) = LOWER(TRIM(a_comprador.correo))
-                     AND ca.admin_nombre = ? AND ca.exito = 1) AS fecha_enviado "
-        . sprintf($sql_base, "") . " ORDER BY t.comprador_id ASC, t.ultimo_mensaje_comprador DESC";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $admin_nombre);
-$stmt->execute();
-$todos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmt->close();
+if ($segmento === 'dormidos') {
 
-$filas = [];
-$vistos = [];
-foreach ($todos as $row) {
-    if (isset($vistos[$row['comprador_id']])) continue;
-    $vistos[$row['comprador_id']] = true;
-    $row['_estado'] = $row['fecha_enviado'] ? 'enviado' : 'pendiente';
-    $filas[] = $row;
+    $sql = "
+        SELECT a.id AS alumno_id, a.nombre, LOWER(TRIM(a.correo)) AS correo,
+               (SELECT MAX(h.fecha) FROM historial_actividad h WHERE h.usuario_id = a.id AND h.es_bot = 0) AS ultima_actividad
+        FROM alumnos a
+        WHERE a.visible = 1 AND a.bloqueado = 0 AND a.confirmado = 1 AND a.recibir_emails = 1
+          AND a.id != 1 AND a.correo NOT LIKE 'testpablo%'
+          AND EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id AND s.estado = 'aprobado')
+          AND (
+                (SELECT MAX(h.fecha) FROM historial_actividad h WHERE h.usuario_id = a.id AND h.es_bot = 0) IS NULL
+             OR (SELECT MAX(h.fecha) FROM historial_actividad h WHERE h.usuario_id = a.id AND h.es_bot = 0) < DATE_SUB(NOW(), INTERVAL 30 DAY)
+              )
+          AND LOWER(TRIM(a.correo)) NOT IN (
+              SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+              WHERE admin_nombre = 'reactivacion_dormidos_jul2026' AND exito = 1
+          )
+        ORDER BY a.id ASC
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $filas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    $conn->close();
+
+    $stats = ['total' => count($filas), 'enviados' => 0, 'pendientes' => count($filas)];
+
+} elseif ($segmento === 'no_registrados') {
+
+    $sql = "
+        SELECT a.id AS alumno_id, a.nombre, LOWER(TRIM(a.correo)) AS correo
+        FROM alumnos a
+        WHERE a.visible = 1 AND a.bloqueado = 0 AND a.confirmado = 1 AND a.recibir_emails = 1
+          AND a.id != 1 AND a.correo NOT LIKE 'testpablo%'
+          AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
+          AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
+          AND LOWER(TRIM(a.correo)) NOT IN (
+              SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+              WHERE admin_nombre IN ('reactivacion_noregistrados_jul2026','despertar_dormidos_jun2026','cupon_alternativas_jul2026')
+                AND exito = 1
+          )
+        ORDER BY a.id ASC
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $filas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    $conn->close();
+
+    $stats = ['total' => count($filas), 'enviados' => 0, 'pendientes' => count($filas)];
+
+} else {
+    $sql = "SELECT t.comprador_id, t.vendedor_id, t.servicio_id, t.ultimo_mensaje_comprador, s.categoria,
+                   a_comprador.nombre, LOWER(TRIM(a_comprador.correo)) AS correo,
+                   (SELECT MAX(ca.fecha_envio) FROM correos_admin ca
+                       WHERE LOWER(TRIM(ca.destinatario)) = LOWER(TRIM(a_comprador.correo))
+                         AND ca.admin_nombre = ? AND ca.exito = 1) AS fecha_enviado "
+            . sprintf($sql_base, "") . " ORDER BY t.comprador_id ASC, t.ultimo_mensaje_comprador DESC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $admin_nombre);
+    $stmt->execute();
+    $todos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $filas = [];
+    $vistos = [];
+    foreach ($todos as $row) {
+        if (isset($vistos[$row['comprador_id']])) continue;
+        $vistos[$row['comprador_id']] = true;
+        $row['_estado'] = $row['fecha_enviado'] ? 'enviado' : 'pendiente';
+        $filas[] = $row;
+    }
+    $conn->close();
+
+    $stats = ['total' => count($filas), 'enviados' => 0, 'pendientes' => 0];
+    foreach ($filas as $f) { $f['_estado'] === 'enviado' ? $stats['enviados']++ : $stats['pendientes']++; }
 }
-$conn->close();
-
-$stats = ['total' => count($filas), 'enviados' => 0, 'pendientes' => 0];
-foreach ($filas as $f) { $f['_estado'] === 'enviado' ? $stats['enviados']++ : $stats['pendientes']++; }
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Campaña: Cupón + Alternativas | Nubira Admin</title>
+  <title>Campaña: Cupón + Tutores Alternativos | Nubira Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -339,6 +533,40 @@ require_once __DIR__ . '/componentes/sidebar.php';
       <p class="text-sm text-gray-500 mt-0.5">Estudiantes sin respuesta en los últimos 30 días. Pega el código de cupón ya creado en /admin/cupones para cada uno.</p>
     </div>
 
+    <div class="flex flex-wrap gap-2">
+      <?php foreach ($TABS as $key => $label): ?>
+      <a href="?segmento=<?= $key ?>"
+         class="px-4 py-2 rounded-xl text-sm font-bold border transition flex items-center gap-1.5
+                <?= $segmento === $key
+                    ? 'bg-[#54A6D8] text-white border-[#54A6D8] shadow-sm'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#54A6D8] hover:text-[#54A6D8]' ?>">
+        <?= $label ?>
+        <span class="<?= $segmento === $key ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500' ?> text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          <?= $conteos[$key] ?>
+        </span>
+      </a>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if ($segmento !== 'sin_respuesta'): ?>
+    <p class="text-sm text-gray-500 -mt-2">
+      <?= $segmento === 'dormidos'
+          ? 'Tutores que publicaron un servicio pero llevan 30+ días sin actividad.'
+          : 'Usuarios registrados que nunca publicaron un servicio ni un apunte.' ?>
+      Un solo código de cupón para todo el lote.
+    </p>
+    <?php endif; ?>
+
+    <?php if ($segmento !== 'sin_respuesta'): ?>
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+        Código de cupón (ya creado en /admin/cupones para este segmento)
+      </label>
+      <input type="text" id="input-codigo" placeholder="REACTIVACION-<?= strtoupper($segmento) ?>-JUL26"
+             class="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-mono uppercase text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+    </div>
+    <?php endif; ?>
+
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total</p>
@@ -353,6 +581,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
         <p class="text-3xl font-extrabold text-gray-700"><?= $stats['pendientes'] ?></p>
       </div>
     </div>
+
+    <?php if ($segmento === 'sin_respuesta'): ?>
 
     <?php if (empty($filas)): ?>
     <div class="bg-white border border-dashed border-gray-200 rounded-2xl p-16 text-center">
@@ -429,8 +659,20 @@ require_once __DIR__ . '/componentes/sidebar.php';
     </div>
     <?php endif; ?>
 
+    <?php else: ?>
+
+    <?= nb_renderizar_tabla_candidatos_simple(
+        $filas,
+        $segmento === 'dormidos' ? 'Última actividad' : null,
+        $segmento === 'dormidos' ? 'ultima_actividad' : null
+    ) ?>
+
+    <?php endif; ?>
+
   </div>
 </main>
+
+<?php if ($segmento === 'sin_respuesta'): ?>
 
 <div id="action-bar"
      class="fixed bottom-0 left-0 right-0 lg:left-64 z-50 bg-white border-t border-gray-200 shadow-xl
@@ -481,12 +723,20 @@ require_once __DIR__ . '/componentes/sidebar.php';
   </div>
 </div>
 
-<?php
-require_once __DIR__ . '/componentes/nav_bottom.php';
-?>
+<?php else: ?>
+
+<?= nb_renderizar_action_bar_campana() ?>
+
+<?php endif; ?>
+
+<?php require_once __DIR__ . '/componentes/nav_bottom.php'; ?>
 
 <script>
 const CSRF_TOKEN = <?= json_encode($csrf_token) ?>;
+</script>
+
+<?php if ($segmento === 'sin_respuesta'): ?>
+<script>
 const MAX_LOTE = 10;
 
 const checkAll  = document.getElementById('check-all');
@@ -616,7 +866,6 @@ document.getElementById('modal-preview')?.addEventListener('click', e => {
   if (e.target.id === 'modal-preview') document.getElementById('modal-preview').classList.add('hidden');
 });
 
-// ── Selección manual de tutores (persiste en sessionStorage) ──────────
 const STORAGE_KEY = 'cupon_alt_tutores';
 let seleccionesTutores = {};
 try { seleccionesTutores = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}'); } catch { seleccionesTutores = {}; }
@@ -682,5 +931,28 @@ document.getElementById('modal-tutores')?.addEventListener('click', e => {
   if (e.target.id === 'modal-tutores') document.getElementById('modal-tutores').classList.add('hidden');
 });
 </script>
+
+<?php else: ?>
+
+<?php require_once __DIR__ . '/helpers/campanas_envio_ui.php'; ?>
+<script>
+const SEGMENTO_ACTUAL = <?= json_encode($segmento) ?>;
+
+initSeleccionMasiva();
+enviarCampanaMasiva({
+    endpoint: window.location.pathname,
+    csrfToken: CSRF_TOKEN,
+    campoIds: 'alumno_ids[]',
+    getSeleccionados: () => document.querySelectorAll('.row-check:checked'),
+    nounSingular: 'usuario', nounPlural: 'usuarios',
+    extraCampos: () => ({
+        segmento: SEGMENTO_ACTUAL,
+        codigo: document.getElementById('input-codigo').value.trim(),
+    }),
+});
+</script>
+
+<?php endif; ?>
+
 </body>
 </html>
