@@ -218,3 +218,33 @@ function nb_bloque_cupon_html(string $codigo, int $porcentaje, ?string $fecha_ex
         <p style='margin:8px 0 0 0; font-size:12px; color:#555;'>{$porcentaje}% de descuento en tu próxima clase. {$vigencia}</p>
     </div>";
 }
+
+function nb_generar_email_cupon_promocional(string $primer_nombre, string $codigo, int $porcentaje, ?string $fecha_expiracion, string $intro): string {
+    $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
+    $bloqueCupon = nb_bloque_cupon_html($codigo, $porcentaje, $fecha_expiracion);
+    return "
+<p>Hola <strong>{$nombre_safe}</strong>,</p>
+<p>{$intro}</p>
+{$bloqueCupon}
+<p style=\"text-align:center; margin:32px 0;\">
+  <a href=\"https://nubira.cl/explorar\"
+     style=\"background:#54A6D8;color:white;padding:13px 28px;
+            text-decoration:none;border-radius:8px;font-weight:bold;
+            font-size:16px;display:inline-block;\">
+    Buscar tutor o servicio
+  </a>
+</p>
+<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
+<p style=\"text-align:center;margin-top:26px;margin-bottom:6px;font-size:13px;color:#555;\">
+  Síguenos en redes sociales:
+</p>
+<p style=\"text-align:center;margin-bottom:24px;\">
+  <a href=\"https://instagram.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
+    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+  </a>
+  <a href=\"https://facebook.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
+    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+  </a>
+</p>
+";
+}

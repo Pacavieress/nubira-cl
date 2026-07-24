@@ -8,7 +8,7 @@
  */
 
 // ── Función compartida (CLI + web) ────────────────────────────
-function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $bloqueCuponHtml = ''): string {
+function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
     $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     return "
 <p>Hola <strong>{$nombre_safe}</strong>,</p>
@@ -35,7 +35,7 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $bloque
     Buscar tutor o servicio
   </a>
 </p>
-{$bloqueCuponHtml}
+
 <p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
 
 <p style=\"text-align:center;margin-top:26px;margin-bottom:6px;font-size:13px;color:#555;\">
@@ -221,13 +221,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
-        $bloqueCupon = $cupon_info ? nb_bloque_cupon_html($codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion']) : '';
-        $html      = generarHtmlEmailDespertarDormidos($primer_nombre, $bloqueCupon);
-        $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
-        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', false);
+        if ($cupon_info) {
+            $asunto_final = "Un {$cupon_info['porcentaje']}% de descuento para tu próxima clase en Nubira";
+            $html         = nb_generar_email_cupon_promocional(
+                $primer_nombre, $codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion'],
+                'Hace un tiempo te registraste en Nubira. Te dejamos un cupón para volver:'
+            );
+        } else {
+            $asunto_final = $asunto;
+            $html         = generarHtmlEmailDespertarDormidos($primer_nombre);
+        }
+        $html_full = plantillaMaestra($asunto_final, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
+        $exito     = _enviarEmailBase($correo, $asunto_final, $html_full, '', false);
         $exito_int = $exito ? 1 : 0;
 
-        $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
+        $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto_final, $html, $exito_int);
         $stmt_log->execute();
         logCampana('[DESPERTAR_DORMIDOS ' . ($exito ? 'OK' : 'FAIL') . '] ' . $correo . ' (' . $primer_nombre . ')');
 
@@ -251,8 +259,7 @@ if (isset($_GET['consultar_cupon'])) {
 
 // ── GET: preview del correo, con o sin cupón según el código dado ────
 if (isset($_GET['preview_cupon'])) {
-    $codigo_pv      = strtoupper(trim((string)($_GET['codigo'] ?? '')));
-    $bloqueCupon_pv = '';
+    $codigo_pv = strtoupper(trim((string)($_GET['codigo'] ?? '')));
 
     if ($codigo_pv !== '') {
         $cupon_pv = nb_consultar_cupon_global($conn, $codigo_pv);
@@ -260,11 +267,17 @@ if (isset($_GET['preview_cupon'])) {
             echo '<p style="font-family:sans-serif;padding:20px;color:#999;">' . htmlspecialchars($cupon_pv['error'], ENT_QUOTES, 'UTF-8') . '</p>';
             exit;
         }
-        $bloqueCupon_pv = nb_bloque_cupon_html($codigo_pv, $cupon_pv['porcentaje'], $cupon_pv['fecha_expiracion']);
+        $asunto_pv = "Un {$cupon_pv['porcentaje']}% de descuento para tu próxima clase en Nubira";
+        $html_pv   = nb_generar_email_cupon_promocional(
+            'Estudiante', $codigo_pv, $cupon_pv['porcentaje'], $cupon_pv['fecha_expiracion'],
+            'Hace un tiempo te registraste en Nubira. Te dejamos un cupón para volver:'
+        );
+    } else {
+        $asunto_pv = $asunto;
+        $html_pv   = generarHtmlEmailDespertarDormidos('Estudiante');
     }
 
-    $html_pv = generarHtmlEmailDespertarDormidos('Estudiante', $bloqueCupon_pv);
-    echo plantillaMaestra($asunto, $html_pv, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
+    echo plantillaMaestra($asunto_pv, $html_pv, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
     exit;
 }
 
