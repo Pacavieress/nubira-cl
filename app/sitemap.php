@@ -75,17 +75,42 @@ while ($r && $row = $r->fetch_assoc()) {
                  w3c($row['fecha_subida']), 'weekly', '0.7');
 }
 
-// E. Landings de categoría (clases) — solo las que tienen >=3 servicios públicos
+// E. Landings de categoría (clases) — solo las marcadas indexable=1 en
+// seo_categorias_contenido (allowlist de negocio) Y con >=3 servicios públicos.
+// El conteo respeta filtro_titulo (LIKE) cuando está definido, igual que
+// landing_categoria.php — sin esto, categorías sintéticas por título
+// (Cálculo, Inglés, Tesis) siempre darían 0 por no tener servicios.categoria
+// exacta igual al nombre de la categoría.
+$where_base = "TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
+                 AND s.visible = 1
+                 AND COALESCE(a.visible, 1) = 1
+                 AND a.bloqueado = 0";
 foreach (nubira_categorias_seo() as $slug => $nombre) {
-    $st = $conn->prepare("SELECT COUNT(*) n FROM servicios s
-                          JOIN alumnos a ON a.id = s.alumno_id
-                          WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
-                            AND s.visible = 1
-                            AND COALESCE(a.visible, 1) = 1
-                            AND a.bloqueado = 0
-                            AND s.categoria = ?");
-    if (!$st) continue;
-    $st->bind_param("s", $nombre);
+    $stc = $conn->prepare("SELECT filtro_titulo, indexable FROM seo_categorias_contenido
+                           WHERE categoria = ? AND tipo IN ('clases', 'ambos')
+                           ORDER BY (tipo = 'ambos') ASC
+                           LIMIT 1");
+    if (!$stc) continue;
+    $stc->bind_param("s", $nombre);
+    $stc->execute();
+    $cfg = $stc->get_result()->fetch_assoc();
+    $stc->close();
+    if (!$cfg || !$cfg['indexable']) continue;
+
+    $filtro_like = $cfg['filtro_titulo'] ?: null;
+    if ($filtro_like) {
+        $st = $conn->prepare("SELECT COUNT(*) n FROM servicios s
+                              JOIN alumnos a ON a.id = s.alumno_id
+                              WHERE $where_base AND s.titulo LIKE ?");
+        if (!$st) continue;
+        $st->bind_param("s", $filtro_like);
+    } else {
+        $st = $conn->prepare("SELECT COUNT(*) n FROM servicios s
+                              JOIN alumnos a ON a.id = s.alumno_id
+                              WHERE $where_base AND s.categoria = ?");
+        if (!$st) continue;
+        $st->bind_param("s", $nombre);
+    }
     $st->execute();
     $n = (int)($st->get_result()->fetch_assoc()['n']);
     $st->close();

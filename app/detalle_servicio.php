@@ -295,6 +295,27 @@ $token_seguro = nubira_encriptar_id($id);
 $url_servicio_masked = $base_url . "/detalle-servicio/" . $token_seguro;
 $url_canonical = $base_url . url_servicio($id, $servicio['slug'] ?? null);
 
+// [SEO Fase 2] Link interno a la landing de categoría — solo si esa categoría
+// está en el allowlist indexable=1 (mismo criterio opt-in de landing_categoria.php
+// y sitemap.php). Sin esto, enlazaríamos a páginas en noindex o inexistentes.
+$link_categoria_slug = null;
+if (!empty($servicio['categoria'])) {
+    $st_cat = $conn->prepare("SELECT indexable FROM seo_categorias_contenido
+                              WHERE categoria = ? AND tipo IN ('clases', 'ambos')
+                              ORDER BY (tipo = 'ambos') ASC
+                              LIMIT 1");
+    if ($st_cat) {
+        $st_cat->bind_param("s", $servicio['categoria']);
+        $st_cat->execute();
+        $row_cat = $st_cat->get_result()->fetch_assoc();
+        $st_cat->close();
+        if ($row_cat && $row_cat['indexable']) {
+            $slug_por_categoria = array_flip(nubira_categorias_seo());
+            $link_categoria_slug = $slug_por_categoria[$servicio['categoria']] ?? null;
+        }
+    }
+}
+
 $og_image = $default_image; 
 $web_src = $default_image;
 $og_mime = "image/webp"; 
@@ -601,6 +622,16 @@ session_write_close();
                     }
                     </script>
                     <?php endif; ?>
+
+<?php if ($link_categoria_slug): ?>
+<div class="mt-6 pt-6 border-t border-gray-50">
+    <a href="/clases/<?= htmlspecialchars($link_categoria_slug) ?>"
+       class="inline-flex items-center gap-1.5 text-sm font-bold text-[#54A6D8] hover:underline">
+        Ver más clases de <?= htmlspecialchars($servicio['categoria']) ?>
+        <i class="fa-solid fa-arrow-right text-xs"></i>
+    </a>
+</div>
+<?php endif; ?>
 
 <?php if (!empty($servicio['video_path']) && $servicio['video_estado'] === 'aprobado'): ?>
 <div class="mt-6 pt-6 border-t border-gray-50">

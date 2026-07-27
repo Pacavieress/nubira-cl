@@ -24,8 +24,9 @@ $categoria = $MAPA[$slug];
 
 // 2. CONTENIDO SEO — se lee PRIMERO para obtener filtro_titulo antes del query principal
 $titulo_h1 = $parrafo_intro = $meta_desc_db = $filtro_like = null;
+$indexable = false; // opt-in: sin fila en seo_categorias_contenido, la categoría no se indexa.
 try {
-    $st = $conn->prepare("SELECT titulo_h1, parrafo_intro, meta_description, filtro_titulo
+    $st = $conn->prepare("SELECT titulo_h1, parrafo_intro, meta_description, filtro_titulo, indexable
                           FROM seo_categorias_contenido
                           WHERE categoria = ? AND tipo IN (?, 'ambos')
                           ORDER BY (tipo = 'ambos') ASC
@@ -40,10 +41,11 @@ try {
             $parrafo_intro = $rc['parrafo_intro'] ?: null;
             $meta_desc_db  = $rc['meta_description'] ?: null;
             $filtro_like   = $rc['filtro_titulo']  ?: null;
+            $indexable     = (bool)$rc['indexable'];
         }
     }
 } catch (Throwable $e) {
-    // Tabla o columna aún no migrada → filtro_like=null usa categoria exacta.
+    // Tabla o columna aún no migrada → indexable=false, mismo criterio opt-in.
 }
 
 // 3. CONSULTA PÚBLICA POR CATEGORÍA (o por título LIKE si filtro_like está definido)
@@ -117,7 +119,7 @@ $res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) { $filas[] = $row; }
 $stmt->close();
 $total = count($filas);
-$noindex = ($total < 3);
+$noindex = ($total < 3 || !$indexable);
 
 // 4. METADATA (defaults si no hay override en BD)
 $tipo_palabra  = ($tipo === 'clases') ? 'Clases' : 'Apuntes';
