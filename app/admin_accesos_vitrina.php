@@ -450,13 +450,13 @@ if (file_exists($sidebar_path)) include $sidebar_path;
         <div class="flex items-center gap-4 bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm">
             <div class="flex items-center gap-2 px-3 py-1">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">En Vivo</span>
-                <div class="relative inline-block w-9 mr-1 align-middle select-none transition duration-200 ease-in">
+                <div class="relative inline-block w-9 mr-1 align-middle select-none transition duration-200 ease-out">
                     <input type="checkbox" name="toggle" id="live-toggle" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-[3px] appearance-none cursor-pointer border-gray-300 top-0.5 left-0.5"/>
                     <label for="live-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-200 cursor-pointer"></label>
                 </div>
             </div>
             <div class="h-6 w-px bg-gray-200"></div>
-            <a href="?exportar=1" class="text-gray-500 active:text-emerald-600 active:bg-emerald-50 transition-colors text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 px-4 py-2 rounded-xl">
+            <a href="?exportar=1" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 px-4 py-2 rounded-xl">
                 <i class="fa-solid fa-cloud-arrow-down"></i> Exportar
             </a>
         </div>
@@ -465,16 +465,16 @@ if (file_exists($sidebar_path)) include $sidebar_path;
 
     <?php if ($ver_usuario_id === null): ?>
     <div class="flex gap-4 md:gap-6 mb-6 border-b border-gray-100 overflow-x-auto custom-scrollbar bg-gray-50 sticky top-[104px] md:top-[90px] z-20">
-        <a href="?tab=trafico" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-colors <?= $tab_activa === 'trafico' ? 'border-[#54A6D8] text-[#54A6D8]' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
+        <a href="?tab=trafico" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wide whitespace-nowrap transition-colors <?= $tab_activa === 'trafico' ? 'border-[#54A6D8] text-[#54A6D8]' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
             <i class="fa-solid fa-users-viewfinder mr-1.5"></i> Tráfico Real
         </a>
-        <a href="?tab=bots" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-colors <?= $tab_activa === 'bots' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
+        <a href="?tab=bots" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wide whitespace-nowrap transition-colors <?= $tab_activa === 'bots' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
             <i class="fa-solid fa-robot mr-1.5"></i> Bots / Crawlers
         </a>
-        <a href="?tab=paginas" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-colors <?= $tab_activa === 'paginas' ? 'border-[#54A6D8] text-[#54A6D8]' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
+        <a href="?tab=paginas" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wide whitespace-nowrap transition-colors <?= $tab_activa === 'paginas' ? 'border-[#54A6D8] text-[#54A6D8]' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
             <i class="fa-solid fa-chart-bar mr-1.5"></i> Top Páginas
         </a>
-        <a href="?tab=fallidas" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-colors <?= $tab_activa === 'fallidas' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
+        <a href="?tab=fallidas" class="pb-3 px-1 border-b-2 font-bold text-xs uppercase tracking-wide whitespace-nowrap transition-colors <?= $tab_activa === 'fallidas' ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
             <i class="fa-solid fa-search-minus mr-1.5"></i> Búsquedas Fallidas
         </a>
     </div>
@@ -484,7 +484,7 @@ if (file_exists($sidebar_path)) include $sidebar_path;
         <!-- ===== VISTA DETALLE USUARIO ===== -->
         <div class="mb-6 animate-fade-in-up">
             <div class="flex items-center justify-between mb-4">
-                <a href="?tab=trafico" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-[#54A6D8] transition-colors"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+                <a href="?tab=trafico" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-400 hover:text-[#54A6D8] transition-colors"><i class="fa-solid fa-arrow-left"></i> Volver</a>
                 <a href="?exportar=1&uid=<?= $ver_usuario_id ?><?= $filtro_ip ? '&ip='.urlencode($filtro_ip) : '' ?>" class="text-white bg-[#54A6D8] hover:bg-sky-500 transition-colors text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-sm">
                     <i class="fa-solid fa-cloud-arrow-down"></i> Exportar Registro
                 </a>
@@ -576,7 +576,7 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                     <div class="bg-gray-50 rounded-xl p-4">
                         <div class="flex items-center gap-1.5 mb-3">
                             <i class="<?= $ref_data['icon'] ?> text-[10px] <?= $ref_data['color_text'] ?>"></i>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Origen</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Origen</span>
                         </div>
                         <p class="text-sm font-bold text-gray-800"><?= htmlspecialchars($ref_data['label']) ?></p>
                         <?php if (!empty($primer_referrer)): ?>
@@ -594,7 +594,7 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                     <div class="bg-gray-50 rounded-xl p-4">
                         <div class="flex items-center gap-1.5 mb-3">
                             <i class="fa-solid fa-chart-line text-[10px] text-[#54A6D8]"></i>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Comportamiento</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Comportamiento</span>
                         </div>
                         <div class="space-y-2">
                             <div class="flex justify-between items-center">
@@ -616,7 +616,7 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                     <div class="bg-gray-50 rounded-xl p-4">
                         <div class="flex items-center gap-1.5 mb-3">
                             <i class="fa-solid fa-handshake text-[10px] text-purple-500"></i>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Conversión</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Conversión</span>
                         </div>
                         <?php if ($is_guest): ?>
                             <p class="text-[10px] text-gray-400 mt-1">No aplica para visitantes</p>
@@ -654,7 +654,7 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                     <div class="bg-gray-50 rounded-xl p-4">
                         <div class="flex items-center gap-1.5 mb-3">
                             <i class="<?= $dispositivo['icon'] ?> text-[10px] text-amber-500"></i>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Dispositivo</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dispositivo</span>
                         </div>
                         <p class="text-sm font-bold text-gray-800 mb-3"><?= htmlspecialchars($dispositivo['label']) ?></p>
                         <?php if ($stats['min_f']): ?>
@@ -956,10 +956,10 @@ if (file_exists($sidebar_path)) include $sidebar_path;
     <?php else: ?>
         <!-- ===== TAB TRÁFICO REAL ===== -->
         <div class="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-4 mb-2 animate-fade-in-up" id="filtros-monitor">
-            <button data-filter="todos" class="filter-btn bg-gray-900 text-white border-gray-900 border rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-transform hover:scale-[1.02]">Todos</button>
-            <button data-filter="alumnos" class="filter-btn bg-white text-gray-600 border-gray-200 border hover:border-gray-300 rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all shadow-sm hover:shadow-md">🙋‍♂️ Alumnos</button>
-            <button data-filter="invitados" class="filter-btn bg-white text-gray-600 border-gray-200 border hover:border-gray-300 rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all shadow-sm hover:shadow-md">🕵️ Invitados</button>
-            <button data-filter="online" class="filter-btn bg-emerald-50 text-emerald-700 border-emerald-200 border hover:border-emerald-300 rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all shadow-sm hover:shadow-md flex items-center gap-1.5">
+            <button data-filter="todos" class="filter-btn bg-gray-900 text-white border-gray-900 border rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-[transform,box-shadow] duration-150 ease-out shadow-sm hover:shadow-md hover:scale-[1.02]">Todos</button>
+            <button data-filter="alumnos" class="filter-btn bg-white text-gray-600 border-gray-200 border hover:border-gray-300 rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-[transform,box-shadow] duration-150 ease-out shadow-sm hover:shadow-md hover:scale-[1.02]">🙋‍♂️ Alumnos</button>
+            <button data-filter="invitados" class="filter-btn bg-white text-gray-600 border-gray-200 border hover:border-gray-300 rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-[transform,box-shadow] duration-150 ease-out shadow-sm hover:shadow-md hover:scale-[1.02]">🕵️ Invitados</button>
+            <button data-filter="online" class="filter-btn bg-emerald-50 text-emerald-700 border-emerald-200 border hover:border-emerald-300 rounded-full px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-[transform,box-shadow] duration-150 ease-out shadow-sm hover:shadow-md hover:scale-[1.02] flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online Ahora
             </button>
             <?php if (isset($contadores)): ?>
@@ -1011,7 +1011,7 @@ if (file_exists($sidebar_path)) include $sidebar_path;
                    data-tipo="<?= $tipo_usuario ?>"
                    data-online="<?= $is_online ?>"
                    data-region="pendiente"
-                   class="monitor-card block rounded-2xl p-5 border <?= $card_bg ?> transition-all hover:shadow-md shadow-sm hover:scale-[1.01] relative flex flex-col h-full group bg-white cursor-pointer">
+                   class="monitor-card block rounded-2xl p-5 border <?= $card_bg ?> transition-[transform,box-shadow] duration-150 ease-out hover:shadow-md shadow-sm hover:scale-[1.01] relative flex flex-col h-full group bg-white cursor-pointer">
                     <div class="flex items-start gap-4 mb-4">
                         <?php if ($tiene_perfil_real): ?>
                         <a href="<?= $url_perfil ?>" target="_blank" onclick="event.stopPropagation()" class="w-12 h-12 rounded-xl <?= $es_invitado ? 'bg-gray-200 text-gray-500' : 'bg-gray-100 text-gray-400' ?> relative flex items-center justify-center border border-transparent group-hover:border-[#54A6D8] transition-colors shrink-0 mt-1 avatar-container">
