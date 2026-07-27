@@ -29,9 +29,9 @@ function obtenerInstitucionUsuario(): ?string {
  */
 function actualizar_score_servicio(mysqli $conn, int $id_servicio): bool {
     // 1. Obtener datos actuales del servicio y del tutor
-    $sql = "SELECT s.id, a.foto_perfil, a.bio, s.descripcion, s.alumno_id 
-            FROM servicios s 
-            INNER JOIN alumnos a ON s.alumno_id = a.id 
+    $sql = "SELECT s.id, a.foto_perfil, a.bio, s.descripcion, s.alumno_id, s.video_estado
+            FROM servicios s
+            INNER JOIN alumnos a ON s.alumno_id = a.id
             WHERE s.id = ?";
             
     $stmt = $conn->prepare($sql);
@@ -102,6 +102,11 @@ function actualizar_score_servicio(mysqli $conn, int $id_servicio): bool {
             $score += 20;
         }
         $check_val->close();
+    }
+
+    // [+20 pts] ESTRICTO: Video de presentación aprobado
+    if (($row['video_estado'] ?? '') === 'aprobado') {
+        $score += 20;
     }
 
     // 3. Persistir el score final en la base de datos
