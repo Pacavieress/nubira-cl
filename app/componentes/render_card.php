@@ -132,6 +132,7 @@ if ($tipo === 'servicio') {
 
     <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
         <img src="<?= $img ?>"
+             alt="<?= $titulo ?>"
              class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
              loading="lazy" decoding="async" width="240" height="180">
 

@@ -173,6 +173,18 @@ $faqs = $FAQS_POR_CATEGORIA[$categoria] ?? [];
            . json_encode($faq_ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
            . '</script>' . "\n  ";
     }
+    $breadcrumb_ld = [
+        '@context'        => 'https://schema.org',
+        '@type'           => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Inicio', 'item' => 'https://nubira.cl/explorar'],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $tipo_palabra, 'item' => 'https://nubira.cl/servicios'],
+            ['@type' => 'ListItem', 'position' => 3, 'name' => $categoria],
+        ],
+    ];
+    echo '<script type="application/ld+json">'
+       . json_encode($breadcrumb_ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+       . '</script>' . "\n  ";
   ?>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">

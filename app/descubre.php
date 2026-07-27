@@ -83,7 +83,7 @@ $_SESSION['csrf_descubre'] = $csrf;
         <button type="button" id="openSidebar" class="p-3 bg-white rounded-full shadow-lg mr-2">
           <i class="fa-solid fa-bars text-blue-700"></i>
         </button>
-        <span class="text-2xl font-extrabold text-blue-700 ml-1 mr-6">Descubre</span>
+        <h1 class="text-2xl font-extrabold text-blue-700 ml-1 mr-6">Descubre</h1>
 
         <div class="flex flex-wrap gap-2 sm:gap-4 items-center ml-auto">
           <input type="hidden" name="csrf" value="<?php echo htmlspecialchars($csrf); ?>">

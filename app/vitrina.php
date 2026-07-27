@@ -794,10 +794,12 @@ require_once __DIR__ . '/componentes/header.php';
 ?>
     <?php require_once __DIR__ . '/componentes/sidebar.php'; ?>
 
-<main data-track-id="home" data-track-type="vitrina" 
+<main data-track-id="home" data-track-type="vitrina"
       class="pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full mx-auto block">
-    
-    
+    <div class="px-4 md:px-10 max-w-[1600px] mx-auto pt-1 pb-2">
+      <h1 class="text-sm md:text-base font-semibold text-gray-400 tracking-tight">Tutores, apuntes y clases particulares universitarias en Chile</h1>
+    </div>
+
 <?php if (!$is_guest): ?>
     <section id="sec-recientes-wrapper" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500 delay-100">
       <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">

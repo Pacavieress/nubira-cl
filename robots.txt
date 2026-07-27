@@ -3,4 +3,5 @@ Allow: /
 Disallow: /admin
 Disallow: /bandeja-entrada
 Disallow: /mini-aula
+Disallow: /app/*.php
 Sitemap: https://nubira.cl/sitemap.xml

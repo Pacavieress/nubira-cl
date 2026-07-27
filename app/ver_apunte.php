@@ -668,9 +668,9 @@ require_once $base_path . '/componentes/sidebar.php';
                         <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3 inline-block border border-gray-200">
                             Asignatura: <?= htmlspecialchars($apunte['asignatura'] ?? 'Apunte') ?>
                         </span>
-                        <h1 class="text-2xl font-bold text-gray-900 leading-tight"><?= $titulo ?></h1>
+                        <p class="text-2xl font-bold text-gray-900 leading-tight"><?= $titulo ?></p>
                     </div>
-                    
+
                     <div class="flex items-end justify-between mb-6">
                         <div>
                             <p class="text-xs text-gray-400 font-bold uppercase mb-1">Precio</p>
