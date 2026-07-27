@@ -6,7 +6,7 @@
         
         <h3 class="font-bold text-lg mb-4 text-center text-gray-900 tracking-tight">Explorar Nubira</h3>
         
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-2">
             
             <a href="/vitrina-apuntes" class="relative flex flex-col items-center justify-center p-3 bg-gray-50 rounded-[1.25rem] transition-all duration-150 active:scale-95 active:bg-orange-50 active:border-orange-100 text-center h-28 border border-gray-100 outline-none">
                 
