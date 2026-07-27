@@ -34,6 +34,49 @@ if (!function_exists('nubira_canonical')) {
              . '<meta property="og:description" content="' . $d . '" />';
     }
 
+    /**
+     * JSON-LD FAQPage. $faqs: array de ['q'=>..., 'a'=>...]. '' si viene vacío
+     * (el caller decide si omitir el <script> por completo o no).
+     * Extraído de landing_categoria.php (Fase 1 Centro de Recursos) — mismo
+     * output exacto, sin cambio de comportamiento.
+     */
+    function nubira_faq_ld(array $faqs): string {
+        if (empty($faqs)) return '';
+        $ld = [
+            '@context'   => 'https://schema.org',
+            '@type'      => 'FAQPage',
+            'mainEntity' => array_map(fn($f) => [
+                '@type'          => 'Question',
+                'name'           => $f['q'],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']],
+            ], $faqs),
+        ];
+        return '<script type="application/ld+json">'
+             . json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+             . '</script>';
+    }
+
+    /**
+     * JSON-LD BreadcrumbList. $items: array de ['name'=>..., 'item'=>url opcional]
+     * en orden — el último item normalmente sin 'item' (página actual, sin URL).
+     * Extraído de landing_categoria.php (Fase 1 Centro de Recursos) — mismo
+     * output exacto, sin cambio de comportamiento.
+     */
+    function nubira_breadcrumb_ld(array $items): string {
+        $ld = [
+            '@context'        => 'https://schema.org',
+            '@type'           => 'BreadcrumbList',
+            'itemListElement' => array_values(array_map(function ($it, $i) {
+                $entry = ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $it['name']];
+                if (!empty($it['item'])) $entry['item'] = $it['item'];
+                return $entry;
+            }, $items, array_keys($items))),
+        ];
+        return '<script type="application/ld+json">'
+             . json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+             . '</script>';
+    }
+
     /** Mapa slug => nombre canónico de categoría para landings SEO (sin "Otros"). */
     function nubira_categorias_seo(): array {
         return [

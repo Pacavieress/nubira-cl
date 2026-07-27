@@ -157,6 +157,11 @@ RewriteRule ^servicios/?$                  app/clases_servicios.php          [L,
 RewriteRule ^clases/([a-z]+)/?$            app/landing_categoria.php?tipo=clases&cat=$1   [L,QSA]
 RewriteRule ^apuntes/([a-z]+)/?$           app/landing_categoria.php?tipo=apuntes&cat=$1  [L,QSA]
 
+# === CENTRO DE RECURSOS (Guías Nubira) ===
+RewriteRule ^guias/?$                                app/guias.php                          [L,QSA]
+RewriteRule ^guias/([a-z0-9\-]+)/?$                  app/guias.php?cat=$1                   [L,QSA]
+RewriteRule ^guias/([a-z0-9\-]+)/([a-z0-9\-]+)/?$    app/guia_post.php?cat=$1&slug=$2       [L,QSA]
+
 # (Redirecciones SEO por si alguien usa los links viejos)
 RewriteRule ^explorar-clases-servicos/?$   /servicios                        [R=301,L]
 RewriteRule ^clases-servicios/?$           /servicios                        [R=301,L]
@@ -237,6 +242,7 @@ RewriteRule ^admin/acciones-apunte$   app/acciones_apunte.php           [L,QSA]
 RewriteRule ^admin/videos$            app/admin_videos.php              [L,QSA]
 RewriteRule ^admin/retiros$           app/admin_retiros.php             [L,QSA]
 RewriteRule ^admin/pagos$             app/admin_pagos.php               [L,QSA]
+RewriteRule ^admin/guias$             app/admin_guias.php               [L,QSA]
 RewriteRule ^admin/cuentas-bancarias$ app/admin_cuentas.php              [L,QSA]
 RewriteRule ^admin/agregar-banco$     app/agregar_banco.php             [L,QSA]
 RewriteRule ^admin/editar-datos-bancarios$ app/editar_datos_bancarios.php [L,QSA]
