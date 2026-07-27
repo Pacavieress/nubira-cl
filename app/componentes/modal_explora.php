@@ -34,7 +34,7 @@
                     </svg>
                 </div>
 
-                <span class="block font-bold text-gray-700 text-sm leading-tight">Ver Guías</span>
+                <span class="block font-bold text-gray-700 text-sm leading-tight">Ver Recursos</span>
             </a>
 
         </div>
