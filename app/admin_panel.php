@@ -73,6 +73,7 @@ $es_admin = ($_SESSION['rol'] === 'admin');
       <li><a href="/admin/servicios" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Aprobar Servicios</a></li>
       <li><a href="/admin/oportunidades" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Aprobar Oportunidades</a></li>
       <li><a href="/admin/empleos" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Aprobar Empleos</a></li>
+      <li><a href="/admin/guias" class="block pl-2 py-1 text-blue-700 font-medium hover:underline">Centro de Recursos (Guías)</a></li>
     </ul>
   </li>
       <!-- Finanzas y Operaciones -->
