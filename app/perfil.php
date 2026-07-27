@@ -664,10 +664,12 @@ require_once __DIR__ . '/componentes/sidebar.php';
                 $tiene_desc_larga = false;
                 $tiene_resena = ($v_qty >= 3);
                 $tiene_bio_larga = (mb_strlen(trim($bio_actual)) >= 60);
+                $tiene_video = false;
 
                 foreach ($publicaciones as $pub) {
                     if (($pub['tipo_pub'] ?? '') === 'apunte') $tiene_apunte = true;
                     if (($pub['tipo_pub'] ?? '') === 'servicio' && !empty($pub['descripcion']) && mb_strlen(trim($pub['descripcion'])) >= 300) $tiene_desc_larga = true;
+                    if (($pub['tipo_pub'] ?? '') === 'servicio' && ($pub['video_estado'] ?? '') === 'aprobado') $tiene_video = true;
                 }
             ?>
             <section class="bg-white rounded-3xl border border-gray-200 p-6 md:p-8">
@@ -713,6 +715,9 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         </div>
                         <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_resena ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
                             <?= $tiene_resena ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Obtener 3 Reseñas (+20)
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px] md:text-xs <?= $tiene_video ? 'text-emerald-600 font-semibold' : 'text-gray-500' ?> bg-gray-50 p-2.5 rounded-xl border border-gray-200/60">
+                            <?= $tiene_video ? icon('check-circle', 'w-3 h-3') : icon('circle', 'w-3 h-3 text-gray-300') ?> Video de Presentación (+20)
                         </div>
                     </div>
                 </div>
