@@ -4,7 +4,7 @@
 //   abreviar_institucion()  → abrevia vía diccionario; vacío => '' (comportamiento histórico, apuntes).
 //   institucion_tutor()     → igual, pero vacío => 'Particular' (superficies de tutores de servicios).
 if (!function_exists('abreviar_institucion')) {
-    function abreviar_institucion(string $inst_raw, int $max_len = 22): string {
+    function abreviar_institucion(string $inst_raw, int $max_len = 22, bool $escapar = true): string {
         if (empty($inst_raw)) return '';
         $inst_clean = $inst_raw;
         $dicc = [
@@ -18,7 +18,8 @@ if (!function_exists('abreviar_institucion')) {
             'Universidad de Concepci' => 'UdeC', 'Universidad T' => 'USM',
             'Federico Santa Mar' => 'USM', 'Adolfo Ib' => 'UAI', 'Universidad de Chile' => 'U. de Chile',
             'Universidad del B' => 'UBB', 'Bío Bío' => 'UBB', 'Bio Bio' => 'UBB',
-            'Instituto Profesional' => 'IP', 'Centro de Formación Técnica' => 'CFT'
+            'Instituto Profesional' => 'IP', 'Centro de Formación Técnica' => 'CFT',
+            'iacc' => 'IACC'
         ];
         foreach ($dicc as $k => $v) {
             if (stripos($inst_clean, $k) !== false) {
@@ -29,7 +30,8 @@ if (!function_exists('abreviar_institucion')) {
         if (stripos($inst_clean, 'universidad ') === 0) {
             $inst_clean = 'U. ' . substr($inst_clean, 12);
         }
-        return htmlspecialchars(mb_strimwidth($inst_clean, 0, $max_len, '...'));
+        $inst_clean = mb_strimwidth($inst_clean, 0, $max_len, '...');
+        return $escapar ? htmlspecialchars($inst_clean) : $inst_clean;
     }
 }
 

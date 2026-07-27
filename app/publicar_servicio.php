@@ -22,6 +22,7 @@ if (file_exists(__DIR__ . '/init_sesion.php')) {
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/helpers/usuario_helper.php';
 require_once $app_dir . '/helpers/horarios.php';
+require_once $app_dir . '/helpers/institucion.php';
 
 // 2. CANDADO ESTRICTO (Visitantes fuera)
 if (function_exists('proteger_ruta')) {
@@ -60,6 +61,22 @@ $nombre_usuario      = $_SESSION['usuario_nombre'] ?? 'Estudiante';
 $institucion_session = strtolower(trim($_SESSION['institucion'] ?? ''));
 $institucion         = $_SESSION['institucion'] ?? '';
 $correo              = $_SESSION['email'] ?? '';
+
+// Fallback: si la sesión no trae institución real (dominio no institucional, cuenta express,
+// o el placeholder 'Excepción Gmail' de login.php), usar la universidad que el propio usuario
+// ya escribió en su perfil (alumnos.universidad), normalizada con el mismo diccionario de
+// institucion.php — sin HTML-escape (se guarda texto plano en BD, no para mostrar), con 50
+// caracteres de tope (igual al ancho real de la columna servicios.institucion).
+if ($institucion === '' || $institucion === 'Excepción Gmail') {
+    $stmt_univ = $conn->prepare("SELECT universidad FROM alumnos WHERE id = ? LIMIT 1");
+    $stmt_univ->bind_param("i", $usuario_id);
+    $stmt_univ->execute();
+    $universidad_perfil = trim((string)($stmt_univ->get_result()->fetch_assoc()['universidad'] ?? ''));
+    $stmt_univ->close();
+    if ($universidad_perfil !== '') {
+        $institucion = abreviar_institucion($universidad_perfil, 50, false);
+    }
+}
 
 // [NUBIRA 2.0] CSRF TOKEN — Protección contra Cross-Site Request Forgery
 if (empty($_SESSION['csrf_token_publicar'])) {
