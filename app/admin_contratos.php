@@ -20,6 +20,12 @@ if(file_exists($ruta_iconos)) require_once $ruta_iconos;
 // Seguridad
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') { header("Location: /login"); exit; }
 
+// CSRF (mismo patrón que cupones.php/admin_procesar_cupon.php)
+if (!isset($_SESSION['csrf_contratos'])) {
+    $_SESSION['csrf_contratos'] = bin2hex(random_bytes(32));
+}
+$csrf_token_contratos = $_SESSION['csrf_contratos'];
+
 // Helper Nav
 $ruta_actual = $_SERVER['REQUEST_URI'] ?? '/';
 if (!function_exists('nav_class')) {
@@ -220,23 +226,23 @@ $res = $stmt->get_result();
                                         </button>
 
                                         <?php if($st === 'en_progreso'): ?>
-                                            <a href="/app/liberar_contrato.php?id=<?= $c['id'] ?>" onclick="return confirm('¿CONFIRMAR? Se liberará el dinero al vendedor.')" class="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-all" title="Liberar fondos">
+                                            <a href="/app/liberar_contrato.php?id=<?= $c['id'] ?>&csrf_token=<?= urlencode($csrf_token_contratos) ?>" onclick="return confirm('¿CONFIRMAR? Se liberará el dinero al vendedor.')" class="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-all" title="Liberar fondos">
                                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                                             </a>
-                                            <a href="/app/cancelar_contrato.php?id=<?= $c['id'] ?>" onclick="return confirm('¿CONFIRMAR? Se cancelará y reembolsará al comprador.')" class="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-all" title="Cancelar contrato">
+                                            <a href="/app/cancelar_contrato.php?id=<?= $c['id'] ?>&csrf_token=<?= urlencode($csrf_token_contratos) ?>" onclick="return confirm('¿CONFIRMAR? Se cancelará y reembolsará al comprador.')" class="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-all" title="Cancelar contrato">
                                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                             </a>
                                         <?php endif; ?>
-                                        
+
                                         <?php if($st === 'liberado' || $st === 'cancelado'): ?>
-                                             <a href="/app/revertir_contrato.php?id=<?= $c['id'] ?>" onclick="return confirm('¿Revertir estado a EN PROGRESO?')" class="p-2 text-orange-400 hover:bg-orange-50 rounded-lg transition-all" title="Revertir estado">
+                                             <a href="/app/revertir_contrato.php?id=<?= $c['id'] ?>&csrf_token=<?= urlencode($csrf_token_contratos) ?>" onclick="return confirm('¿Revertir estado a EN PROGRESO?')" class="p-2 text-orange-400 hover:bg-orange-50 rounded-lg transition-all" title="Revertir estado">
                                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                                              </a>
                                         <?php endif; ?>
 
                                         <span class="w-px h-5 bg-gray-200 mx-1"></span>
 
-                                        <a href="/app/eliminar_contrato.php?id=<?= $c['id'] ?>" onclick="return confirm('⚠️ ALERTA: Esto borrará el contrato para SIEMPRE.')" class="p-2 text-gray-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all" title="Eliminar definitivamente">
+                                        <a href="/app/eliminar_contrato.php?id=<?= $c['id'] ?>&csrf_token=<?= urlencode($csrf_token_contratos) ?>" onclick="return confirm('⚠️ ALERTA: Esto borrará el contrato para SIEMPRE.')" class="p-2 text-gray-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all" title="Eliminar definitivamente">
                                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </a>
                                     </div>
@@ -378,7 +384,8 @@ $res = $stmt->get_result();
             const errs = {
                 'sql_error': 'Error de base de datos.',
                 'id_invalido': 'ID de contrato no válido.',
-                'no_admin': 'No tienes permisos.'
+                'no_admin': 'No tienes permisos.',
+                'csrf_invalido': 'Token de seguridad inválido o expirado. Intenta de nuevo.'
             };
             return errs[code] || 'Ocurrió un error inesperado.';
         }

@@ -29,6 +29,12 @@ if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
     exit;
 }
 
+// CSRF
+if (!hash_equals($_SESSION['csrf_contratos'] ?? '', $_GET['csrf_token'] ?? '')) {
+    header("Location: /app/admin_contratos.php?error=csrf_invalido");
+    exit;
+}
+
 // --- 4. LÓGICA DE ELIMINACIÓN ---
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
