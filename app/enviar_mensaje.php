@@ -150,10 +150,10 @@ if (preg_match('/\b(junt[eé]monos|reun[aá]monos)\b/i', $mensaje_lower)) {
     }
 }
 
-// 5d. Teléfono fraccionado en 2 mensajes consecutivos: concatena con el último mensaje
-//     del MISMO remitente en esta conversación (ventana de 5 min) y reaplica el patrón
-//     'telefono' sin modificar — la adyacencia + el umbral de 7 dígitos ya descartan
-//     casos como "a las 15" + "30 minutos" o "cuesta 10" + "000 pesos".
+// 5d. Teléfono fraccionado en varios mensajes consecutivos: concatena con los últimos
+//     mensajes (hasta 5) del MISMO remitente en esta conversación (ventana de 5 min) y
+//     reaplica el patrón 'telefono' sin modificar — la adyacencia + el umbral de 7 dígitos
+//     ya descartan casos como "a las 15" + "30 minutos" o "cuesta 10" + "000 pesos".
 if (preg_match('/\d/', $mensaje_lower)) {
     $tabla_prev     = ($contexto === 'aula') ? 'chat_aula' : 'mensajes';
     $col_id_prev    = ($contexto === 'aula') ? 'contrato_id' : 'conversacion_id';
@@ -162,17 +162,18 @@ if (preg_match('/\d/', $mensaje_lower)) {
     $stmt_prev = $conn->prepare(
         "SELECT mensaje FROM $tabla_prev
          WHERE $col_id_prev = ? AND remitente_id = ? AND $col_fecha_prev > (NOW() - INTERVAL 5 MINUTE)
-         ORDER BY id DESC LIMIT 1"
+         ORDER BY id DESC LIMIT 5"
     );
     $stmt_prev->bind_param("ii", $id_ref, $my_id);
     $stmt_prev->execute();
-    $prev = $stmt_prev->get_result()->fetch_assoc();
+    $previos = array_column($stmt_prev->get_result()->fetch_all(MYSQLI_ASSOC), 'mensaje');
     $stmt_prev->close();
 
-    if ($prev) {
-        $texto_combinado = mb_strtolower($prev['mensaje'], 'UTF-8') . ' ' . $mensaje_lower;
+    if (!empty($previos)) {
+        $previos = array_reverse($previos); // orden cronológico: más viejo primero
+        $texto_combinado = mb_strtolower(implode(' ', $previos), 'UTF-8') . ' ' . $mensaje_lower;
         if (preg_match($patrones_bloqueo['telefono'], $texto_combinado)) {
-            nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, 'telefono', 'telefono (fraccionado en 2 mensajes)');
+            nb_dlp_bloquear($conn, $id_ref, $my_id, $mensaje, 'telefono', 'telefono (fraccionado en varios mensajes)');
         }
     }
 }
