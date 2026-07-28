@@ -110,6 +110,14 @@ if (!function_exists('linkify_mensaje')) {
 // =================================================================================
 if (!function_exists('render_mensaje_admin')) {
     function render_mensaje_admin($m, $is_blue, $avatar_html, $es_historico = false) {
+        // [NUBIRA 2.0] Mensaje de sistema: HTML de confianza generado por el propio backend
+        // (hoy solo generar_slot_excepcion.php inserta con remitente_id=0, nunca un usuario —
+        // ver auditoría completa de INSERTs a `mensajes`). Mismo criterio que ya usa
+        // render_mensajes.php para el chat real: sin burbuja, sin escapar.
+        if ((int)$m['remitente_id'] === 0) {
+            return '<div class="flex justify-center mb-4" data-msg-id="' . (int)$m['id'] . '">' . $m['mensaje'] . '</div>';
+        }
+
         $flex_dir = $is_blue ? 'flex-row-reverse' : 'flex-row';
         $burbuja_color = $is_blue ? 'bg-[#54A6D8] text-white rounded-tr-sm' : 'bg-white text-gray-800 rounded-tl-sm border border-gray-100';
         $opacidad = $es_historico ? 'opacity-75 grayscale-[25%]' : '';
