@@ -75,6 +75,7 @@ if (php_sapi_name() === 'cli') {
           AND a.recibir_emails = 1
           AND a.id != 1
           AND a.correo NOT LIKE 'testpablo%'
+          AND DATEDIFF(NOW(), a.fecha_registro) >= 31
           AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
           AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
           AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
@@ -324,6 +325,7 @@ $sql = "
       AND a.recibir_emails = 1
       AND a.id != 1
       AND a.correo NOT LIKE 'testpablo%'
+      AND DATEDIFF(NOW(), a.fecha_registro) >= 31
       AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
       AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
       AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
