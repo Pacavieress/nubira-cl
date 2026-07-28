@@ -264,7 +264,7 @@ if ($slot['estado'] === 'pagado') {
     pagina_error('Reserva ya pagada', 'Esta reserva ya fue pagada.',
         '/app/chat_previo_contrato.php?id=' . $conv_id, 'Ir al chat');
 }
-if ($slot['estado'] === 'expirado' || $ya_expirado) {
+if ($slot['estado'] === 'expirada' || $ya_expirado) {
     pagina_error('Reserva expirada', 'Este enlace expiró. El tutor puede generar una nueva reserva desde el chat.',
         '/app/chat_previo_contrato.php?id=' . $conv_id, 'Volver al chat');
 }
