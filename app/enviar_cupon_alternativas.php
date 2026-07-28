@@ -137,8 +137,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usuarios[$row['comprador_id']] = $row;
     }
 
-    // Protección anti doble envío: excluir a quien ya recibió esta campaña con éxito
-    $stmt_ya = $conn->prepare("SELECT DISTINCT LOWER(TRIM(destinatario)) AS correo FROM correos_admin WHERE admin_nombre = ? AND exito = 1");
+    // Protección anti doble envío: excluir solo si recibió esta campaña Y pagó algo después
+    $stmt_ya = $conn->prepare("
+        SELECT DISTINCT LOWER(TRIM(ca.destinatario)) AS correo
+        FROM correos_admin ca
+        JOIN alumnos a ON LOWER(TRIM(a.correo)) = LOWER(TRIM(ca.destinatario))
+        WHERE ca.admin_nombre = ? AND ca.exito = 1
+          AND EXISTS (
+              SELECT 1 FROM contratos c
+              WHERE c.comprador_id = a.id
+                AND c.fecha_pago IS NOT NULL
+                AND c.fecha_pago > ca.fecha_envio
+          )
+    ");
     $stmt_ya->bind_param("s", $admin_nombre);
     $stmt_ya->execute();
     $ya_enviados = array_flip(array_column($stmt_ya->get_result()->fetch_all(MYSQLI_ASSOC), 'correo'));
@@ -290,7 +301,13 @@ $sql = "SELECT t.comprador_id, t.vendedor_id, t.servicio_id, t.ultimo_mensaje_co
                a_comprador.nombre, LOWER(TRIM(a_comprador.correo)) AS correo,
                (SELECT MAX(ca.fecha_envio) FROM correos_admin ca
                    WHERE LOWER(TRIM(ca.destinatario)) = LOWER(TRIM(a_comprador.correo))
-                     AND ca.admin_nombre = ? AND ca.exito = 1) AS fecha_enviado "
+                     AND ca.admin_nombre = ? AND ca.exito = 1
+                     AND EXISTS (
+                         SELECT 1 FROM contratos c
+                         WHERE c.comprador_id = a_comprador.id
+                           AND c.fecha_pago IS NOT NULL
+                           AND c.fecha_pago > ca.fecha_envio
+                     )) AS fecha_enviado "
         . sprintf($sql_base, "") . " ORDER BY t.comprador_id ASC, t.ultimo_mensaje_comprador DESC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $admin_nombre);
@@ -488,6 +505,7 @@ require_once __DIR__ . '/componentes/nav_bottom.php';
 <script>
 const CSRF_TOKEN = <?= json_encode($csrf_token) ?>;
 const MAX_LOTE = 10;
+const PENDIENTES_KEY = 'cupon_alt_sin_codigo';
 
 const checkAll  = document.getElementById('check-all');
 const rows      = [...document.querySelectorAll('tbody tr')];
@@ -541,24 +559,44 @@ rows.forEach(r => {
   });
 });
 
+// ── Restaurar filas que quedaron sin código en el envío anterior ──────
+try {
+  const idsPendientes = JSON.parse(sessionStorage.getItem(PENDIENTES_KEY) || '[]');
+  sessionStorage.removeItem(PENDIENTES_KEY);
+  idsPendientes.forEach(id => {
+    const cb = document.querySelector(`.row-check[value="${id}"]`);
+    if (cb && !cb.disabled) cb.checked = true;
+  });
+} catch {}
+syncBar();
+
 btnEnviar?.addEventListener('click', async () => {
   const envios = [];
-  let faltaCodigo = false;
+  const sinCodigoIds = [];
 
   rows.forEach(r => {
     const cb = r.querySelector('.row-check');
     if (!cb || !cb.checked) return;
     const codigoInput = r.querySelector('.row-codigo');
     const codigo = codigoInput.value.trim();
-    if (!codigo) { faltaCodigo = true; codigoInput.classList.add('border-red-400'); return; }
+    if (!codigo) { sinCodigoIds.push(cb.value); codigoInput.classList.add('border-red-400'); return; }
+    codigoInput.classList.remove('border-red-400');
     const porcentaje = parseInt(r.querySelector('.row-porcentaje').value, 10) || 15;
     envios.push({ alumno_id: parseInt(cb.value, 10), codigo, porcentaje, tutor_ids: seleccionesTutores[cb.value] || [] });
   });
 
-  if (faltaCodigo) { mostrarToast('Falta pegar el código de cupón en alguna fila seleccionada', 'error'); return; }
-  if (envios.length === 0) return;
+  const sinCodigo = sinCodigoIds.length;
 
-  if (!confirm(`¿Confirmas el envío del correo a ${envios.length} estudiante${envios.length !== 1 ? 's' : ''}?`)) return;
+  if (envios.length === 0) {
+    mostrarToast(sinCodigo > 0 ? 'Ninguna fila seleccionada tiene código de cupón todavía' : 'Sin destinatarios seleccionados', 'error');
+    return;
+  }
+
+  let confirmMsg = `¿Confirmas el envío del correo a ${envios.length} estudiante${envios.length !== 1 ? 's' : ''}?`;
+  if (sinCodigo > 0) {
+    confirmMsg += `\n\n${sinCodigo} fila${sinCodigo !== 1 ? 's' : ''} seleccionada${sinCodigo !== 1 ? 's' : ''} sin código ${sinCodigo !== 1 ? 'se omitirán' : 'se omitirá'} — queda${sinCodigo !== 1 ? 'n' : ''} marcada${sinCodigo !== 1 ? 's' : ''} para completarla${sinCodigo !== 1 ? 's' : ''} después.`;
+  }
+  if (!confirm(confirmMsg)) return;
 
   btnEnviar.disabled = true;
   btnEnviar.textContent = 'Enviando…';
@@ -571,9 +609,11 @@ btnEnviar?.addEventListener('click', async () => {
     const res  = await fetch(window.location.pathname, { method: 'POST', body });
     const data = await res.json();
     if (data.ok) {
+      if (sinCodigoIds.length > 0) sessionStorage.setItem(PENDIENTES_KEY, JSON.stringify(sinCodigoIds));
       const msg = `${data.enviados} enviado${data.enviados !== 1 ? 's' : ''}`
         + (data.fallidos > 0 ? `, ${data.fallidos} fallido${data.fallidos !== 1 ? 's' : ''}` : '')
-        + (data.omitidos > 0 ? `, ${data.omitidos} omitido${data.omitidos !== 1 ? 's' : ''}` : '');
+        + (data.omitidos > 0 ? `, ${data.omitidos} omitido${data.omitidos !== 1 ? 's' : ''}` : '')
+        + (sinCodigo > 0 ? `, ${sinCodigo} sin código` : '');
       mostrarToast(msg, 'ok');
       setTimeout(() => location.reload(), 2500);
     } else {
