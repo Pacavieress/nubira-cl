@@ -116,12 +116,12 @@ foreach ($items_ordenados as $item):
         $pct_descuento = ($es_oferta && (int)$precio_normal > 0) ? round(((int)$precio_normal - (int)$row['precio_oferta']) / (int)$precio_normal * 100) : 0;
 
         if ($es_oferta) {
-            $precio_html = '<span class="text-[10px] text-gray-400 line-through font-medium mr-1">$' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-gray-700 font-semibold tracking-tight">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span>' . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '');
+            $precio_html = '<span class="text-[10px] text-gray-400 line-through font-medium mr-1">$' . number_format($precio_normal, 0, ',', '.') . '</span><span class="text-[#222222] font-normal tracking-[-0.01em]">$' . number_format($row['precio_oferta'], 0, ',', '.') . '</span>' . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '');
         } else {
-            if (is_numeric($precio_normal) && $precio_normal > 0) { 
-                $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-700 font-semibold tracking-tight mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>';
-            } else { 
-                $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-700 font-semibold tracking-tight mt-1">Gratis</div>';
+            if (is_numeric($precio_normal) && $precio_normal > 0) {
+                $precio_html = '<div class="text-[13px] md:text-[14px] text-[#222222] font-normal tracking-[-0.01em] mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>';
+            } else {
+                $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-600 font-normal tracking-[-0.01em] mt-1">Gratis</div>';
             }
         }
         
@@ -231,7 +231,7 @@ foreach ($items_ordenados as $item):
 <a href="<?= $link ?>"
    class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
-    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
         <img src="<?= htmlspecialchars($img) ?>"
              class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
              loading="lazy" decoding="async" width="170" height="128"
@@ -244,6 +244,7 @@ foreach ($items_ordenados as $item):
         $ov_foto      = $foto_tutor;
         $ov_nombre    = $tutor_nombre;
         $ov_size      = 'sm';
+        $ov_liviano   = true;
         include __DIR__ . '/componentes/overlay_card_servicio.php';
         ?>
         <?php endif; ?>
@@ -253,7 +254,7 @@ foreach ($items_ordenados as $item):
         <?php $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? ''; ?>
         <?php if ($nivel_label): ?>
         <div class="absolute top-1 right-1 z-10">
-            <span class="inline-flex items-center px-1 py-0 md:px-2 md:py-0.5 rounded-full text-[8px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
+            <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]"><?= $nivel_label ?></span>
         </div>
         <?php endif; ?>
         <?php endif; ?>
@@ -268,10 +269,10 @@ foreach ($items_ordenados as $item):
     </div>
 
     <div class="pt-2.5 flex flex-col flex-1 text-left">
-        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($titulo) ?></h3>
+        <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($titulo) ?></h3>
 
         <div class="text-[14px] mt-auto mb-1.5 leading-none min-h-[20px] whitespace-nowrap overflow-hidden">
-            <?= isset($precio_html) ? $precio_html : '<span class="text-gray-700 font-semibold tracking-tight">' . ($precio ?? '') . '</span>' ?>
+            <?= isset($precio_html) ? $precio_html : '<span class="text-[#222222] font-normal tracking-[-0.01em]">' . ($precio ?? '') . '</span>' ?>
         </div>
 
         <div class="flex items-center justify-between">
