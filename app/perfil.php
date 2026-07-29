@@ -884,11 +884,11 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         
                         // Formato de Precio
                         if (is_numeric($precio_val) && $precio_val > 0) {
-                            $precio = "$" . number_format($precio_val, 0, ',', '.') . ""; 
-                            $precio_class = "text-gray-900 font-bold"; 
+                            $precio = "$" . number_format($precio_val, 0, ',', '.') . "";
+                            $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
                         } else {
-                            $precio = "Gratis"; 
-                            $precio_class = "text-green-600 font-bold";
+                            $precio = "Gratis";
+                            $precio_class = "text-gray-600 font-normal tracking-[-0.01em]";
                         }
 
                         // Lógica de Score y Tiers Youtube Edition
@@ -936,7 +936,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         <a href="<?= $enlace_detalle ?>"
                            class="w-[240px] md:w-[260px] shrink-0 snap-start block flex flex-col mb-4 bg-transparent cursor-pointer select-none group h-full active:scale-[0.97] active:opacity-80 transition-all duration-200 <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
-                          <div class="relative bg-gray-100 rounded-2xl overflow-hidden w-full aspect-[3/2] border border-gray-200/60">
+                          <div class="relative bg-gray-100 rounded-2xl overflow-hidden w-full aspect-[3/2] border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                             <img src="<?= htmlspecialchars($portada_url) ?>"
                                  alt="<?= htmlspecialchars($titulo) ?>"
                                  class="w-full h-full object-cover transition-opacity duration-300"
@@ -964,19 +964,19 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
                             <div class="absolute top-2 left-2 flex flex-wrap gap-1 z-10 scale-90 origin-top-left">
                               <?php if ($nivel_tutor === 'leyenda'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
                                       Leyenda
                                   </span>
                               <?php elseif ($nivel_tutor === 'elite'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
                                       Élite
                                   </span>
                               <?php elseif ($nivel_tutor === 'pro'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
                                       Pro
                                   </span>
                               <?php elseif ($nivel_tutor === 'top'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-gray-500 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full flex items-center shadow-sm border border-gray-200">
+                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
                                       Top
                                   </span>
                               <?php endif; ?>
@@ -1003,7 +1003,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                               
                               <p class="text-[9px] font-bold <?= $tag_color ?> uppercase tracking-wider mb-0.5"><?= $tag_txt ?></p>
 
-                              <div class="font-bold text-[14px] md:text-[15px] tracking-tight leading-[1.25] text-gray-900 line-clamp-2 mb-1.5">
+                              <div class="font-normal text-[14px] md:text-[15px] tracking-[-0.01em] leading-[1.25] text-[#222222] line-clamp-2 mb-1.5">
                                   <?= htmlspecialchars($titulo) ?>
                               </div>
 
