@@ -532,7 +532,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                 
                                 <div class="flex flex-col items-start w-full">
                                     <div class="flex items-center justify-start gap-2 w-full">
-                                        <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 break-words"><?= htmlspecialchars($nombre_display) ?></h1>
+                                        <h1 class="text-2xl md:text-3xl font-normal tracking-[-0.01em] text-[#222222] break-words"><?= htmlspecialchars($nombre_display) ?></h1>
                                         <?php if ($es_verificado): ?>
                                         <span title="Alumno Verificado"><?= icon('check-circle', 'w-5 h-5 text-[#54A6D8] shrink-0') ?></span>
                                         <?php endif; ?>
