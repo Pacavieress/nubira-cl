@@ -23,6 +23,12 @@ function initAgendaSlots(config) {
     let diaSeleccionado = null;
     let fechaActiva = null;
 
+    // [NUBIRA 2.0] Horario preseleccionado (llega vía data-preseleccion en el wrapper,
+    // ej. desde detalle_servicio.php redirigiendo con el slot ya elegido)
+    const preseleccion = wrapper.dataset.preseleccion || '';
+    const fechaPreseleccion = preseleccion ? preseleccion.split(' ')[0] : null;
+    let preseleccionActiva = !!preseleccion;
+
     document.querySelectorAll('.dia-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.dia-card').forEach(c => {
@@ -40,6 +46,15 @@ function initAgendaSlots(config) {
             renderFechasProximas(diasMap[diaSeleccionado]);
         });
     });
+
+    // Si hay preselección, dispara el flujo completo automáticamente (equivalente a
+    // que el usuario haga clic él mismo en la tarjeta del día correspondiente)
+    if (preseleccion) {
+        const targetDow = new Date(fechaPreseleccion + 'T00:00:00').getDay();
+        const diaNombre = Object.keys(diasMap).find(k => diasMap[k] === targetDow);
+        const diaCard = document.querySelector(`.dia-card[data-dia="${diaNombre}"]`);
+        if (diaCard) diaCard.click();
+    }
 
     function renderFechasProximas(targetDow) {
         fechasStrip.innerHTML = '';
@@ -72,8 +87,11 @@ function initAgendaSlots(config) {
             fechasStrip.appendChild(btn);
         });
 
-        // Auto-seleccionar la primera fecha
-        const first = fechasStrip.querySelector('.fecha-btn');
+        // Preferir la fecha exacta preseleccionada (si la hay); si no, la primera
+        const targetBtn = preseleccionActiva
+            ? fechasStrip.querySelector(`.fecha-btn[data-fecha="${fechaPreseleccion}"]`)
+            : null;
+        const first = targetBtn || fechasStrip.querySelector('.fecha-btn');
         if (first) seleccionarFecha(first);
     }
 
@@ -157,6 +175,16 @@ function initAgendaSlots(config) {
             slotsLeyenda.classList.remove('hidden');
         } else {
             slotsLeyenda.classList.add('hidden');
+        }
+
+        // Si había un horario exacto preseleccionado, se intenta marcar automáticamente.
+        // Se consume una sola vez, exista o no el slot (pudo haber dejado de estar
+        // disponible entre que se eligió en detalle_servicio.php y se llegó hasta acá).
+        if (preseleccionActiva) {
+            preseleccionActiva = false;
+            const targetSlot = Array.from(slotsGrid.querySelectorAll('.slot-btn'))
+                .find(b => b.dataset.datetime === preseleccion);
+            if (targetSlot) targetSlot.click();
         }
     }
 

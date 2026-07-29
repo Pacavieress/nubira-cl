@@ -43,6 +43,12 @@ $servicio_id = (int)($_GET['servicio_id'] ?? 0);
 
 if ($servicio_id <= 0) { header("Location: /vitrina"); exit; }
 
+// [NUBIRA 2.0] Horario preseleccionado desde detalle_servicio.php
+$fecha_preseleccionada = '';
+if (!empty($_GET['fecha_clase']) && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $_GET['fecha_clase'])) {
+    $fecha_preseleccionada = $_GET['fecha_clase'];
+}
+
 // Consulta optimizada [INYECCIÓN NUBIRA SUBSIDIOS]
 $stmt = $conn->prepare("SELECT s.id, s.titulo, s.alumno_id, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.modalidad, s.categoria, s.imagen, s.imagen_banco_id, s.horarios_json,
                         a.nombre as nombre_vendedor, a.institucion, bi.archivo AS banco_archivo
@@ -271,7 +277,7 @@ $page_title = "Confirmar Contrato";
         </div>
     <?php else: ?>
         <!-- Grilla de días (idéntica a detalle_servicio.php) -->
-        <div id="agenda-wrapper" data-servicio-id="<?= $servicio_id ?>">
+        <div id="agenda-wrapper" data-servicio-id="<?= $servicio_id ?>" data-preseleccion="<?= htmlspecialchars($fecha_preseleccionada, ENT_QUOTES, 'UTF-8') ?>">
             
             <div class="mb-4 flex items-center gap-2">
                 <div class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1">

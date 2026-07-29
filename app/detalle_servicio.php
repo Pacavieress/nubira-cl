@@ -746,7 +746,6 @@ function reproducirVideoTutor() {
                         <div class="flex items-center justify-between mb-5">
                             <div class="flex items-center gap-2">
                                 <h3 class="font-bold text-gray-900">Disponibilidad</h3>
-                                <span class="text-[10px] text-gray-400 font-medium bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Referencial</span>
                             </div>
                            <?php if ($es_propietario): ?>
     <a href="/app/editar_horarios.php?id=<?= $id ?>" class="text-[11px] font-bold text-[#54A6D8] hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full transition-colors">
@@ -764,31 +763,55 @@ function reproducirVideoTutor() {
         </div>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <?php foreach ($dias_disponibles as $dia => $bloques):
-            $es_proximo = ($dia === $dia_proximo);
-        ?>
-            <div class="bg-white border <?= $es_proximo ? 'border-[#54A6D8] shadow-md ring-2 ring-blue-100' : 'border-blue-100 shadow-sm' ?> rounded-xl p-3 hover:shadow-md hover:border-[#54A6D8] transition-all group relative">
+    <div id="agenda-wrapper" data-servicio-id="<?= (int)$id ?>">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <?php foreach ($dias_disponibles as $dia => $bloques):
+                $es_proximo = ($dia === $dia_proximo);
+            ?>
+                <button type="button"
+                        class="dia-card text-left bg-white border <?= $es_proximo ? 'border-[#54A6D8] ring-2 ring-blue-100' : 'border-blue-100' ?> rounded-xl p-3 hover:border-[#54A6D8] hover:shadow-md transition-all group relative"
+                        data-dia="<?= $dia ?>">
 
-                <?php if ($es_proximo): ?>
-                    <span class="absolute -top-2 -right-2 bg-[#54A6D8] text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
-                        Próximo
-                    </span>
-                <?php endif; ?>
-
-                <p class="text-xs font-extrabold <?= $es_proximo ? 'text-[#54A6D8]' : 'text-gray-800' ?> mb-2 group-hover:text-[#54A6D8] transition-colors">
-                    <?= $dia ?>
-                </p>
-
-                <div class="flex flex-col gap-1.5">
-                    <?php foreach ($bloques as $h): ?>
-                        <span class="bg-blue-50 text-[#54A6D8] text-[10px] font-bold px-2 py-1 rounded-md text-center border border-blue-100/50 truncate">
-                            <?= htmlspecialchars($h) ?>
+                    <?php if ($es_proximo): ?>
+                        <span class="absolute -top-2 -right-2 bg-[#54A6D8] text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
+                            Próximo
                         </span>
-                    <?php endforeach; ?>
-                </div>
+                    <?php endif; ?>
+
+                    <p class="text-xs font-extrabold <?= $es_proximo ? 'text-[#54A6D8]' : 'text-gray-800' ?> mb-2 group-hover:text-[#54A6D8] transition-colors">
+                        <?= $dia ?>
+                    </p>
+
+                    <div class="flex flex-col gap-1.5">
+                        <?php foreach ($bloques as $h): ?>
+                            <span class="bg-blue-50 text-[#54A6D8] text-[10px] font-bold px-2 py-1 rounded-md text-center border border-blue-100/50 truncate">
+                                <?= htmlspecialchars($h) ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Selector de slot (aparece cuando elige un día) -->
+        <div id="slots-section" class="hidden mt-6 pt-6 border-t border-gray-100">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+                Elige una hora para <span id="slots-dia-label" class="text-[#54A6D8]"></span>
+            </p>
+
+            <div id="fechas-strip" class="flex gap-2 overflow-x-auto pb-3 no-scrollbar mb-4"></div>
+
+            <div id="slots-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
+            <div id="slots-leyenda" class="hidden mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-gray-400"></div>
+
+            <div id="slots-loading" class="hidden text-center py-6">
+                <div class="inline-block animate-spin h-6 w-6 border-4 border-blue-200 border-t-[#54A6D8] rounded-full"></div>
             </div>
-        <?php endforeach; ?>
+
+            <div id="slots-empty" class="hidden bg-gray-50 border border-dashed border-gray-200 rounded-xl p-5 text-center">
+                <p class="text-xs text-gray-500">No hay horarios disponibles para esta fecha.</p>
+            </div>
+        </div>
     </div>
                     </div>
                     <?php else: ?>
@@ -1259,6 +1282,19 @@ if(file_exists($ruta_comp . '/modal_compartir_servicio.php')) require_once $ruta
 ?>
 
 <script src="/assets/js/behavior_tracker.js"></script>
+<script src="/app/js/agenda_slots.js"></script>
+
+<script>
+// [NUBIRA 2.0] Selector de horarios (espejo de contratar_servicio.php): al elegir
+// un slot disponible, redirige a contratar_servicio.php con el horario en la URL.
+(function() {
+    initAgendaSlots({
+        onSlotSelected: (datetime) => {
+            window.location.href = `/app/contratar_servicio.php?servicio_id=<?= (int)$id ?>&fecha_clase=${encodeURIComponent(datetime)}`;
+        }
+    });
+})();
+</script>
 
 <script>
 // [NUBIRA 2.0] Prevenir salto de scroll al recargar
