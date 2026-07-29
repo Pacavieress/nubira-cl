@@ -207,16 +207,16 @@ foreach ($servicios as $i => $row):
 
    if ($es_oferta) {
         $precio_oferta = (int)$row['precio_oferta'];
-        $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>' . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '') . '</div>';
-    
+        $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-[#222222] font-normal tracking-[-0.01em] leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>' . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '') . '</div>';
+
     } else {
         if (is_numeric($precio_val) && $precio_val > 0) {
-            $precio = "$" . number_format($precio_val, 0, ',', '.'); 
-            $precio_class = "text-gray-700 font-semibold tracking-tight";
+            $precio = "$" . number_format($precio_val, 0, ',', '.');
+            $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
             $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
         } else {
-            $precio = "Gratis"; 
-            $precio_class = "text-gray-900 font-bold tracking-tight";
+            $precio = "Gratis";
+            $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
             $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
         }
     }
@@ -270,7 +270,7 @@ foreach ($servicios as $i => $row):
 <a href="<?= $link_hash ?>"
    class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
 
-  <div class="card-apunte relative overflow-hidden w-full <?= $compacto ? 'aspect-square rounded-xl' : 'aspect-[3/2] rounded-xl' ?> bg-gray-100 border border-gray-200">
+  <div class="card-apunte relative overflow-hidden w-full <?= $compacto ? 'aspect-square rounded-xl' : 'aspect-[3/2] rounded-xl' ?> bg-gray-100 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
     <img src="<?= htmlspecialchars($portada_url) ?>"
          alt="<?= htmlspecialchars($row['titulo']) ?>"
        class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -283,6 +283,7 @@ foreach ($servicios as $i => $row):
   $ov_foto      = $foto_tutor;
   $ov_nombre    = $tutor_nombre;
   $ov_size      = 'lg';
+  $ov_liviano   = true;
   include __DIR__ . '/componentes/overlay_card_servicio.php';
   ?>
 
@@ -290,13 +291,13 @@ foreach ($servicios as $i => $row):
   <?php if (!$es_oferta): ?>
   <div class="absolute top-2.5 right-2.5 z-10">
     <?php if ($nivel_tutor === 'leyenda'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Leyenda</span>
     <?php elseif ($nivel_tutor === 'elite'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Élite</span>
     <?php elseif ($nivel_tutor === 'pro'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Pro</span>
     <?php elseif ($nivel_tutor === 'top'): ?>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Top</span>
     <?php endif; ?>
   </div>
   <?php endif; ?>
@@ -314,14 +315,14 @@ foreach ($servicios as $i => $row):
  <div class="pl-1 pr-1 pt-3 pb-1 flex flex-col flex-1 text-left min-h-[90px]">
       
       <?php if ($compacto): ?>
-      <h6 class="font-bold text-[14px] leading-[1.3] text-gray-900 line-clamp-2 h-[36px] overflow-hidden">
+      <h6 class="font-medium text-[14px] leading-[1.3] tracking-[-0.01em] text-[#222222] line-clamp-2 h-[36px] overflow-hidden">
               <?= htmlspecialchars($row['titulo']) ?>
           </h6>
-          
+
           <?= $precio_html ?>
 
 <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+              <div class="flex items-center gap-1 text-[9px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[65%]">
                 <?php if(!empty($inst_text)): ?>
                     <span class="truncate"><?= $inst_text ?></span>
                 <?php endif; ?>
@@ -330,14 +331,14 @@ foreach ($servicios as $i => $row):
           </div>
 
       <?php else: ?>
-          <h6 class="font-bold text-[14px] leading-[1.3] text-gray-900 line-clamp-2 h-[36px] overflow-hidden mb-1">
+          <h6 class="font-medium text-[14px] leading-[1.3] tracking-[-0.01em] text-[#222222] line-clamp-2 h-[36px] overflow-hidden mb-1">
               <?= htmlspecialchars($row['titulo']) ?>
           </h6>
 
           <?= $precio_html ?>
 
 <div class="flex items-center justify-between pt-1">
-              <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
+              <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[70%]">
                 <?php if(!empty($inst_text)): ?>
                     <span class="truncate"><?= $inst_text ?></span>
                 <?php endif; ?>
