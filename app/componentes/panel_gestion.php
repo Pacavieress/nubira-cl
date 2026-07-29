@@ -144,7 +144,7 @@ $accesos_admin = [
             $mostrar_punto_sugerencia = ($badgeSelector === 'punto-sugerencia' && isset($_SESSION['es_tutor_activo']) && $_SESSION['es_tutor_activo'] === true && isset($_SESSION['notif_sugerencia_vista']) && $_SESSION['notif_sugerencia_vista'] == 0);
         ?>
                <a href="<?= $href ?>" <?= $onclick ?> 
-   class="group flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 hover:shadow-md hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 relative select-none cursor-pointer text-center h-full">
+   class="group flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:scale-[1.01] active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out relative select-none cursor-pointer text-center h-full">
                     
                     <div class="w-12 h-12 rounded-xl <?= $bg ?> <?= $color ?> flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200 relative">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -193,7 +193,7 @@ $accesos_admin = [
             <?php foreach($accesos_admin as $aa): 
                 $titulo = $aa[0]; $link = $aa[1]; $icono = $aa[2]; $color = $aa[3]; $bg = $aa[4]; $badgeId = $aa[5];
             ?>
-                <a href="<?= $link ?>" class="group flex flex-col items-center justify-center gap-2.5 p-3.5 rounded-xl bg-white border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 hover:shadow-md hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 relative select-none cursor-pointer text-center h-full">
+                <a href="<?= $link ?>" class="group flex flex-col items-center justify-center gap-2.5 p-3.5 rounded-xl bg-white border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:scale-[1.01] active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out relative select-none cursor-pointer text-center h-full">
                     
                     <div class="w-10 h-10 rounded-lg <?= $bg ?> <?= $color ?> flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200 relative">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -217,7 +217,7 @@ $accesos_admin = [
     </div>
     <?php endif; ?>
 
-    <a href="/logout" class="group flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border border-red-100 text-red-500 bg-white hover:bg-red-50 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 font-bold text-[13px] mt-4">
+    <a href="/logout" class="group flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border border-red-100 text-red-500 bg-white hover:bg-red-50 hover:scale-[1.01] active:scale-[0.98] transition-[transform,background-color] duration-150 ease-out font-bold text-[13px] mt-4">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
         </svg>
