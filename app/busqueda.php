@@ -416,17 +416,17 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                             $precio_oferta = (int)$row['precio_oferta'];
                             $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5">'
                                 . '<span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span>'
-                                . '<span class="text-[14px] text-gray-700 font-semibold tracking-tight leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>'
+                                . '<span class="text-[14px] text-[#222222] font-normal tracking-[-0.01em] leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>'
                                 . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '')
                                 . '</div>';
                         } else {
                             if (is_numeric($precio_val) && $precio_val > 0) {
                                 $precio = "$" . number_format($precio_val, 0, ',', '.');
-                                $precio_class = "text-gray-700 font-semibold tracking-tight";
+                                $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
                                 $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
                             } else {
                                 $precio = "Gratis";
-                                $precio_class = "text-gray-700 font-semibold tracking-tight";
+                                $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
                                 $precio_html = '<div class="text-[13px] ' . $precio_class . ' leading-none mb-0.5">' . $precio . '</div>';
                             }
                         }
@@ -472,7 +472,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                        onclick="if(typeof registrarClick === 'function') registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
                        class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
-                          <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-gray-200">
+                          <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                             <img src="<?= htmlspecialchars((string)$img_url) ?>"
                                  alt="<?= htmlspecialchars($row['titulo']) ?>"
                                  class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -489,6 +489,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                               $ov_foto      = $foto_tutor;
                               $ov_nombre    = $tutor_nombre;
                               $ov_size      = 'lg';
+                              $ov_liviano   = true;
                               include __DIR__ . '/componentes/overlay_card_servicio.php';
                             ?>
 
@@ -496,13 +497,13 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                             <?php if (!$es_oferta): ?>
                             <div class="absolute top-1 right-1 z-10">
                                 <?php if ($nivel_tutor === 'leyenda'): ?>
-                                    <span class="inline-flex items-center px-1 py-0 md:px-2 md:py-0.5 rounded-full text-[8px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Leyenda</span>
                                 <?php elseif ($nivel_tutor === 'elite'): ?>
-                                    <span class="inline-flex items-center px-1 py-0 md:px-2 md:py-0.5 rounded-full text-[8px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Élite</span>
                                 <?php elseif ($nivel_tutor === 'pro'): ?>
-                                    <span class="inline-flex items-center px-1 py-0 md:px-2 md:py-0.5 rounded-full text-[8px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Pro</span>
                                 <?php elseif ($nivel_tutor === 'top'): ?>
-                                    <span class="inline-flex items-center px-1 py-0 md:px-2 md:py-0.5 rounded-full text-[8px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Top</span>
                                 <?php endif; ?>
                             </div>
                             <?php endif; ?>
@@ -516,14 +517,14 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                         </div>
 
                         <div class="pl-1 pr-1 pt-3 pb-1 flex flex-col flex-1 text-left min-h-[90px]">
-                            <h6 class="font-bold text-[14px] leading-[1.3] text-gray-900 line-clamp-2 h-[36px] overflow-hidden mb-1">
+                            <h6 class="font-medium text-[14px] leading-[1.3] tracking-[-0.01em] text-[#222222] line-clamp-2 h-[36px] overflow-hidden mb-1">
                                 <?= resaltarTermino($row['titulo'], $q) ?>
                             </h6>
 
                             <?= $precio_html ?>
 
                             <div class="flex items-center justify-between pt-1">
-                                <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
+                                <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[70%]">
                                     <?php if(!empty($inst_text)): ?>
                                         <span class="truncate"><?= $inst_text ?></span>
                                     <?php endif; ?>
@@ -564,10 +565,10 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                         $precio_val_ap = $a['precio'] ?? 0;
                         if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
                             $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.');
-                            $precio_class_ap = "text-gray-700 font-semibold tracking-tight";
+                            $precio_class_ap = "text-[#222222] font-normal tracking-[-0.01em]";
                         } else {
                             $precio_ap = "Gratis";
-                            $precio_class_ap = "text-gray-700 font-semibold tracking-tight";
+                            $precio_class_ap = "text-[#222222] font-normal tracking-[-0.01em]";
                         }
 
                         $inst_text_ap = abreviar_institucion($a['institucion_maestra'] ?? ($a['institucion'] ?? ''));
@@ -577,7 +578,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                        onclick="if(typeof registrarClick === 'function') registrarClick(<?= (int)$a['id'] ?>, 'apunte')"
                        class="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full">
 
-                        <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-gray-200">
+                        <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                             <img src="<?= htmlspecialchars((string)$img_ap) ?>"
                                  alt="<?= htmlspecialchars($a['titulo']) ?>"
                                  class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -588,19 +589,19 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                                  onerror="this.onerror=null;this.src='/upload/preview/default_file.webp';">
 
                             <div class="absolute top-2.5 left-2.5 z-10">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Apunte</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Apunte</span>
                             </div>
                         </div>
 
                         <div class="pl-1 pr-1 pt-3 pb-1 flex flex-col flex-1 text-left min-h-[90px]">
-                            <h6 class="font-bold text-[14px] leading-[1.3] text-gray-900 line-clamp-2 h-[36px] overflow-hidden mb-1">
+                            <h6 class="font-medium text-[14px] leading-[1.3] tracking-[-0.01em] text-[#222222] line-clamp-2 h-[36px] overflow-hidden mb-1">
                                 <?= resaltarTermino($a['titulo'], $q) ?>
                             </h6>
 
                             <div class="text-[13px] <?= $precio_class_ap ?> leading-none mb-0.5"><?= $precio_ap ?></div>
 
                             <div class="flex items-center justify-between pt-1">
-                                <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
+                                <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[70%]">
                                     <?php if(!empty($inst_text_ap)): ?>
                                         <span class="truncate"><?= $inst_text_ap ?></span>
                                     <?php endif; ?>
