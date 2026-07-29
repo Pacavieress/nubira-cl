@@ -121,7 +121,7 @@ foreach ($items_ordenados as $item):
             if (is_numeric($precio_normal) && $precio_normal > 0) {
                 $precio_html = '<div class="text-[13px] md:text-[14px] text-[#222222] font-normal tracking-[-0.01em] mt-1">$' . number_format($precio_normal, 0, ',', '.') . '</div>';
             } else {
-                $precio_html = '<div class="text-[13px] md:text-[14px] text-gray-600 font-normal tracking-[-0.01em] mt-1">Gratis</div>';
+                $precio_html = '<div class="text-[13px] md:text-[14px] text-[#222222] font-normal tracking-[-0.01em] mt-1">Gratis</div>';
             }
         }
         

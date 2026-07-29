@@ -650,7 +650,7 @@ if (!function_exists('render_rating_html')) {
         if ($total_votos > 0) {
             return '<div class="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
                         <svg class="w-3 h-3 text-gray-900 pb-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                        <span class="text-[10px] font-bold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
+                        <span class="text-[10px] font-light tracking-[0.01em] text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
                     </div>';
         }
         return '';
@@ -720,6 +720,7 @@ try {
     
    <style>
         html, body { background-color: #ffffff; }
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
@@ -796,17 +797,17 @@ require_once __DIR__ . '/componentes/header.php';
 
 <main data-track-id="home" data-track-type="vitrina"
       class="pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full mx-auto block">
-    <div class="px-4 md:px-10 max-w-[1600px] mx-auto pt-1 pb-2">
-      <h1 class="text-sm md:text-base font-semibold text-gray-400 tracking-tight">Tutores, apuntes y clases particulares universitarias en Chile</h1>
+    <div class="px-4 md:px-10 max-w-[1600px] mx-auto pt-0 pb-0 md:pt-1 md:pb-2">
+      <h1 class="sr-only md:not-sr-only text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Tutores, apuntes y clases particulares universitarias en Chile</h1>
     </div>
 
 <?php if (!$is_guest): ?>
     <section id="sec-recientes-wrapper" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500 delay-100">
       <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Sigue donde lo dejaste</h2>
+        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Sigue donde lo dejaste</h2>
         </div>
         <div class="relative group">
-            <button onclick="scrollCarrusel('sec-recientes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-md items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-100 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+            <button onclick="scrollCarrusel('sec-recientes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
 <div id="sec-recientes" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-stretch" data-src="/app/cargar_vistos.php" data-hide-target="#sec-recientes-wrapper">
                     <?php for($i=0; $i<4; $i++): ?>
                     <div class="flex-shrink-0 w-[220px] md:w-[300px] h-[96px] md:h-[112px] bg-white rounded-2xl border border-gray-100 p-2 md:p-3 flex gap-3 snap-start opacity-60 overflow-hidden">
@@ -819,19 +820,19 @@ require_once __DIR__ . '/componentes/header.php';
                     </div>
                     <?php endfor; ?>
             </div>
-            <button onclick="scrollCarrusel('sec-recientes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-md items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-100 transition hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+            <button onclick="scrollCarrusel('sec-recientes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
         </div>
     </section>
 <?php endif; ?>
 
 <section class="mb-3 md:mb-5 relative ">
 <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_servicios ?></h2>
-        <a href="/servicios" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]"><?= $titulo_servicios ?></h2>
+        <a href="/servicios" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
     
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-servicios', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-servicios', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
         
         <div id="sec-servicios" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
             <?php if ($res_servicios && $res_servicios->num_rows > 0): 
@@ -894,14 +895,14 @@ $portada_url = $portada_set['card'];
                     $pct_descuento = ($es_oferta && (int)$precio_normal > 0) ? round(((int)$precio_normal - (int)$row['precio_oferta']) / (int)$precio_normal * 100) : 0;
                     
                     if ($es_oferta) {
-                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_descuento > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_descuento}%</span>" : "");
-                        $precio_class = "text-gray-900 font-semibold";
+                        $precio_html = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal, 0, ',', '.') . "</span><span class='text-gray-600 font-normal tracking-tight'>$" . number_format($row['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_descuento > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_descuento}%</span>" : "");
+                        $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else if (is_numeric($precio_normal) && $precio_normal > 0) {
                         $precio_html = "$" . number_format($precio_normal, 0, ',', '.');
-                        $precio_class = "text-gray-700 font-semibold";
+                        $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else {
                         $precio_html = "Gratis";
-                        $precio_class = "text-gray-700 font-semibold";
+                        $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
                     }
                     
                     $mod = strtolower($row['modalidad'] ?? '');
@@ -916,7 +917,7 @@ $portada_url = $portada_set['card'];
                 <a href="<?= $link_hash ?>" onclick="registrarClick(<?= (int)$row['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full <?php echo $es_basico ? 'opacity-90 grayscale-[15%]' : ''; ?>">
 
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                       <img src="<?= htmlspecialchars($portada_url) ?>" 
      srcset="<?= htmlspecialchars($portada_set['thumb']) ?> 240w,
              <?= htmlspecialchars($portada_set['card']) ?> 480w,
@@ -936,6 +937,7 @@ $portada_url = $portada_set['card'];
                        $ov_foto      = $foto_tutor;
                        $ov_nombre    = $tutor_nombre;
                        $ov_size      = 'lg';
+                       $ov_liviano   = true;
                        include __DIR__ . '/componentes/overlay_card_servicio.php';
                        ?>
 
@@ -943,13 +945,13 @@ $portada_url = $portada_set['card'];
                        <?php if (empty($es_oferta)): ?>
                        <div class="absolute top-1 right-1 z-10">
                             <?php if ($nivel_tutor === 'leyenda'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Leyenda</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Leyenda</span>
                             <?php elseif ($nivel_tutor === 'elite'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Élite</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Élite</span>
                             <?php elseif ($nivel_tutor === 'pro'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Pro</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Pro</span>
                             <?php elseif ($nivel_tutor === 'top'): ?>
-                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Top</span>
+                                <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Top</span>
                             <?php endif; ?>
                        </div>
                        <?php endif; ?>
@@ -965,11 +967,11 @@ $portada_url = $portada_set['card'];
                     </div>
 
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row['titulo']) ?></h3>
+                        <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row['titulo']) ?></h3>
                       <div class="text-[14px] <?= $precio_class ?> mt-auto mb-1.5 leading-none"><?= $precio_html ?></div>
                         
                         <div class="flex items-center justify-between">
-    <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+    <div class="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
         <?php if(!empty($inst_text)): ?><span class="truncate"><?= $inst_text ?></span><?php endif; ?>
     </div>
     <div class="shrink-0 flex items-center gap-1"><?= $html_stars ?></div>
@@ -980,17 +982,17 @@ $portada_url = $portada_set['card'];
             <?php endif; ?>
         </div>
         
-        <button onclick="scrollCarrusel('sec-servicios', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-servicios', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 
 <?php if ($res_rapidos && $res_rapidos->num_rows > 0): ?>
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-    <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Responden en menos de 1 hora</h2>
+    <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Responden en menos de 1 hora</h2>
 </div>
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-rapidos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-rapidos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
 <div id="sec-rapidos" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
                 <?php $idx_r = 0; while ($row_r = $res_rapidos->fetch_assoc()):
                     $idx_r++;
@@ -1017,21 +1019,21 @@ $portada_url = $portada_set['card'];
                     $pct_r = ($es_oferta_r && (int)($row_r['precio'] ?? 0) > 0) ? round(((int)$row_r['precio'] - (int)$row_r['precio_oferta']) / (int)$row_r['precio'] * 100) : 0;
                     $precio_normal_r = $row_r['precio'] ?? 0;
                     if ($es_oferta_r) {
-                        $precio_html_r = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_r, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row_r['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_r > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_r}%</span>" : "");
-                        $precio_class_r = "text-gray-900 font-semibold";
+                        $precio_html_r = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_r, 0, ',', '.') . "</span><span class='text-gray-600 font-normal tracking-tight'>$" . number_format($row_r['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_r > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_r}%</span>" : "");
+                        $precio_class_r = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else if (is_numeric($precio_normal_r) && $precio_normal_r > 0) {
                         $precio_html_r = "$" . number_format($precio_normal_r, 0, ',', '.');
-                        $precio_class_r = "text-gray-700 font-semibold";
+                        $precio_class_r = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else {
                         $precio_html_r = "Gratis";
-                        $precio_class_r = "text-gray-700 font-semibold";
+                        $precio_class_r = "text-[#222222] font-normal tracking-[-0.01em]";
                     }
                     $html_stars_r = render_rating_html($rating_val_r, $total_v_r);
                     $inst_text_r = institucion_tutor($row_r['institucion_maestra'] ?? ($row_r['institucion'] ?? ''));
                 ?>
                 <a href="<?= $link_hash_r ?>" onclick="registrarClick(<?= (int)$row_r['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                         <img src="<?= htmlspecialchars($portada_url_r) ?>"
      srcset="<?= htmlspecialchars($portada_set_r['thumb']) ?> 240w,
              <?= htmlspecialchars($portada_set_r['card']) ?> 480w,
@@ -1050,6 +1052,7 @@ $portada_url = $portada_set['card'];
                        $ov_foto      = $foto_tutor_r;
                        $ov_nombre    = $tutor_nombre_r;
                        $ov_size      = 'lg';
+                       $ov_liviano   = true;
                        include __DIR__ . '/componentes/overlay_card_servicio.php';
                        ?>
                        <?php if ($es_oferta_r): ?>
@@ -1061,10 +1064,10 @@ $portada_url = $portada_set['card'];
                        <?php endif; ?>
                     </div>
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_r['titulo']) ?></h3>
+                        <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_r['titulo']) ?></h3>
                     <div class="text-[14px] <?= $precio_class_r ?> mt-auto mb-1.5 leading-none"><?= $precio_html_r ?></div>
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_r)): ?><span class="truncate"><?= $inst_text_r ?></span><?php endif; ?>
                             </div>
                             <div class="shrink-0 flex items-center gap-1"><?= $html_stars_r ?></div>
@@ -1073,18 +1076,18 @@ $portada_url = $portada_set['card'];
                 </a>
                 <?php endwhile; ?>
         </div>
-        <button onclick="scrollCarrusel('sec-rapidos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-rapidos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 <?php endif; ?>
 
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-    <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Tutorías nuevas</h2>
+    <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Tutorías nuevas</h2>
 </div>
     
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-nuevos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-nuevos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
         
 <div id="sec-nuevos" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
             <?php if ($res_nuevos && $res_nuevos->num_rows > 0): 
@@ -1125,14 +1128,14 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $precio_normal_n = $row_n['precio'] ?? 0;
                     
                     if ($es_oferta_n) {
-                        $precio_html_n = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_n, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row_n['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_n > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_n}%</span>" : "");
-                        $precio_class_n = "text-gray-900 font-semibold";
+                        $precio_html_n = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_n, 0, ',', '.') . "</span><span class='text-gray-600 font-normal tracking-tight'>$" . number_format($row_n['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_n > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_n}%</span>" : "");
+                        $precio_class_n = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else if (is_numeric($precio_normal_n) && $precio_normal_n > 0) {
                         $precio_html_n = "$" . number_format($precio_normal_n, 0, ',', '.');
-                        $precio_class_n = "text-gray-700 font-semibold";
+                        $precio_class_n = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else {
                         $precio_html_n = "Gratis";
-                        $precio_class_n = "text-gray-700 font-semibold";
+                        $precio_class_n = "text-[#222222] font-normal tracking-[-0.01em]";
                     }
                     
                     $html_stars_n = render_rating_html($rating_val_n, $total_v_n);
@@ -1142,7 +1145,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                 <a href="<?= $link_hash_n ?>" onclick="registrarClick(<?= (int)$row_n['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
 
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                         <img src="<?= htmlspecialchars($portada_url_n) ?>" 
      srcset="<?= htmlspecialchars($portada_set_n['thumb']) ?> 240w,
              <?= htmlspecialchars($portada_set_n['card']) ?> 480w,
@@ -1162,6 +1165,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                        $ov_foto      = $foto_tutor_n;
                        $ov_nombre    = $tutor_nombre_n;
                        $ov_size      = 'lg';
+                       $ov_liviano   = true;
                        include __DIR__ . '/componentes/overlay_card_servicio.php';
                        ?>
 
@@ -1176,11 +1180,11 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     </div>
 
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_n['titulo']) ?></h3>
+                        <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_n['titulo']) ?></h3>
                     <div class="text-[14px] <?= $precio_class_n ?> mt-auto mb-1.5 leading-none"><?= $precio_html_n ?></div>
                         
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_n)): ?><span class="truncate"><?= $inst_text_n ?></span><?php endif; ?>
                             </div>
                             <div class="shrink-0 flex items-center gap-1"><?= $html_stars_n ?></div>
@@ -1195,18 +1199,18 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
             <?php endif; ?>
         </div>
         
-        <button onclick="scrollCarrusel('sec-nuevos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-nuevos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 
 <section class="mb-3 md:mb-5 relative">
 <div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight"><?= $titulo_apuntes ?></h2>
-        <a href="/apuntes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]"><?= $titulo_apuntes ?></h2>
+        <a href="/apuntes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
 
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-apuntes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
 
 <div id="sec-apuntes" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
             <?php if (isset($res_apuntes) && $res_apuntes && $res_apuntes->num_rows > 0):
@@ -1244,12 +1248,12 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
 
                     $precio_val_ap = $row_ap['precio'] ?? 0;
                     if ($es_promo_activa) {
-                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
-                        $precio_class_ap = "text-gray-900 font-semibold flex items-center";
+                        $precio_ap = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_ap, 0, ',', '.') . "</span><span class='text-gray-600 font-normal tracking-tight'>¡Gratis!</span>";
+                        $precio_class_ap = "text-[#222222] font-normal tracking-[-0.01em] flex items-center";
                     } else if (is_numeric($precio_val_ap) && $precio_val_ap > 0) {
-                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-gray-700 font-semibold";
+                        $precio_ap = "$" . number_format($precio_val_ap, 0, ',', '.'); $precio_class_ap = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else {
-                        $precio_ap = "Gratis"; $precio_class_ap = "text-gray-700 font-semibold";
+                        $precio_ap = "Gratis"; $precio_class_ap = "text-[#222222] font-normal tracking-[-0.01em]";
                     }
                     $inst_text_ap = abreviar_institucion($row_ap['institucion_maestra'] ?? ($row_ap['institucion'] ?? ''));
                 ?>
@@ -1257,7 +1261,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                 <a href="/apunte/<?= $link_hash_ap ?>" onclick="registrarClick(<?= (int)$row_ap['id'] ?>, 'apunte')"
                    class="block flex flex-col cursor-pointer group snap-center w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
 
-                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                   <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                        <img src="<?= htmlspecialchars($portada_url_ap) ?>"
      alt="<?= htmlspecialchars($row_ap['titulo']) ?>"
      class="w-full h-full object-cover"
@@ -1278,17 +1282,17 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     </div>
 
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_ap['titulo']) ?></h3>
+                        <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_ap['titulo']) ?></h3>
 
                         <div class="text-[14px] <?= $precio_class_ap ?> mt-auto mb-1.5 leading-none"><?= $precio_ap ?></div>
 
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_ap)): ?><span class="truncate"><?= $inst_text_ap ?></span><?php endif; ?>
                             </div>
                             <?php if ($ventas_totales > 0): ?>
                             <div class="shrink-0 flex items-center">
-                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
+                                <span class="text-[10px] font-light tracking-[0.01em] text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -1300,18 +1304,18 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
             <?php endif; ?>
         </div>
 
-        <button onclick="scrollCarrusel('sec-apuntes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 
 <?php if ($res_clases_paes && $res_clases_paes->num_rows > 0): ?>
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
-    <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">PAES</h2>
-    <a href="/clases/paes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+    <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">PAES</h2>
+    <a href="/clases/paes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
 </div>
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-clases-paes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-clases-paes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
 <div id="sec-clases-paes" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
                 <?php $idx_paes = 0; while ($row_paes = $res_clases_paes->fetch_assoc()):
                     $idx_paes++;
@@ -1338,21 +1342,21 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                     $pct_paes = ($es_oferta_paes && (int)($row_paes['precio'] ?? 0) > 0) ? round(((int)$row_paes['precio'] - (int)$row_paes['precio_oferta']) / (int)$row_paes['precio'] * 100) : 0;
                     $precio_normal_paes = $row_paes['precio'] ?? 0;
                     if ($es_oferta_paes) {
-                        $precio_html_paes = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_paes, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>$" . number_format($row_paes['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_paes > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_paes}%</span>" : "");
-                        $precio_class_paes = "text-gray-900 font-semibold";
+                        $precio_html_paes = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_normal_paes, 0, ',', '.') . "</span><span class='text-gray-600 font-normal tracking-tight'>$" . number_format($row_paes['precio_oferta'], 0, ',', '.') . "</span>" . ($pct_paes > 0 ? "<span class='bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5'>-{$pct_paes}%</span>" : "");
+                        $precio_class_paes = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else if (is_numeric($precio_normal_paes) && $precio_normal_paes > 0) {
                         $precio_html_paes = "$" . number_format($precio_normal_paes, 0, ',', '.');
-                        $precio_class_paes = "text-gray-700 font-semibold";
+                        $precio_class_paes = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else {
                         $precio_html_paes = "Gratis";
-                        $precio_class_paes = "text-gray-700 font-semibold";
+                        $precio_class_paes = "text-[#222222] font-normal tracking-[-0.01em]";
                     }
                     $html_stars_paes = render_rating_html($rating_val_paes, $total_v_paes);
                     $inst_text_paes = institucion_tutor($row_paes['institucion_maestra'] ?? ($row_paes['institucion'] ?? ''));
                 ?>
                 <a href="<?= $link_hash_paes ?>" onclick="registrarClick(<?= (int)$row_paes['id'] ?>, 'servicio')"
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                         <img src="<?= htmlspecialchars($portada_url_paes) ?>"
      srcset="<?= htmlspecialchars($portada_set_paes['thumb']) ?> 240w,
              <?= htmlspecialchars($portada_set_paes['card']) ?> 480w,
@@ -1371,6 +1375,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                        $ov_foto      = $foto_tutor_paes;
                        $ov_nombre    = $tutor_nombre_paes;
                        $ov_size      = 'lg';
+                       $ov_liviano   = true;
                        include __DIR__ . '/componentes/overlay_card_servicio.php';
                        ?>
                        <?php if ($es_oferta_paes): ?>
@@ -1382,10 +1387,10 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                        <?php endif; ?>
                     </div>
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_paes['titulo']) ?></h3>
+                        <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_paes['titulo']) ?></h3>
                     <div class="text-[14px] <?= $precio_class_paes ?> mt-auto mb-1.5 leading-none"><?= $precio_html_paes ?></div>
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_paes)): ?><span class="truncate"><?= $inst_text_paes ?></span><?php endif; ?>
                             </div>
                             <div class="shrink-0 flex items-center gap-1"><?= $html_stars_paes ?></div>
@@ -1394,7 +1399,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                 </a>
                 <?php endwhile; ?>
         </div>
-        <button onclick="scrollCarrusel('sec-clases-paes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-clases-paes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 <?php endif; ?>
@@ -1404,13 +1409,13 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
            <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
                 <div class="flex items-center gap-2">
                     <div>
-                        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight leading-none">Precios de última hora</h2>
+                        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em] leading-none">Precios de última hora</h2>
                     </div>
                 </div>
             </div>
             
             <div class="relative group">
-               <button onclick="scrollCarrusel('sec-ofertas', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+               <button onclick="scrollCarrusel('sec-ofertas', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
                 
                <div id="sec-ofertas" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 pt-1 no-scrollbar scroll-smooth pl-4 pr-4 md:pl-10 md:pr-10 min-h-[108px] md:min-h-[124px] items-center">
                     
@@ -1451,7 +1456,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                            onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
                            class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
 
-                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                                 <img src="<?= htmlspecialchars($portada_url_of) ?>"
                                      srcset="<?= htmlspecialchars($portada_set_of['thumb']) ?> 240w, <?= htmlspecialchars($portada_set_of['card']) ?> 480w"
                                      sizes="170px"
@@ -1467,6 +1472,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                 $ov_foto      = $foto_tutor_ov;
                                 $ov_nombre    = $tutor_nombre_ov;
                                 $ov_size      = 'lg';
+                                $ov_liviano   = true;
                                 include __DIR__ . '/componentes/overlay_card_servicio.php';
                                 ?>
 
@@ -1478,14 +1484,14 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                             </div>
 
                             <div class="pt-2.5 flex flex-col flex-1 text-left">
-                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
+                                <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
                                 <div class="text-[14px] mt-auto mb-1.5 leading-none whitespace-nowrap">
                                     <span class="text-[11px] text-gray-400 line-through font-medium mr-1">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
-                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
+                                    <span class="text-gray-600 font-normal tracking-tight">$<?= number_format($row_of['precio_oferta'], 0, ',', '.') ?></span>
                                     <?php if ($pct_of > 0): ?><span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-<?= $pct_of ?>%</span><?php endif; ?>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                                    <div class="flex items-center gap-1.5 text-[10px] font-light text-gray-400 uppercase tracking-wide truncate max-w-[65%]">
                                         <span class="truncate"><?= $tag_of ?></span>
                                     </div>
                                     <div class="shrink-0 flex items-center gap-1"><?= $html_stars_of ?></div>
@@ -1497,7 +1503,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                            onclick="registrarClick(<?= (int)$row_of['id'] ?>, 'servicio')"
                            class="block flex flex-col cursor-pointer group snap-start w-[150px] md:w-[170px] flex-shrink-0 bg-transparent h-full">
 
-                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                            <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                                 <img src="<?= htmlspecialchars($portada_url_of) ?>"
                                      alt="<?= htmlspecialchars($row_of['titulo']) ?>"
                                      class="w-full h-full object-cover"
@@ -1510,17 +1516,18 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                 $ov_foto      = $foto_tutor_ov;
                                 $ov_nombre    = $tutor_nombre_ov;
                                 $ov_size      = 'lg';
+                                $ov_liviano   = true;
                                 include __DIR__ . '/componentes/overlay_card_servicio.php';
                                 ?>
                             </div>
 
                             <div class="pt-2.5 flex flex-col flex-1 text-left">
-                                <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
+                                <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_of['titulo']) ?></h3>
                                 <div class="text-[13px] mt-auto mb-1.5 leading-none">
-                                    <span class="text-gray-700 font-semibold tracking-tight">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
+                                    <span class="text-gray-600 font-normal tracking-tight">$<?= number_format($row_of['precio'], 0, ',', '.') ?></span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                                    <div class="flex items-center gap-1.5 text-[10px] font-light text-gray-400 uppercase tracking-wide truncate max-w-[65%]">
                                         <span class="truncate"><?= $tag_of ?></span>
                                     </div>
                                 </div>
@@ -1529,7 +1536,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
-              <button onclick="scrollCarrusel('sec-ofertas', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+              <button onclick="scrollCarrusel('sec-ofertas', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
             </div>
         </section>
         <?php endif; ?>
@@ -1540,7 +1547,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
     <?php require_once __DIR__ . '/componentes/seccion_recomendaciones.php'; ?>
     
     <div class="relative group">
-      <button onclick="scrollCarrusel('carrusel-ia', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+      <button onclick="scrollCarrusel('carrusel-ia', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
         
  <div id="carrusel-ia" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10 min-h-[100px] md:min-h-[130px]">
             <?php for($i=0; $i<6; $i++): ?>
@@ -1556,7 +1563,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
             <?php endfor; ?>
         </div>
         
-        <button onclick="scrollCarrusel('carrusel-ia', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('carrusel-ia', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-20 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 <?php endif; ?>
@@ -1565,11 +1572,11 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
 <!-- [NUBIRA 2.0] APUNTES RECIÉN PUBLICADOS -->
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
     <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Apuntes nuevos</h2>
-        <a href="/apuntes?orden=nuevos" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Apuntes nuevos</h2>
+        <a href="/apuntes?orden=nuevos" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-apuntes-nuevos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes-nuevos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
         
         <div id="sec-apuntes-nuevos" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
             <?php if (isset($res_apuntes_nuevos) && $res_apuntes_nuevos && $res_apuntes_nuevos->num_rows > 0): 
@@ -1609,14 +1616,14 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                     // --- Precio ---
                     $precio_val_apn = $row_apn['precio'] ?? 0;
                     if ($es_promo_activa_apn) {
-                        $precio_apn = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_apn, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
-                        $precio_class_apn = "text-gray-900 font-semibold flex items-center";
+                        $precio_apn = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_apn, 0, ',', '.') . "</span><span class='text-gray-600 font-normal tracking-tight'>¡Gratis!</span>";
+                        $precio_class_apn = "text-[#222222] font-normal tracking-[-0.01em] flex items-center";
                     } else if (is_numeric($precio_val_apn) && $precio_val_apn > 0) {
                         $precio_apn = "$" . number_format($precio_val_apn, 0, ',', '.'); 
-                        $precio_class_apn = "text-gray-700 font-semibold";
+                        $precio_class_apn = "text-[#222222] font-normal tracking-[-0.01em]";
                     } else { 
                         $precio_apn = "Gratis"; 
-                        $precio_class_apn = "text-gray-700 font-semibold";
+                        $precio_class_apn = "text-[#222222] font-normal tracking-[-0.01em]";
                     }
                     $inst_text_apn = abreviar_institucion($row_apn['institucion_maestra'] ?? ($row_apn['institucion'] ?? ''));
                 ?>
@@ -1624,7 +1631,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                 <a href="/apunte/<?= $link_hash_apn ?>" onclick="registrarClick(<?= (int)$row_apn['id'] ?>, 'apunte')" 
                    class="block flex flex-col cursor-pointer group snap-center w-[220px] md:w-[240px] flex-shrink-0 bg-transparent h-full">
                     
-                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-xl border border-gray-200 transition-all">
+                    <div class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
                         <img src="<?= htmlspecialchars($portada_url_apn) ?>"
                              alt="<?= htmlspecialchars($row_apn['titulo']) ?>" 
                              class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" 
@@ -1646,17 +1653,17 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                     </div>
                     
                     <div class="pt-2.5 flex flex-col flex-1 text-left">
-                        <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_apn['titulo']) ?></h3>
+                        <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_apn['titulo']) ?></h3>
                         
                         <div class="text-[14px] <?= $precio_class_apn ?> mt-auto mb-1.5 leading-none"><?= $precio_apn ?></div>
                         
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                            <div class="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
                                 <?php if(!empty($inst_text_apn)): ?><span class="truncate"><?= $inst_text_apn ?></span><?php endif; ?>
                             </div>
                             <?php if ($ventas_totales_apn > 0): ?>
                             <div class="shrink-0 flex items-center">
-                                <span class="text-[10px] font-semibold text-gray-500 leading-none"><?= $ventas_txt_apn ?> descargas</span>
+                                <span class="text-[10px] font-light tracking-[0.01em] text-gray-500 leading-none"><?= $ventas_txt_apn ?> descargas</span>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -1670,7 +1677,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
             <?php endif; ?>
         </div>
         
-        <button onclick="scrollCarrusel('sec-apuntes-nuevos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes-nuevos', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 <?php endif; ?>
@@ -1679,12 +1686,12 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
 <!-- [NUBIRA 2.0] APUNTES PAES -->
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
    <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
-        <h2 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Apuntes PAES</h2>
-        <a href="/apuntes?nivel=paes" class="text-xs font-semibold text-[#54A6D8] hover:underline transition bg-gray-50 px-3 py-1.5 rounded-2xl border border-gray-100 flex items-center gap-1 shrink-0">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Apuntes PAES</h2>
+        <a href="/apuntes?nivel=paes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
     
     <div class="relative group">
-        <button onclick="scrollCarrusel('sec-apuntes-paes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes-paes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
         
         <div id="sec-apuntes-paes" class="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar scroll-smooth compact-root pl-4 pr-4 md:pl-10 md:pr-10">
             <?php 
@@ -1715,7 +1722,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                 $precio_val_p = $row_paes['precio'] ?? 0;
                 if ($es_promo_p) {
                     $precio_p = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_val_p, 0, ',', '.') . "</span><span class='text-orange-500 tracking-tight'>¡Gratis!</span>";
-                    $precio_class_p = "text-gray-900 font-semibold flex items-center";
+                    $precio_class_p = "text-[#222222] font-normal tracking-[-0.01em] flex items-center";
                 } else if (is_numeric($precio_val_p) && $precio_val_p > 0) {
                     $precio_p = "$" . number_format($precio_val_p, 0, ',', '.'); 
                     $precio_class_p = "text-gray-900 font-bold";
@@ -1755,17 +1762,17 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                 </div>
                 
                 <div class="pt-2.5 flex flex-col flex-1 text-left">
-                    <h3 class="font-semibold text-[14px] leading-snug text-gray-900 line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_paes['titulo']) ?></h3>
+                    <h3 class="font-medium text-[14px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 mb-1 min-h-[40px]"><?= htmlspecialchars($row_paes['titulo']) ?></h3>
                     
                     <div class="text-[14px] <?= $precio_class_p ?> mt-auto mb-1.5 leading-none"><?= $precio_p ?></div>
                     
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase truncate max-w-[65%]">
+                        <div class="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
                             <?php if(!empty($inst_p)): ?><?= icon('building', 'w-3 h-3 text-gray-300 flex-shrink-0') ?><span class="truncate"><?= $inst_p ?></span><?php endif; ?>
                         </div>
                         <?php if ($ventas_p > 0): ?>
                         <div class="shrink-0 flex items-center bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                            <span class="text-[10px] font-bold text-gray-800 leading-none">
+                            <span class="text-[10px] font-light tracking-[0.01em] text-gray-800 leading-none">
                                 <?= $ventas_txt_p ?> <span class="font-medium text-gray-500">descargas</span>
                             </span>
                         </div>
@@ -1776,7 +1783,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
             <?php endwhile; ?>
         </div>
         
-        <button onclick="scrollCarrusel('sec-apuntes-paes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-orange-500 border border-gray-200 hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+        <button onclick="scrollCarrusel('sec-apuntes-paes', 1)" class="hidden md:flex absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-right text-xs"></i></button>
     </div>
 </section>
 <?php endif; ?>
@@ -1830,9 +1837,9 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
         </div>
         <div class="p-4 md:p-6 bg-white border-t border-gray-100 shrink-0">
             <?php if ($is_guest): ?>
-                <a href="/registro?rol=tutor" class="block w-full text-center py-3 md:py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-md hover:shadow-lg hover:scale-[1.01] transition-all text-sm md:text-base">Crea tu cuenta gratis</a>
+                <a href="/registro?rol=tutor" class="block w-full text-center py-3 md:py-4 rounded-2xl font-medium text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_14px_rgba(84,166,216,0.35)] hover:scale-[1.01] transition-[transform,box-shadow] duration-150 ease-out text-sm md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Crea tu cuenta gratis</a>
             <?php else: ?>
-                <button onclick="cerrarModalCaptacion(); document.getElementById('btn-publicar')?.click();" class="block w-full text-center py-3 md:py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-md hover:shadow-lg hover:scale-[1.01] transition-all text-sm md:text-base">Comenzar a enseñar ahora</button>
+                <button onclick="cerrarModalCaptacion(); document.getElementById('btn-publicar')?.click();" class="block w-full text-center py-3 md:py-4 rounded-2xl font-medium text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_14px_rgba(84,166,216,0.35)] hover:scale-[1.01] transition-[transform,box-shadow] duration-150 ease-out text-sm md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Comenzar a enseñar ahora</button>
             <?php endif; ?>
         </div>
     </div>
@@ -1875,9 +1882,9 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
         </div>
         <div class="p-4 md:p-6 bg-white border-t border-gray-100 shrink-0">
             <?php if ($is_guest): ?>
-                <a href="/registro?rol=alumno" class="block w-full text-center py-3 md:py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-md hover:shadow-lg hover:scale-[1.01] transition-all text-sm md:text-base">Crea tu cuenta gratis</a>
+                <a href="/registro?rol=alumno" class="block w-full text-center py-3 md:py-4 rounded-2xl font-medium text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_14px_rgba(84,166,216,0.35)] hover:scale-[1.01] transition-[transform,box-shadow] duration-150 ease-out text-sm md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Crea tu cuenta gratis</a>
             <?php else: ?>
-                <button onclick="cerrarModalAlumno(); document.getElementById('btn-explora')?.click();" class="block w-full text-center py-3 md:py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-md hover:shadow-lg hover:scale-[1.01] transition-all text-sm md:text-base">Explorar apuntes ahora</button>
+                <button onclick="cerrarModalAlumno(); document.getElementById('btn-explora')?.click();" class="block w-full text-center py-3 md:py-4 rounded-2xl font-medium text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_14px_rgba(84,166,216,0.35)] hover:scale-[1.01] transition-[transform,box-shadow] duration-150 ease-out text-sm md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Explorar apuntes ahora</button>
             <?php endif; ?>
         </div>
     </div>
