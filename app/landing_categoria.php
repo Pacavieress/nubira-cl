@@ -197,7 +197,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
   <header class="mb-4">
     <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
     <?php if (!empty($intro)): ?>
-    <p class="text-sm md:text-base text-gray-600 mt-2 max-w-3xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
+    <p class="sr-only md:not-sr-only text-sm md:text-base text-gray-600 mt-2 max-w-3xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
     <?php endif; ?>
     <?php if ($total > 0): ?>
       <p class="text-xs text-gray-400 mt-2 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
