@@ -321,7 +321,8 @@ $page_title = "Confirmar Contrato";
                 <div id="fechas-strip" class="flex gap-2 overflow-x-auto pb-3 no-scrollbar mb-4"></div>
                 
                 <div id="slots-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
-                
+                <div id="slots-leyenda" class="hidden mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-gray-400"></div>
+
                 <div id="slots-loading" class="hidden text-center py-6">
                     <div class="inline-block animate-spin h-6 w-6 border-4 border-blue-200 border-t-[#54A6D8] rounded-full"></div>
                 </div>
@@ -491,9 +492,10 @@ $page_title = "Confirmar Contrato";
 <?php 
 // [NUBIRA 2.0] nav_bottom eliminado intencionalmente para forzar el "Modo Túnel" en el Checkout Móvil
 if(file_exists($app_dir . '/componentes/modal_publicar.php')) require_once $app_dir . '/componentes/modal_publicar.php'; 
-if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_dir . '/componentes/modal_explora.php'; 
+if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_dir . '/componentes/modal_explora.php';
 ?>
 
+<script src="/app/js/agenda_slots.js"></script>
 <script>
     // Loader
     window.onload = () => { 
@@ -507,22 +509,14 @@ if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_d
     setupModal('btn-explora','modal-explora','explora-card','explora-close');
 
     // =========================================================
-    // [NUBIRA 2.0] CALENDARIO + SLOTS (estilo Calendly)
-    // =========================================================
-   // =========================================================
     // [NUBIRA 2.0] AGENDA: Grilla de días + Slots por hora
+    // Lógica genérica del selector vive en /app/js/agenda_slots.js (compartida
+    // con detalle_servicio.php). Acá solo lo específico de esta página: llenar
+    // el input hidden del form, habilitar "Confirmar y Pagar", mostrar el resumen.
     // =========================================================
-    (function initAgenda() {
-        const wrapper = document.getElementById('agenda-wrapper');
-        if (!wrapper) return;
+    (function() {
+        if (!document.getElementById('agenda-wrapper')) return;
 
-        const servicioId = wrapper.dataset.servicioId;
-        const slotsSection = document.getElementById('slots-section');
-        const slotsDiaLabel = document.getElementById('slots-dia-label');
-        const fechasStrip = document.getElementById('fechas-strip');
-        const slotsGrid = document.getElementById('slots-grid');
-        const slotsLoad = document.getElementById('slots-loading');
-        const slotsEmpty = document.getElementById('slots-empty');
         const inputFecha = document.getElementById('input-fecha-clase');
         const btnSubmit = document.getElementById('btn-submit');
         const slotConf = document.getElementById('slot-confirmado');
@@ -530,154 +524,36 @@ if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_d
         const resumenFechaRow = document.getElementById('resumen-fecha-row');
         const resumenFechaTexto = document.getElementById('resumen-fecha-texto');
 
-        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        const diasMap = { 'Lunes':1,'Martes':2,'Miércoles':3,'Jueves':4,'Viernes':5,'Sábado':6,'Domingo':0 };
-
-        let diaSeleccionado = null;
-        let fechaActiva = null;
-
-        // Click en una card de día → mostrar próximas 4 fechas reales y cargar slots
-        document.querySelectorAll('.dia-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.dia-card').forEach(c => {
-                    c.classList.remove('ring-2','ring-blue-100','border-[#54A6D8]','bg-blue-50');
-                    c.classList.add('border-blue-100');
-                });
-                card.classList.remove('border-blue-100');
-                card.classList.add('ring-2','ring-blue-100','border-[#54A6D8]','bg-blue-50');
-
-                diaSeleccionado = card.dataset.dia;
-                slotsDiaLabel.textContent = diaSeleccionado.toLowerCase();
-                slotsSection.classList.remove('hidden');
+        initAgendaSlots({
+            onDiaSeleccionado: () => {
                 inputFecha.value = '';
                 btnSubmit.disabled = true;
                 slotConf.classList.add('hidden');
+            },
+            onFechaSeleccionada: () => {
+                inputFecha.value = '';
+                btnSubmit.disabled = true;
+                slotConf.classList.add('hidden');
+            },
+            onSlotSelected: (datetime, hora) => {
+                inputFecha.value = datetime;
+                btnSubmit.disabled = false;
 
-                renderFechasProximas(diasMap[diaSeleccionado]);
-            });
+                const fObj = new Date(datetime.replace(' ', 'T'));
+                const diasL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+                const mesesL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                const txt = `${diasL[fObj.getDay()]} ${fObj.getDate()} de ${mesesL[fObj.getMonth()]} a las ${hora}`;
+                const txtCap = txt.charAt(0).toUpperCase() + txt.slice(1);
+
+                slotConfTxt.textContent = txtCap;
+                slotConf.classList.remove('hidden');
+                if (resumenFechaTexto) resumenFechaTexto.textContent = txtCap;
+                if (resumenFechaRow) {
+                    resumenFechaRow.classList.remove('hidden');
+                    resumenFechaRow.classList.add('flex');
+                }
+            }
         });
-
-        // Genera próximas 4 fechas reales del día elegido (ej: próximos 4 lunes)
-        function renderFechasProximas(targetDow) {
-            fechasStrip.innerHTML = '';
-            const hoy = new Date();
-            const fechas = [];
-            let cursor = new Date(hoy);
-
-            while (fechas.length < 4) {
-                if (cursor.getDay() === targetDow && cursor >= hoy) {
-                    fechas.push(new Date(cursor));
-                }
-                cursor.setDate(cursor.getDate() + 1);
-                if (fechas.length >= 4) break;
-            }
-
-            fechas.forEach((d, idx) => {
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const dd = String(d.getDate()).padStart(2, '0');
-                const fechaStr = `${yyyy}-${mm}-${dd}`;
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'flex-shrink-0 w-20 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-[#54A6D8] transition-all text-center fecha-btn';
-                btn.dataset.fecha = fechaStr;
-                btn.innerHTML = `
-                    <p class="text-[10px] font-bold text-gray-400 uppercase">${idx === 0 ? 'Próximo' : 'En ' + (idx*7) + ' días'}</p>
-                    <p class="text-base font-extrabold text-gray-900 leading-tight">${d.getDate()} ${meses[d.getMonth()]}</p>
-                `;
-                btn.addEventListener('click', () => seleccionarFecha(btn));
-                fechasStrip.appendChild(btn);
-            });
-
-            // Auto-seleccionar la primera fecha
-            const first = fechasStrip.querySelector('.fecha-btn');
-            if (first) seleccionarFecha(first);
-        }
-
-        function seleccionarFecha(btn) {
-            fechasStrip.querySelectorAll('.fecha-btn').forEach(b => {
-                b.classList.remove('border-[#54A6D8]','bg-blue-50','ring-2','ring-blue-100');
-                b.classList.add('border-gray-200','bg-white');
-            });
-            btn.classList.remove('border-gray-200','bg-white');
-            btn.classList.add('border-[#54A6D8]','bg-blue-50','ring-2','ring-blue-100');
-
-            inputFecha.value = '';
-            btnSubmit.disabled = true;
-            slotConf.classList.add('hidden');
-            fechaActiva = btn.dataset.fecha;
-            cargarSlots(fechaActiva);
-        }
-
-        async function cargarSlots(fecha) {
-            slotsGrid.innerHTML = '';
-            slotsEmpty.classList.add('hidden');
-            slotsLoad.classList.remove('hidden');
-
-            try {
-                const res = await fetch(`/app/api/slots_disponibles.php?servicio_id=${servicioId}&fecha=${fecha}`);
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
-
-                slotsLoad.classList.add('hidden');
-
-                if (!data.slots || data.slots.length === 0) {
-                    slotsEmpty.classList.remove('hidden');
-                    return;
-                }
-                renderSlots(data.slots);
-            } catch (e) {
-                console.error('Error cargando slots:', e);
-                slotsLoad.classList.add('hidden');
-                slotsEmpty.classList.remove('hidden');
-            }
-        }
-
-        function renderSlots(slots) {
-            let html = '';
-            slots.forEach(slot => {
-                const dis = slot.disponible;
-                const cls = dis 
-                    ? 'slot-btn bg-white border border-gray-200 text-gray-900 hover:border-[#54A6D8] hover:bg-blue-50 cursor-pointer'
-                    : 'bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed line-through';
-                html += `
-                    <button type="button" 
-                            class="${cls} py-2.5 rounded-xl text-sm font-bold transition-all"
-                            ${dis ? `data-datetime="${slot.datetime}" data-hora="${slot.hora}"` : 'disabled'}>
-                        ${slot.hora}
-                    </button>
-                `;
-            });
-            slotsGrid.innerHTML = html;
-
-            slotsGrid.querySelectorAll('.slot-btn').forEach(b => {
-                b.addEventListener('click', () => seleccionarSlot(b));
-            });
-        }
-
-        function seleccionarSlot(btn) {
-            slotsGrid.querySelectorAll('.slot-btn').forEach(b => {
-                b.classList.remove('bg-[#54A6D8]','text-white','border-[#54A6D8]');
-                b.classList.add('bg-white','text-gray-900','border-gray-200');
-            });
-            btn.classList.remove('bg-white','text-gray-900','border-gray-200');
-            btn.classList.add('bg-[#54A6D8]','text-white','border-[#54A6D8]');
-
-            inputFecha.value = btn.dataset.datetime;
-            btnSubmit.disabled = false;
-
-            const fObj = new Date(btn.dataset.datetime.replace(' ', 'T'));
-            const diasL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-            const mesesL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-            const txt = `${diasL[fObj.getDay()]} ${fObj.getDate()} de ${mesesL[fObj.getMonth()]} a las ${btn.dataset.hora}`;
-            slotConfTxt.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
-            slotConf.classList.remove('hidden');
-            if (resumenFechaTexto) resumenFechaTexto.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
-            if (resumenFechaRow) {
-                resumenFechaRow.classList.remove('hidden');
-                resumenFechaRow.classList.add('flex');
-            }
-        }
     })();
 
     document.querySelectorAll('.form-chat-sin-horarios').forEach(function(form) {
