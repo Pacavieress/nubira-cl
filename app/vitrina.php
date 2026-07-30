@@ -204,6 +204,11 @@ if ($is_guest && $device_id_cookie && isset($conn)) {
 // =========================================================================
 // C. CONSULTAS OPTIMIZADAS (AHORA IMPULSADAS POR AFINIDAD)
 $seed = (int)floor(time() / 1800); // Cambia cada 30 min — rota orden de carruseles
+
+// [NUBIRA 2.0] Prioridad de perfil completo: foto real > horario configurado > criterio propio de cada sección.
+require_once __DIR__ . '/helpers/usuario_helper.php';
+$sql_tiene_foto_real = nb_condicion_foto_real($conn);
+$sql_tiene_horario    = "CASE WHEN COALESCE(s.horarios_json, '') NOT IN ('', '{}', '[]') THEN 1 ELSE 0 END";
 $res_servicios = null;
 $titulo_servicios = "Clases particulares destacadas"; // Título por defecto
 try {
@@ -213,7 +218,9 @@ try {
                       (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                       a.foto_perfil,
                       a.nombre as nombre_tutor,
-                      bi.archivo as banco_archivo
+                      bi.archivo as banco_archivo,
+                      {$sql_tiene_foto_real} AS tiene_foto_real,
+                      {$sql_tiene_horario} AS tiene_horario
                FROM servicios s
                INNER JOIN alumnos a ON s.alumno_id = a.id
                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -224,13 +231,13 @@ try {
 $titulo_servicios = "Tutorías recomendadas";
 
 if ($cat_favorita) {
-    $sql_servicios .= "ORDER BY CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 8";
+    $sql_servicios .= "ORDER BY tiene_foto_real DESC, tiene_horario DESC, CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 8";
     $stmt_serv = $conn->prepare($sql_servicios);
     $stmt_serv->bind_param("s", $cat_favorita);
     $stmt_serv->execute();
     $res_servicios = $stmt_serv->get_result();
 } else {
-    $sql_servicios .= "ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 8";
+    $sql_servicios .= "ORDER BY tiene_foto_real DESC, tiene_horario DESC, {$orden_institucion_sql} RAND($seed) LIMIT 8";
     $res_servicios = $conn->query($sql_servicios);
 }
 } catch (Exception $e) {}
@@ -254,14 +261,16 @@ try {
                           (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                           a.foto_perfil,
                           a.nombre as nombre_tutor,
-                          bi.archivo as banco_archivo
+                          bi.archivo as banco_archivo,
+                          {$sql_tiene_foto_real} AS tiene_foto_real,
+                          {$sql_tiene_horario} AS tiene_horario
                    FROM servicios s
                    INNER JOIN alumnos a ON s.alumno_id = a.id
                    LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                    LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
 WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
                    AND s.id NOT IN ($placeholders_nuevos)
-                   ORDER BY {$orden_institucion_sql} s.id DESC LIMIT 8";
+                   ORDER BY tiene_foto_real DESC, tiene_horario DESC, {$orden_institucion_sql} s.id DESC LIMIT 8";
     $stmt_nuevos = $conn->prepare($sql_nuevos);
     $stmt_nuevos->bind_param(str_repeat('i', count($ids_servicios_usados)), ...$ids_servicios_usados);
     $stmt_nuevos->execute();
@@ -308,7 +317,9 @@ try {
                                 WHERE rt.tutor_id = a.id
                                   AND rt.creado_en > (NOW() - INTERVAL 30 DAY)
                                   AND rt.minutos_respuesta <= 1440) AS tiempo_resp_calculado,
-                               bi.archivo as banco_archivo
+                               bi.archivo as banco_archivo,
+                               {$sql_tiene_foto_real} AS tiene_foto_real,
+                               {$sql_tiene_horario} AS tiene_horario
                         FROM servicios s
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -316,7 +327,7 @@ try {
                         WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0
                           AND s.id NOT IN ($placeholders_rapidos)
                         HAVING tiempo_resp_calculado IS NOT NULL AND tiempo_resp_calculado < 60
-                        ORDER BY tiempo_resp_calculado ASC, RAND($seed)
+                        ORDER BY tiene_foto_real DESC, tiene_horario DESC, tiempo_resp_calculado ASC, RAND($seed)
                         LIMIT 12";
         $stmt_rapidos = $conn->prepare($sql_rapidos);
         $stmt_rapidos->bind_param(str_repeat('i', count($ids_servicios_usados)), ...$ids_servicios_usados);
@@ -345,7 +356,9 @@ try {
                                (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                                a.foto_perfil,
                                a.nombre as nombre_tutor,
-                               bi.archivo as banco_archivo
+                               bi.archivo as banco_archivo,
+                               {$sql_tiene_foto_real} AS tiene_foto_real,
+                               {$sql_tiene_horario} AS tiene_horario
                         FROM servicios s
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -353,7 +366,7 @@ try {
                         WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
                           AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1)
                           AND s.id NOT IN ($placeholders_paes_cl)
-                        ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 12";
+                        ORDER BY tiene_foto_real DESC, tiene_horario DESC, {$orden_institucion_sql} RAND($seed) LIMIT 12";
     $stmt_clases_paes = $conn->prepare($sql_clases_paes);
     $tipos_paes = 'ssssss' . str_repeat('i', count($ids_servicios_usados));
     $params_paes = array_merge([$termino_paes, $termino_paes, $termino_paes, $termino_paes, $termino_paes, $termino_paes], $ids_servicios_usados);
@@ -384,21 +397,22 @@ try {
                            a.foto_perfil, 
                            a.nombre as nombre_tutor,
                            COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                           ap.descargas AS ventas_totales
+                           ap.descargas AS ventas_totales,
+                           {$sql_tiene_foto_real} AS tiene_foto_real
                     FROM apuntes ap
                     INNER JOIN alumnos a ON ap.id_alumno = a.id
                     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                    WHERE ap.estado = 'aprobado' AND ap.nivel_academico != 'paes' ";
-                    
+
     if ($cat_favorita) {
-        $sql_apuntes .= "ORDER BY CASE WHEN ap.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 10";
+        $sql_apuntes .= "ORDER BY tiene_foto_real DESC, CASE WHEN ap.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 10";
         $stmt_ap = $conn->prepare($sql_apuntes);
         $stmt_ap->bind_param("s", $cat_favorita);
         $stmt_ap->execute();
         $res_apuntes = $stmt_ap->get_result();
     } else {
         // Fallback: lo más popular de todo Nubira
-        $sql_apuntes .= "ORDER BY {$orden_institucion_sql} RAND($seed) LIMIT 10";
+        $sql_apuntes .= "ORDER BY tiene_foto_real DESC, {$orden_institucion_sql} RAND($seed) LIMIT 10";
         $res_apuntes = $conn->query($sql_apuntes);
     }
 } catch (Exception $e) {
@@ -414,12 +428,13 @@ try {
                                   a.foto_perfil, 
                                   a.nombre as nombre_tutor,
                                   COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                                  ap.descargas AS ventas_totales
+                                  ap.descargas AS ventas_totales,
+                                  {$sql_tiene_foto_real} AS tiene_foto_real
                            FROM apuntes ap
                            INNER JOIN alumnos a ON ap.id_alumno = a.id
                            LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-                           WHERE ap.estado = 'aprobado' 
-                           ORDER BY {$orden_institucion_sql} ap.id DESC LIMIT 8";
+                           WHERE ap.estado = 'aprobado'
+                           ORDER BY tiene_foto_real DESC, {$orden_institucion_sql} ap.id DESC LIMIT 8";
     $res_apuntes_nuevos = $conn->query($sql_apuntes_nuevos);
 } catch (Exception $e) {
     error_log("Error cargando apuntes nuevos vitrina: " . $e->getMessage());
@@ -461,7 +476,9 @@ try {
                            (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                            (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                            a.foto_perfil, a.nombre as nombre_tutor,
-                           bi.archivo as banco_archivo
+                           bi.archivo as banco_archivo,
+                           {$sql_tiene_foto_real} AS tiene_foto_real,
+                           {$sql_tiene_horario} AS tiene_horario
                     FROM servicios s
                     INNER JOIN alumnos a ON s.alumno_id = a.id
                     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -469,7 +486,7 @@ try {
                     WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1 AND a.bloqueado = 0
                       AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
                       AND s.id NOT IN ($placeholders_ofertas)
-                    ORDER BY (s.cupos_oferta > 0) DESC, RAND($seed) LIMIT 12";
+                    ORDER BY tiene_foto_real DESC, tiene_horario DESC, (s.cupos_oferta > 0) DESC, RAND($seed) LIMIT 12";
     $stmt_ofertas = $conn->prepare($sql_ofertas);
     $stmt_ofertas->bind_param(str_repeat('i', count($ids_usados)), ...$ids_usados);
     $stmt_ofertas->execute();
@@ -492,13 +509,15 @@ try {
                                (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
                                (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
                                a.foto_perfil, a.nombre as nombre_tutor,
-                               bi.archivo as banco_archivo
+                               bi.archivo as banco_archivo,
+                               {$sql_tiene_foto_real} AS tiene_foto_real,
+                               {$sql_tiene_horario} AS tiene_horario
                         FROM servicios s
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                         WHERE s.estado = 'aprobado' AND a.bloqueado = 0 AND s.id NOT IN ($placeholders)
-                        ORDER BY s.id ASC LIMIT ?";
+                        ORDER BY tiene_foto_real DESC, tiene_horario DESC, s.id ASC LIMIT ?";
         $stmt_relleno = $conn->prepare($sql_relleno);
         if ($stmt_relleno) {
             $params_relleno = array_merge($ids_usados, [$faltan]);
@@ -1292,7 +1311,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                             </div>
                             <?php if ($ventas_totales > 0): ?>
                             <div class="shrink-0 flex items-center">
-                                <span class="text-[10px] font-light tracking-[0.01em] text-gray-500 leading-none"><?= $ventas_txt ?> ventas</span>
+                                <span class="text-[10px] font-light tracking-[0.01em] text-gray-500 leading-none"><?= $ventas_txt ?> descargas</span>
                             </div>
                             <?php endif; ?>
                         </div>

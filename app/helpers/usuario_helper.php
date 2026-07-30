@@ -22,6 +22,31 @@ function obtenerInstitucionUsuario(): ?string {
 }
 
 /**
+ * [NUBIRA 2.0] Fuente única de verdad de qué cuenta como "avatar por defecto"
+ * (no foto real del tutor). Usado tanto por el scoring (actualizar_score_servicio)
+ * como por el ORDER BY de vitrina.php.
+ */
+if (!function_exists('nb_fotos_prohibidas')) {
+    function nb_fotos_prohibidas(): array {
+        return ['default.png', 'default_avatar.webp', 'default_avatar.png', ''];
+    }
+}
+
+/**
+ * [NUBIRA 2.0] Fragmento SQL listo para SELECT/ORDER BY: evalúa a.foto_perfil
+ * contra nb_fotos_prohibidas() y devuelve 1/0. Requiere alumnos aliasado como "a".
+ */
+if (!function_exists('nb_condicion_foto_real')) {
+    function nb_condicion_foto_real(mysqli $conn): string {
+        $lista_sql = implode(',', array_map(
+            fn($f) => "'" . $conn->real_escape_string($f) . "'",
+            nb_fotos_prohibidas()
+        ));
+        return "CASE WHEN TRIM(COALESCE(a.foto_perfil, '')) NOT IN ($lista_sql) THEN 1 ELSE 0 END";
+    }
+}
+
+/**
  * ============================================================================
  * MOTOR DE GAMIFICACIÓN NUBIRA 2.0 (CURVA EXPONENCIAL)
  * Actualiza el score_nubira de un servicio en base al perfil y aportes del tutor.
@@ -57,8 +82,7 @@ function actualizar_score_servicio(mysqli $conn, int $id_servicio): bool {
     // --- NIVEL FÁCIL (El "Gancho") ---
 
     // [+20 pts] FÁCIL: Foto de perfil
-    $fotos_prohibidas = ['default.png', 'default_avatar.webp', 'default_avatar.png', ''];
-    if (!in_array(trim($row['foto_perfil'] ?? ''), $fotos_prohibidas)) {
+    if (!in_array(trim($row['foto_perfil'] ?? ''), nb_fotos_prohibidas())) {
         $score += 20;
     }
     
