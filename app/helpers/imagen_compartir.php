@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v17');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v18');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
