@@ -51,9 +51,9 @@ if (!function_exists('nav_class')) {
         
         $base = 'group flex items-center gap-3 px-3 py-2.5 text-[13px] rounded-xl transition-all duration-200 relative ';
         
-        $style = $active 
-            ? 'bg-[#54A6D8]/8 text-[#54A6D8] font-semibold ring-1 ring-[#54A6D8]/15' 
-            : 'text-gray-500 hover:bg-gray-50/80 hover:text-gray-800 font-medium';
+        $style = $active
+            ? 'text-[#54A6D8] font-medium'
+            : 'text-[#222222] hover:bg-gray-50/80 font-medium';
             
         return $base . $style;
     }
@@ -84,7 +84,7 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
     .sidebar-active-icon { background: rgba(84,166,216,0.1) !important; }
 </style>
 
-<aside class="hidden lg:flex lg:flex-col fixed top-14 left-0 h-[calc(100%-3.5rem)] w-56 bg-white/95 backdrop-blur-sm border-r border-gray-100/80 z-40 overflow-y-auto sidebar-scroll">
+<aside class="hidden lg:flex lg:flex-col fixed top-14 left-0 h-[calc(100%-3.5rem)] w-56 bg-white/95 backdrop-blur-sm border-r border-[#f0f0f0]/80 z-40 overflow-y-auto sidebar-scroll">
   <div class="px-4 py-5 flex flex-col h-full">
     
     <nav class="flex flex-col space-y-0.5 flex-1">
@@ -95,7 +95,7 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
               <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
           </svg>
         </div>
-        <span class="tracking-tight">Inicio</span>
+        <span class="tracking-[-0.01em]">Inicio</span>
       </a>
 
       <a href="<?= $is_guest ? '/login?redir=' . urlencode('/bandeja-entrada') : '/bandeja-entrada' ?>" class="<?= nav_class('bandeja') ?> justify-between">
@@ -105,11 +105,11 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.495 1.141.143 1.65-.6.866-1.42 1.586-2.38 2.115 1.576.166 3.09.043 4.41-.33.61-.171 1.256-.123 1.833.125A9.01 9.01 0 0 0 12 20.25Z" />
               </svg>
             </div>
-            <span class="tracking-tight">Mensajes</span>
+            <span class="tracking-[-0.01em]">Mensajes</span>
         </div>
         
         <?php if (!$is_guest): ?>
-        <span id="badge-mensajes-seguro" class="hidden bg-red-500 text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 rounded-full shadow-sm flex items-center justify-center">
+        <span id="badge-mensajes-seguro" class="hidden bg-red-500 text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.08)] flex items-center justify-center">
             0
         </span>
         <?php endif; ?>
@@ -121,7 +121,7 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.905 59.905 0 0 1 12 3.493a59.902 59.902 0 0 1 10.499 5.516 51.55 51.55 0 0 1-2.657.813m-15.482 0A50.923 50.923 0 0 1 12 13.489a50.92 50.92 0 0 1 10.491-3.342" />
           </svg>
         </div>
-        <span class="tracking-tight">Clases</span>
+        <span class="tracking-[-0.01em]">Clases</span>
       </a>
 
       <a href="/apuntes" class="<?= nav_class('/apuntes') ?>">
@@ -130,7 +130,7 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
           </svg>
         </div>
-        <span class="tracking-tight">Apuntes</span>
+        <span class="tracking-[-0.01em]">Apuntes</span>
       </a>
 
       <a href="/guias" class="<?= nav_class('/guias') ?>">
@@ -139,7 +139,7 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
           </svg>
         </div>
-        <span class="tracking-tight">Recursos</span>
+        <span class="tracking-[-0.01em]">Recursos</span>
       </a>
 
       <a href="<?= $is_guest ? '/login?redir=' . urlencode('/perfil') : '/perfil/' . $_SESSION['usuario_id'] ?>" class="<?= nav_class('/perfil') ?>">
@@ -149,23 +149,23 @@ $is_perfil   = (strpos($ruta, '/perfil') !== false);
           </svg>
         </div>
         
-        <span class="tracking-tight relative">
+        <span class="tracking-[-0.01em] relative">
             Mi Perfil
-            <span id="sidebar-alert-dot" class="<?= $alert_perfil ? '' : 'hidden' ?> absolute -top-0.5 -right-3.5 w-2 h-2 bg-red-500 rounded-full shadow-sm ring-2 ring-white" title="Completa tu perfil"></span>
+            <span id="sidebar-alert-dot" class="<?= $alert_perfil ? '' : 'hidden' ?> absolute -top-0.5 -right-3.5 w-2 h-2 bg-red-500 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.08)] ring-2 ring-white" title="Completa tu perfil"></span>
         </span>
       </a>
       
     </nav>
 
     <?php if (!$is_guest): ?>
-    <div class="mt-auto border-t border-gray-100/70 pt-3.5">
+    <div class="mt-auto border-t border-[#f0f0f0]/70 pt-3.5">
         <a href="/app/logout.php" class="flex items-center gap-3 px-3.5 py-2.5 text-[13px] text-gray-400 hover:text-red-500 hover:bg-red-50/60 rounded-xl transition-all duration-200 group">
             <div class="sidebar-nav-icon group-hover:!bg-red-50">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px] h-[18px] group-hover:translate-x-0.5 transition-transform duration-200">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
               </svg>
             </div>
-            <span class="font-medium">Cerrar Sesión</span>
+            <span class="font-medium tracking-[-0.01em]">Cerrar Sesión</span>
         </a>
     </div>
     <?php endif; ?>

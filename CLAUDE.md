@@ -1,4 +1,62 @@
 
+## Pendiente: descubre.php tiene una arquitectura de página distinta al resto del sitio
+
+Sidebar como drawer JS propio (oculto en todas las resoluciones hasta clic en hamburguesa), sin `header.php` ni `nav_bottom.php` incluidos. Para alinearlo al `sidebar.php` estándar (detectado el 30/07/2026 al intentar extender el refinamiento visual del sidebar) hace falta: (1) agregar `header.php`, (2) reemplazar el `<aside>` hardcodeado por include real de `sidebar.php`, (3) agregar `nav_bottom.php` para recuperar navegación móvil, (4) eliminar JS muerto de `openSidebar`/`closeSidebar`/`overlay`, (5) ajustar el layout de `<main>` al patrón estándar (`lg:ml-64` + padding, no `flex`). Es una reestructuración de página completa, no un simple cambio de include — requiere sesión dedicada.
+
+## Pendiente: vitrina.php y cargar_apuntes.php calculan "ventas_totales" con fórmulas DISTINTAS
+
+vitrina.php (3 carruseles de apuntes) y cargar_apuntes.php calculan `ventas_totales` con fórmulas DISTINTAS para el mismo apunte — vitrina.php usa solo `ap.descargas`, cargar_apuntes.php suma `ventas_apuntes` (precio>0) + `ap.descargas`. Esto significa que el mismo apunte podría mostrar números diferentes según en qué página se vea. Detectado el 29/07/2026 al unificar la palabra a "descargas" en ambos. Evaluar si conviene unificar también las fórmulas para consistencia total.
+
+## Pendiente sin resolver completamente: salto/zoom visual al cargar perfil.php en móvil (red lenta)
+
+Investigado el 29/07/2026 con 3 intentos: (1) Google Fonts preload+onload swap — insuficiente. (2) defer en Tailwind CDN + candado esperando DOMContentLoaded — empeoró el problema (defer no garantiza que Tailwind terminó de inyectar CSS, solo que el script se ejecutó). (3) Candado con sonda real (requestAnimationFrame verificando display computado de un elemento con clase .hidden) — mejoró parcialmente, pero la sonda solo verifica UNA clase representativa, no todas las clases realmente usadas en la página, así que el salto persiste en algunos elementos (confirmado con íconos SVG). (4) Se agregó tamaño intrínseco (width/height) a los SVG de icon() en iconos.php, beneficiando a 48 archivos del sitio — resuelve el caso específico de íconos, pero el usuario reporta que "sigue el tema" en general. Pendiente: investigar si hace falta ampliar la sonda para verificar múltiples clases representativas, o un enfoque más robusto de raíz. Log temporal en loader_nativo.php pendiente de remover cuando se cierre este tema.
+
+## Pendiente: panel_gestion.php se renderiza DOS VECES en perfil.php (candidato a investigación de arquitectura)
+
+Detectado el 29/07/2026 al investigar un reporte de "zoom"/salto visual al cargar perfil.php en móvil. `app/componentes/panel_gestion.php` (34 tiles de accesos) se incluye dos veces en la misma carga de `perfil.php`: una copia dentro de la sección `xl:hidden` para móvil (`perfil.php` ~línea 732) y otra dentro de `<aside class="hidden xl:block">` para escritorio (~línea 1041), cada una oculta por CSS según el breakpoint. No parece un descuido — el propio `panel_gestion.php` ya tiene un workaround documentado en su JS para el problema que esto genera (IDs de badge duplicados): comentario `// NUBIRA 2.0 BUGFIX: Usamos selector de atributo para atrapar IDs duplicados (Móvil + Escritorio)` (`panel_gestion.php:232-233`), que usa `document.querySelectorAll('[id="..."]')` en vez de `getElementById` para no perderse ninguna de las dos copias.
+
+Relevancia para el bug de "zoom" investigado: duplicar el panel infla el volumen de DOM y de clases Tailwind que el CDN de Tailwind (carga JIT en el navegador, ver `perfil.php:451`) tiene que escanear e inyectar antes de que el candado anti-FOUC (`fouc-lock`, `componentes/loader_nativo.php`) se libere — factor agravante identificado, no la causa raíz confirmada (esa sigue siendo el propio CDN de Tailwind bloqueante corriendo carrera contra el timing de revelado de la página).
+
+Pendiente de decidir: si vale la pena rediseñar esto (renderizar una sola vez y reposicionar vía CSS/JS según breakpoint, o cargar la versión de escritorio de forma diferida) o dejarlo como está dado que ya tiene su propio workaround funcionando. Requiere sesión dedicada — no se tocó el 29/07/2026 para no arriesgar el workaround de IDs duplicados ya existente.
+
+## Pendiente: admin como observador en clase en progreso (mini_aula.php)
+
+Detectado el 28/07/2026 al investigar si el admin puede "espiar" una clase en curso. El acceso YA existe hoy y es más abierto de lo ideal — no falta un camino de entrada, falta que ese camino sea de observador real en vez de participante indistinguible:
+
+- `mini_aula.php:34-36` exime explícitamente al admin de la restricción de comprador/vendedor (`if (!$es_admin) { $sql .= " AND (c.comprador_id = ? OR c.vendedor_id = ?)"; }`) — cualquier admin puede cargar `/app/mini_aula.php?id=X` para cualquier contrato, sin ser parte de él.
+- `mini_aula.php:128-133` fuerza `$video_habilitado = true` para admin siempre, saltándose la sala de espera y el cierre por horario.
+- La función de videollamada (`iniciarClase()`, `mini_aula.php:654-698`) no tiene ninguna rama para `$es_admin` — se une a la sala real de Daily.co con su nombre de sesión, cámara y mic con comportamiento default, indistinguible de un participante real. Los otros dos participantes además reciben la notificación de "reunión activa" (badge polling, `mini_aula.php:802-816`) apenas el admin entra — no es sigiloso.
+- Existe una variable `$rol_en_contrato = 'espectador_admin'` (`mini_aula.php:168`) que sugiere que se pensó un modo observador, pero nunca se usa en ningún otro lugar del archivo — código muerto, no una función real.
+- Contraste: `chat_mini_aula.php:68-69` sí implementa un observador real y funcional (`$bloqueado = $es_admin || ...` — el admin ve el chat pero no puede escribir). Ese mismo criterio nunca se replicó al video.
+
+Decisión de diseño pendiente: modo **VISIBLE** (admin se une como participante identificado, ej. "Nubira - Soporte" — más simple técnicamente, ya que solo requiere cambiar el `userName` que se le pasa a Daily.co en vez del nombre de sesión real, y es más transparente/ético hacia los participantes) vs. modo **INVISIBLE** (admin oculto de la videollamada real para los otros participantes — mucho más complejo técnicamente, implica trabajar contra las capacidades de la librería/API de Daily.co, y tiene implicaciones legales de privacidad a evaluar antes de construirlo). Recomendación previa: ir con modo visible. Sin resolver por decisión pendiente del usuario.
+
+## Aclaración importante: hay 3 archivos "hub" de admin — cuál es cuál (evitar confusión futura)
+
+Detectado el 27/07/2026 al intentar agregar el link de Guías al "menú admin" y descubrir, con evidencia real (grep + render con sesión simulada + revisión de `.htaccess`), que había editado el archivo equivocado primero. Documentado acá para no repetir la confusión:
+
+- **`app/panel_gestion.php` — el hub REAL que los admins usan día a día.** Es un componente incluido dentro de `perfil.php` (Mi Perfil): cuando `$es_admin === true`, renderiza el grid tipo Bento con el array `$accesos_admin` (título, link, ícono SVG, color, bg, badge). **Este es el que hay que editar** cuando se agrega una sección admin nueva — confirmado que es el que el usuario ve y usa.
+- **`app/admin_panel.php` (ruta `/admin/panel`) — un hub secundario con accordion de grupos** ("Gestión de Plataforma", "Contenidos y Publicaciones", etc.), con su propio `<aside>` propio (no usa el sidebar público). Sigue vigente y actualizado (tiene el link a Guías agregado el 27/07/2026), pero **no es el que el usuario mira habitualmente** — nadie enlaza a `/admin/panel` desde la navegación normal del sitio. Además está desactualizado: le faltan `/admin/marketing-cards`, `/admin/ia`, `/admin/banco-imagenes`, `/admin/avisos` — drift acumulado de sesiones anteriores, no introducido ahora.
+- **`app/admin_dashboard.php` (ruta `/admin/dashboard`) — archivo legacy/abandonado.** Usa Bulma CSS, redirige a `../public/login.html` (ruta que ya ni existe en la estructura actual), y solo tiene 2 botones hardcodeados (Ver Usuarios, Ver Apuntes). No tiene ningún accordion ni lista de secciones. Candidato a eliminar en una sesión de limpieza (verificar primero que nada más lo referencie), pero no se tocó ahora por estar fuera de alcance.
+
+**Regla práctica para el futuro**: si se agrega una sección `/admin/*` nueva, agregarla en **`panel_gestion.php`** (`$accesos_admin`) primero — es el que realmente importa. `admin_panel.php` es secundario/opcional de mantener. `admin_dashboard.php` no se debe tocar ni usar como referencia.
+
+## Pendiente: reactivar app/datos/ia_nubira.php (endpoint de IA para descripción de apuntes)
+
+`app/datos/ia_nubira.php:23-25` corta con un `exit` temprano ("Servicio de IA temporalmente no disponible... mientras se migra a nuevo proveedor de IA") antes de llegar al código real que arma el prompt y llama a Gemini. Detectado el 27/07/2026 durante el diseño del módulo de IA del Centro de Recursos. Confirmado con el usuario: la migración de proveedor mencionada en el comentario **se descartó** — Gemini sigue siendo el proveedor real, hay que reactivar este endpoint (quitar el corte temprano y confirmar que `GEMINI_API_KEY` sigue siendo válida), no migrar a otro proveedor. Tarea separada, no forma parte del Centro de Recursos — pendiente para una sesión dedicada.
+
+## Tech-debt pendiente: lógica de $categoria_overlay triplicada (7 copias) en vitrina.php/cargar_servicios.php/busqueda.php
+
+Detectado durante Fase 1 de la auditoría SEO (22/07/2026), al investigar el bug de `servicios.categoria = 'Otro'` (singular) renderizando "Clase de Otro" en el overlay de las cards de producción (ids 60, 61, 105, 109 — ver `sql/pendientes/fase1_unificacion_categoria_otro.sql`). El bug existió justamente porque el bloque de 3 líneas que decide el label del overlay está copy-pasteado 7 veces en vez de vivir en un solo lugar:
+
+```php
+$categoria_overlay = $row['categoria'] ?? 'Otros';
+$prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
+$nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
+```
+
+Ubicaciones: `vitrina.php` (5 copias, ~líneas 882, 1013, 1118, 1334, 1445), `cargar_servicios.php` (~línea 191), `busqueda.php` (~línea 466). Fuera de alcance de la auditoría SEO (que es sobre higiene de datos, no refactor de código) — candidato para extraer a una función helper compartida (ej. `nb_categoria_overlay($categoria)`) en una sesión de limpieza técnica dedicada, para que un futuro caso similar se arregle una sola vez y no 7.
+
 ## Pendiente: badge de nombre del tutor puede desbordar el lienzo en cards de marketing
 
 Pendiente: el badge de nombre del tutor en las cards de marketing (nb_generar_imagen_post()) puede desbordar el lienzo con nombres muy largos — colMaxW=590px hoy, sin manejo explícito de overflow/truncado. Riesgo detectado en varias rondas de rediseño del 21/07/2026, sin resolver por estar fuera de alcance de cada sesión. Evaluar truncado o reducción de tamaño de fuente dinámico para nombres largos.
