@@ -38,10 +38,11 @@ if (!function_exists('nb_fotos_prohibidas')) {
  */
 if (!function_exists('nb_condicion_foto_real')) {
     function nb_condicion_foto_real(mysqli $conn): string {
-        $lista_sql = implode(',', array_map(
-            fn($f) => "'" . $conn->real_escape_string($f) . "'",
-            nb_fotos_prohibidas()
-        ));
+        $escapadas = [];
+        foreach (nb_fotos_prohibidas() as $f) {
+            $escapadas[] = "'" . $conn->real_escape_string($f) . "'";
+        }
+        $lista_sql = implode(',', $escapadas);
         return "CASE WHEN TRIM(COALESCE(a.foto_perfil, '')) NOT IN ($lista_sql) THEN 1 ELSE 0 END";
     }
 }
