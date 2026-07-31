@@ -96,14 +96,23 @@ $hour = (int)date('G');
 $bucket = (int)floor($hour / 4);
 $seed = date('Y-m-d') . "|$bucket";
 
+// [NUBIRA 2.0] Mismo criterio de priorización que Recomendados/PAES en vitrina.php:
+// foto real > video aprobado > horario configurado > criterio original de esta página.
+$sql_tiene_foto_real = nb_condicion_foto_real($conn);
+$sql_tiene_video      = "CASE WHEN s.video_estado = 'aprobado' THEN 1 ELSE 0 END";
+$sql_tiene_horario    = "CASE WHEN COALESCE(s.horarios_json, '') NOT IN ('', '{}', '[]') THEN 1 ELSE 0 END";
+
 // 1. SELECT PRINCIPAL (Sin GROUP BY innecesario)
-$select_sql = "SELECT s.*, 
+$select_sql = "SELECT s.*,
                       COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                       (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
                       (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                       a.foto_perfil,
                       a.nombre as nombre_tutor,
-                      bi.archivo as banco_archivo
+                      bi.archivo as banco_archivo,
+                      {$sql_tiene_foto_real} AS tiene_foto_real,
+                      {$sql_tiene_video} AS tiene_video,
+                      {$sql_tiene_horario} AS tiene_horario
                FROM servicios s
                LEFT JOIN alumnos a ON s.alumno_id = a.id
                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -118,14 +127,14 @@ switch ($modo) {
         // FIX: Se agregó OFFSET para que el scroll infinito no cicle los mismos resultados
         $sql = "$select_sql $where_sql 
                 AND (s.visitas > 0 OR s.contrataciones > 0) 
-                ORDER BY s.score_nubira DESC, total_votos DESC, rating_promedio DESC, (s.visitas + (s.contrataciones * 10)) DESC 
+                ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, s.score_nubira DESC, total_votos DESC, rating_promedio DESC, (s.visitas + (s.contrataciones * 10)) DESC
                 LIMIT ? OFFSET ?";
         $params[] = $limite; $params[] = $offset; $tipos .= "ii";
         break;
         
     case 'recientes':
         $sql = "$select_sql $where_sql 
-                ORDER BY s.score_nubira DESC, total_votos DESC, rating_promedio DESC, s.fecha_publicacion DESC 
+                ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, s.score_nubira DESC, total_votos DESC, rating_promedio DESC, s.fecha_publicacion DESC
                 LIMIT ? OFFSET ?";
         $params[] = $limite; $params[] = $offset; $tipos .= "ii";
         break;
@@ -133,7 +142,7 @@ switch ($modo) {
     default:
         // Mezcla inteligente sembrada cada 4 horas
         $sql = "$select_sql $where_sql 
-                ORDER BY s.score_nubira DESC, total_votos DESC, rating_promedio DESC, SHA2(CONCAT(CAST(s.id AS CHAR), '|', ?), 256) ASC 
+                ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, s.score_nubira DESC, total_votos DESC, rating_promedio DESC, SHA2(CONCAT(CAST(s.id AS CHAR), '|', ?), 256) ASC
                 LIMIT ? OFFSET ?";
         $params[] = $seed; $params[] = $limite; $params[] = $offset; $tipos .= "sii";
         break;
