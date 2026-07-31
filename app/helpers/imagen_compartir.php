@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v19');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v20');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -20,6 +20,19 @@ if (!function_exists('nb_ancho_texto')) {
     function nb_ancho_texto(string $font, float $size, string $txt): int {
         $bb = imagettfbbox($size, 0, $font, $txt);
         return $bb !== false ? abs($bb[2] - $bb[0]) : 0;
+    }
+}
+
+if (!function_exists('nb_centrar_baseline_vertical')) {
+    // Calcula el baseline Y necesario para centrar verticalmente $txt dentro de una caja
+    // de alto $bh que empieza en $yTop, usando la caja de tinta REAL de la fuente
+    // (imagettfbbox) — no un offset fijo. Un offset fijo asume una altura de mayúscula
+    // estándar y falla con texto más alto de lo esperado (tildes: Á, É, Í, Ó, Ú, Ñ).
+    function nb_centrar_baseline_vertical(string $font, float $size, string $txt, int $yTop, int $bh): int {
+        $bb = imagettfbbox($size, 0, $font, $txt);
+        $capHeight = -min($bb[7], $bb[5]); // tinta real por encima del baseline
+        $descender = max($bb[1], $bb[3]);  // tinta real por debajo del baseline (0 si no hay)
+        return $yTop + (int)round($bh / 2 + ($capHeight - $descender) / 2);
     }
 }
 
@@ -350,7 +363,8 @@ if (!function_exists('nb_dibujar_badge_categoria')) {
 
         $cyDot = $yTop + (int)($bh / 2);
         imagefilledellipse($img, $x + $padX + $dotR, $cyDot, $dotR * 2, $dotR * 2, $cTexto);
-        imagettftext($img, $size, 0, $x + $padX + $dotR * 2 + $gapDot, $yTop + $bh - $padY - (int)($size * 0.22), $cTexto, $fSemi, $cat);
+        $yTexto = nb_centrar_baseline_vertical($fSemi, $size, $cat, $yTop, $bh);
+        imagettftext($img, $size, 0, $x + $padX + $dotR * 2 + $gapDot, $yTexto, $cTexto, $fSemi, $cat);
         return [$bw, $bh];
     }
 }
@@ -405,6 +419,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
 
         $img = imagecreatetruecolor($W, $H);
+        imageantialias($img, true); // suaviza círculos/elipses: anillo del avatar, esquinas de píldoras, puntos decorativos
         $pal = nb_paleta_marca($img);
         $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2']; $cBlanco = $pal['blanco'];
         // #10B981 (emerald-500) — mismo verde que usa detalle_servicio.php para "Disponible",
