@@ -205,7 +205,7 @@ $page_title = "Confirmar Contrato";
     <div class="md:hidden flex items-center justify-between mb-6 mt-1 max-w-[1000px] mx-auto">
         <button type="button" 
                 onclick="window.history.length > 1 ? window.history.back() : window.location.href='/vitrina'"
-                class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all"
+                class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-[#f0f0f0]/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)] active:scale-95 transition-all"
                 aria-label="Volver">
             <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
         </button>
@@ -216,7 +216,7 @@ $page_title = "Confirmar Contrato";
     <div class="w-full max-w-[1000px] mx-auto"> 
         
         <div class="mb-8 mt-2 md:mt-0">
-            <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 class="text-3xl font-medium tracking-[-0.01em] text-[#222222] flex items-center gap-3">
                 <button type="button" 
                         onclick="window.history.length > 1 ? window.history.back() : window.location.href='/vitrina'"
                         class="hidden md:flex w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 items-center justify-center text-gray-600 transition-all hover:scale-[1.01]"
@@ -248,7 +248,7 @@ $page_title = "Confirmar Contrato";
                 <div class="lg:col-span-7 space-y-8">
                     
                     <section>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Detalles del acuerdo</h3>
+                        <h3 class="text-xl font-medium tracking-[-0.01em] text-[#222222] mb-4">Detalles del acuerdo</h3>
                         
                         <div class="mb-6">
   <div class="mb-6">
@@ -355,25 +355,25 @@ $page_title = "Confirmar Contrato";
 </div>
                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Mensaje inicial (Opcional)</label>
                             <textarea name="notas" rows="4" 
-                                     class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[16px] md:text-sm focus:ring-2 focus:ring-[#54A6D8] focus:bg-white transition outline-none resize-none"
+                                     class="w-full bg-gray-50 border border-[#f0f0f0] rounded-xl px-4 py-3 text-[16px] md:text-sm focus:ring-2 focus:ring-[#54A6D8] focus:bg-white transition outline-none resize-none"
                                       placeholder="Hola, me interesa tu servicio para..."></textarea>
                         </div>
                     </section>
 
-                    <hr class="border-gray-100">
+                    <hr class="border-[#f0f0f0]">
 
                     <section>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Monto a pagar</h3>
+                        <h3 class="text-xl font-medium tracking-[-0.01em] text-[#222222] mb-4">Monto a pagar</h3>
                         
-                        <div class="bg-white border-2 border-gray-100 rounded-2xl p-6 hover:border-blue-100 transition-colors shadow-sm relative overflow-hidden group">
+                        <div class="bg-white border border-[#f0f0f0] rounded-2xl p-6 hover:border-blue-100 transition-colors shadow-[0_1px_3px_rgba(0,0,0,0.04)] relative overflow-hidden group">
                             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                 <?= icon('money', 'w-24 h-24 text-[#54A6D8]') ?>
                             </div>
                             
                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Precio del servicio (CLP)</label>
                             <div class="flex items-center gap-2">
-                                <span class="text-3xl font-extrabold text-gray-400">$</span>
-                                <span class="text-4xl font-extrabold text-gray-900"><?= number_format($montoInicial, 0, ',', '.') ?></span>
+                                <span class="text-3xl font-normal text-gray-400">$</span>
+                                <span class="text-4xl font-normal text-[#222222] tracking-[-0.01em]"><?= number_format($montoInicial, 0, ',', '.') ?></span>
                             </div>
                             
                             <?php if($is_oferta): ?>
@@ -396,32 +396,32 @@ $page_title = "Confirmar Contrato";
 
                 <div class="lg:col-span-5 relative">
                     <div class="sticky top-24">
-                        <div class="bg-white rounded-3xl border border-gray-200 shadow-xl shadow-gray-200/50 overflow-hidden">
+                        <div class="bg-white rounded-3xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
                             
                             <div class="p-6 border-b border-gray-50 flex gap-4">
-                                <img src="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>" class="w-20 h-20 rounded-xl object-cover border border-gray-100 bg-gray-50" alt="Servicio">
+                                <img src="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>" class="w-20 h-20 rounded-xl object-cover border border-[#f0f0f0] bg-gray-50" alt="Servicio">
                                 <div>
                                     <p class="text-[10px] font-bold text-[#54A6D8] uppercase tracking-wide mb-1">Contratando a</p>
-                                    <h4 class="font-bold text-gray-900 leading-tight mb-1 line-clamp-2"><?= $vendedor_display ?></h4>
+                                    <h4 class="font-medium tracking-[-0.01em] text-[#222222] leading-tight mb-1 line-clamp-2"><?= $vendedor_display ?></h4>
                                     <p class="text-xs text-gray-500 truncate"><?= htmlspecialchars(institucion_tutor($serv['institucion'] ?? '', false), ENT_QUOTES, 'UTF-8') ?></p>
                                 </div>
                             </div>
 
                             <div class="p-6 bg-gray-50/50">
-                                <h3 class="font-bold text-gray-900 text-sm mb-4"><?= htmlspecialchars($serv['titulo'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                <h3 class="font-medium tracking-[-0.01em] text-[#222222] text-sm mb-4"><?= htmlspecialchars($serv['titulo'], ENT_QUOTES, 'UTF-8') ?></h3>
                                 
                                 <div class="flex justify-between items-center text-sm text-gray-600 mb-2">
                                     <span>Modalidad</span>
-                                    <span class="font-medium text-gray-900"><?= ucfirst(htmlspecialchars($serv['modalidad'], ENT_QUOTES, 'UTF-8')) ?></span>
+                                    <span class="font-medium tracking-[-0.01em] text-[#222222]"><?= ucfirst(htmlspecialchars($serv['modalidad'], ENT_QUOTES, 'UTF-8')) ?></span>
                                 </div>
                                 <div class="flex justify-between items-center text-sm text-gray-600 mb-2">
                                     <span>Categoría</span>
-                                    <span class="font-medium text-gray-900"><?= htmlspecialchars($serv['categoria'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="font-medium tracking-[-0.01em] text-[#222222]"><?= htmlspecialchars($serv['categoria'], ENT_QUOTES, 'UTF-8') ?></span>
                                 </div>
                                 <?php if ($tiene_horarios): ?>
                                 <div id="resumen-fecha-row" class="hidden justify-between items-center text-sm text-gray-600 mb-2">
                                     <span>Fecha y hora</span>
-                                    <span id="resumen-fecha-texto" class="font-medium text-gray-900 text-right"></span>
+                                    <span id="resumen-fecha-texto" class="font-medium tracking-[-0.01em] text-[#222222] text-right"></span>
                                 </div>
                                 <?php endif; ?>
 
@@ -429,30 +429,30 @@ $page_title = "Confirmar Contrato";
                                     <div class="space-y-2 mb-6">
                                         <div class="flex justify-between items-center text-sm text-gray-500 mt-4">
                                             <span>Subtotal</span>
-                                            <span class="font-bold line-through">$<?= number_format($montoInicial,0,',','.') ?></span>
+                                            <span class="font-medium line-through">$<?= number_format($montoInicial,0,',','.') ?></span>
                                         </div>
                                         <div class="flex justify-between items-center text-sm text-emerald-600 font-bold bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100">
                                             <span><?= htmlspecialchars($mensaje_beca, ENT_QUOTES, 'UTF-8') ?></span>
                                             <span>-$<?= number_format($montoInicial - $montoFinal, 0, ',', '.') ?></span>
                                         </div>
-                                        <div class="border-t border-gray-200 my-3 border-dashed"></div>
+                                        <div class="border-t border-[#f0f0f0] my-3 border-dashed"></div>
                                         <div class="flex justify-between items-center">
-                                            <span class="font-bold text-gray-900">Total a Pagar</span>
-                                            <span class="font-extrabold text-2xl text-[#54A6D8] tracking-tight">$<?= number_format($montoFinal,0,',','.') ?></span>
+                                            <span class="font-medium tracking-[-0.01em] text-[#222222]">Total a Pagar</span>
+                                            <span class="font-normal text-2xl text-[#54A6D8] tracking-[-0.01em]">$<?= number_format($montoFinal,0,',','.') ?></span>
                                         </div>
                                     </div>
                                 <?php else: ?>
-                                    <div class="border-t border-gray-200 my-4 border-dashed"></div>
+                                    <div class="border-t border-[#f0f0f0] my-4 border-dashed"></div>
                                     <div class="flex justify-between items-center mb-6">
-                                        <span class="font-bold text-gray-900">Total (CLP)</span>
-                                        <span class="font-extrabold text-2xl text-[#54A6D8]">$<?= number_format($montoFinal,0,',','.') ?></span>
+                                        <span class="font-medium tracking-[-0.01em] text-[#222222]">Total (CLP)</span>
+                                        <span class="font-normal text-2xl text-[#54A6D8] tracking-[-0.01em]">$<?= number_format($montoFinal,0,',','.') ?></span>
                                     </div>
                                 <?php endif; ?>
 
                                 <!-- [NUBIRA 2.0] Botón de Acción Principal -->
                                 <?php if (!$tiene_horarios): ?>
                                 <button type="submit" form="form-chat-sticky"
-                                        class="w-full text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 active:scale-[0.98]">
+                                        class="w-full text-white font-bold py-4 rounded-2xl transition-all shadow-md hover:shadow-blue-200 flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 active:scale-[0.98]">
                                     <i class="fa-regular fa-comments text-sm opacity-80"></i>
                                     <span>Contactar al tutor</span>
                                 </button>
@@ -460,7 +460,7 @@ $page_title = "Confirmar Contrato";
                                     El tutor coordinará contigo el horario por chat.
                                 </p>
                                 <?php else: ?>
-                                <button type="submit" id="btn-submit" disabled class="w-full text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-200 transform active:scale-[0.98] flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none">
+                                <button type="submit" id="btn-submit" disabled class="w-full text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-blue-200 transform active:scale-[0.98] flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none">
                                     <span><?= $montoFinal == 0 ? 'Canjear Servicio Gratis' : 'Confirmar y Pagar' ?></span>
                                     <i class="fa-solid <?= $montoFinal == 0 ? 'fa-gift' : 'fa-lock' ?> text-sm opacity-80" id="btn-icon"></i>
                                 </button>
@@ -471,11 +471,11 @@ $page_title = "Confirmar Contrato";
                             </div>
                         </div>
 
-                        <div class="mt-6 flex items-start gap-3 px-4">
+                        <div class="mt-6 bg-slate-50 border border-[#f0f0f0] rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-start gap-3 p-4">
                             <div class="text-emerald-500 mt-0.5"><?= icon('shield-check', 'w-5 h-5') ?></div>
                             <div>
-                                <p class="text-xs font-bold text-gray-900">Protección al Estudiante Nubira</p>
-                                <p class="text-[10px] text-gray-500 leading-tight mt-1">Si el servicio no se entrega o no cumple lo acordado, te devolvemos el dinero íntegramente.</p>
+                                <p class="text-xs font-medium tracking-[-0.01em] text-[#222222]">Protección al Estudiante Nubira</p>
+                                <p class="text-[10px] text-gray-500 font-normal leading-tight mt-1">Si el servicio no se entrega o no cumple lo acordado, te devolvemos el dinero íntegramente.</p>
                             </div>
                         </div>
 

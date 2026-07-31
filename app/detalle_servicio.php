@@ -505,48 +505,48 @@ session_write_close();
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-start">
             
             <div class="lg:col-span-8 space-y-8">
-                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                <div class="bg-white border border-[#f0f0f0] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <!-- Topbar dentro de la card (solo móvil): Volver + Categoría + Compartir -->
                     <div class="lg:hidden flex items-center justify-between gap-2 mb-4">
                         <button type="button" onclick="navegacionSeguraNubira()"
-                                class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all" aria-label="Volver">
+                                class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-[#f0f0f0]/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)] active:scale-95 transition-all" aria-label="Volver">
                             <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
                         </button>
-                        <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
+                        <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-[#f0f0f0] uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
                         <button type="button"
-                                class="js-abrir-sheet-compartir w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200/60 shadow-sm active:scale-95 transition-all" aria-label="Compartir" data-track-click="share:abrir_sheet">
+                                class="js-abrir-sheet-compartir w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-[#f0f0f0]/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)] active:scale-95 transition-all" aria-label="Compartir" data-track-click="share:abrir_sheet">
                             <?= icon('share-outline', 'w-5 h-5') ?>
                         </button>
                     </div>
                     <div class="hidden lg:flex items-center justify-between gap-3 mb-3">
                       <div class="flex items-center gap-3">
-                          <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
+                          <span class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-[#f0f0f0] uppercase tracking-wide"><?= htmlspecialchars($servicio['categoria']) ?></span>
                       </div>
                       <!-- ✈️ Compartir (desktop): abre el bottom sheet -->
                       <button type="button"
-                              class="js-abrir-sheet-compartir hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200 text-sm font-bold transition-all shrink-0"
+                              class="js-abrir-sheet-compartir hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-[#f0f0f0] text-sm font-bold transition-all shrink-0"
                               aria-label="Compartir" data-track-click="share:abrir_sheet">
                           <?= icon('share-outline','w-4 h-4') ?> Compartir
                       </button>
                     </div>
 
-                    <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight mb-6 tracking-tight"><?= $page_title ?></h1>
+                    <h1 class="text-3xl md:text-4xl font-medium text-[#222222] leading-tight mb-6 tracking-[-0.01em]"><?= $page_title ?></h1>
                     
                     <a href="/perfil/<?= (int)$servicio['alumno_id'] ?>" 
-                       class="flex items-center gap-4 pb-6 border-b border-gray-100 w-full hover:bg-gray-50 p-3 rounded-xl transition -mx-3 track-seller"
+                       class="flex items-center gap-4 pb-6 border-b border-[#f0f0f0] w-full hover:bg-gray-50 p-3 rounded-xl transition -mx-3 track-seller"
                        data-track-click="perfil:<?= (int)$servicio['alumno_id'] ?>">
-                        <div class="w-14 h-14 rounded-full border border-gray-200 bg-white overflow-hidden shadow-sm flex-shrink-0">
+                        <div class="w-14 h-14 rounded-full border border-[#f0f0f0] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex-shrink-0">
                              <?php $pf = (!empty($servicio['foto_perfil'])) ? "/app/perfil/fotos/".htmlspecialchars($servicio['foto_perfil']) : ""; ?>
                             <?php if($pf): ?><img src="<?= $pf ?>" class="w-full h-full object-cover"><?php else: ?><div class="w-full h-full flex items-center justify-center bg-blue-50 text-[#54A6D8] font-bold text-lg"><?= $inicPub ?></div><?php endif; ?>
                         </div>
                         <div>
                             <div class="flex items-center gap-1.5">
-                                <p class="text-sm font-bold text-gray-900">Publicado por <?= htmlspecialchars($nombrePub) ?></p>
+                                <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Publicado por <?= htmlspecialchars($nombrePub) ?></p>
                                 <?php if (($servicio['verificacion_estado'] === 'aprobado') || ($servicio['verificacion_estado'] === null && !empty($servicio['institucion_maestra']))): ?><i class="fa-solid fa-circle-check text-[#54A6D8] text-xs"></i><?php endif; ?>
                             </div>
                            <div class="flex items-center gap-1.5 mt-0.5">
             <span class="text-gray-400 text-xs"><i class="fa-solid fa-building-columns"></i></span>
-            <p class="text-xs text-gray-500 uppercase font-medium"><?= htmlspecialchars(institucion_tutor($servicio['institucion_maestra'] ?? '', false)) ?></p>
+            <p class="text-xs text-gray-500 font-normal tracking-[0.01em]"><?= htmlspecialchars(institucion_tutor($servicio['institucion_maestra'] ?? '', false)) ?></p>
         </div>
         
      <div class="mt-1.5">
@@ -582,7 +582,7 @@ session_write_close();
 
 
                    <div class="mt-6">
-                        <h3 class="font-bold text-gray-900 mb-3">Sobre este servicio</h3>
+                        <h3 class="font-medium tracking-[-0.01em] text-[#222222] mb-3">Sobre este servicio</h3>
                         <?php
                             $desc_raw = trim($servicio['descripcion'] ?? '');
                             $desc_raw = html_entity_decode($desc_raw, ENT_QUOTES, 'UTF-8');
@@ -688,7 +688,7 @@ function reproducirVideoTutor() {
 </script>
 <?php elseif ($es_propietario): ?>
 <div class="mt-6 pt-6 border-t border-gray-50">
-    <div class="border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+    <div class="border border-[#f0f0f0] rounded-2xl p-4 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
             <i class="fa-solid fa-video text-gray-300 text-lg shrink-0"></i>
             <span class="text-sm text-gray-500">Los servicios con video reciben más contactos</span>
@@ -701,14 +701,14 @@ function reproducirVideoTutor() {
 <?php endif; ?>
 
                    <div class="mt-8 pt-8 border-t border-gray-50">
-    <h3 class="font-bold text-gray-900 mb-5">Lo que incluye este servicio</h3>
+    <h3 class="font-medium tracking-[-0.01em] text-[#222222] mb-5">Lo que incluye este servicio</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
         <div class="flex items-start gap-3">
             <svg class="text-gray-400 mt-1 w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0H3" />
             </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Clase 100% online en Nubira</p>
+                <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Clase 100% online en Nubira</p>
                 <p class="text-[11px] text-gray-500">Sin Meet, Zoom ni Teams. Aula virtual integrada en la plataforma.</p>
             </div>
         </div>
@@ -717,7 +717,7 @@ function reproducirVideoTutor() {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Chat anónimo antes de contratar</p>
+                <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Chat anónimo antes de contratar</p>
                 <p class="text-[11px] text-gray-500">Conversa con el tutor sin compartir WhatsApp ni redes sociales. Cuidamos tu privacidad.</p>
             </div>
         </div>
@@ -726,7 +726,7 @@ function reproducirVideoTutor() {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
             </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Horarios publicados por el tutor</p>
+                <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Horarios publicados por el tutor</p>
                 <p class="text-[11px] text-gray-500">Reserva con días de anticipación según su disponibilidad.</p>
             </div>
         </div>
@@ -735,7 +735,7 @@ function reproducirVideoTutor() {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
             </svg>
             <div>
-                <p class="text-sm font-bold text-gray-800">Garantía Nubira</p>
+                <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Garantía Nubira</p>
                 <p class="text-[11px] text-gray-500">Tu pago queda protegido hasta confirmar la clase.</p>
             </div>
         </div>
@@ -745,7 +745,7 @@ function reproducirVideoTutor() {
                     <div class="mt-8 pt-8 border-t border-gray-50">
                         <div class="flex items-center justify-between mb-5">
                             <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-gray-900">Disponibilidad</h3>
+                                <h3 class="font-medium tracking-[-0.01em] text-[#222222]">Disponibilidad</h3>
                             </div>
                            <?php if ($es_propietario): ?>
     <a href="/app/editar_horarios.php?id=<?= $id ?>" class="text-[11px] font-bold text-[#54A6D8] hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full transition-colors">
@@ -757,7 +757,7 @@ function reproducirVideoTutor() {
     <div class="mb-4 flex items-center gap-2">
         <div class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1">
             <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span class="text-[11px] font-bold text-emerald-700">
+            <span class="text-[11px] font-medium text-emerald-700">
                 Disponible <?= $cantidad_dias ?> día<?= $cantidad_dias > 1 ? 's' : '' ?> a la semana
             </span>
         </div>
@@ -769,7 +769,7 @@ function reproducirVideoTutor() {
                 $es_proximo = ($dia === $dia_proximo);
             ?>
                 <button type="button"
-                        class="dia-card text-left bg-white border <?= $es_proximo ? 'border-[#54A6D8] ring-2 ring-blue-100' : 'border-blue-100' ?> rounded-xl p-3 hover:border-[#54A6D8] hover:shadow-md transition-all group relative"
+                        class="dia-card text-left bg-white border <?= $es_proximo ? 'border-[#54A6D8] ring-2 ring-blue-100' : 'border-[#f0f0f0]' ?> rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#54A6D8] hover:shadow-md transition-all group relative"
                         data-dia="<?= $dia ?>">
 
                     <?php if ($es_proximo): ?>
@@ -778,13 +778,13 @@ function reproducirVideoTutor() {
                         </span>
                     <?php endif; ?>
 
-                    <p class="text-xs font-extrabold <?= $es_proximo ? 'text-[#54A6D8]' : 'text-gray-800' ?> mb-2 group-hover:text-[#54A6D8] transition-colors">
+                    <p class="text-xs font-medium <?= $es_proximo ? 'text-[#54A6D8]' : 'text-[#222222]' ?> mb-2 group-hover:text-[#54A6D8] transition-colors">
                         <?= $dia ?>
                     </p>
 
                     <div class="flex flex-col gap-1.5">
                         <?php foreach ($bloques as $h): ?>
-                            <span class="bg-blue-50 text-[#54A6D8] text-[10px] font-bold px-2 py-1 rounded-md text-center border border-blue-100/50 truncate">
+                            <span class="bg-blue-50 text-[#54A6D8] text-[10px] font-medium px-2 py-1 rounded-md text-center border border-blue-100/50 truncate">
                                 <?= htmlspecialchars($h) ?>
                             </span>
                         <?php endforeach; ?>
@@ -816,7 +816,7 @@ function reproducirVideoTutor() {
                     </div>
                     <?php else: ?>
                     <div class="mt-8 pt-8 border-t border-gray-50 rounded-2xl">
-                        <div class="border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+                        <div class="border border-[#f0f0f0] rounded-2xl p-4 flex items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <i class="fa-regular fa-calendar-days text-gray-300 text-lg shrink-0"></i>
                                 <span class="text-sm text-gray-500">Coordina directo con <span class="font-semibold text-gray-800"><?= htmlspecialchars($nombrePub) ?></span> por chat</span>
@@ -831,8 +831,8 @@ function reproducirVideoTutor() {
                     <?php endif; ?>
                     </div>
                 
-                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-             <h3 class="font-bold text-gray-900 mb-6 flex gap-2 items-center">Opiniones <?php if ($tot_votos > 0): ?><span id="badge-votos" class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs"><?= $tot_votos ?></span><?php endif; ?></h3>
+                <div class="bg-white border border-[#f0f0f0] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+             <h3 class="font-medium tracking-[-0.01em] text-[#222222] mb-6 flex gap-2 items-center">Opiniones <?php if ($tot_votos > 0): ?><span id="badge-votos" class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs"><?= $tot_votos ?></span><?php endif; ?></h3>
                     <?php if (count($coms) > 0): ?>
                         <div class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar">
                             <?php foreach ($coms as $c): 
@@ -847,7 +847,7 @@ function reproducirVideoTutor() {
                                 $cf = (!empty($c['f'])) ? "/app/perfil/fotos/".htmlspecialchars($c['f']) : "";
                             ?>
 <div class="min-w-[85%] md:min-w-[45%] snap-start reseña-card" data-rating="<?= $c['r'] ?>">
-                                <div class="bg-gray-50 border border-gray-100 p-4 rounded-xl h-full flex flex-col relative group/resena">
+                                <div class="bg-gray-50 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 rounded-xl h-full flex flex-col relative group/resena">
         
         <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
             <button onclick="borrarOpinionUI(this, <?= $c['c_id'] ?>, 'contrato')" 
@@ -858,11 +858,11 @@ function reproducirVideoTutor() {
         <?php endif; ?>
 
         <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 rounded-full bg-white border border-gray-200 overflow-hidden"><?php if($cf): ?><img src="<?= $cf ?>" class="w-full h-full object-cover"><?php else: ?><div class="w-full h-full flex items-center justify-center text-[#54A6D8] bg-blue-50 font-bold text-xs"><?= $ci ?></div><?php endif; ?></div>
-            <div><p class="font-bold text-xs text-gray-900"><?= htmlspecialchars($cn) ?></p><p class="text-[10px] text-gray-400"><?= date('d M Y', strtotime($c['d'])) ?></p></div>
+            <div class="w-8 h-8 rounded-full bg-white border border-[#f0f0f0] overflow-hidden"><?php if($cf): ?><img src="<?= $cf ?>" class="w-full h-full object-cover"><?php else: ?><div class="w-full h-full flex items-center justify-center text-[#54A6D8] bg-blue-50 font-bold text-xs"><?= $ci ?></div><?php endif; ?></div>
+            <div><p class="font-medium tracking-[-0.01em] text-xs text-[#222222]"><?= htmlspecialchars($cn) ?></p><p class="text-[10px] text-gray-400 font-normal"><?= date('d M Y', strtotime($c['d'])) ?></p></div>
         </div>
         <div class="flex text-yellow-400 text-[10px] mb-2"><?php for($i=0;$i<5;$i++) echo ($i<$c['r'])?'<i class="fa-solid fa-star"></i>':'<i class="fa-regular fa-star text-gray-300"></i>'; ?></div>
-        <p class="text-gray-600 text-xs leading-relaxed"><?= nl2br(htmlspecialchars($c['t'])) ?></p>
+        <p class="text-gray-600 text-xs font-normal leading-relaxed"><?= nl2br(htmlspecialchars($c['t'])) ?></p>
     </div>
 </div>
                             <?php endforeach; ?>
@@ -882,7 +882,7 @@ function reproducirVideoTutor() {
 
             <div class="lg:col-span-4">
                 <div class="sticky top-16 space-y-6">
-                      <div class="hidden lg:block bg-white rounded-2xl border border-gray-200 p-6">
+                      <div class="hidden lg:block bg-white rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6">
                         <?php 
 // [INYECCIÓN NUBIRA] Lógica de oferta
 $is_oferta = oferta_vigente($servicio);
@@ -909,7 +909,7 @@ $is_oferta = oferta_vigente($servicio);
         <div class="flex flex-col gap-0.5" id="precio-block">
             <span class="text-sm text-gray-400 line-through font-medium">Normal $<?= number_format($servicio['precio'], 0, ',', '.') ?></span>
             <div class="flex items-baseline gap-2">
-                  <span class="text-4xl font-black text-gray-900 tracking-tight leading-none">$<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?></span>
+                  <span class="text-4xl font-normal text-[#222222] tracking-[-0.01em] leading-none">$<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?></span>
                   <?php $pct_det = (int)round(($servicio['precio'] - $servicio['precio_oferta']) / $servicio['precio'] * 100); ?>
                   <?php if ($pct_det > 0): ?><span class="bg-green-600 text-white text-xs font-semibold px-1.5 py-0.5 rounded ml-1 align-middle">-<?= $pct_det ?>%</span><?php endif; ?>
             </div>
@@ -927,7 +927,7 @@ $is_oferta = oferta_vigente($servicio);
         </div>
     <?php else: ?>
         <div class="flex items-baseline gap-2" id="precio-block">
-            <span class="text-4xl font-extrabold text-gray-900 tracking-tight">$<?= number_format($servicio['precio'], 0, ',', '.') ?></span>
+            <span class="text-4xl font-normal text-[#222222] tracking-[-0.01em]">$<?= number_format($servicio['precio'], 0, ',', '.') ?></span>
             <span class="text-xs font-bold bg-gray-100 px-2 py-1 rounded text-gray-600"><?= strtoupper($servicio['modalidad']) ?></span>
         </div>
     <?php endif; ?>
@@ -1011,7 +1011,7 @@ $is_oferta = oferta_vigente($servicio);
                     </div>
                     
 
-                    <div class="mt-8 bg-slate-50 border border-slate-100 rounded-2xl p-5 flex gap-4 items-start shadow-sm">
+                    <div class="mt-8 bg-slate-50 border border-[#f0f0f0] rounded-2xl p-5 flex gap-4 items-start shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                         <div class="w-10 h-10 rounded-full bg-blue-100 text-[#54A6D8] flex items-center justify-center shrink-0">
                             <i class="fa-solid fa-shield-halved text-lg"></i>
                         </div>
@@ -1113,7 +1113,7 @@ $is_oferta = oferta_vigente($servicio);
                 <div class="absolute top-1 right-1 z-10">
                     <?php $nivel_label = ['leyenda'=>'Leyenda','elite'=>'Élite','pro'=>'Pro','top'=>'Top'][$nivel_tutor] ?? ''; ?>
                     <?php if ($nivel_label): ?>
-                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200"><?= $nivel_label ?></span>
+                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]"><?= $nivel_label ?></span>
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
@@ -1196,7 +1196,7 @@ $mostrar_barra_movil = (
                     <?php endif; ?>
                 </div>
                 <div class="flex items-baseline gap-1.5 mt-0.5">
-    <span id="precio-movil-oferta" class="text-xl font-black text-gray-900 tracking-tight leading-none">
+    <span id="precio-movil-oferta" class="text-xl font-normal text-[#222222] tracking-[-0.01em] leading-none">
         $<?= number_format($servicio['precio_oferta'], 0, ',', '.') ?>
     </span>
     <?php if (isset($pct_det) && $pct_det > 0): ?><span class="bg-green-600 text-white text-[10px] font-semibold px-1 py-px rounded ml-1 leading-none relative -top-0.5">-<?= $pct_det ?>%</span><?php endif; ?>
@@ -1204,7 +1204,7 @@ $mostrar_barra_movil = (
 <?php if (isset($txt_term) && $txt_term !== null): ?><p class="text-xs text-gray-500 leading-none mt-0.5"><?= $txt_term ?></p><?php endif; ?>
 <?php else: ?>
 <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-none">Inversión total</span>
-<span id="precio-movil-main" class="text-xl font-extrabold text-gray-900 tracking-tight leading-none mt-0.5">
+<span id="precio-movil-main" class="text-xl font-normal text-[#222222] tracking-[-0.01em] leading-none mt-0.5">
     $<?= number_format($servicio['precio'], 0, ',', '.') ?>
 </span>
             <?php endif; ?>
@@ -1428,7 +1428,7 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
                             </div>
                             <div class="flex justify-between items-end mt-2 pt-2 border-t border-gray-100">
                                 <span class="text-xs font-bold uppercase text-gray-400">Total a pagar</span>
-                                <span class="text-4xl font-black text-emerald-500 tracking-tight leading-none">${formatCLP(totalPagar)}</span>
+                                <span class="text-4xl font-normal text-emerald-500 tracking-[-0.01em] leading-none">${formatCLP(totalPagar)}</span>
                             </div>
                         </div>
                     `;
