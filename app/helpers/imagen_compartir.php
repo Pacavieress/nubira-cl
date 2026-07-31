@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v18');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v19');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -372,12 +372,9 @@ if (!function_exists('nb_dibujar_features_fijas')) {
             $col  = $i % 2;
             $colX = $padX + $col * ($colW + $gap);
             $yBase = $yTop + 14 + $fila * $rowGap;
-            $wLn = nb_ancho_texto($fSemi, $size, $label);
-            $wTotal = $dotR * 2 + $dotGap + $wLn;
-            $xUnidad = $colX + (int)(($colW - $wTotal) / 2);
             $cyDot = $yBase - (int)($size * 0.35);
-            imagefilledellipse($img, $xUnidad + $dotR, $cyDot, $dotR * 2, $dotR * 2, $cAcentoDot);
-            nb_texto_izquierda($img, $fSemi, $size, $cTxt, $label, $xUnidad + $dotR * 2 + $dotGap, $yBase);
+            imagefilledellipse($img, $colX + $dotR, $cyDot, $dotR * 2, $dotR * 2, $cAcentoDot);
+            nb_texto_izquierda($img, $fSemi, $size, $cTxt, $label, $colX + $dotR * 2 + $dotGap, $yBase);
         }
         return $yTop + 14 + $rowGap + 16;
     }
@@ -450,7 +447,7 @@ if (!function_exists('nb_generar_imagen_post')) {
 
         /* ===== PARTE 3: título genérico (categoría en acento) — sin bio (privacidad: ver nota) =====
            avatar bajado a 340 para que el título pueda subir sin taparlo. */
-        $y = max($avBottom, $yRating + 20) + 55;
+        $y = max($avBottom, $yRating + 20) + 70;
 
         $categoriaTxt = trim((string)($s['categoria'] ?? ''));
         $tituloGenerico = 'Clases particulares de ' . $categoriaTxt;
