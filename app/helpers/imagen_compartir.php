@@ -358,13 +358,14 @@ if (!function_exists('nb_dibujar_badge_categoria')) {
 if (!function_exists('nb_dibujar_features_fijas')) {
     // 4 features fijas en grilla 2x2 (textos nuevos más largos que en 4 columnas —
     // verificado con nb_wrap_texto real: en 4 columnas 2 de las 4 frases se truncaban).
-    function nb_dibujar_features_fijas($img, string $fSemi, int $W, int $yTop, int $cTxt2): int {
+    function nb_dibujar_features_fijas($img, string $fSemi, int $W, int $yTop, int $cTxt, int $cAcentoDot): int {
         $features = [
             'Clase 100% online en Nubira', 'Chat anónimo antes de contratar',
             'Horarios publicados por el tutor', 'Garantía Nubira',
         ];
         $padX = 100; $gap = 40; $size = 18; $rowGap = 40;
         $colW = (int)(($W - $padX * 2 - $gap) / 2);
+        $dotR = 4; $dotGap = 10;
 
         foreach ($features as $i => $label) {
             $fila = (int)($i / 2);
@@ -372,8 +373,11 @@ if (!function_exists('nb_dibujar_features_fijas')) {
             $colX = $padX + $col * ($colW + $gap);
             $yBase = $yTop + 14 + $fila * $rowGap;
             $wLn = nb_ancho_texto($fSemi, $size, $label);
-            $xLn = $colX + (int)(($colW - $wLn) / 2);
-            nb_texto_izquierda($img, $fSemi, $size, $cTxt2, $label, $xLn, $yBase);
+            $wTotal = $dotR * 2 + $dotGap + $wLn;
+            $xUnidad = $colX + (int)(($colW - $wTotal) / 2);
+            $cyDot = $yBase - (int)($size * 0.35);
+            imagefilledellipse($img, $xUnidad + $dotR, $cyDot, $dotR * 2, $dotR * 2, $cAcentoDot);
+            nb_texto_izquierda($img, $fSemi, $size, $cTxt, $label, $xUnidad + $dotR * 2 + $dotGap, $yBase);
         }
         return $yTop + 14 + $rowGap + 16;
     }
@@ -412,7 +416,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
         /* ===== PARTE 1: avatar grande + badge Disponible + nombre + institución ===== */
-        $diamAv = 340; $avTop = 90; $avLeft = 70;
+        $diamAv = 340; $avTop = 120; $avLeft = 70;
         $avCx = $avLeft + (int)($diamAv / 2);
         nb_dibujar_avatar($img, $s, $avCx, $avTop, $diamAv, $cAcento, $cBlanco, $fBold);
         $avBottom = $avTop + $diamAv;
@@ -421,7 +425,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         $colMaxW = $W - 40 - $colX;
 
         $nombre = nb_truncar_una_linea($fBold, 40, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $colMaxW);
-        $yNombre = 180;
+        $yNombre = 210;
         nb_texto_izquierda($img, $fBold, 40, $cAcento, $nombre, $colX, $yNombre);
 
         // Badge decorativo puro — ya no depende de tiempo de respuesta real.
@@ -444,9 +448,9 @@ if (!function_exists('nb_generar_imagen_post')) {
         $yRating = $yCatBadge + $bhCat + 34;
         nb_dibujar_cat_rating_izquierda($img, '', $fBold, $fSemi, 26, $prom, $votos, $colX, $yRating, $cAcento, $cAcento);
 
-        /* ===== PARTE 3: título genérico (categoría en acento) + bio condicional =====
+        /* ===== PARTE 3: título genérico (categoría en acento) — sin bio (privacidad: ver nota) =====
            avatar bajado a 340 para que el título pueda subir sin taparlo. */
-        $y = max($avBottom, $yRating + 20) + 30;
+        $y = max($avBottom, $yRating + 20) + 55;
 
         $categoriaTxt = trim((string)($s['categoria'] ?? ''));
         $tituloGenerico = 'Clases particulares de ' . $categoriaTxt;
@@ -464,23 +468,27 @@ if (!function_exists('nb_generar_imagen_post')) {
         }
         $y += 46 + 30;
 
-        $bio = trim((string)($s['bio'] ?? ''));
-        if ($bio !== '') {
-            $lineasBio = nb_wrap_texto($fReg, 26, $bio, $W - 200, 2);
-            foreach ($lineasBio as $i => $ln) {
-                nb_texto_centrado($img, $fReg, 26, $cTxt2, $ln, $W, $y + $i * 36);
-            }
-            $y += count($lineasBio) * 36 + 40;
-        } else {
-            $y += 10;
-        }
+        // [NUBIRA 2.0] Bio removida de esta card (30/07/2026): el texto libre puede contener
+        // el apellido completo del tutor (ej. "Soy Karen Almonacid..."), lo que anula la
+        // protección de privacidad que ya aplica nombre_publico_tutor() más arriba ("Karen A.").
+        // La bio SIGUE mostrándose normal en perfil.php — este cambio es solo para la imagen
+        // pública compartible. El espacio liberado se redistribuye como aire entre secciones
+        // (ver los 3 gaps de PARTE 4 más abajo), no queda vacío al fondo del canvas.
+        $y += 70;
 
         /* ===== PARTE 4: features 2x2 + precio (negro) + botón (izquierda) + marca (misma fila) ===== */
-        $yFeaturesFin = nb_dibujar_features_fijas($img, $fSemi, $W, $y, $cTxt2);
-        $y = $yFeaturesFin + 55;
+        $yFeaturesFin = nb_dibujar_features_fijas($img, $fSemi, $W, $y, $cTxt, $cAcento);
+
+        $ofertaVigenteCard = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
+            && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'))
+            && (float)($s['precio_oferta'] ?? 0) > 0;
+        $y = $yFeaturesFin + 90;
+        if ($ofertaVigenteCard) {
+            $y += 65; // espacio extra para que el badge OFERTA (dibujado sobre el precio) no choque con la fila 2 de features
+        }
 
         nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 48, 32, $W, $y, $cTxt, $cTxt2);
-        $y += 60;
+        $y += 75;
 
         $bhBoton = nb_dibujar_boton_agendar($img, $fBold, 100, $y, $cAcento, $cBlanco);
 
