@@ -209,6 +209,8 @@ $seed = (int)floor(time() / 1800); // Cambia cada 30 min — rota orden de carru
 require_once __DIR__ . '/helpers/usuario_helper.php';
 $sql_tiene_foto_real = nb_condicion_foto_real($conn);
 $sql_tiene_horario    = "CASE WHEN COALESCE(s.horarios_json, '') NOT IN ('', '{}', '[]') THEN 1 ELSE 0 END";
+// [NUBIRA 2.0] Factor extra SOLO para "Recomendados" y "PAES": foto > video > horario > criterio propio.
+$sql_tiene_video      = "CASE WHEN s.video_estado = 'aprobado' THEN 1 ELSE 0 END";
 $res_servicios = null;
 $titulo_servicios = "Clases particulares destacadas"; // Título por defecto
 try {
@@ -220,7 +222,8 @@ try {
                       a.nombre as nombre_tutor,
                       bi.archivo as banco_archivo,
                       {$sql_tiene_foto_real} AS tiene_foto_real,
-                      {$sql_tiene_horario} AS tiene_horario
+                      {$sql_tiene_horario} AS tiene_horario,
+                      {$sql_tiene_video} AS tiene_video
                FROM servicios s
                INNER JOIN alumnos a ON s.alumno_id = a.id
                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -231,13 +234,13 @@ try {
 $titulo_servicios = "Tutorías recomendadas";
 
 if ($cat_favorita) {
-    $sql_servicios .= "ORDER BY tiene_foto_real DESC, tiene_horario DESC, CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 8";
+    $sql_servicios .= "ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 8";
     $stmt_serv = $conn->prepare($sql_servicios);
     $stmt_serv->bind_param("s", $cat_favorita);
     $stmt_serv->execute();
     $res_servicios = $stmt_serv->get_result();
 } else {
-    $sql_servicios .= "ORDER BY tiene_foto_real DESC, tiene_horario DESC, {$orden_institucion_sql} RAND($seed) LIMIT 8";
+    $sql_servicios .= "ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, {$orden_institucion_sql} RAND($seed) LIMIT 8";
     $res_servicios = $conn->query($sql_servicios);
 }
 } catch (Exception $e) {}
@@ -358,7 +361,8 @@ try {
                                a.nombre as nombre_tutor,
                                bi.archivo as banco_archivo,
                                {$sql_tiene_foto_real} AS tiene_foto_real,
-                               {$sql_tiene_horario} AS tiene_horario
+                               {$sql_tiene_horario} AS tiene_horario,
+                               {$sql_tiene_video} AS tiene_video
                         FROM servicios s
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
@@ -366,7 +370,7 @@ try {
                         WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
                           AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1)
                           AND s.id NOT IN ($placeholders_paes_cl)
-                        ORDER BY tiene_foto_real DESC, tiene_horario DESC, {$orden_institucion_sql} RAND($seed) LIMIT 12";
+                        ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, {$orden_institucion_sql} RAND($seed) LIMIT 12";
     $stmt_clases_paes = $conn->prepare($sql_clases_paes);
     $tipos_paes = 'ssssss' . str_repeat('i', count($ids_servicios_usados));
     $params_paes = array_merge([$termino_paes, $termino_paes, $termino_paes, $termino_paes, $termino_paes, $termino_paes], $ids_servicios_usados);
@@ -1005,7 +1009,16 @@ $portada_url = $portada_set['card'];
     </div>
 </section>
 
-<?php if ($res_rapidos && $res_rapidos->num_rows > 0): ?>
+<?php
+// [NUBIRA 2.0] Sección oculta temporalmente (30/07/2026): muy pocos tutores califican con
+// cualquier umbral de tiempo de respuesta (diagnóstico de esta sesión: en producción el
+// volumen es insuficiente y/o repite el mismo tutor). La query de arriba y el pool de
+// deduplicación ($ids_servicios_usados) siguen corriendo sin cambios — esto SOLO oculta
+// el render. Para reactivar: cambiar $mostrar_seccion_rapidos a true, o reemplazar esta
+// condición cuando se decida la sección de reemplazo (ver criterios evaluados: foto+horario,
+// descripción larga, apuntes, ofertas, score_nubira, recién publicados).
+$mostrar_seccion_rapidos = false;
+if ($mostrar_seccion_rapidos && $res_rapidos && $res_rapidos->num_rows > 0): ?>
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
     <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Responden en menos de 1 hora</h2>
