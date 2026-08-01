@@ -322,8 +322,8 @@ require_once $app_dir . '/componentes/sidebar.php';
                 <h2 class="text-base font-bold text-gray-900 mb-4">Imágenes generadas</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="text-center">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Post (1:1)</p>
-                        <img id="preview-post-img" src="" alt="Preview POST" class="w-full max-w-[320px] mx-auto rounded-xl border border-gray-100 aspect-square object-cover bg-gray-50">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Post (4:5)</p>
+                        <img id="preview-post-img" src="" alt="Preview POST" class="w-full max-w-[320px] mx-auto rounded-xl border border-gray-100 aspect-[4/5] object-cover bg-gray-50">
                         <div class="flex items-center justify-center gap-2 mt-3">
                             <button type="button" class="btn-compartir px-3 py-2 rounded-xl border border-gray-200 text-[#54A6D8] hover:bg-blue-50 text-xs font-bold flex items-center gap-1.5" data-formato="post">
                                 <i class="fa-solid fa-share-nodes"></i> Compartir

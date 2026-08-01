@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v21');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v22');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -412,7 +412,9 @@ if (!function_exists('nb_dibujar_boton_agendar')) {
 
 if (!function_exists('nb_generar_imagen_post')) {
     function nb_generar_imagen_post(array $s, string $output_path): bool {
-        $W = 1080; $H = 1080;
+        // 4:5 — formato recomendado por Instagram para feed (evita el recorte lateral que
+        // aplica la cuadrícula de perfil 3:4 desde ene/2026 a posts 1:1).
+        $W = 1080; $H = 1350;
         $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
         $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
         $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
@@ -431,7 +433,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         // Margen de seguridad lateral: colchón visual para compartir en redes,
         // independiente de si la plataforma finalmente recorta o no la imagen.
         $M = 110;
-        $diamAv = 340; $avTop = 120; $avLeft = $M;
+        $diamAv = 400; $avTop = 150; $avLeft = $M;
         $avCx = $avLeft + (int)($diamAv / 2);
         nb_dibujar_avatar($img, $s, $avCx, $avTop, $diamAv, $cAcento, $cBlanco, $fBold);
         $avBottom = $avTop + $diamAv;
@@ -440,7 +442,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         $colMaxW = ($W - $M) - $colX;
 
         $nombre = nb_truncar_una_linea($fBold, 40, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $colMaxW);
-        $yNombre = 210;
+        $yNombre = $avTop + 90; // misma relación con avTop que en H=1080, para no desalinear con el avatar más grande
         nb_texto_izquierda($img, $fBold, 40, $cAcento, $nombre, $colX, $yNombre);
 
         // Badge decorativo puro — ya no depende de tiempo de respuesta real.
@@ -463,9 +465,8 @@ if (!function_exists('nb_generar_imagen_post')) {
         $yRating = $yCatBadge + $bhCat + 34;
         nb_dibujar_cat_rating_izquierda($img, '', $fBold, $fSemi, 26, $prom, $votos, $colX, $yRating, $cAcento, $cAcento);
 
-        /* ===== PARTE 3: título genérico (categoría en acento) — sin bio (privacidad: ver nota) =====
-           avatar bajado a 340 para que el título pueda subir sin taparlo. */
-        $y = max($avBottom, $yRating + 20) + 70;
+        /* ===== PARTE 3: título genérico (categoría en acento) — sin bio (privacidad: ver nota) ===== */
+        $y = max($avBottom, $yRating + 20) + 110;
 
         $categoriaTxt = trim((string)($s['categoria'] ?? ''));
         $tituloGenerico = 'Clases particulares de ' . $categoriaTxt;
@@ -481,7 +482,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         } else {
             nb_texto_centrado($img, $fSemi, 34, $cTxt, $lineaTit, $W, $y);
         }
-        $y += 46 + 30;
+        $y += 46 + 40;
 
         // [NUBIRA 2.0] Bio removida de esta card (30/07/2026): el texto libre puede contener
         // el apellido completo del tutor (ej. "Soy Karen Almonacid..."), lo que anula la
@@ -489,7 +490,7 @@ if (!function_exists('nb_generar_imagen_post')) {
         // La bio SIGUE mostrándose normal en perfil.php — este cambio es solo para la imagen
         // pública compartible. El espacio liberado se redistribuye como aire entre secciones
         // (ver los 3 gaps de PARTE 4 más abajo), no queda vacío al fondo del canvas.
-        $y += 70;
+        $y += 100;
 
         /* ===== PARTE 4: features 2x2 + precio (negro) + botón (izquierda) + marca (misma fila) ===== */
         $yFeaturesFin = nb_dibujar_features_fijas($img, $fSemi, $W, $y, $cTxt, $cAcento);
@@ -497,13 +498,13 @@ if (!function_exists('nb_generar_imagen_post')) {
         $ofertaVigenteCard = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
             && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'))
             && (float)($s['precio_oferta'] ?? 0) > 0;
-        $y = $yFeaturesFin + 90;
+        $y = $yFeaturesFin + 120;
         if ($ofertaVigenteCard) {
             $y += 65; // espacio extra para que el badge OFERTA (dibujado sobre el precio) no choque con la fila 2 de features
         }
 
         nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 48, 32, $W, $y, $cTxt, $cTxt2);
-        $y += 75;
+        $y += 95;
 
         $bhBoton = nb_dibujar_boton_agendar($img, $fBold, $M, $y, $cAcento, $cBlanco);
 
