@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v20');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v21');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -377,7 +377,7 @@ if (!function_exists('nb_dibujar_features_fijas')) {
             'Clase 100% online en Nubira', 'Chat anónimo antes de contratar',
             'Horarios publicados por el tutor', 'Garantía Nubira',
         ];
-        $padX = 100; $gap = 40; $size = 18; $rowGap = 40;
+        $padX = 110; $gap = 40; $size = 18; $rowGap = 40; // padX debe coincidir con $M de nb_generar_imagen_post()
         $colW = (int)(($W - $padX * 2 - $gap) / 2);
         $dotR = 4; $dotGap = 10;
 
@@ -428,13 +428,16 @@ if (!function_exists('nb_generar_imagen_post')) {
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
         /* ===== PARTE 1: avatar grande + badge Disponible + nombre + institución ===== */
-        $diamAv = 340; $avTop = 120; $avLeft = 70;
+        // Margen de seguridad lateral: colchón visual para compartir en redes,
+        // independiente de si la plataforma finalmente recorta o no la imagen.
+        $M = 110;
+        $diamAv = 340; $avTop = 120; $avLeft = $M;
         $avCx = $avLeft + (int)($diamAv / 2);
         nb_dibujar_avatar($img, $s, $avCx, $avTop, $diamAv, $cAcento, $cBlanco, $fBold);
         $avBottom = $avTop + $diamAv;
 
         $colX = $avLeft + $diamAv + 40;
-        $colMaxW = $W - 40 - $colX;
+        $colMaxW = ($W - $M) - $colX;
 
         $nombre = nb_truncar_una_linea($fBold, 40, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $colMaxW);
         $yNombre = 210;
@@ -466,7 +469,7 @@ if (!function_exists('nb_generar_imagen_post')) {
 
         $categoriaTxt = trim((string)($s['categoria'] ?? ''));
         $tituloGenerico = 'Clases particulares de ' . $categoriaTxt;
-        $lineasTit = nb_wrap_texto($fSemi, 34, $tituloGenerico, $W - 160, 1);
+        $lineasTit = nb_wrap_texto($fSemi, 34, $tituloGenerico, $W - ($M * 2), 1);
         $lineaTit = $lineasTit[0] ?? '';
         if ($categoriaTxt !== '' && mb_substr($lineaTit, -mb_strlen($categoriaTxt)) === $categoriaTxt) {
             $prefijo = mb_substr($lineaTit, 0, mb_strlen($lineaTit) - mb_strlen($categoriaTxt));
@@ -502,11 +505,11 @@ if (!function_exists('nb_generar_imagen_post')) {
         nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 48, 32, $W, $y, $cTxt, $cTxt2);
         $y += 75;
 
-        $bhBoton = nb_dibujar_boton_agendar($img, $fBold, 100, $y, $cAcento, $cBlanco);
+        $bhBoton = nb_dibujar_boton_agendar($img, $fBold, $M, $y, $cAcento, $cBlanco);
 
         // Marca en la misma fila que el botón (izquierda), centrada verticalmente respecto
         // a su altura (65px) — antes iba apilada debajo y se sentían "encimados".
-        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', 980, $y + 42);
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - $M, $y + 42);
         $y += $bhBoton;
 
         $ok = imagejpeg($img, $output_path, 90);
