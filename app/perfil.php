@@ -215,6 +215,12 @@ if (!$es_propio && !$es_visitante) {
 }
 // ============================================================
 
+// [NUBIRA 2.0 PERF] Liberar la sesión para no bloquear otras pestañas/requests del
+// mismo usuario mientras corren las queries pesadas de abajo (servicios, apuntes,
+// comentarios, gamificación). Ya no quedan escrituras a $_SESSION después de este
+// punto: header.php/nav_bottom.php migraron su caché de nav a archivo (nav_cache.php).
+session_write_close();
+
 // --- LÓGICA DE INCENTIVOS & ALERTAS ---
 $falta_foto = empty($foto_field);
 $falta_bio  = empty(trim($bio_actual));
@@ -451,7 +457,9 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -532,7 +540,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                 
                                 <div class="flex flex-col items-start w-full">
                                     <div class="flex items-center justify-start gap-2 w-full">
-                                        <h1 class="text-2xl md:text-3xl font-normal tracking-[-0.01em] text-[#222222] break-words"><?= htmlspecialchars($nombre_display) ?></h1>
+                                        <h1 class="text-2xl md:text-3xl font-medium tracking-[-0.01em] text-[#222222] break-words"><?= htmlspecialchars($nombre_display) ?></h1>
                                         <?php if ($es_verificado): ?>
                                         <span title="Alumno Verificado"><?= icon('check-circle', 'w-5 h-5 text-[#54A6D8] shrink-0') ?></span>
                                         <?php endif; ?>
@@ -1185,19 +1193,6 @@ async function enviarMensajeAdmin(destinoId, btn) {
 }
 </script>
 <?php endif; ?>
-<?php 
-$rutas_footer = [
-    __DIR__ . '/includes/footer.php',
-    $_SERVER['DOCUMENT_ROOT'] . '/app/includes/footer.php',
-    $_SERVER['DOCUMENT_ROOT'] . '/includes/footer.php'
-];
-foreach ($rutas_footer as $ruta) {
-    if (file_exists($ruta)) {
-        require_once $ruta;
-        break;
-    }
-}
-?>
 
 <script>
 // TOKEN CSRF disponible para todas las peticiones
@@ -1549,54 +1544,36 @@ setInterval(async () => {
 </script>
 
 <script>
-(function() {
-    var yaDisparado = false;
+// [Fix zoom foto de perfil] Antes de revelar la página, esperar a que la foto grande
+// termine de decodificar — evita que aparezca a medio decodificar justo cuando se
+// quita fouc-lock (se percibía como un "zoom" al estabilizarse). Timeout corto: mejor
+// mostrar sin decodificar que colgar el loader. El resto del mecanismo (cuándo se
+// dispara, failsafe) vive centralizado en componentes/loader_nativo.php.
+window.nubiraLoaderExtraWait = function(revelar) {
+    if (window.__perfilFotoEsperaIniciada) return;
+    window.__perfilFotoEsperaIniciada = true;
 
-    var revelarPagina = function() {
-        var l = document.getElementById('loader-nativo');
-        var b = document.body;
-        sessionStorage.setItem('nubira_loader_visto', '1');
-        if (b) b.classList.remove('fouc-lock');
-        if (l && l.style.display !== 'none') { l.style.opacity = '0'; setTimeout(function() { l.style.display = 'none'; }, 300); }
+    var img = document.getElementById('img-perfil-visual');
+    if (!img) { revelar(); return; }
+
+    var resuelto = false;
+    var resolverUnaVez = function() {
+        if (resuelto) return;
+        resuelto = true;
+        revelar();
     };
 
-    // [Fix zoom foto de perfil] Antes de revelar la página, esperar a que la foto grande
-    // termine de decodificar — evita que aparezca a medio decodificar justo cuando se
-    // quita fouc-lock (se percibía como un "zoom" al estabilizarse). Timeout corto: mejor
-    // mostrar sin decodificar que colgar el loader. No afecta páginas sin esta foto.
-    var dismissLoader = function() {
-        if (yaDisparado) return;
-        yaDisparado = true;
-
-        var img = document.getElementById('img-perfil-visual');
-        if (!img) { revelarPagina(); return; }
-
-        var resuelto = false;
-        var resolverUnaVez = function() {
-            if (resuelto) return;
-            resuelto = true;
-            revelarPagina();
-        };
-
-        if (typeof img.decode === 'function') {
-            img.decode().then(resolverUnaVez).catch(resolverUnaVez);
-        } else if (img.complete) {
-            resolverUnaVez();
-            return;
-        } else {
-            img.addEventListener('load', resolverUnaVez, { once: true });
-            img.addEventListener('error', resolverUnaVez, { once: true });
-        }
-        setTimeout(resolverUnaVez, 350);
-    };
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', dismissLoader, { once: true });
+    if (typeof img.decode === 'function') {
+        img.decode().then(resolverUnaVez).catch(resolverUnaVez);
+    } else if (img.complete) {
+        resolverUnaVez();
+        return;
     } else {
-        requestAnimationFrame(dismissLoader);
+        img.addEventListener('load', resolverUnaVez, { once: true });
+        img.addEventListener('error', resolverUnaVez, { once: true });
     }
-    window.addEventListener('load', dismissLoader, { once: true });
-    setTimeout(dismissLoader, 1500);
-})();
+    setTimeout(resolverUnaVez, 350);
+};
 </script>
 
 </body>
