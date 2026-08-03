@@ -474,7 +474,6 @@ $tiene_ofertas_activas = false;
 $ids_usados = $ids_servicios_usados; // [DEDUP] arranca con lo ya mostrado en recomendadas+nuevas+rápidas
 
 try {
-    $placeholders_ofertas = implode(',', array_fill(0, count($ids_usados), '?'));
     $sql_ofertas = "SELECT s.*, s.oferta_termino,
                            COALESCE(dp.institucion, a.institucion) as institucion_maestra,
                            (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
@@ -489,12 +488,8 @@ try {
                     LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
                     WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1 AND a.bloqueado = 0
                       AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
-                      AND s.id NOT IN ($placeholders_ofertas)
                     ORDER BY tiene_foto_real DESC, tiene_horario DESC, (s.cupos_oferta > 0) DESC, RAND($seed) LIMIT 12";
-    $stmt_ofertas = $conn->prepare($sql_ofertas);
-    $stmt_ofertas->bind_param(str_repeat('i', count($ids_usados)), ...$ids_usados);
-    $stmt_ofertas->execute();
-    $res_ofertas = $stmt_ofertas->get_result();
+    $res_ofertas = $conn->query($sql_ofertas);
 
     if ($res_ofertas) {
         while ($r = $res_ofertas->fetch_assoc()) {
