@@ -8,6 +8,50 @@ require_once __DIR__ . '/helpers/seo.php';
 require_once __DIR__ . '/helpers/imagen_guia.php';
 require_once __DIR__ . '/helpers/institucion.php';
 
+// [CTA guías] Inserta HTML como hermano justo después del primer <h2> del cuerpo del
+// artículo. Usa el parser HTML tolerante de DOMDocument en ambos fragmentos (no exige
+// XML estricto) e importa nodos entre documentos. Si no hay ningún <h2>, no fuerza
+// una posición alternativa: devuelve el cuerpo sin tocar.
+if (!function_exists('nb_insertar_tras_primer_h2')) {
+    function nb_insertar_tras_primer_h2(string $html_cuerpo, string $html_insertar): string {
+        if (trim($html_insertar) === '') return $html_cuerpo;
+
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $html_cuerpo . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        if (!$ok) return $html_cuerpo;
+
+        $h2 = $dom->getElementsByTagName('h2')->item(0);
+        if (!$h2 || !$h2->parentNode) return $html_cuerpo;
+
+        $dom_cta = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom_cta->loadHTML('<?xml encoding="utf-8" ?><div>' . $html_insertar . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        $cta_root = $dom_cta->getElementsByTagName('div')->item(0);
+        if (!$cta_root) return $html_cuerpo;
+
+        $frag = $dom->createDocumentFragment();
+        foreach ($cta_root->childNodes as $node) {
+            $frag->appendChild($dom->importNode($node, true));
+        }
+
+        if ($h2->nextSibling) {
+            $h2->parentNode->insertBefore($frag, $h2->nextSibling);
+        } else {
+            $h2->parentNode->appendChild($frag);
+        }
+
+        $root = $dom->getElementsByTagName('div')->item(0);
+        $html_final = '';
+        foreach ($root->childNodes as $child) {
+            $html_final .= $dom->saveHTML($child);
+        }
+        return $html_final;
+    }
+}
+
 $cat_slug = strtolower(trim($_GET['cat'] ?? ''));
 $art_slug = strtolower(trim($_GET['slug'] ?? ''));
 
@@ -51,6 +95,7 @@ $where_base_servicios = "TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activ
 $tutores_relacionados = [];
 $apuntes_relacionados = [];
 $link_ver_clases = null;
+$link_ver_apuntes = null;
 
 if (!empty($categoria['categoria_relacionada']) || !empty($categoria['filtro_relacionado'])) {
     // --- Tutores/servicios relacionados ---
@@ -98,16 +143,49 @@ if (!empty($categoria['categoria_relacionada']) || !empty($categoria['filtro_rel
     while ($row = $res->fetch_assoc()) $apuntes_relacionados[] = $row;
     $stmt->close();
 
-    // --- Link "Ver todas las clases de X" (solo si esa landing está indexable=1) ---
+    // --- Link "Ver todas las clases/apuntes de X" (solo si esa landing está indexable=1) ---
+    $slug_por_categoria = array_flip(nubira_categorias_seo());
+
     $stmt = $conn->prepare("SELECT indexable FROM seo_categorias_contenido WHERE categoria = ? AND tipo IN ('clases','ambos') ORDER BY (tipo='ambos') ASC LIMIT 1");
     $stmt->bind_param("s", $categoria['nombre']);
     $stmt->execute();
     $cfg_seo = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     if ($cfg_seo && $cfg_seo['indexable']) {
-        $slug_por_categoria = array_flip(nubira_categorias_seo());
         $link_ver_clases = $slug_por_categoria[$categoria['nombre']] ?? null;
     }
+
+    $stmt = $conn->prepare("SELECT indexable FROM seo_categorias_contenido WHERE categoria = ? AND tipo IN ('apuntes','ambos') ORDER BY (tipo='ambos') ASC LIMIT 1");
+    $stmt->bind_param("s", $categoria['nombre']);
+    $stmt->execute();
+    $cfg_seo_apuntes = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($cfg_seo_apuntes && $cfg_seo_apuntes['indexable']) {
+        $link_ver_apuntes = $slug_por_categoria[$categoria['nombre']] ?? null;
+    }
+}
+
+require_once __DIR__ . '/componentes/cta_guia.php';
+
+$cta_tutores_html = '';
+if (!empty($link_ver_clases) && count($tutores_relacionados) > 0) {
+    $cta_tutores_html = nb_cta_guia([
+        'tipo'      => 'tutores',
+        'categoria' => $categoria['nombre'],
+        'cantidad'  => count($tutores_relacionados),
+        'link'      => $link_ver_clases,
+        'avatares'  => array_column($tutores_relacionados, 'foto_perfil'),
+    ]);
+}
+
+$cta_apuntes_html = '';
+if (!empty($link_ver_apuntes) && count($apuntes_relacionados) > 0) {
+    $cta_apuntes_html = nb_cta_guia([
+        'tipo'      => 'apuntes',
+        'categoria' => $categoria['nombre'],
+        'cantidad'  => count($apuntes_relacionados),
+        'link'      => $link_ver_apuntes,
+    ]);
 }
 
 // --- Artículos relacionados (misma categoría, cruce en caliente por categoria_id) ---
@@ -178,7 +256,7 @@ $faqs_para_ld = array_map(fn($f) => ['q' => $f['pregunta'], 'a' => $f['respuesta
         ['name' => $articulo['titulo']],
     ]) . "\n  ";
   ?>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
@@ -205,7 +283,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
   </nav>
 
   <header class="mb-6">
-    <h1 class="text-2xl md:text-4xl font-bold text-gray-900 tracking-tight leading-tight"><?= htmlspecialchars($articulo['titulo']) ?></h1>
+    <h1 class="text-2xl md:text-4xl font-medium text-[#222222] tracking-[-0.01em] leading-tight"><?= htmlspecialchars($articulo['titulo']) ?></h1>
     <?php if (!empty($articulo['resumen'])): ?>
     <p class="text-base text-gray-600 mt-3 leading-relaxed"><?= htmlspecialchars($articulo['resumen']) ?></p>
     <?php endif; ?>
@@ -220,11 +298,11 @@ require_once __DIR__ . '/componentes/sidebar.php';
        alt="<?= htmlspecialchars($articulo['titulo']) ?>" class="w-full rounded-2xl object-cover mb-8" style="max-height:420px">
   <?php endif; ?>
 
-  <article class="prose prose-lg max-w-none text-gray-800 leading-relaxed">
+  <article class="prose prose-lg prose-headings:text-[#222222] prose-headings:font-medium prose-headings:tracking-[-0.01em] prose-strong:text-[#222222] prose-strong:font-semibold prose-a:text-[#54A6D8] prose-a:no-underline hover:prose-a:underline prose-li:marker:text-gray-400">
     <?= /* Sin htmlspecialchars(): cuerpo ya viene sanitizado por nb_sanitizar_html() antes de
            guardarse (único punto de escritura, ver admin_guias.php:99) — es HTML seguro,
            whitelisteado, y acá se renderiza como HTML real, no como texto escapado. */
-        $articulo['cuerpo'] ?>
+        nb_insertar_tras_primer_h2($articulo['cuerpo'], $cta_tutores_html) ?>
   </article>
 
   <?php if (!empty($faqs_articulo)): ?>
@@ -286,6 +364,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
   </section>
   <?php endif; ?>
 
+  <?= $cta_apuntes_html ?>
+
   <?php if (!empty($articulos_relacionados)): ?>
   <section class="mt-10 border-t border-gray-100 pt-8">
     <h2 class="text-xl font-bold text-gray-900 mb-4">Más guías de <?= htmlspecialchars($categoria['nombre']) ?></h2>
@@ -311,5 +391,38 @@ require_once __DIR__ . '/componentes/sidebar.php';
   </div>
 </main>
 <?php require_once __DIR__ . '/componentes/nav_bottom.php'; ?>
+
+<?php
+require_once __DIR__ . '/componentes/modal_publicar.php';
+require_once __DIR__ . '/componentes/modal_explora.php';
+?>
+
+<script>
+    function setupModal(triggerId, modalId, cardId, closeId) {
+        const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
+        if(!btn || !modal) return;
+        const open = () => { modal.classList.remove('hidden'); requestAnimationFrame(() => card.classList.remove('translate-y-full', 'opacity-0')); document.body.style.overflow = 'hidden'; };
+        const shut = () => { card.classList.add('translate-y-full', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300); };
+        btn.onclick = (e) => { e.preventDefault(); open(); };
+        if(close) close.onclick = shut;
+        modal.onclick = (e) => { if(e.target === modal) shut(); };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        <?php if (!isset($_SESSION['usuario_id'])): ?>
+            const btnPublicar = document.getElementById('btn-publicar');
+            if(btnPublicar) {
+                btnPublicar.onclick = (e) => {
+                    e.preventDefault();
+                    window.location.href = '/login?redir=' + encodeURIComponent(window.location.pathname + window.location.search);
+                };
+            }
+        <?php else: ?>
+            setupModal('btn-publicar', 'modal-quick', 'quick-card', 'quick-close');
+        <?php endif; ?>
+
+        setupModal('btn-explora', 'modal-explora', 'explora-card', 'explora-close');
+    });
+</script>
 </body>
 </html>
