@@ -149,15 +149,17 @@ try {
 </div>
 
 <?php
-$ocultar_buscador = true; // Buscador global no aporta acá: el usuario está gestionando sus propias publicaciones, no explorando las de otros
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que detalle_servicio.php
+echo '<div class="hidden md:block">';
 require_once $app_dir . '/componentes/header.php';
+echo '</div>';
 require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px]">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px]">
   <div class="w-full">
     
-    <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
             <button type="button" onclick="navegacionSeguraNubira()"
                     class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
@@ -172,7 +174,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         <div id="lista-publicaciones" class="pb-10 space-y-2 mt-2">
             
             <div class="group-dia space-y-1" id="seccion-clases">
-                <button onclick="toggleGrupo('content-clases', 'icon-clases')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-gray-50 transition-colors cursor-pointer sticky top-[108px] sm:top-[115px] z-20 bg-white">
+                <button onclick="toggleGrupo('content-clases', 'icon-clases')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-gray-50 transition-colors cursor-pointer sticky top-16 md:top-32 z-20 bg-white">
                     <div class="flex items-center gap-2">
                         <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Clases o Servicios (<?= count($servicios) ?>)</h2>
                     </div>
@@ -252,7 +254,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
 
             <div class="group-dia space-y-1 mt-4" id="seccion-apuntes">
-                <button onclick="toggleGrupo('content-apuntes', 'icon-apuntes')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-gray-50 transition-colors cursor-pointer sticky top-[108px] sm:top-[115px] z-20 bg-white">
+                <button onclick="toggleGrupo('content-apuntes', 'icon-apuntes')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-gray-50 transition-colors cursor-pointer sticky top-16 md:top-32 z-20 bg-white">
                     <div class="flex items-center gap-2">
                         <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Apuntes (<?= count($apuntes) ?>)</h2>
                     </div>
