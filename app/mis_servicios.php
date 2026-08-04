@@ -171,10 +171,10 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <div class="flex items-center gap-2">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Clases o Servicios (<?= count($servicios) ?>)</h2>
                     </div>
-                    <i id="icon-clases" class="fa-solid fa-chevron-down text-slate-400 text-[10px] chevron-icon"></i>
+                    <i id="icon-clases" class="fa-solid fa-chevron-down text-slate-400 text-[10px] chevron-icon rotated"></i>
                 </button>
 
-                <div id="content-clases" class="expand-content collapsed bg-white border-y md:border border-slate-100 md:rounded-2xl">
+                <div id="content-clases" class="expand-content bg-white border-y md:border border-slate-100 md:rounded-2xl">
                     <?php if (count($servicios) > 0): ?>
                         <ul class="divide-y divide-slate-100">
                             <?php foreach($servicios as $s): 
@@ -251,10 +251,10 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <div class="flex items-center gap-2">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Apuntes (<?= count($apuntes) ?>)</h2>
                     </div>
-                    <i id="icon-apuntes" class="fa-solid fa-chevron-down text-slate-400 text-[10px] chevron-icon"></i>
+                    <i id="icon-apuntes" class="fa-solid fa-chevron-down text-slate-400 text-[10px] chevron-icon rotated"></i>
                 </button>
 
-                <div id="content-apuntes" class="expand-content collapsed bg-white border-y md:border border-slate-100 md:rounded-2xl">
+                <div id="content-apuntes" class="expand-content bg-white border-y md:border border-slate-100 md:rounded-2xl">
                     <?php if (count($apuntes) > 0): ?>
                         <ul class="divide-y divide-slate-100">
                             <?php foreach($apuntes as $a): 
