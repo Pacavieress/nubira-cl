@@ -148,25 +148,23 @@ try {
   <div class="animate-spin h-7 w-7 border-4 border-gray-200 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
-<?php 
-require_once $app_dir . '/componentes/header.php'; 
-require_once $app_dir . '/componentes/sidebar.php'; 
+<?php
+$ocultar_buscador = true; // Buscador global no aporta acá: el usuario está gestionando sus propias publicaciones, no explorando las de otros
+require_once $app_dir . '/componentes/header.php';
+require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
 <main class="pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px]">
   <div class="w-full">
     
-    <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
             <button type="button" onclick="navegacionSeguraNubira()"
                     class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
                     aria-label="Volver">
                 <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
             </button>
-            <div>
-                <h1 class="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Mis Publicaciones</h1>
-                <p class="text-gray-400 text-xs font-medium">Gestiona tus contenidos ofrecidos.</p>
-            </div>
+            <h1 class="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Mis Publicaciones</h1>
         </div>
     </div>
 
@@ -178,10 +176,10 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <div class="flex items-center gap-2">
                         <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Clases o Servicios (<?= count($servicios) ?>)</h2>
                     </div>
-                    <i id="icon-clases" class="fa-solid fa-chevron-down text-gray-400 text-[10px] chevron-icon rotated"></i>
+                    <i id="icon-clases" class="fa-solid fa-chevron-down text-gray-400 text-[10px] chevron-icon"></i>
                 </button>
 
-                <div id="content-clases" class="expand-content bg-white border-y md:border border-[#f0f0f0] md:rounded-2xl md:shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <div id="content-clases" class="expand-content collapsed bg-white border-y md:border border-[#f0f0f0] md:rounded-2xl md:shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <?php if (count($servicios) > 0): ?>
                         <ul class="divide-y divide-gray-100">
                             <?php foreach($servicios as $s): 
@@ -258,10 +256,10 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <div class="flex items-center gap-2">
                         <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Apuntes (<?= count($apuntes) ?>)</h2>
                     </div>
-                    <i id="icon-apuntes" class="fa-solid fa-chevron-down text-gray-400 text-[10px] chevron-icon rotated"></i>
+                    <i id="icon-apuntes" class="fa-solid fa-chevron-down text-gray-400 text-[10px] chevron-icon"></i>
                 </button>
 
-                <div id="content-apuntes" class="expand-content bg-white border-y md:border border-[#f0f0f0] md:rounded-2xl md:shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <div id="content-apuntes" class="expand-content collapsed bg-white border-y md:border border-[#f0f0f0] md:rounded-2xl md:shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <?php if (count($apuntes) > 0): ?>
                         <ul class="divide-y divide-gray-100">
                             <?php foreach($apuntes as $a): 
