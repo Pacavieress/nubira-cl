@@ -204,7 +204,7 @@ $pizarra_key = substr(base64_encode(md5("key_" . $id_contrato . "_" . $hash_segu
 $pizarra_key = strtr($pizarra_key, ['+' => '-', '/' => '_', '=' => '']);
 $url_pizarra = "https://excalidraw.com/#room=" . $pizarra_room_id . "," . $pizarra_key;
 
-if (!$es_pre_clase) {
+if ($video_habilitado) {
     $curl = curl_init();
     curl_setopt_array($curl, [
         CURLOPT_URL => "https://api.daily.co/v1/rooms",
@@ -476,7 +476,9 @@ if (!$es_pre_clase) {
                                 <?= icon('video', 'w-8 h-8') ?>
                             </div>
                             <h2 class="text-xl font-bold mb-2 text-gray-800">Sala de Reunión</h2>
-                            <?php if ($es_post_clase && !$video_habilitado): ?>
+                            <?php if ($contrato['estado'] === 'cancelado'): ?>
+                                <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Esta clase fue cancelada.</p>
+                            <?php elseif ($es_post_clase && !$video_habilitado): ?>
                                 <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Esta clase ya finalizó.</p>
                             <?php elseif ($es_post_clase && $video_habilitado): ?>
                                 <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">El horario programado terminó, pero la sala sigue disponible por si necesitas reconectarte.</p>
