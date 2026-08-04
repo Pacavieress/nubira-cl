@@ -22,6 +22,11 @@ require_once $app_dir . '/iconos.php';
 $usuario_id = (int)$_SESSION['usuario_id'];
 $errores = [];
 
+// CSRF: Generar token si no existe
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $sql = "SELECT * FROM datos_pago_usuario WHERE usuario_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $usuario_id);
@@ -32,47 +37,51 @@ $stmt->close();
 $bancos_query = $conn->query("SELECT nombre FROM bancos ORDER BY nombre ASC");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $banco   = trim($_POST['banco'] ?? '');
-    $tipo    = trim($_POST['tipo_cuenta'] ?? '');
-    $cuenta  = trim($_POST['numero_cuenta'] ?? '');
-    $titular = trim($_POST['titular_nombre'] ?? '');
-    $rut     = trim($_POST['rut'] ?? '');
-
-    if (!$banco || !$tipo || !$cuenta || !$titular || !$rut) {
-        $errores[] = "Todos los campos son obligatorios.";
-    }
-    if (!ctype_digit($cuenta)) {
-        $errores[] = "El número de cuenta debe contener solo números.";
-    }
-
-    $rut_limpio = str_replace('.', '', $rut);
-
-    if (!preg_match("/^\d{7,8}-[\dkK]$/", $rut_limpio)) {
-        $errores[] = "El RUT debe tener el formato correcto (ejemplo: 12345678-9).";
-    }
-
-    if (empty($errores)) {
-        if ($datos) {
-            $sql = "UPDATE datos_pago_usuario SET banco=?, tipo_cuenta=?, numero_cuenta=?, titular_nombre=?, rut=? WHERE usuario_id=?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sssssi", $banco, $tipo, $cuenta, $titular, $rut_limpio, $usuario_id);
-        } else {
-            $sql = "INSERT INTO datos_pago_usuario (usuario_id, banco, tipo_cuenta, numero_cuenta, titular_nombre, rut) VALUES (?, ?, ?, ?, ?, ?)";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("isssss", $usuario_id, $banco, $tipo, $cuenta, $titular, $rut_limpio);
-        }
-        $stmt->execute();
-        
-        header("Location: /datos_bancarios");
-        exit;
+    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+        $errores[] = "Tu sesión expiró o la solicitud no es válida. Vuelve a intentarlo.";
     } else {
-        $datos = [
-            'banco' => $banco,
-            'tipo_cuenta' => $tipo,
-            'numero_cuenta' => $cuenta,
-            'titular_nombre' => $titular,
-            'rut' => $rut
-        ];
+        $banco   = trim($_POST['banco'] ?? '');
+        $tipo    = trim($_POST['tipo_cuenta'] ?? '');
+        $cuenta  = trim($_POST['numero_cuenta'] ?? '');
+        $titular = trim($_POST['titular_nombre'] ?? '');
+        $rut     = trim($_POST['rut'] ?? '');
+
+        if (!$banco || !$tipo || !$cuenta || !$titular || !$rut) {
+            $errores[] = "Todos los campos son obligatorios.";
+        }
+        if (!ctype_digit($cuenta)) {
+            $errores[] = "El número de cuenta debe contener solo números.";
+        }
+
+        $rut_limpio = str_replace('.', '', $rut);
+
+        if (!preg_match("/^\d{7,8}-[\dkK]$/", $rut_limpio)) {
+            $errores[] = "El RUT debe tener el formato correcto (ejemplo: 12345678-9).";
+        }
+
+        if (empty($errores)) {
+            if ($datos) {
+                $sql = "UPDATE datos_pago_usuario SET banco=?, tipo_cuenta=?, numero_cuenta=?, titular_nombre=?, rut=? WHERE usuario_id=?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("sssssi", $banco, $tipo, $cuenta, $titular, $rut_limpio, $usuario_id);
+            } else {
+                $sql = "INSERT INTO datos_pago_usuario (usuario_id, banco, tipo_cuenta, numero_cuenta, titular_nombre, rut) VALUES (?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("isssss", $usuario_id, $banco, $tipo, $cuenta, $titular, $rut_limpio);
+            }
+            $stmt->execute();
+
+            header("Location: /datos_bancarios");
+            exit;
+        } else {
+            $datos = [
+                'banco' => $banco,
+                'tipo_cuenta' => $tipo,
+                'numero_cuenta' => $cuenta,
+                'titular_nombre' => $titular,
+                'rut' => $rut
+            ];
+        }
     }
 }
 ?>
@@ -134,6 +143,7 @@ require_once $app_dir . '/componentes/sidebar.php';
 
     <div class="bg-white border border-slate-100 rounded-3xl p-6 md:p-8">
         <form method="POST" class="space-y-6" id="banco-form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                 
                 <div class="space-y-2">
