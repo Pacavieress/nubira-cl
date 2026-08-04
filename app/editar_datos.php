@@ -67,12 +67,17 @@ $stmt->close();
 
 $mensaje = '';
 $exito   = false;
+if (!empty($_SESSION['flash_mensaje'])) {
+    $mensaje = $_SESSION['flash_mensaje'];
+    $exito   = !empty($_SESSION['flash_exito']);
+    unset($_SESSION['flash_mensaje'], $_SESSION['flash_exito']);
+}
 
 // --- PROCESAMIENTO ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals($CSRF, $_POST['csrf'] ?? '')) {
-        $mensaje = '❌ Sesión inválida.';
-    } 
+        $mensaje = 'Sesión inválida.';
+    }
     // 1. Editar Datos
     elseif (isset($_POST['editar_datos'])) {
         $nuevo_nombre   = trim($_POST['nombre']   ?? '');
@@ -86,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tipos_validos = ['estudiante', 'egresado', 'profesor', 'particular'];
 
         if ($nuevo_nombre === '' || $nueva_carrera === '') {
-            $mensaje = '❌ El nombre y la carrera o área son obligatorios.';
+            $mensaje = 'El nombre y la carrera o área son obligatorios.';
         } elseif ($nuevo_tipo !== '' && !in_array($nuevo_tipo, $tipos_validos, true)) {
-            $mensaje = '❌ Tipo de cuenta inválido.';
+            $mensaje = 'Tipo de cuenta inválido.';
         } else {
             $tipo_guardar = $nuevo_tipo !== '' ? $nuevo_tipo : null;
             $bio_guardar  = $nueva_bio  !== '' ? $nueva_bio  : null;
@@ -97,19 +102,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $u = $conn->prepare("UPDATE alumnos SET nombre=?, carrera=?, tipo=?, bio=?, universidad=?, anio_egreso=?, anios_experiencia=? WHERE id=?");
             $u->bind_param("sssssiii", $nuevo_nombre, $nueva_carrera, $tipo_guardar, $bio_guardar, $univ_guardar, $nuevo_anio_eg, $nuevo_anios_ex, $usuario_id);
             if ($u->execute()) {
-                $mensaje = '✅ Datos actualizados correctamente.';
-                $exito = true;
-                $nombre_actual   = $nuevo_nombre;
-                $carrera_actual  = $nueva_carrera;
-                $tipo_actual     = $tipo_guardar;
-                $bio_actual      = $bio_guardar;
-                $univ_actual     = $univ_guardar;
-                $anio_eg_actual  = $nuevo_anio_eg;
-                $anios_exp_actual = $nuevo_anios_ex;
                 $_SESSION['usuario_nombre'] = $nuevo_nombre;
                 $_SESSION['carrera']        = $nueva_carrera;
+                $_SESSION['flash_mensaje']  = 'Datos actualizados correctamente.';
+                $_SESSION['flash_exito']    = true;
+                header("Location: /configurar-cuenta");
+                exit;
             } else {
-                $mensaje = '❌ Error al actualizar.';
+                $mensaje = 'Error al actualizar.';
             }
             $u->close();
         }
@@ -121,23 +121,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nueva2 = $_POST['nueva2'] ?? '';
 
         if (!$actual || !$nueva || !$nueva2) {
-            $mensaje = '❌ Completa todos los campos.';
+            $mensaje = 'Completa todos los campos.';
         } elseif (!password_verify($actual, $hash_password)) {
-            $mensaje = '❌ La contraseña actual es incorrecta.';
+            $mensaje = 'La contraseña actual es incorrecta.';
         } elseif ($nueva !== $nueva2) {
-            $mensaje = '❌ Las contraseñas no coinciden.';
+            $mensaje = 'Las contraseñas no coinciden.';
         } elseif (strlen($nueva) < 8) {
-            $mensaje = '❌ Mínimo 8 caracteres.';
+            $mensaje = 'Mínimo 8 caracteres.';
         } else {
             $nuevo_hash = password_hash($nueva, PASSWORD_DEFAULT);
             $u = $conn->prepare("UPDATE alumnos SET password = ? WHERE id = ?");
             $u->bind_param("si", $nuevo_hash, $usuario_id);
             if ($u->execute()) {
-                $mensaje = '✅ Contraseña actualizada.';
-                $exito = true;
-                $hash_password = $nuevo_hash;
+                $_SESSION['flash_mensaje'] = 'Contraseña actualizada.';
+                $_SESSION['flash_exito']   = true;
+                header("Location: /configurar-cuenta");
+                exit;
             } else {
-                $mensaje = '❌ Error al actualizar.';
+                $mensaje = 'Error al actualizar.';
             }
             $u->close();
         }
@@ -149,11 +150,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pwd    = $_POST['pwd_confirm'] ?? '';
 
         if ($frase !== 'ELIMINAR MI CUENTA') {
-            $mensaje = '❌ Frase de confirmación incorrecta.';
+            $mensaje = 'Frase de confirmación incorrecta.';
         } elseif (!$acepto) {
-            $mensaje = '❌ Debes aceptar las consecuencias.';
+            $mensaje = 'Debes aceptar las consecuencias.';
         } elseif (!password_verify($pwd, $hash_password)) {
-            $mensaje = '❌ Contraseña incorrecta.';
+            $mensaje = 'Contraseña incorrecta.';
         } else {
             $nombre_borrado = 'Cuenta eliminada';
             $correo_borrado = 'deleted+' . $usuario_id . '@nubira.cl';
@@ -171,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: /cuenta-eliminada');
                 exit;
             } else {
-                $mensaje = '❌ Error al eliminar cuenta.';
+                $mensaje = 'Error al eliminar cuenta.';
             }
         }
     }
@@ -203,24 +204,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="animate-spin h-10 w-10 border-4 border-blue-200 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
-<?php 
-require_once $app_dir . '/componentes/header.php'; 
-require_once $app_dir . '/componentes/sidebar.php'; 
+<?php
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que las demás páginas de gestión
+echo '<div class="hidden md:block">';
+require_once $app_dir . '/componentes/header.php';
+echo '</div>';
+require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-20 pb-32 md:pb-12 lg:ml-64 px-4 md:px-8 w-auto">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 px-4 md:px-8 w-full">
   <div class="w-full max-w-3xl mx-auto space-y-8">
 
-    <div class="mb-4">
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Configuración de Cuenta</h1>
-        <p class="text-sm text-gray-500 mt-0.5">Gestiona tu información personal y seguridad.</p>
+    <div class="mb-4 flex items-center gap-3">
+        <button type="button" onclick="navegacionSeguraNubira()"
+                class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+                aria-label="Volver">
+            <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+        </button>
+        <div>
+            <h1 class="text-xl md:text-2xl font-medium tracking-[-0.01em] text-[#222222]">Configuración de Cuenta</h1>
+            <p class="text-gray-400 text-xs font-medium mt-0.5">Gestiona tu información personal y seguridad.</p>
+        </div>
     </div>
 
     <?php if ($mensaje): ?>
       <div id="toast" class="rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 <?= $exito ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'; ?>">
          <?= icon($exito ? 'check-circle' : 'exclamation', 'w-5 h-5') ?>
          <span class="font-medium text-sm flex-1"><?= htmlspecialchars($mensaje) ?></span>
-         <button onclick="document.getElementById('toast').remove()" class="text-sm underline hover:no-underline">Cerrar</button>
+         <button onclick="document.getElementById('toast').remove()" class="text-sm underline hover:no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Cerrar</button>
       </div>
     <?php endif; ?>
 
@@ -234,7 +245,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($CSRF, ENT_QUOTES) ?>">
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Correo Institucional</label>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Correo Institucional</label>
                 <input type="email" value="<?= htmlspecialchars($correo_actual) ?>" readonly
                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-500 cursor-not-allowed select-none text-sm">
                 <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><?= icon('lock', 'w-3 h-3') ?> No editable por seguridad.</p>
@@ -242,19 +253,19 @@ require_once $app_dir . '/componentes/sidebar.php';
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Nombre Completo</label>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Nombre Completo</label>
                     <input type="text" name="nombre" value="<?= htmlspecialchars($nombre_actual) ?>" required
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Carrera / Área</label>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Carrera / Área</label>
                     <input type="text" name="carrera" value="<?= htmlspecialchars($carrera_actual ?? '') ?>" required
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Tipo de cuenta</label>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Tipo de cuenta</label>
                 <select name="tipo"
                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none appearance-none cursor-pointer">
                     <option value="">Sin especificar</option>
@@ -267,14 +278,14 @@ require_once $app_dir . '/componentes/sidebar.php';
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Universidad / Institución</label>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Universidad / Institución</label>
                     <input type="text" name="universidad" maxlength="100"
                            value="<?= htmlspecialchars($univ_actual ?? '') ?>"
                            placeholder="Ej: USACH, UC, AIEP"
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Año de egreso</label>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Año de egreso</label>
                     <input type="number" name="anio_egreso" min="1970" max="2030"
                            value="<?= htmlspecialchars($anio_eg_actual ?? '') ?>"
                            placeholder="2020"
@@ -283,7 +294,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Años de experiencia enseñando</label>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Años de experiencia enseñando</label>
                 <input type="number" name="anios_experiencia" min="0" max="50"
                        value="<?= htmlspecialchars($anios_exp_actual ?? '') ?>"
                        placeholder="Ej: 3"
@@ -291,14 +302,14 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Bio profesional</label>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Bio profesional</label>
                 <textarea name="bio" rows="4" maxlength="800"
                           placeholder="Cuéntanos tu experiencia y qué enseñas..."
                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none resize-none"><?= htmlspecialchars($bio_actual ?? '') ?></textarea>
             </div>
 
             <div class="flex justify-end pt-2">
-                <button type="submit" class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition transform active:scale-95 text-sm">
+                <button type="submit" class="bg-[#54A6D8] md:hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition transform active:scale-95 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                     Guardar Cambios
                 </button>
             </div>
@@ -307,7 +318,7 @@ require_once $app_dir . '/componentes/sidebar.php';
 
     <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 md:p-8">
         <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <svg class="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+            <svg class="w-5 h-5 text-[#54A6D8]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
             Seguridad
         </h2>
 
@@ -316,26 +327,26 @@ require_once $app_dir . '/componentes/sidebar.php';
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($CSRF, ENT_QUOTES) ?>">
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Contraseña Actual</label>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Contraseña Actual</label>
                 <input type="password" name="actual" required
-                       class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-yellow-400 focus:border-yellow-400 transition outline-none">
+                       class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Nueva Contraseña</label>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Nueva Contraseña</label>
                     <input type="password" name="nueva" required minlength="8"
-                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-yellow-400 focus:border-yellow-400 transition outline-none">
+                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Confirmar Nueva</label>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Confirmar Nueva</label>
                     <input type="password" name="nueva2" required minlength="8"
-                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-yellow-400 focus:border-yellow-400 transition outline-none">
+                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none">
                 </div>
             </div>
 
             <div class="flex justify-end pt-2">
-                <button type="submit" class="bg-gray-900 hover:bg-black text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition transform active:scale-95 text-sm">
+                <button type="submit" class="bg-gray-900 hover:bg-black text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition transform active:scale-95 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                     Actualizar Contraseña
                 </button>
             </div>
@@ -375,7 +386,7 @@ require_once $app_dir . '/componentes/sidebar.php';
 
             <div class="flex justify-end pt-2">
                 <button type="submit" id="btn-eliminar" disabled
-                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition opacity-50 cursor-not-allowed text-sm">
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-sm transition opacity-50 cursor-not-allowed text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                     Eliminar Definitivamente
                 </button>
             </div>
@@ -393,6 +404,17 @@ require_once $app_dir . '/componentes/modal_explora.php';
 
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } };
+
+// [NUBIRA 2.0] Volver — mismo patrón que las demás páginas de gestión, con fallback
+// a /perfil (tile "Configurar Cuenta" en panel_gestion.php; también accesible por
+// link directo de correo, sin historial previo).
+window.navegacionSeguraNubira = function() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/perfil';
+    }
+};
 
 function setupModal(triggerId, modalId, cardId, closeId) {
     const btn=document.getElementById(triggerId), modal=document.getElementById(modalId), card=document.getElementById(cardId), close=document.getElementById(closeId);
@@ -417,8 +439,6 @@ document.getElementById('chk-irrev')?.addEventListener('change', function() {
         btn.classList.add('opacity-50', 'cursor-not-allowed');
     }
 });
-
-function abrirMisChats() { window.open("/app/mis_chats.php", "mis_chats", "width=440,height=640,resizable=yes,scrollbars=yes"); }
 </script>
 
 </body>
