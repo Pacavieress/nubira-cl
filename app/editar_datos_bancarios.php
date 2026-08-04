@@ -113,7 +113,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             <h1 class="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">Datos Bancarios</h1>
             <p class="text-slate-400 text-xs font-medium mt-0.5">Configura dónde recibirás tus ganancias.</p>
         </div>
-        <a href="/datos_bancarios" class="inline-flex items-center justify-center gap-2 bg-slate-100 text-slate-600 font-bold py-2 px-4 rounded-xl hover:bg-slate-200 active:scale-95 transition-all text-xs tracking-wide shadow-none border border-transparent shrink-0">
+        <a href="/datos_bancarios" class="inline-flex items-center justify-center gap-2 bg-slate-100 text-slate-600 font-medium tracking-[-0.01em] py-2 px-4 rounded-xl hover:bg-slate-200 active:scale-95 transition-all text-xs shadow-none border border-transparent shrink-0">
             <i class="fa-solid fa-arrow-left"></i> Volver
         </a>
     </div>
