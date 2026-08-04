@@ -112,53 +112,60 @@ $page_title = "Ventas de Apuntes";
     .checkbox-ui { display: none; }
     .selection-mode-active .checkbox-ui { display: flex; }
     .row-checkbox:checked + .checkbox-box { background-color: #54A6D8; border-color: #54A6D8; color: white; }
-    .row-selected .swipe-content { background-color: #f8fafc !important; }
+    .row-selected .swipe-content { background-color: #eef6fb !important; }
   </style>
 </head>
 
-<body class="text-slate-800 antialiased overflow-x-hidden select-none md:select-auto bg-white">
+<body class="text-gray-800 antialiased overflow-x-hidden select-none md:select-auto bg-white">
 
 <div id="loader" class="fixed inset-0 bg-white flex items-center justify-center z-[60] transition-opacity duration-300">
-  <div class="animate-spin h-7 w-7 border-4 border-slate-200 border-t-[#54A6D8] rounded-full"></div>
+  <div class="animate-spin h-7 w-7 border-4 border-gray-200 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
-<?php 
-require_once $app_dir . '/componentes/header.php'; 
-require_once $app_dir . '/componentes/sidebar.php'; 
+<?php
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que las demás páginas de gestión
+echo '<div class="hidden md:block">';
+require_once $app_dir . '/componentes/header.php';
+echo '</div>';
+require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<div id="top-acciones" class="fixed top-0 left-0 w-full bg-white border-b border-slate-100 z-[70] transform -translate-y-full transition-transform duration-300 flex items-center justify-between px-4 py-3 md:pl-72 md:pr-8 h-[60px]">
+<div id="top-acciones" class="fixed top-0 left-0 w-full bg-white border-b border-gray-200 z-[70] transform -translate-y-full transition-transform duration-300 flex items-center justify-between px-4 py-3 md:pl-72 md:pr-8 h-[60px]">
     <div class="flex items-center gap-3">
-        <button onclick="cancelarSeleccion()" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-full transition-colors active:scale-95">
+        <button onclick="cancelarSeleccion()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-full transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
             <i class="fa-solid fa-xmark text-lg"></i>
         </button>
-        <span class="font-bold text-slate-900 text-lg tracking-tight">
+        <span class="font-medium text-[#222222] text-lg tracking-[-0.01em]">
             <span id="contador-seleccionados">0</span> selec.
         </span>
     </div>
-    <button onclick="eliminarSeleccionados()" class="text-red-500 hover:text-red-600 font-bold text-sm px-3 py-1.5 rounded-full active:bg-red-50 transition-colors flex items-center gap-1.5 shadow-none">
+    <button onclick="eliminarSeleccionados()" class="text-red-500 hover:text-red-600 font-bold text-sm px-3 py-1.5 rounded-full active:bg-red-50 transition-colors flex items-center gap-1.5 shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
         <i class="fa-regular fa-trash-can"></i> Ocultar
     </button>
 </div>
 
-<main class="pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px]">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px]">
   <div class="w-full">
-    
-    <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-            <h1 class="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">Ventas de Apuntes</h1>
-            <p class="text-slate-400 text-xs font-medium">Panel operativo de documentos.</p>
+
+    <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="navegacionSeguraNubira()"
+                    class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+                    aria-label="Volver">
+                <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+            </button>
+            <div>
+                <h1 class="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Ventas de Apuntes</h1>
+                <p class="text-gray-400 text-xs font-medium">Panel operativo de documentos.</p>
+            </div>
         </div>
-        
+
         <div class="flex items-center gap-2">
             <?php if ($total_ventas_count > 0): ?>
-            <button onclick="exportarCSV()" class="inline-flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-600 font-bold py-2 px-3.5 rounded-xl hover:bg-emerald-100 active:scale-95 transition text-xs tracking-wide shadow-none border border-transparent">
+            <button onclick="exportarCSV()" class="inline-flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-600 font-bold py-2 px-3.5 rounded-xl hover:bg-emerald-100 active:scale-95 transition text-xs tracking-wide shadow-none border border-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                 <i class="fa-solid fa-file-csv"></i> Exportar
             </button>
             <?php endif; ?>
-            <a href="/datos_bancarios" class="inline-flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 font-bold py-2 px-3.5 rounded-xl hover:bg-slate-200 active:scale-95 transition text-xs tracking-wide shadow-none border border-transparent">
-                <i class="fa-solid fa-wallet text-[#54A6D8]"></i> Billetera
-            </a>
         </div>
     </div>
 
@@ -171,18 +178,18 @@ require_once $app_dir . '/componentes/sidebar.php';
                 ?>
                     <div class="group-dia space-y-1 mt-4" id="dia-<?= $fecha ?>">
                         
-                        <button onclick="toggleGrupo('<?= $idGrupo ?>', 'icon-<?= $idGrupo ?>')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-slate-50 transition-colors cursor-pointer sticky top-[108px] sm:top-[115px] z-20 bg-white">
+                        <button onclick="toggleGrupo('<?= $idGrupo ?>', 'icon-<?= $idGrupo ?>')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-gray-50 transition-colors cursor-pointer sticky top-[121px] sm:top-[77px] md:top-[141px] z-20 bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                             <div class="flex items-center gap-2">
-                                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest"><?= $dia['titulo'] ?> (<?= count($dia['ventas']) ?>)</h2>
+                                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest"><?= $dia['titulo'] ?> (<?= count($dia['ventas']) ?>)</h2>
                             </div>
-                            <i id="icon-<?= $idGrupo ?>" class="fa-solid fa-chevron-down text-slate-400 text-[10px] chevron-icon"></i>
+                            <i id="icon-<?= $idGrupo ?>" class="fa-solid fa-chevron-down text-gray-400 text-[10px] chevron-icon"></i>
                         </button>
-                        
-                        <div id="<?= $idGrupo ?>" class="expand-content collapsed bg-white border-y md:border border-slate-100 md:rounded-2xl">
-                            <ul class="divide-y divide-slate-100">
+
+                        <div id="<?= $idGrupo ?>" class="expand-content collapsed bg-white border-y md:border border-[#f0f0f0] md:rounded-2xl md:shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                            <ul class="divide-y divide-gray-100">
                                 <?php foreach ($dia['ventas'] as $v): 
                                     $es_pagado = $v['pagado_al_vendedor'];
-                                    $estado_color = $es_pagado ? 'text-emerald-500' : 'text-amber-500';
+                                    $estado_color = $es_pagado ? 'text-emerald-500 bg-emerald-50 border border-emerald-100' : 'text-amber-500 bg-amber-50 border border-amber-100';
                                     $estado_texto = $es_pagado ? 'Pagado' : 'Pendiente';
                                     $precio_mostrar = (int)($v['precio'] ?? 0);
                                     $inicial = substr(formatearNombrePrivado($v['comprador_nombre']), 0, 1);
@@ -192,7 +199,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                                     $ext = strtolower(pathinfo($archivo_real, PATHINFO_EXTENSION));
                                     $esImagen = in_array($ext, ['jpg','jpeg','png','webp','bmp']);
                                     
-                                    $iconClass = 'fa-file-lines'; $iconColor = 'text-slate-500'; $bgIcon = 'bg-slate-50'; $iconTxt = 'DOC';
+                                    $iconClass = 'fa-file-lines'; $iconColor = 'text-gray-500'; $bgIcon = 'bg-gray-50'; $iconTxt = 'DOC';
                                     if ($ext === 'pdf') { $iconClass = 'fa-file-pdf'; $iconColor = 'text-red-500'; $bgIcon = 'bg-red-50'; $iconTxt = 'PDF'; } 
                                     elseif ($esImagen) { $iconClass = 'fa-image'; $iconColor = 'text-emerald-500'; $bgIcon = 'bg-emerald-50'; $iconTxt = strtoupper($ext); } 
                                     elseif (in_array($ext, ['doc', 'docx'])) { $iconClass = 'fa-file-word'; $iconColor = 'text-blue-600'; $bgIcon = 'bg-blue-50'; $iconTxt = 'DOC'; }
@@ -204,39 +211,39 @@ require_once $app_dir . '/componentes/sidebar.php';
                                         Ocultar
                                     </div>
 
-                                    <div class="swipe-content relative flex items-center py-4 px-4 md:px-5 bg-white active:bg-slate-50 transition-colors w-full z-10 cursor-pointer">
-                                        
+                                    <div class="swipe-content relative flex items-center py-4 px-4 md:px-5 bg-white active:bg-gray-50 transition-colors w-full z-10 cursor-pointer">
+
                                         <div class="checkbox-ui shrink-0 mr-3">
                                             <input type="checkbox" value="<?= $v['id'] ?>" class="hidden row-checkbox" id="chk-<?= $v['id'] ?>">
-                                            <div class="checkbox-box w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center text-transparent transition-colors bg-white shadow-none">
+                                            <div class="checkbox-box w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center text-transparent transition-colors bg-white shadow-none">
                                                 <i class="fa-solid fa-check text-[10px]"></i>
                                             </div>
                                         </div>
 
-                                        <div class="w-12 h-12 rounded-xl <?= $bgIcon ?> <?= $iconColor ?> flex flex-col items-center justify-center shrink-0 border border-slate-100">
+                                        <div class="w-12 h-12 rounded-xl <?= $bgIcon ?> <?= $iconColor ?> flex flex-col items-center justify-center shrink-0 border border-gray-100">
                                             <i class="fa-solid <?= $iconClass ?> text-xl mb-px"></i>
                                             <span class="text-[7px] font-black uppercase tracking-widest opacity-70"><?= $iconTxt ?></span>
                                         </div>
-                                        
+
                                         <div class="flex-1 min-w-0 mx-3.5">
-                                            <h3 class="font-bold text-slate-800 text-[14px] line-clamp-1 leading-tight mb-0.5">
+                                            <h3 class="font-medium text-[#222222] text-[14px] line-clamp-1 leading-tight mb-0.5">
                                                 <?= htmlspecialchars($v['titulo']) ?>
                                             </h3>
-                                            <div class="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium truncate">
-                                                <div class="w-4 h-4 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[7px] font-bold shrink-0">
+                                            <div class="flex items-center gap-1.5 text-[11px] text-gray-400 font-medium truncate">
+                                                <div class="w-4 h-4 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[7px] font-bold shrink-0">
                                                     <?= htmlspecialchars($inicial) ?>
                                                 </div>
                                                 <span class="truncate"><?= formatearNombrePrivado($v['comprador_nombre']) ?></span>
                                                 <span>•</span>
-                                                <span class="font-mono text-slate-400"><?= date('H:i', strtotime($v['fecha'])) ?></span>
+                                                <span class="font-mono text-gray-400"><?= date('H:i', strtotime($v['fecha'])) ?></span>
                                             </div>
                                         </div>
 
                                         <div class="shrink-0 text-right flex flex-col items-end">
-                                            <span class="font-black text-slate-900 text-[15px] tabular-nums tracking-tight leading-none text-right">
-                                                <?= ($precio_mostrar > 0) ? '+$'.number_format($precio_mostrar, 0, ',', '.') : '<span class="text-slate-400 font-medium text-xs">Gratis</span>' ?>
+                                            <span class="font-medium text-[#222222] text-[15px] tabular-nums tracking-[-0.01em] leading-none text-right">
+                                                <?= ($precio_mostrar > 0) ? '+$'.number_format($precio_mostrar, 0, ',', '.') : '<span class="text-gray-400 font-medium text-xs">Gratis</span>' ?>
                                             </span>
-                                            <p class="text-[9px] font-extrabold <?= $estado_color ?> uppercase tracking-wider mt-1.5">
+                                            <p class="<?= $estado_color ?> px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider mt-1.5">
                                                 <?= $estado_texto ?>
                                             </p>
                                         </div>
@@ -249,19 +256,16 @@ require_once $app_dir . '/componentes/sidebar.php';
                 <?php endforeach; ?>
             </div>
             
-            <p class="text-center text-[10px] text-slate-400 font-medium mt-4">
+            <p class="text-center text-[10px] text-gray-400 font-medium mt-4">
                 Mantén presionada una fila para seleccionar.
             </p>
         <?php else: ?>
-            <div class="bg-white border-y md:border border-slate-200 md:rounded-3xl p-8 text-center mt-4 mx-4 md:mx-0">
-                <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300">
+            <div class="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-8 text-center mt-4 mx-4 md:mx-0">
+                <div class="w-12 h-12 bg-white border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
                     <i class="fa-solid fa-receipt text-xl"></i>
                 </div>
-                <h3 class="text-base font-bold text-slate-800">Aún no hay movimientos</h3>
-                <p class="text-slate-400 text-sm mt-1 mb-5">Tus ventas y descargas aparecerán aquí agrupadas por día.</p>
-                <a href="/formulario-subir-apunte" class="inline-flex items-center justify-center bg-slate-800 text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-slate-700 active:scale-95 transition">
-                    Publicar Apunte
-                </a>
+                <h3 class="text-base font-medium text-[#222222] tracking-[-0.01em]">Aún no hay movimientos</h3>
+                <p class="text-gray-400 text-sm mt-1">Tus ventas y descargas aparecerán aquí agrupadas por día.</p>
             </div>
         <?php endif; ?>
     </div>
@@ -275,9 +279,19 @@ require_once $app_dir . '/componentes/modal_explora.php';
 ?>
 
 <script>
-window.onload = () => { 
-    const l = document.getElementById('loader'); 
-    if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } 
+window.onload = () => {
+    const l = document.getElementById('loader');
+    if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); }
+};
+
+// [NUBIRA 2.0] Volver — mismo patrón que mis_servicios.php/ventas_clases.php, con
+// fallback a /perfil (mismo tile de origen: "Apuntes Vendidos" en panel_gestion.php).
+window.navegacionSeguraNubira = function() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/perfil';
+    }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
