@@ -50,20 +50,34 @@ if ($stmt) {
 
 usort($publicaciones, fn($a, $b) => $b['fecha_orden'] - $a['fecha_orden']);
 
-// ── Visitas 30d por publicación ────────────────────────────────────────────
+// ── Visitas 30d por publicación (agregado por tipo, evita N+1) ─────────────
 
-$stmt_v = $conn->prepare("SELECT COUNT(*) as total FROM vistas_detalle WHERE tipo = ? AND publicacion_id = ? AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
-foreach ($publicaciones as &$pub) {
-    $pub['visitas_30d'] = 0;
+$visitas_map = [];
+foreach (['servicio', 'apunte'] as $tipo_v) {
+    $ids = array_values(array_map(fn($p) => (int)$p['id'], array_filter($publicaciones, fn($p) => $p['tipo'] === $tipo_v)));
+    if (empty($ids)) continue;
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt_v = $conn->prepare("SELECT publicacion_id, COUNT(*) as total FROM vistas_detalle WHERE tipo = ? AND publicacion_id IN ($placeholders) AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY publicacion_id");
     if ($stmt_v) {
-        $t = $pub['tipo']; $i = $pub['id'];
-        $stmt_v->bind_param("si", $t, $i);
+        $types  = 's' . str_repeat('i', count($ids));
+        $params = array_merge([$types], [$tipo_v], $ids);
+        $tmp = [];
+        foreach ($params as $k => $v) $tmp[$k] = &$params[$k];
+        call_user_func_array([$stmt_v, 'bind_param'], $tmp);
         $stmt_v->execute();
-        $pub['visitas_30d'] = (int)($stmt_v->get_result()->fetch_assoc()['total'] ?? 0);
+        $res_v = $stmt_v->get_result();
+        while ($row = $res_v->fetch_assoc()) {
+            $visitas_map[$tipo_v . ':' . $row['publicacion_id']] = (int)$row['total'];
+        }
+        $stmt_v->close();
     }
 }
+
+foreach ($publicaciones as &$pub) {
+    $pub['visitas_30d'] = $visitas_map[$pub['tipo'] . ':' . $pub['id']] ?? 0;
+}
 unset($pub);
-if ($stmt_v) $stmt_v->close();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -144,12 +158,28 @@ require_once $app_dir . '/componentes/sidebar.php';
   </div>
 </main>
 
-<?php require_once $app_dir . '/componentes/nav_bottom.php'; ?>
+<?php
+require_once $app_dir . '/componentes/nav_bottom.php';
+require_once $app_dir . '/componentes/modal_publicar.php';
+require_once $app_dir . '/componentes/modal_explora.php';
+?>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const l = document.getElementById('loader');
     if (l) { l.style.opacity = '0'; setTimeout(() => l.style.display = 'none', 300); }
+
+    function setupModal(triggerId, modalId, cardId, closeId) {
+        const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
+        if (!btn || !modal) return;
+        const open = () => { modal.classList.remove('hidden'); requestAnimationFrame(() => card.classList.remove('translate-y-full', 'opacity-0')); document.body.style.overflow = 'hidden'; };
+        const shut = () => { card.classList.add('translate-y-full', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300); };
+        btn.onclick = (e) => { e.preventDefault(); open(); };
+        if (close) close.onclick = shut;
+        modal.onclick = (e) => { if (e.target === modal) shut(); };
+    }
+    setupModal('btn-publicar', 'modal-quick', 'quick-card', 'quick-close');
+    setupModal('btn-explora', 'modal-explora', 'explora-card', 'explora-close');
 });
 </script>
 </body>

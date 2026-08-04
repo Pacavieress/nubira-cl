@@ -280,9 +280,9 @@ require_once $app_dir . '/componentes/sidebar.php';
           <span class="text-2xl font-extrabold text-gray-900 leading-none"><?= number_format($stats['pct_leyo'], 1) ?>%</span>
           <span class="text-[11px] text-gray-400 mt-1 leading-tight">Leyó<br>completo</span>
         </div>
-        <div class="flex flex-col items-center justify-center px-3 py-4 text-center">
+        <div class="flex flex-col items-center justify-center px-3 py-4 text-center bg-gray-50/70">
           <span class="text-2xl font-extrabold text-gray-900 leading-none"><?= number_format($stats['visitas_total']) ?></span>
-          <span class="text-[11px] text-gray-400 mt-1 leading-tight">Visitas<br>total</span>
+          <span class="text-[11px] text-gray-400 mt-1 leading-tight">Visitas<br>histórico</span>
         </div>
       </div>
     </div>
@@ -378,12 +378,28 @@ require_once $app_dir . '/componentes/sidebar.php';
   </div><!-- /px-4 -->
 </main>
 
-<?php require_once $app_dir . '/componentes/nav_bottom.php'; ?>
+<?php
+require_once $app_dir . '/componentes/nav_bottom.php';
+require_once $app_dir . '/componentes/modal_publicar.php';
+require_once $app_dir . '/componentes/modal_explora.php';
+?>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const l = document.getElementById('loader');
     if (l) { l.style.opacity = '0'; setTimeout(() => l.style.display = 'none', 300); }
+
+    function setupModal(triggerId, modalId, cardId, closeId) {
+        const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
+        if (!btn || !modal) return;
+        const open = () => { modal.classList.remove('hidden'); requestAnimationFrame(() => card.classList.remove('translate-y-full', 'opacity-0')); document.body.style.overflow = 'hidden'; };
+        const shut = () => { card.classList.add('translate-y-full', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300); };
+        btn.onclick = (e) => { e.preventDefault(); open(); };
+        if (close) close.onclick = shut;
+        modal.onclick = (e) => { if (e.target === modal) shut(); };
+    }
+    setupModal('btn-publicar', 'modal-quick', 'quick-card', 'quick-close');
+    setupModal('btn-explora', 'modal-explora', 'explora-card', 'explora-close');
 });
 </script>
 </body>

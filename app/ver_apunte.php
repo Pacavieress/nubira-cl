@@ -1130,6 +1130,7 @@ function cerrarModalAlumno() {
 }
 </script>
 
+<?php if (!$es_dueno): ?>
 <!-- [NUBIRA TRACKER] Engagement tracking - NO modificar sin revisar track_vista.php -->
 <script>
 (function() {
@@ -1199,6 +1200,7 @@ function cerrarModalAlumno() {
     });
 })();
 </script>
+<?php endif; ?>
 
 <?php
 $ruta_footer = $base_path . '/includes/footer.php';

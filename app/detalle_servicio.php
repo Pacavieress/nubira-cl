@@ -1660,6 +1660,7 @@ window.borrarOpinionUI = async function(botonDom, id, tipo) {
 <?php endif; ?>
 </script>
 
+<?php if (!$es_propietario): ?>
 <!-- [NUBIRA TRACKER] Engagement tracking - NO modificar sin revisar track_vista.php -->
 <script>
 (function() {
@@ -1729,6 +1730,7 @@ window.borrarOpinionUI = async function(botonDom, id, tipo) {
     });
 })();
 </script>
+<?php endif; ?>
 
 <!-- MODAL CHAT VISITANTE — Cuenta Express -->
 <div id="modal-chat-visitante" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
