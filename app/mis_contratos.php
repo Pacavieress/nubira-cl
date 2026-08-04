@@ -171,7 +171,7 @@ if (!function_exists('nav_class')) {
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
     .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-    .tab-btn.active { color: #54A6D8; border-bottom: 2px solid #54A6D8; background-color: #f0f9ff; }
+    .tab-btn.active { color: #54A6D8; border-bottom: 2px solid #54A6D8; background-color: #eef6fb; }
   </style>
 </head>
 
@@ -181,17 +181,27 @@ if (!function_exists('nav_class')) {
   <div class="animate-spin h-10 w-10 border-4 border-blue-200 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
-<?php 
-require_once $app_dir . '/componentes/header.php'; 
-require_once $app_dir . '/componentes/sidebar.php'; 
+<?php
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que las demás páginas de gestión
+echo '<div class="hidden md:block">';
+require_once $app_dir . '/componentes/header.php';
+echo '</div>';
+require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-20 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8 w-auto">
+<main class="pt-4 md:pt-20 pb-32 md:pb-16 lg:ml-64 px-4 md:px-8 w-auto">
   <div class="w-full max-w-[1600px] mx-auto space-y-8">
-    
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Mis Contratos</h1>
-        <p class="text-gray-500 text-sm mt-0.5">Gestiona el progreso de tus clases y servicios.</p>
+
+    <div class="mb-6 flex items-center gap-3">
+        <button type="button" onclick="navegacionSeguraNubira()"
+                class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+                aria-label="Volver">
+            <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+        </button>
+        <div>
+            <h1 class="text-2xl font-medium text-[#222222] tracking-[-0.01em]">Mis Contratos</h1>
+            <p class="text-gray-500 text-sm mt-0.5">Gestiona el progreso de tus clases y servicios.</p>
+        </div>
     </div>
 
     <?php
@@ -211,13 +221,13 @@ $_ventas  = contar_activas($res_ventas);
 ?>
 
 <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-2xl overflow-hidden shadow-sm">
-    <button class="tab-btn active flex-1 md:flex-none px-6 py-4 font-bold text-sm text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-2 outline-none" data-target="compras">
-        <?= icon('user', 'w-4 h-4') ?> Soy Alumno 
+    <button class="tab-btn active flex-1 md:flex-none px-6 py-4 font-bold text-sm text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-2 outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" data-target="compras">
+        <?= icon('user', 'w-4 h-4') ?> Soy Alumno
         <?php if ($_compras['activas'] > 0): ?>
             <span class="bg-[#54A6D8] text-white px-2 py-0.5 rounded-full text-xs ml-1 font-bold"><?= $_compras['activas'] ?></span>
         <?php endif; ?>
     </button>
-    <button class="tab-btn flex-1 md:flex-none px-6 py-4 font-bold text-sm text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-2 outline-none" data-target="ventas">
+    <button class="tab-btn flex-1 md:flex-none px-6 py-4 font-bold text-sm text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-2 outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" data-target="ventas">
         <?= icon('publish-class', 'w-4 h-4') ?> Soy Profesor 
         <?php if ($_ventas['activas'] > 0): ?>
             <span class="bg-[#54A6D8] text-white px-2 py-0.5 rounded-full text-xs ml-1 font-bold"><?= $_ventas['activas'] ?></span>
@@ -241,8 +251,8 @@ function render_card_contrato($row, $tipo_vista) {
     
     ob_start();
     ?>
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col md:flex-row gap-4 md:items-center hover:shadow-md transition group">
-        
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 flex flex-col md:flex-row gap-4 md:items-center hover:shadow-md transition group">
+
         <div class="w-full md:w-20 h-20 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-100 relative flex items-center justify-center">
             <?php if($img): ?>
                 <img src="<?= $img ?>" class="w-full h-full object-cover">
@@ -250,17 +260,20 @@ function render_card_contrato($row, $tipo_vista) {
                 <div class="text-gray-300"><?= icon('publish-class', 'w-7 h-7') ?></div>
             <?php endif; ?>
         </div>
-        
+
         <div class="flex-1 w-full text-center md:text-left min-w-0">
-            <h3 class="font-bold text-gray-900 text-base leading-tight mb-1 truncate">
+            <h3 class="font-medium text-[#222222] text-base leading-tight mb-1 truncate">
                 <?= htmlspecialchars($row['servicio_titulo']) ?>
             </h3>
-            
+
             <p class="text-sm text-gray-500 mb-2">
                 <?= $persona_label ?> <span class="font-medium text-gray-700"><?= htmlspecialchars(explode(' ', $persona_nombre)[0]) ?></span>
-                <?php if ($row['monto'] > 0): ?>
+                <?php // [NUBIRA 2.0] Monto solo se muestra al comprador (lo que pagó) — para el
+                      // vendedor, mostrar $row['monto'] sin sumar subsidio ni restar comisión
+                      // sería un número distinto al neto real que ya muestra /clases-vendidas. ?>
+                <?php if ($tipo_vista === 'comprador' && $row['monto'] > 0): ?>
                     <span class="text-gray-300 mx-1">·</span>
-                    <span class="font-bold text-gray-900">$<?= number_format($row['monto'],0,',','.') ?></span>
+                    <span class="font-medium text-[#222222]">$<?= number_format($row['monto'],0,',','.') ?></span>
                 <?php endif; ?>
             </p>
             
@@ -283,11 +296,11 @@ function render_card_contrato($row, $tipo_vista) {
 
         <div class="w-full md:w-auto shrink-0">
             <?php if($tipo_vista === 'comprador' && $row['estado'] === 'pendiente_pago'): ?>
-                <a href="/app/iniciar_pago_contrato.php?id_contrato=<?= $row['id'] ?>" class="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition shadow-md shadow-yellow-100 w-full md:w-auto">
+                <a href="/app/iniciar_pago_contrato.php?id_contrato=<?= $row['id'] ?>" class="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition shadow-md shadow-yellow-100 w-full md:w-auto focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                     <?= icon('cart', 'w-4 h-4') ?> Pagar
                 </a>
             <?php else: ?>
-                <a href="/app/mini_aula.php?id=<?= $row['id'] ?>" class="flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition shadow-md shadow-blue-100 w-full md:w-auto">
+                <a href="/app/mini_aula.php?id=<?= $row['id'] ?>" class="flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition shadow-md shadow-blue-100 w-full md:w-auto focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                     Ir al Aula <i class="fa-solid fa-arrow-right text-xs"></i>
                 </a>
             <?php endif; ?>
@@ -331,12 +344,12 @@ function render_card_compacta($row, $tipo_vista) {
     
     ob_start();
     ?>
-    <a href="/app/mini_aula.php?id=<?= $row['id'] ?>" 
-       class="flex items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all group">
+    <a href="/app/mini_aula.php?id=<?= $row['id'] ?>"
+       class="flex items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
         <div class="flex items-center gap-3 min-w-0 flex-1">
             <div class="w-1 h-10 rounded-full <?= $barra_color ?> flex-shrink-0"></div>
             <div class="min-w-0 flex-1">
-                <p class="text-sm font-bold text-gray-800 truncate"><?= htmlspecialchars($row['servicio_titulo']) ?></p>
+                <p class="text-sm font-medium text-[#222222] truncate"><?= htmlspecialchars($row['servicio_titulo']) ?></p>
                 <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5 flex-wrap">
                     <span class="truncate"><?= htmlspecialchars(explode(' ', $persona_nombre)[0]) ?></span>
                     <?php if ($fecha_amigable): ?>
@@ -386,7 +399,7 @@ function render_seccion($titulo, $contratos, $tipo_vista, $color_titulo = 'text-
             <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-center mb-6">
                 <p class="text-sm font-bold text-gray-800 mb-1">No tienes clases próximas</p>
                 <p class="text-xs text-gray-500 mb-3">Explora servicios y agenda tu siguiente clase.</p>
-                <a href="/clases-servicios" class="inline-flex bg-[#54A6D8] text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-blue-600 transition">Explorar</a>
+                <a href="/clases-servicios" class="inline-flex bg-[#54A6D8] text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-blue-600 transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Explorar</a>
             </div>
         <?php endif; ?>
 
@@ -407,15 +420,12 @@ function render_seccion($titulo, $contratos, $tipo_vista, $color_titulo = 'text-
             </details>
         <?php endif; ?>
     <?php else: ?>
-        <div class="flex flex-col items-center justify-center py-16 bg-white rounded-3xl border border-dashed border-gray-200">
-            <div class="w-16 h-16 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-4 text-3xl">
+        <div class="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+            <div class="w-16 h-16 bg-white border border-gray-100 text-gray-300 rounded-full flex items-center justify-center mb-4 text-3xl">
                 <?= icon('publish-class', 'w-8 h-8') ?>
             </div>
-            <h3 class="text-lg font-bold text-gray-900">No tienes clases contratadas</h3>
-            <p class="text-gray-500 text-sm mt-1 mb-6">Busca un profesor y comienza a aprender.</p>
-            <a href="/clases-servicios" class="bg-[#54A6D8] text-white font-bold py-2.5 px-6 rounded-xl text-sm hover:bg-blue-600 transition shadow-md shadow-blue-200">
-                Explorar Profesores
-            </a>
+            <h3 class="text-lg font-medium text-[#222222] tracking-[-0.01em]">No tienes clases contratadas</h3>
+            <p class="text-gray-500 text-sm mt-1">Busca un profesor y comienza a aprender.</p>
         </div>
     <?php endif; ?>
 </div>
@@ -455,15 +465,12 @@ function render_seccion($titulo, $contratos, $tipo_vista, $color_titulo = 'text-
             </details>
         <?php endif; ?>
     <?php else: ?>
-        <div class="flex flex-col items-center justify-center py-16 bg-white rounded-3xl border border-dashed border-gray-200">
-            <div class="w-16 h-16 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mb-4 text-3xl">
+        <div class="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+            <div class="w-16 h-16 bg-white border border-gray-100 text-yellow-500 rounded-full flex items-center justify-center mb-4 text-3xl">
                 <?= icon('publish-doc', 'w-8 h-8') ?>
             </div>
-            <h3 class="text-lg font-bold text-gray-900">No tienes alumnos activos</h3>
-            <p class="text-gray-500 text-sm mt-1 mb-6">Publica un nuevo servicio para atraer estudiantes.</p>
-            <a href="/publicar-servicio" class="bg-[#54A6D8] text-white font-bold py-2.5 px-6 rounded-xl text-sm hover:bg-blue-600 transition shadow-md shadow-blue-200">
-                Crear Servicio
-            </a>
+            <h3 class="text-lg font-medium text-[#222222] tracking-[-0.01em]">No tienes alumnos activos</h3>
+            <p class="text-gray-500 text-sm mt-1">Publica un nuevo servicio para atraer estudiantes.</p>
         </div>
     <?php endif; ?>
 </div>
@@ -477,6 +484,16 @@ require_once $app_dir . '/componentes/modal_explora.php';
 
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } };
+
+// [NUBIRA 2.0] Volver — mismo patrón que las demás páginas de gestión, con fallback
+// a /perfil (mismo tile de origen: "Mis Contratos" en panel_gestion.php).
+window.navegacionSeguraNubira = function() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/perfil';
+    }
+};
 
 // Pestañas
 const tabBtns = document.querySelectorAll('.tab-btn');
