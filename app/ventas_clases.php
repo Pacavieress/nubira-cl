@@ -126,25 +126,8 @@ require_once $app_dir . '/componentes/sidebar.php';
                 <i class="fa-solid fa-file-csv"></i> Exportar
             </button>
             <?php endif; ?>
-            <a href="/datos_bancarios" class="inline-flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 font-bold py-1.5 px-3 rounded-xl hover:bg-gray-200 active:scale-95 transition text-[11px] tracking-wide focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
-                <i class="fa-solid fa-wallet text-[#54A6D8]"></i> Billetera
-            </a>
         </div>
     </div>
-
-   <!-- Info-box: esta vista es de dinero; la agenda vive en Mis Contratos -->
-   <a href="/mis-contratos" class="flex items-center gap-3 mx-4 md:mx-6 mt-3 bg-sky-50 border border-sky-100 rounded-2xl px-4 py-3 hover:bg-sky-100 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
-       <span class="w-9 h-9 rounded-xl bg-white text-[#54A6D8] flex items-center justify-center shrink-0 border border-sky-100">
-           <i class="fa-regular fa-calendar"></i>
-       </span>
-       <div class="flex-1 min-w-0">
-           <p class="text-[13px] font-medium text-[#222222] leading-tight">¿Buscas tus próximas clases?</p>
-           <p class="text-[11px] text-gray-400 leading-tight">Esta vista es solo de dinero. Revisa tu agenda en Mis Contratos.</p>
-       </div>
-       <span class="text-[#54A6D8] text-[11px] font-bold flex items-center gap-1 shrink-0">
-           Ver mi agenda <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
-       </span>
-   </a>
 
    <div class="md:px-6 pt-2">
         <?php if (!empty($ventasAgrupadas)): ?>
@@ -165,7 +148,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                     
                 <div class="group-dia" id="dia-<?= $dia ?>">
                     
-                    <button onclick="toggleGrupo('<?= $idGrupo ?>', 'icono-<?= $idGrupo ?>')" class="w-full px-4 md:px-2 py-2 flex items-center justify-between bg-white transition-colors cursor-pointer sticky top-16 md:top-32 z-20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
+                    <button onclick="toggleGrupo('<?= $idGrupo ?>', 'icono-<?= $idGrupo ?>')" class="w-full px-4 md:px-2 py-2 flex items-center justify-between bg-white transition-colors cursor-pointer sticky top-[104px] sm:top-16 md:top-32 z-20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-gray-400 text-[12px] uppercase tracking-widest"><?= $etiquetaDia ?></span>
                             <span class="bg-gray-100 text-gray-600 text-[9px] font-medium px-1.5 py-0.5 rounded-md"><?= $cantidadDia ?></span>
