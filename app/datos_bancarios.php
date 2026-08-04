@@ -88,36 +88,49 @@ $page_title = "Mi Billetera";
       .force-no-shadow * { text-shadow: none !important; }
   </style>
 </head>
-<body class="text-slate-800 antialiased overflow-x-hidden">
+<body class="text-gray-800 antialiased overflow-x-hidden">
 
 <div id="loader" class="fixed inset-0 bg-white flex items-center justify-center z-[60] transition-opacity duration-300">
-  <div class="animate-spin h-8 w-8 border-4 border-slate-100 border-t-[#54A6D8] rounded-full"></div>
+  <div class="animate-spin h-8 w-8 border-4 border-gray-100 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
-<?php 
-require_once $app_dir . '/componentes/header.php'; 
-require_once $app_dir . '/componentes/sidebar.php'; 
+<?php
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que las demás páginas de gestión
+echo '<div class="hidden md:block">';
+require_once $app_dir . '/componentes/header.php';
+echo '</div>';
+require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px] animate-fade-in-up force-no-shadow">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px] animate-fade-in-up force-no-shadow">
   <div class="w-full">
     
-    <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-            <h1 class="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">Mi Billetera</h1>
-            <p class="text-slate-400 text-xs font-medium">Administra tus ganancias y retiros.</p>
+    <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-[#f0f0f0] px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="navegacionSeguraNubira()"
+                    class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+                    aria-label="Volver">
+                <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+            </button>
+            <div>
+                <h1 class="text-xl md:text-2xl font-medium tracking-[-0.01em] text-[#222222]">Mi Billetera</h1>
+                <p class="text-gray-400 text-xs font-medium">Administra tus ganancias y retiros.</p>
+            </div>
         </div>
     </div>
 
     <div class="md:px-6 pt-4 space-y-6">
 
         <div class="px-4 md:px-0">
-            <div class="bg-slate-900 rounded-2xl md:rounded-3xl p-5 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 overflow-hidden relative border border-slate-800">
-                <div class="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5 pointer-events-none"></div>
-                
+            <div class="bg-white rounded-2xl md:rounded-3xl p-5 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 overflow-hidden relative border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div class="relative z-10">
-                    <p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Saldo Disponible</p>
-                    <p class="text-3xl md:text-4xl font-black text-white tracking-tight">$<?= number_format(max(0, $saldo_disponible), 0, ',', '.') ?></p>
+                    <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Saldo Disponible</p>
+                    <p class="text-3xl md:text-4xl font-medium text-[#222222] tracking-[-0.01em]">$<?= number_format(max(0, $saldo_disponible), 0, ',', '.') ?></p>
+                    <?php if ($saldo_disponible < $minimo_retiro): ?>
+                    <span class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 text-[10px] font-semibold uppercase tracking-wide">
+                        <i class="fa-solid fa-lock text-[9px]"></i> Aún no retirable
+                    </span>
+                    <?php endif; ?>
                     <div class="mt-2 inline-flex items-center gap-1.5 <?= $comision_actual == 0 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-sky-500/10 text-sky-600 border-sky-500/20' ?> px-2.5 py-1 rounded-md text-[10px] font-medium border">
     <i class="fa-solid <?= $comision_actual == 0 ? 'fa-gift' : 'fa-circle-info' ?>"></i>
     <span>
@@ -130,15 +143,15 @@ require_once $app_dir . '/componentes/sidebar.php';
 </div>
                     
                     <?php if ($total_ganancias > 0): ?>
-                    <div class="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-slate-400 font-medium">
+                    <div class="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-gray-500 font-medium">
                         <?php if ($ganancias_apuntes > 0): ?>
-                        <span class="flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-md">
+                        <span class="flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-md">
                             <i class="fa-solid fa-file-lines"></i>
                             Apuntes: $<?= number_format($ganancias_apuntes, 0, ',', '.') ?>
                         </span>
                         <?php endif; ?>
                         <?php if ($ganancias_servicios > 0): ?>
-                        <span class="flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-md">
+                        <span class="flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-md">
                             <i class="fa-solid fa-handshake"></i>
                             Servicios: $<?= number_format($ganancias_servicios, 0, ',', '.') ?>
                         </span>
@@ -154,26 +167,26 @@ require_once $app_dir . '/componentes/sidebar.php';
                                <form action="/solicitar-retiro" method="POST" class="w-full">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="monto" value="<?= floor($saldo_disponible) ?>">
-    <button type="submit" class="w-full bg-white text-slate-900 active:bg-slate-200 md:hover:bg-slate-100 py-3 rounded-xl font-bold transition-colors text-sm flex items-center justify-center gap-2 shadow-none border border-transparent">
+    <button type="submit" class="w-full bg-[#54A6D8] text-white active:bg-blue-600 md:hover:bg-[#4392c3] py-3 rounded-xl font-bold transition-colors text-sm flex items-center justify-center gap-2 shadow-md border border-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                                         <i class="fa-solid fa-building-columns"></i> Solicitar Retiro
                                     </button>
                                 </form>
                             <?php else: ?>
-                                <a href="/editar-datos-bancarios" class="w-full bg-white text-slate-900 active:bg-slate-200 md:hover:bg-slate-100 py-3 rounded-xl font-bold transition-colors text-sm flex items-center justify-center gap-2 shadow-none border border-transparent">
+                                <a href="/editar-datos-bancarios" class="w-full bg-[#54A6D8] text-white active:bg-blue-600 md:hover:bg-[#4392c3] py-3 rounded-xl font-bold transition-colors text-sm flex items-center justify-center gap-2 shadow-md border border-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                                     <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Configurar Banco
                                 </a>
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <div class="w-full">
-                            <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-1">
-                                <span class="text-slate-400">Progreso para retiro</span>
-                                <span class="text-[#54A6D8]"><?= round($porcentaje_progreso) ?>%</span>
+                            <div class="flex justify-between items-baseline mb-1.5">
+                                <span class="text-[12px] font-semibold text-[#222222]">Te faltan $<?= number_format(max(0, $minimo_retiro - $saldo_disponible), 0, ',', '.') ?></span>
+                                <span class="text-[11px] font-bold text-[#54A6D8]"><?= round($porcentaje_progreso) ?>%</span>
                             </div>
-                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                                 <div class="bg-[#54A6D8] h-full transition-all duration-1000 ease-out" style="width: <?= $porcentaje_progreso ?>%"></div>
                             </div>
-                            <p class="text-[10px] text-slate-400 font-medium text-right mt-1.5">Mínimo: $<?= number_format($minimo_retiro, 0, ',', '.') ?></p>
+                            <p class="text-[10px] text-gray-400 font-medium text-right mt-1.5">Mínimo: $<?= number_format($minimo_retiro, 0, ',', '.') ?></p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -181,14 +194,14 @@ require_once $app_dir . '/componentes/sidebar.php';
         </div>
 
         <div class="px-4 md:px-0">
-            <a href="/editar-datos-bancarios" class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-100 hover:bg-slate-50 active:bg-slate-100 transition-colors group">
+            <a href="/editar-datos-bancarios" class="flex items-center justify-between bg-white p-4 rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:bg-gray-50 active:bg-gray-100 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 <?= $datosBancarios ? 'bg-slate-50 text-[#54A6D8] border border-slate-100' : 'bg-red-50 text-red-500 border border-red-100' ?>">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 <?= $datosBancarios ? 'bg-gray-50 text-[#54A6D8] border border-[#f0f0f0]' : 'bg-red-50 text-red-500 border border-red-100' ?>">
                         <i class="fa-solid <?= $datosBancarios ? 'fa-building-columns' : 'fa-triangle-exclamation' ?>"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-slate-800 text-sm md:text-base">Cuenta Bancaria de Destino</h3>
-                        <p class="text-xs md:text-sm font-medium mt-0.5 <?= $datosBancarios ? 'text-slate-500' : 'text-red-400' ?>">
+                        <h3 class="font-medium tracking-[-0.01em] text-[#222222] text-sm md:text-base">Cuenta Bancaria de Destino</h3>
+                        <p class="text-xs md:text-sm font-medium mt-0.5 <?= $datosBancarios ? 'text-gray-500' : 'text-red-400' ?>">
                             <?php if ($datosBancarios): ?>
                                 <?= htmlspecialchars($datosBancarios['banco']) ?> • Cta. terminada en <?= strlen($datosBancarios['numero_cuenta'] ?? '') >= 4 ? substr(htmlspecialchars($datosBancarios['numero_cuenta']), -4) : '••••' ?>
                             <?php else: ?>
@@ -197,13 +210,13 @@ require_once $app_dir . '/componentes/sidebar.php';
                         </p>
                     </div>
                 </div>
-                <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-slate-600 transition-colors"></i>
+                <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-gray-600 transition-colors"></i>
             </a>
         </div>
 
         <div class="px-4 md:px-0 pt-4">
             <div class="flex items-center justify-between mb-3">
-                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Historial de Retiros</h2>
+                <h2 class="text-xs font-medium text-gray-400 uppercase tracking-widest">Historial de Retiros</h2>
             </div>
 
             <?php 
@@ -214,8 +227,8 @@ require_once $app_dir . '/componentes/sidebar.php';
             
             if ($resRetiros->num_rows > 0): 
             ?>
-                <div class="bg-white md:rounded-2xl border-y md:border border-slate-100 overflow-hidden">
-                    <ul class="divide-y divide-slate-50">
+                <div class="bg-white md:rounded-2xl border-y md:border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+                    <ul class="divide-y divide-gray-50">
                     <?php while ($r = $resRetiros->fetch_assoc()): 
                         $estado = strtolower($r['estado']);
                         $fecha = date('d M Y, H:i', strtotime($r['fecha_solicitud']));
@@ -233,24 +246,24 @@ require_once $app_dir . '/componentes/sidebar.php';
                         } else {
                             $icono = '<i class="fa-solid fa-clock text-amber-500"></i>';
                             $bg_icono = 'bg-amber-50';
-                            $color_estado = 'text-slate-800';
+                            $color_estado = 'text-gray-800';
                             $txt_estado = 'En proceso';
                         }
                     ?>
-                        <li class="flex items-center justify-between p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-default">
+                        <li class="flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-default">
                             <div class="flex items-center gap-4 flex-1 min-w-0">
                                 <div class="w-10 h-10 rounded-full <?= $bg_icono ?> flex items-center justify-center shrink-0 border border-transparent">
                                     <?= $icono ?>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <h3 class="font-bold text-slate-800 text-[13px] md:text-sm truncate">Retiro a Banco</h3>
-                                    <p class="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+                                    <h3 class="font-medium tracking-[-0.01em] text-[#222222] text-[13px] md:text-sm truncate">Retiro a Banco</h3>
+                                    <p class="text-[11px] text-gray-400 font-medium mt-0.5 truncate">
                                         <?= $fecha ?> • <?= $txt_estado ?>
                                     </p>
                                 </div>
                             </div>
                             <div class="text-right pl-4 shrink-0">
-                                <span class="font-bold <?= $color_estado ?> text-sm tracking-tight">
+                                <span class="font-medium <?= $color_estado ?> text-sm tracking-[-0.01em]">
                                     -$<?= number_format($r['monto'], 0, ',', '.') ?>
                                 </span>
                             </div>
@@ -259,12 +272,12 @@ require_once $app_dir . '/componentes/sidebar.php';
                     </ul>
                 </div>
             <?php else: ?>
-                <div class="flex flex-col items-center justify-center py-12 px-4 text-center bg-white md:rounded-2xl border-y md:border border-slate-100">
-                    <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-slate-300 border border-slate-100">
+                <div class="flex flex-col items-center justify-center py-12 px-4 text-center bg-white md:rounded-2xl border-y md:border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                    <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3 text-gray-300 border border-[#f0f0f0]">
                         <i class="fa-solid fa-clock-rotate-left text-xl"></i>
                     </div>
-                    <h3 class="text-sm font-bold text-slate-800">No hay retiros registrados</h3>
-                    <p class="text-slate-400 text-xs mt-1 max-w-xs mx-auto font-medium">Tus transferencias hacia el banco aparecerán aquí.</p>
+                    <h3 class="text-sm font-medium tracking-[-0.01em] text-[#222222]">No hay retiros registrados</h3>
+                    <p class="text-gray-400 text-xs mt-1 max-w-xs mx-auto font-medium">Tus transferencias hacia el banco aparecerán aquí.</p>
                 </div>
             <?php endif; $stmtH->close(); ?>
         </div>
@@ -280,12 +293,22 @@ require_once $app_dir . '/componentes/modal_explora.php';
 ?>
 
 <script>
-window.onload = () => { 
-    const l = document.getElementById('loader'); 
-    if(l) { 
-        l.classList.add('opacity-0'); 
-        setTimeout(() => l.classList.add('hidden'), 300); 
-    } 
+window.onload = () => {
+    const l = document.getElementById('loader');
+    if(l) {
+        l.classList.add('opacity-0');
+        setTimeout(() => l.classList.add('hidden'), 300);
+    }
+};
+
+// [NUBIRA 2.0] Volver — mismo patrón que las demás páginas de gestión, con fallback
+// a /perfil (mismo tile de origen: "Mi Billetera" en panel_gestion.php).
+window.navegacionSeguraNubira = function() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/perfil';
+    }
 };
 
 // Modales
