@@ -977,7 +977,7 @@ $portada_url = $portada_set['card'];
                        <!-- Badge cupos (derecha) -->
                        <?php if ($es_oferta): ?>
                        <div class="absolute top-1 right-1 z-10">
-                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-500 text-white border border-amber-500">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200">
                                <?= (int)$row['cupos_oferta'] ?> <?= (int)$row['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                            </span>
                        </div>
@@ -1084,7 +1084,7 @@ if ($mostrar_seccion_rapidos && $res_rapidos && $res_rapidos->num_rows > 0): ?>
                        ?>
                        <?php if ($es_oferta_r): ?>
                        <div class="absolute top-1 right-1 z-10">
-                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-500 text-white border border-amber-500">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200">
                                <?= (int)$row_r['cupos_oferta'] ?> <?= (int)$row_r['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                            </span>
                        </div>
@@ -1199,7 +1199,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                        <!-- Badge cupos (derecha) -->
                        <?php if ($es_oferta_n): ?>
                        <div class="absolute top-1 right-1 z-10">
-                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-500 text-white border border-amber-500">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200">
                                <?= (int)$row_n['cupos_oferta'] ?> <?= (int)$row_n['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                            </span>
                        </div>
@@ -1407,7 +1407,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
                        ?>
                        <?php if ($es_oferta_paes): ?>
                        <div class="absolute top-1 right-1 z-10">
-                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-500 text-white border border-amber-500">
+                           <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200">
                                <?= (int)$row_paes['cupos_oferta'] ?> <?= (int)$row_paes['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                            </span>
                        </div>
@@ -1504,7 +1504,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
                                 ?>
 
                                 <div class="absolute top-1 right-1 z-10">
-                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-500 text-white border border-amber-500">
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200">
                                         <?= (int)$row_of['cupos_oferta'] ?> <?= (int)$row_of['cupos_oferta'] === 1 ? 'cupo' : 'cupos' ?>
                                     </span>
                                 </div>
