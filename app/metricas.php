@@ -101,13 +101,16 @@ unset($pub);
 </div>
 
 <?php
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que las demás páginas de gestión
+echo '<div class="hidden md:block">';
 require_once $app_dir . '/componentes/header.php';
+echo '</div>';
 require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[720px] fade-in">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[720px] fade-in">
 
-  <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-4">
+  <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-4">
     <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">Métricas</h1>
     <p class="text-xs text-gray-400 mt-0.5">Últimos 30 días</p>
   </div>
@@ -130,7 +133,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         }
 
         $badge_label = $tipo === 'servicio' ? 'TUTORÍA' : 'APUNTE';
-        $href = '/app/metricas_detalle.php?tipo=' . urlencode($tipo) . '&id=' . (int)$pub['id'];
+        $href = '/metricas/' . urlencode($tipo) . '/' . (int)$pub['id'];
     ?>
     <a href="<?= $href ?>" class="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 px-4 py-3 hover:border-gray-200 hover:shadow-sm hover:scale-[1.005] active:scale-[0.998] transition-all duration-150 group">
 

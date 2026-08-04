@@ -21,7 +21,7 @@ $tipo = $_GET['tipo'] ?? '';
 $id   = (int)($_GET['id'] ?? 0);
 
 if (!in_array($tipo, ['servicio', 'apunte'], true) || $id <= 0) {
-    header("Location: /app/metricas.php"); exit;
+    header("Location: /metricas"); exit;
 }
 
 // ── Verificar propiedad ────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ if ($tipo === 'servicio') {
     }
 }
 
-if (!$pub) { header("Location: /app/metricas.php"); exit; }
+if (!$pub) { header("Location: /metricas"); exit; }
 
 // ── Stats principales ──────────────────────────────────────────────────────
 
@@ -228,15 +228,18 @@ if ($tipo === 'servicio') {
 </div>
 
 <?php
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que las demás páginas de gestión
+echo '<div class="hidden md:block">';
 require_once $app_dir . '/componentes/header.php';
+echo '</div>';
 require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[720px] fade-in">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[720px] fade-in">
 
   <!-- Topbar -->
-  <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-3 flex items-center gap-3">
-    <a href="/app/metricas.php" class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors shrink-0">
+  <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-3 flex items-center gap-3">
+    <a href="/metricas" class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors shrink-0">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
       </svg>
