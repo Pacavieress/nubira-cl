@@ -18,6 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+    header("Location: /app/datos_bancarios.php?error=csrf_invalido");
+    exit;
+}
+
 $usuario_id = (int)$_SESSION['usuario_id'];
 $monto_solicitado = intval($_POST['monto'] ?? 0);
 
