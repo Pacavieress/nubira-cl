@@ -116,32 +116,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['responder_ticket'])) 
     $ticket_id       = (int)$_POST['ticket_id'];
     $mensaje_usuario = trim($_POST['mensaje_usuario'] ?? '');
 
-    if ($ticket_id > 0 && !empty($mensaje_usuario)) {
-        $stmt_val = $conn->prepare("SELECT id FROM reclamos_sugerencias WHERE id = ? AND usuario_id = ?");
-        $stmt_val->bind_param('ii', $ticket_id, $usuario_id);
-        $stmt_val->execute();
-        if ($stmt_val->get_result()->num_rows > 0) {
-            $conn->begin_transaction();
-            try {
-                $stmt_in = $conn->prepare("INSERT INTO reclamos_mensajes (reclamo_id, remitente, mensaje, fecha) VALUES (?, 'usuario', ?, NOW())");
-                $stmt_in->bind_param('is', $ticket_id, $mensaje_usuario);
-                $stmt_in->execute();
-                $stmt_in->close();
+    if ($ticket_id <= 0 || $mensaje_usuario === '') {
+        flash_redirect('Debes escribir un mensaje para responder.', true, $current_url);
+    }
 
-                // Al responder el usuario, el ticket vuelve a estar leído (1) para él.
-                $stmt_up = $conn->prepare("UPDATE reclamos_sugerencias SET estado = 'pendiente', revisado_usuario = 1 WHERE id = ?");
-                $stmt_up->bind_param('i', $ticket_id);
-                $stmt_up->execute();
-                $stmt_up->close();
+    $stmt_val = $conn->prepare("SELECT id FROM reclamos_sugerencias WHERE id = ? AND usuario_id = ?");
+    $stmt_val->bind_param('ii', $ticket_id, $usuario_id);
+    $stmt_val->execute();
+    $existe = $stmt_val->get_result()->num_rows > 0;
+    $stmt_val->close();
 
-                $conn->commit();
-                flash_redirect('Tu respuesta ha sido enviada a soporte.', false, $current_url);
-            } catch (Exception $e) {
-                $conn->rollback();
-                flash_redirect('Error al enviar la respuesta.', true, $current_url);
-            }
-        }
-        $stmt_val->close();
+    if (!$existe) {
+        flash_redirect('No encontramos ese ticket.', true, $current_url);
+    }
+
+    $conn->begin_transaction();
+    try {
+        $stmt_in = $conn->prepare("INSERT INTO reclamos_mensajes (reclamo_id, remitente, mensaje, fecha) VALUES (?, 'usuario', ?, NOW())");
+        $stmt_in->bind_param('is', $ticket_id, $mensaje_usuario);
+        if (!$stmt_in->execute()) throw new Exception($stmt_in->error);
+        $stmt_in->close();
+
+        // Al responder el usuario, el ticket vuelve a estar leído (1) para él.
+        $stmt_up = $conn->prepare("UPDATE reclamos_sugerencias SET estado = 'pendiente', revisado_usuario = 1 WHERE id = ?");
+        $stmt_up->bind_param('i', $ticket_id);
+        if (!$stmt_up->execute()) throw new Exception($stmt_up->error);
+        $stmt_up->close();
+
+        $conn->commit();
+        flash_redirect('Tu respuesta ha sido enviada a soporte.', false, $current_url);
+    } catch (Exception $e) {
+        $conn->rollback();
+        flash_redirect('Error al enviar la respuesta.', true, $current_url);
     }
 }
 
@@ -158,23 +164,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_eliminar'])) {
         $ids_a_eliminar = json_decode($_POST['tickets_seleccionados'], true);
     }
 
-    if (is_array($ids_a_eliminar) && count($ids_a_eliminar) > 0) {
-        $ids_limpios = array_filter(array_map('intval', $ids_a_eliminar), fn($v) => $v > 0);
-        if (!empty($ids_limpios)) {
-            $placeholders = implode(',', array_fill(0, count($ids_limpios), '?'));
-            $types = str_repeat('i', count($ids_limpios)) . 'i'; 
-            
-            $stmt_del = $conn->prepare("UPDATE reclamos_sugerencias SET estado = 'eliminado' WHERE id IN ($placeholders) AND usuario_id = ?");
-            $bind_params = array_merge([$types], $ids_limpios, [$usuario_id]);
-            $tmp = [];
-            foreach ($bind_params as $key => $value) $tmp[$key] = &$bind_params[$key];
-            call_user_func_array([$stmt_del, 'bind_param'], $tmp);
-            
-            if ($stmt_del->execute()) {
-                $stmt_del->close();
-                flash_redirect('🗑️ ' . count($ids_limpios) . ' ticket(s) eliminado(s) correctamente.', false, $current_url);
-            }
-        }
+    $ids_limpios = is_array($ids_a_eliminar)
+        ? array_filter(array_map('intval', $ids_a_eliminar), fn($v) => $v > 0)
+        : [];
+
+    if (empty($ids_limpios)) {
+        flash_redirect('No se seleccionó ningún ticket válido para eliminar.', true, $current_url);
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids_limpios), '?'));
+    $types = str_repeat('i', count($ids_limpios)) . 'i';
+
+    $stmt_del = $conn->prepare("UPDATE reclamos_sugerencias SET estado = 'eliminado' WHERE id IN ($placeholders) AND usuario_id = ?");
+    $bind_params = array_merge([$types], $ids_limpios, [$usuario_id]);
+    $tmp = [];
+    foreach ($bind_params as $key => $value) $tmp[$key] = &$bind_params[$key];
+    call_user_func_array([$stmt_del, 'bind_param'], $tmp);
+
+    if ($stmt_del->execute()) {
+        $stmt_del->close();
+        flash_redirect('🗑️ ' . count($ids_limpios) . ' ticket(s) eliminado(s) correctamente.', false, $current_url);
+    } else {
+        $stmt_del->close();
+        flash_redirect('Error al eliminar el/los ticket(s). Intenta de nuevo.', true, $current_url);
     }
 }
 
@@ -185,13 +197,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar_resuelto'])) {
     }
     
     $ticket_id = (int)$_POST['ticket_id'];
-    if ($ticket_id > 0) {
-        $stmt = $conn->prepare("UPDATE reclamos_sugerencias SET estado = 'resuelto', revisado_usuario = 1 WHERE id = ? AND usuario_id = ?");
-        $stmt->bind_param('ii', $ticket_id, $usuario_id);
-        if ($stmt->execute()) {
-            $stmt->close();
-            flash_redirect('Ticket cerrado correctamente. ¡Gracias!', false, $current_url);
-        }
+    if ($ticket_id <= 0) {
+        flash_redirect('Ticket inválido.', true, $current_url);
+    }
+
+    $stmt = $conn->prepare("UPDATE reclamos_sugerencias SET estado = 'resuelto', revisado_usuario = 1 WHERE id = ? AND usuario_id = ?");
+    $stmt->bind_param('ii', $ticket_id, $usuario_id);
+    if ($stmt->execute() && $stmt->affected_rows > 0) {
+        $stmt->close();
+        flash_redirect('Ticket cerrado correctamente. ¡Gracias!', false, $current_url);
+    } else {
+        $stmt->close();
+        flash_redirect('No se pudo cerrar el ticket. Verifica que sea tuyo e intenta de nuevo.', true, $current_url);
     }
 }
 
@@ -258,7 +275,7 @@ foreach ($tickets as $t) {
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <title><?= $page_title ?> | Nubira</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -308,23 +325,33 @@ foreach ($tickets as $t) {
   <div class="animate-spin h-10 w-10 border-4 border-blue-200 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
-<?php 
-require_once $app_dir . '/componentes/header.php'; 
-require_once $app_dir . '/componentes/sidebar.php'; 
+<?php
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que las demás páginas de gestión
+echo '<div class="hidden md:block">';
+require_once $app_dir . '/componentes/header.php';
+echo '</div>';
+require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-20 pb-32 md:pb-12 lg:ml-64 px-0 md:px-8 w-auto max-w-4xl mx-auto space-y-6">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 px-0 md:px-8 w-full max-w-4xl mx-auto space-y-6">
 
     <div class="px-4 md:px-0 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Centro de Ayuda</h1>
-        <p class="text-sm text-gray-500 mt-0.5">Resolvemos tus dudas y problemas.</p>
+      <div class="flex items-center gap-3">
+        <button type="button" onclick="navegacionSeguraNubira()"
+                class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+                aria-label="Volver">
+            <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+        </button>
+        <div>
+          <h1 class="text-xl md:text-2xl font-medium tracking-[-0.01em] text-[#222222]">Centro de Ayuda</h1>
+          <p class="text-gray-400 text-xs font-medium mt-0.5">Resolvemos tus dudas y problemas.</p>
+        </div>
       </div>
       <div class="flex items-center gap-3 shrink-0">
-        <button type="button" id="btn-toggle-select" class="bg-white hover:bg-gray-50 text-gray-700 font-bold py-2.5 px-4 rounded-xl border border-gray-200 transition transform active:scale-95 text-sm flex items-center gap-2" title="Seleccionar múltiples tickets">
+        <button type="button" id="btn-toggle-select" class="bg-white hover:bg-gray-50 text-gray-700 font-bold py-2.5 px-4 rounded-xl border border-gray-200 transition transform active:scale-95 text-sm flex items-center gap-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Seleccionar múltiples tickets">
           <i class="fa-solid fa-list-check"></i><span class="hidden sm:inline">Seleccionar</span>
         </button>
-        <button type="button" id="btn-nuevo-ticket" class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl transition transform active:scale-95 text-sm flex items-center gap-2">
+        <button type="button" id="btn-nuevo-ticket" class="bg-[#54A6D8] md:hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl transition transform active:scale-95 text-sm flex items-center gap-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
           <i class="fa-solid fa-plus text-xs"></i><span class="hidden sm:inline">Nuevo ticket</span><span class="sm:hidden">Nuevo</span>
         </button>
       </div>
@@ -334,19 +361,19 @@ require_once $app_dir . '/componentes/sidebar.php';
       <div id="toast" class="mx-4 md:mx-0 rounded-xl px-4 py-3 flex items-center gap-3 <?= !$error ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'; ?> transition-all duration-300">
         <?= icon(!$error ? 'check-circle' : 'exclamation', 'w-5 h-5 shrink-0') ?>
         <span class="font-medium text-sm flex-1"><?= htmlspecialchars($mensaje_feedback) ?></span>
-        <button onclick="document.getElementById('toast').remove()" class="text-sm underline hover:no-underline shrink-0">Cerrar</button>
+        <button onclick="document.getElementById('toast').remove()" class="text-sm underline hover:no-underline shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Cerrar</button>
       </div>
     <?php endif; ?>
 
     <?php if ($cnt_total > 0): ?>
     <div class="px-4 md:px-0">
       <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-        <button type="button" data-filtro="todos" class="filtro-chip is-active shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border transition-all" style="background-color:#54A6D8; color:white; border-color:#54A6D8;">Todos · <?= $cnt_total ?></button>
-        <button type="button" data-filtro="activos" class="filtro-chip shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all">Activos · <?= $cnt_activos ?></button>
-        <button type="button" data-filtro="resueltos" class="filtro-chip shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all">Resueltos · <?= $cnt_resueltos ?></button>
+        <button type="button" data-filtro="todos" class="filtro-chip is-active shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" style="background-color:#54A6D8; color:white; border-color:#54A6D8;">Todos · <?= $cnt_total ?></button>
+        <button type="button" data-filtro="activos" class="filtro-chip shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Activos · <?= $cnt_activos ?></button>
+        <button type="button" data-filtro="resueltos" class="filtro-chip shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Resueltos · <?= $cnt_resueltos ?></button>
         <?php if ($cnt_no_leidos > 0): ?>
         <!-- ID agregado para poder actualizar dinámicamente este contador con JavaScript -->
-        <button type="button" data-filtro="no_leidos" class="filtro-chip shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border border-[#54A6D8]/30 bg-[#54A6D8]/10 text-[#54A6D8] transition-all flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#54A6D8] animate-pulse"></span>Sin leer · <span id="counter-sin-leer"><?= $cnt_no_leidos ?></span></button>
+        <button type="button" data-filtro="no_leidos" class="filtro-chip shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide border border-[#54A6D8]/30 bg-[#54A6D8]/10 text-[#54A6D8] transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"><span class="w-1.5 h-1.5 rounded-full bg-[#54A6D8] animate-pulse"></span>Sin leer · <span id="counter-sin-leer"><?= $cnt_no_leidos ?></span></button>
         <?php endif; ?>
       </div>
     </div>
@@ -359,7 +386,7 @@ require_once $app_dir . '/componentes/sidebar.php';
           <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300"><i class="fa-solid fa-headset text-2xl"></i></div>
           <h3 class="text-base font-bold text-gray-900">Aún no tienes tickets</h3>
           <p class="text-gray-500 text-sm mt-1">Si necesitas ayuda, abre un ticket y te respondemos pronto.</p>
-          <button type="button" id="btn-nuevo-ticket-empty" class="mt-6 inline-flex items-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl transition transform active:scale-95 text-sm"><i class="fa-solid fa-plus text-xs"></i> Crear mi primer ticket</button>
+          <button type="button" id="btn-nuevo-ticket-empty" class="mt-6 inline-flex items-center gap-2 bg-[#54A6D8] md:hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl transition transform active:scale-95 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"><i class="fa-solid fa-plus text-xs"></i> Crear mi primer ticket</button>
         </div>
       <?php else: ?>
         <div class="bg-white border-y md:border border-gray-100 md:rounded-2xl overflow-hidden">
@@ -426,7 +453,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                         <input type="hidden" name="csrf" value="<?= htmlspecialchars($CSRF) ?>">
                         <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
                         <input type="hidden" name="accion_eliminar" value="1">
-                        <button type="submit" class="w-8 h-8 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors active:scale-95" title="Eliminar ticket">
+                        <button type="submit" class="w-8 h-8 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Eliminar ticket">
                             <i class="fa-solid fa-trash-can text-sm"></i>
                         </button>
                     </form>
@@ -465,7 +492,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                       <input type="hidden" name="csrf" value="<?= htmlspecialchars($CSRF) ?>">
                       <input type="hidden" name="ticket_id" value="<?= (int)$t['id'] ?>">
                       <textarea name="mensaje_usuario" rows="1" placeholder="Escribe tu respuesta a soporte..." required maxlength="2000" class="auto-resize flex-1 bg-transparent border-none px-4 py-3 text-sm text-gray-900 outline-none resize-none placeholder-gray-400 max-h-[150px]"></textarea>
-                      <button type="submit" class="shrink-0 bg-[#54A6D8] hover:bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors active:scale-95 mb-1.5 mr-1.5">
+                      <button type="submit" class="shrink-0 bg-[#54A6D8] md:hover:bg-blue-600 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors active:scale-95 mb-1.5 mr-1.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                         <i class="fa-solid fa-paper-plane text-xs"></i>
                       </button>
                     </form>
@@ -473,7 +500,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                       <input type="hidden" name="marcar_resuelto" value="1">
                       <input type="hidden" name="csrf" value="<?= htmlspecialchars($CSRF) ?>">
                       <input type="hidden" name="ticket_id" value="<?= (int)$t['id'] ?>">
-                      <button type="submit" onclick="return confirm('¿Marcar este ticket como resuelto? Se cerrará de forma permanente.')" class="text-xs font-bold text-green-600 hover:text-green-700 uppercase tracking-wide transition-colors">
+                      <button type="submit" onclick="return confirm('¿Marcar este ticket como resuelto? Se cerrará de forma permanente.')" class="text-xs font-bold text-green-600 hover:text-green-700 uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                         <i class="fa-solid fa-check mr-1"></i> Dar por resuelto
                       </button>
                     </form>
@@ -509,7 +536,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         </h2>
         <p class="text-xs text-gray-500 font-medium">Cuéntanos qué sucede para poder ayudarte.</p>
       </div>
-      <button type="button" id="ticket-close" class="w-8 h-8 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-colors">
+      <button type="button" id="ticket-close" class="w-8 h-8 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
         <i class="fa-solid fa-xmark text-gray-500"></i>
       </button>
     </div>
@@ -519,10 +546,10 @@ require_once $app_dir . '/componentes/sidebar.php';
       <input type="hidden" name="categoria" id="input-categoria" value="otro">
 
       <div>
-        <label class="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">¿Qué tipo de problema es?</label>
+        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">¿Qué tipo de problema es?</label>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <?php foreach ($CATEGORIAS as $key => $cat): ?>
-            <button type="button" data-cat="<?= $key ?>" class="cat-chip <?= $key === 'otro' ? 'is-active' : '' ?> px-3 py-2.5 rounded-xl border border-gray-200 bg-white transition-all flex items-center gap-2 text-left">
+            <button type="button" data-cat="<?= $key ?>" class="cat-chip <?= $key === 'otro' ? 'is-active' : '' ?> px-3 py-2.5 rounded-xl border border-gray-200 bg-white transition-all flex items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
               <i class="cat-icon fa-solid <?= $cat['icon'] ?> text-xs text-<?= $cat['color'] ?>-500"></i>
               <span class="text-xs font-bold text-gray-700 truncate"><?= htmlspecialchars($cat['label']) ?></span>
             </button>
@@ -531,19 +558,19 @@ require_once $app_dir . '/componentes/sidebar.php';
       </div>
       
       <div>
-        <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Asunto</label>
+        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Asunto</label>
         <input type="text" name="asunto" required maxlength="100" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none" placeholder="Resume tu problema...">
       </div>
       
       <div>
-        <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Descripción</label>
+        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Descripción</label>
         <textarea name="mensaje" required rows="4" maxlength="2000" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none resize-none" placeholder="Cuéntanos con detalle..."></textarea>
       </div>
     </form>
     
     <div class="px-6 py-4 border-t border-gray-100 shrink-0 flex items-center justify-end gap-3 bg-gray-50/50">
-      <button type="button" id="ticket-cancel" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 px-6 rounded-xl font-bold transition text-sm">Cancelar</button>
-      <button type="submit" form="form-ticket" class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl transition transform active:scale-95 text-sm flex items-center gap-2">Enviar ticket <i class="fa-solid fa-paper-plane text-xs"></i></button>
+      <button type="button" id="ticket-cancel" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 px-6 rounded-xl font-bold transition text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Cancelar</button>
+      <button type="submit" form="form-ticket" class="bg-[#54A6D8] md:hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl transition transform active:scale-95 text-sm flex items-center gap-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Enviar ticket <i class="fa-solid fa-paper-plane text-xs"></i></button>
     </div>
   </div>
 </div>
@@ -556,13 +583,13 @@ require_once $app_dir . '/componentes/sidebar.php';
 
     <div class="bg-red-600 text-white rounded-2xl shadow-lg pl-4 pr-4 py-3 flex items-center justify-between gap-6 md:max-w-md md:ml-auto">
         <div class="flex items-center gap-3">
-            <button type="button" onclick="exitSelectionMode()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors active:scale-95"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" onclick="exitSelectionMode()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"><i class="fa-solid fa-xmark"></i></button>
             <div>
                 <div class="text-sm font-bold"><span id="selected-count">0</span> items</div>
                 <div class="text-[10px] text-red-200 font-bold uppercase tracking-wide">Seleccionados</div>
             </div>
         </div>
-        <button type="submit" class="text-white hover:text-red-200 text-xs font-bold uppercase tracking-wide p-2 transition-colors active:scale-95 flex items-center gap-2">
+        <button type="submit" class="text-white hover:text-red-200 text-xs font-bold uppercase tracking-wide p-2 transition-colors active:scale-95 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
             Eliminar <i class="fa-solid fa-trash-can text-lg"></i>
         </button>
     </div>
@@ -577,6 +604,16 @@ if (file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if (l) { l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'), 300); }};
 const CSRF_TOKEN = <?= json_encode($CSRF) ?>;
+
+// [NUBIRA 2.0] Volver — mismo patrón que las demás páginas de gestión, con fallback
+// a /perfil (tile "Soporte" en panel_gestion.php).
+window.navegacionSeguraNubira = function() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/perfil';
+    }
+};
 
 // --- GESTIÓN TOUCH, LONG PRESS Y SELECCIÓN MÚLTIPLE ---
 let pressTimer;
