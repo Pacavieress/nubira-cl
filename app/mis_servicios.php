@@ -142,10 +142,10 @@ try {
   </style>
 </head>
 
-<body class="text-slate-800 antialiased overflow-x-hidden select-none md:select-auto bg-white">
+<body class="text-gray-800 antialiased overflow-x-hidden select-none md:select-auto bg-white">
 
 <div id="loader" class="fixed inset-0 bg-white flex items-center justify-center z-[60] transition-opacity duration-300">
-  <div class="animate-spin h-7 w-7 border-4 border-slate-200 border-t-[#54A6D8] rounded-full"></div>
+  <div class="animate-spin h-7 w-7 border-4 border-gray-200 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
 <?php 
@@ -156,10 +156,17 @@ require_once $app_dir . '/componentes/sidebar.php';
 <main class="pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px]">
   <div class="w-full">
     
-    <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-slate-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-            <h1 class="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">Mis Publicaciones</h1>
-            <p class="text-slate-400 text-xs font-medium">Gestiona tus contenidos ofrecidos.</p>
+    <div class="sticky top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="navegacionSeguraNubira()"
+                    class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+                    aria-label="Volver">
+                <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+            </button>
+            <div>
+                <h1 class="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Mis Publicaciones</h1>
+                <p class="text-gray-400 text-xs font-medium">Gestiona tus contenidos ofrecidos.</p>
+            </div>
         </div>
     </div>
 
@@ -167,35 +174,35 @@ require_once $app_dir . '/componentes/sidebar.php';
         <div id="lista-publicaciones" class="pb-10 space-y-2 mt-2">
             
             <div class="group-dia space-y-1" id="seccion-clases">
-                <button onclick="toggleGrupo('content-clases', 'icon-clases')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-slate-50 transition-colors cursor-pointer sticky top-[108px] sm:top-[115px] z-20 bg-white">
+                <button onclick="toggleGrupo('content-clases', 'icon-clases')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-gray-50 transition-colors cursor-pointer sticky top-[108px] sm:top-[115px] z-20 bg-white">
                     <div class="flex items-center gap-2">
-                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Clases o Servicios (<?= count($servicios) ?>)</h2>
+                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Clases o Servicios (<?= count($servicios) ?>)</h2>
                     </div>
-                    <i id="icon-clases" class="fa-solid fa-chevron-down text-slate-400 text-[10px] chevron-icon rotated"></i>
+                    <i id="icon-clases" class="fa-solid fa-chevron-down text-gray-400 text-[10px] chevron-icon rotated"></i>
                 </button>
 
-                <div id="content-clases" class="expand-content bg-white border-y md:border border-slate-100 md:rounded-2xl">
+                <div id="content-clases" class="expand-content bg-white border-y md:border border-[#f0f0f0] md:rounded-2xl md:shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <?php if (count($servicios) > 0): ?>
-                        <ul class="divide-y divide-slate-100">
+                        <ul class="divide-y divide-gray-100">
                             <?php foreach($servicios as $s): 
                                 $rutaImg = !empty($s['imagen']) ? '/upload/servicios/'.basename($s['imagen']) : '/img/portadas/servicios/clases.webp';
                                 $estadoColor = match($s['estado'] ?? 'pendiente') {
-    'aprobado' => 'text-emerald-500 bg-emerald-50',
-    'pendiente' => 'text-amber-500 bg-amber-50',
-    'rechazado' => 'text-red-500 bg-red-50',
-    'pausado' => 'text-orange-600 bg-orange-100', // NUEVO: Feedback visual claro
-    default => 'text-slate-500 bg-slate-50'
+    'aprobado' => 'text-emerald-500 bg-emerald-50 border border-emerald-100',
+    'pendiente' => 'text-amber-500 bg-amber-50 border border-amber-100',
+    'rechazado' => 'text-red-500 bg-red-50 border border-red-100',
+    'pausado' => 'text-orange-600 bg-orange-100 border border-orange-200', // NUEVO: Feedback visual claro
+    default => 'text-gray-500 bg-gray-50 border border-gray-100'
 };
                             ?>
-                            <li class="flex items-center justify-between p-4 md:px-4 hover:bg-slate-50 transition-colors gap-3 active:bg-slate-100">
+                            <li class="flex items-center justify-between p-4 md:px-4 hover:bg-gray-50 transition-colors gap-3 active:bg-gray-100">
                                 <div class="flex items-center gap-3 flex-1 min-w-0 z-20">
-                                    <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 border border-slate-100 relative">
+                                    <div class="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-100 relative">
                                         <img src="<?= htmlspecialchars($rutaImg, ENT_QUOTES, 'UTF-8') ?>" class="w-full h-full object-cover">
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="font-bold text-slate-800 text-[14px] line-clamp-1 leading-tight mb-0.5"><?= htmlspecialchars($s['titulo'] ?? 'Sin título', ENT_QUOTES, 'UTF-8') ?></h3>
-                                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium truncate">
-                                            <span class="<?= $estadoColor ?> px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide"><?= htmlspecialchars($s['estado'] ?? 'Pendiente', ENT_QUOTES, 'UTF-8') ?></span>
+                                        <h3 class="font-medium text-[#222222] text-[14px] line-clamp-1 leading-tight mb-0.5"><?= htmlspecialchars($s['titulo'] ?? 'Sin título', ENT_QUOTES, 'UTF-8') ?></h3>
+                                        <div class="flex items-center gap-1.5 text-[11px] text-gray-400 font-medium truncate">
+                                            <span class="<?= $estadoColor ?> px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide"><?= htmlspecialchars($s['estado'] ?? 'Pendiente', ENT_QUOTES, 'UTF-8') ?></span>
                                             <span>•</span>
                                             <span class="truncate"><?= htmlspecialchars($s['modalidad'] ?? 'Online', ENT_QUOTES, 'UTF-8') ?></span>
                                         </div>
@@ -203,31 +210,31 @@ require_once $app_dir . '/componentes/sidebar.php';
                                 </div>
 
                                 <div class="flex flex-col items-end gap-1.5 shrink-0 pl-2 z-20">
-                                    <span class="font-black text-slate-900 text-[15px] tabular-nums tracking-tight leading-none text-right">
+                                    <span class="font-medium text-[#222222] text-[15px] tabular-nums tracking-[-0.01em] leading-none text-right">
                                         <?= (!empty($s['precio']) && $s['precio'] > 0) ? '$'.number_format($s['precio'], 0, ',', '.') : 'Gratis' ?>
                                     </span>
                                     
-                                   <div class="flex justify-end items-center gap-1 bg-slate-100 p-1 rounded-full border border-transparent">
+                                   <div class="flex justify-end items-center gap-1 bg-gray-100 p-1 rounded-full border border-transparent">
     
     <?php if (($s['estado'] ?? '') === 'pausado'): ?>
         <form action="" method="POST" class="m-0">
             <input type="hidden" name="accion" value="reactivar_servicio">
             <input type="hidden" name="id" value="<?= $s['id'] ?>">
-            <button type="submit" class="flex items-center gap-1.5 bg-[#54A6D8] text-white px-3 py-1 rounded-full text-[11px] font-bold shadow-sm hover:bg-blue-600 transition-colors active:scale-95" title="Reactivar publicación">
+            <button type="submit" class="flex items-center gap-1.5 bg-[#54A6D8] text-white px-3 py-1 rounded-full text-[11px] font-bold shadow-sm hover:bg-blue-600 transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Reactivar publicación">
                 <i class="fa-solid fa-play text-[9px]"></i> Reactivar
             </button>
         </form>
     <?php else: ?>
-        <a href="<?= url_servicio((int)$s['id'], $s['slug'] ?? null) ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:bg-white active:bg-white transition" title="Ver publicación">
+        <a href="<?= url_servicio((int)$s['id'], $s['slug'] ?? null) ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Ver publicación">
             <i class="fa-regular fa-eye text-xs"></i>
         </a>
-        <a href="/app/editar_servicio.php?id=<?= $s['id'] ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:bg-white hover:text-[#54A6D8] active:bg-white transition" title="Editar">
+        <a href="/app/editar_servicio.php?id=<?= $s['id'] ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white hover:text-[#54A6D8] active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Editar">
             <i class="fa-solid fa-pen text-xs"></i>
         </a>
         <form action="" method="POST" onsubmit="return confirm('¿Eliminar esta clase definitivamente?');" class="m-0">
             <input type="hidden" name="accion" value="eliminar_servicio">
             <input type="hidden" name="id" value="<?= $s['id'] ?>">
-            <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-full text-red-400 hover:bg-white hover:text-red-600 active:bg-white transition" title="Eliminar">
+            <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-full text-red-400 hover:bg-white hover:text-red-600 active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Eliminar">
                 <i class="fa-solid fa-trash-can text-xs"></i>
             </button>
         </form>
@@ -239,40 +246,40 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <?php endforeach; ?>
                         </ul>
                     <?php else: ?>
-                        <div class="bg-white p-6 text-center border-b border-slate-100 rounded-2xl">
-                            <p class="text-sm font-medium text-slate-500">No ofreces clases aún.</p>
+                        <div class="bg-gray-50 p-6 text-center border border-dashed border-gray-200 rounded-2xl">
+                            <p class="text-sm font-medium text-gray-400">No ofreces clases aún.</p>
                         </div>
                     <?php endif; ?>
                 </div>
             </div>
 
             <div class="group-dia space-y-1 mt-4" id="seccion-apuntes">
-                <button onclick="toggleGrupo('content-apuntes', 'icon-apuntes')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-slate-50 transition-colors cursor-pointer sticky top-[108px] sm:top-[115px] z-20 bg-white">
+                <button onclick="toggleGrupo('content-apuntes', 'icon-apuntes')" class="w-full px-4 md:px-2 pt-4 pb-2 flex items-center justify-between active:bg-gray-50 transition-colors cursor-pointer sticky top-[108px] sm:top-[115px] z-20 bg-white">
                     <div class="flex items-center gap-2">
-                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Apuntes (<?= count($apuntes) ?>)</h2>
+                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Apuntes (<?= count($apuntes) ?>)</h2>
                     </div>
-                    <i id="icon-apuntes" class="fa-solid fa-chevron-down text-slate-400 text-[10px] chevron-icon rotated"></i>
+                    <i id="icon-apuntes" class="fa-solid fa-chevron-down text-gray-400 text-[10px] chevron-icon rotated"></i>
                 </button>
 
-                <div id="content-apuntes" class="expand-content bg-white border-y md:border border-slate-100 md:rounded-2xl">
+                <div id="content-apuntes" class="expand-content bg-white border-y md:border border-[#f0f0f0] md:rounded-2xl md:shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <?php if (count($apuntes) > 0): ?>
-                        <ul class="divide-y divide-slate-100">
+                        <ul class="divide-y divide-gray-100">
                             <?php foreach($apuntes as $a): 
                                 $es_publico = isset($a['publico']) ? $a['publico'] : ($a['estado'] == 'aprobado' ? 1 : 0);
                                 $estadoTxt = $es_publico ? 'Visible' : 'Pendiente';
-                                $estadoColor = $es_publico ? 'text-emerald-500 bg-emerald-50' : 'text-amber-500 bg-amber-50';
+                                $estadoColor = $es_publico ? 'text-emerald-500 bg-emerald-50 border border-emerald-100' : 'text-amber-500 bg-amber-50 border border-amber-100';
                                 $archivo_nombre = $a['archivo'] ?? $a['archivo_pdf'] ?? '';
                             ?>
-                            <li class="flex items-center justify-between p-4 md:px-4 hover:bg-slate-50 transition-colors gap-3 active:bg-slate-100">
+                            <li class="flex items-center justify-between p-4 md:px-4 hover:bg-gray-50 transition-colors gap-3 active:bg-gray-100">
                                 <div class="flex items-center gap-3 flex-1 min-w-0 z-20">
                                     <div class="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex flex-col items-center justify-center shrink-0 border border-red-100 relative">
                                         <i class="fa-solid fa-file-pdf text-xl mb-px"></i>
                                         <span class="text-[7px] font-black uppercase tracking-widest opacity-60">PDF</span>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="font-bold text-slate-800 text-[14px] line-clamp-1 leading-tight mb-0.5"><?= htmlspecialchars($a['titulo'] ?? 'Sin título', ENT_QUOTES, 'UTF-8') ?></h3>
-                                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium truncate">
-                                            <span class="<?= $estadoColor ?> px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide"><?= $estadoTxt ?></span>
+                                        <h3 class="font-medium text-[#222222] text-[14px] line-clamp-1 leading-tight mb-0.5"><?= htmlspecialchars($a['titulo'] ?? 'Sin título', ENT_QUOTES, 'UTF-8') ?></h3>
+                                        <div class="flex items-center gap-1.5 text-[11px] text-gray-400 font-medium truncate">
+                                            <span class="<?= $estadoColor ?> px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide"><?= $estadoTxt ?></span>
                                             <span>•</span>
                                             <span class="truncate"><?= htmlspecialchars($a['universidad'] ?? 'General', ENT_QUOTES, 'UTF-8') ?></span>
                                         </div>
@@ -280,21 +287,21 @@ require_once $app_dir . '/componentes/sidebar.php';
                                 </div>
 
                                 <div class="flex flex-col items-end gap-1.5 shrink-0 pl-2 z-20">
-                                    <span class="font-black text-slate-900 text-[15px] tabular-nums tracking-tight leading-none text-right">
+                                    <span class="font-medium text-[#222222] text-[15px] tabular-nums tracking-[-0.01em] leading-none text-right">
                                         <?= (!empty($a['precio']) && $a['precio'] > 0) ? '$'.number_format($a['precio'], 0, ',', '.') : 'Gratis' ?>
                                     </span>
                                     
-                                    <div class="flex justify-end items-center gap-1 bg-slate-100 p-1 rounded-full border border-transparent">
-                                        <a href="/ver-apunte?archivo=<?= urlencode($archivo_nombre) ?>" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:bg-white active:bg-white transition" title="Ver documento">
+                                    <div class="flex justify-end items-center gap-1 bg-gray-100 p-1 rounded-full border border-transparent">
+                                        <a href="/ver-apunte?archivo=<?= urlencode($archivo_nombre) ?>" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Ver documento">
                                             <i class="fa-regular fa-eye text-xs"></i>
                                         </a>
-                                        <a href="/app/editar_apunte.php?id=<?= $a['id'] ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:bg-white hover:text-[#54A6D8] active:bg-white transition" title="Editar">
+                                        <a href="/app/editar_apunte.php?id=<?= $a['id'] ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white hover:text-[#54A6D8] active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Editar">
                                             <i class="fa-solid fa-pen text-xs"></i>
                                         </a>
                                         <form action="" method="POST" onsubmit="return confirm('¿Eliminar este apunte definitivamente?');" class="m-0">
                                             <input type="hidden" name="accion" value="eliminar_apunte">
                                             <input type="hidden" name="id" value="<?= $a['id'] ?>">
-                                            <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-full text-red-400 hover:bg-white hover:text-red-600 active:bg-white transition" title="Eliminar">
+                                            <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-full text-red-400 hover:bg-white hover:text-red-600 active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Eliminar">
                                                 <i class="fa-solid fa-trash-can text-xs"></i>
                                             </button>
                                         </form>
@@ -304,8 +311,8 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <?php endforeach; ?>
                         </ul>
                     <?php else: ?>
-                        <div class="bg-white p-6 text-center border-b border-slate-100 rounded-2xl">
-                            <p class="text-sm font-medium text-slate-500">No tienes apuntes subidos.</p>
+                        <div class="bg-gray-50 p-6 text-center border border-dashed border-gray-200 rounded-2xl">
+                            <p class="text-sm font-medium text-gray-400">No tienes apuntes subidos.</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -323,9 +330,20 @@ require_once $app_dir . '/componentes/modal_explora.php';
 ?>
 
 <script>
-window.onload = () => { 
-    const l = document.getElementById('loader'); 
-    if(l){ l.classList.add('opacity-0'); setTimeout(() => l.classList.add('hidden'), 300); } 
+window.onload = () => {
+    const l = document.getElementById('loader');
+    if(l){ l.classList.add('opacity-0'); setTimeout(() => l.classList.add('hidden'), 300); }
+};
+
+// [NUBIRA 2.0] Volver — mismo patrón que detalle_servicio.php/ver_apunte.php, sin el
+// chequeo de pasarela de pago (irrelevante acá) y con fallback a /perfil, que es de
+// donde casi siempre se entra a esta página (tile "Mis Publicaciones" en panel_gestion.php).
+window.navegacionSeguraNubira = function() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/perfil';
+    }
 };
 
 // 🔥 FIX: JS Simplificado para solo rotar (sin cambiar la clase base del ícono)
