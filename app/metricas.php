@@ -111,8 +111,19 @@ require_once $app_dir . '/componentes/sidebar.php';
 <main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[720px] fade-in">
 
   <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-4">
-    <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">Métricas</h1>
-    <p class="text-xs text-gray-400 mt-0.5">Últimos 30 días</p>
+    <div class="flex items-center gap-3">
+      <button type="button" onclick="navegacionSeguraNubira()"
+              class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+              aria-label="Volver">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-gray-700">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+      </button>
+      <div>
+        <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">Métricas</h1>
+        <p class="text-xs text-gray-400 mt-0.5">Últimos 30 días</p>
+      </div>
+    </div>
   </div>
 
   <div class="px-4 md:px-6 mt-4 space-y-2">
@@ -171,6 +182,16 @@ require_once $app_dir . '/componentes/modal_explora.php';
 document.addEventListener('DOMContentLoaded', () => {
     const l = document.getElementById('loader');
     if (l) { l.style.opacity = '0'; setTimeout(() => l.style.display = 'none', 300); }
+
+    // [NUBIRA 2.0] Volver — mismo patrón que las demás páginas de gestión, con fallback
+    // a /perfil (tile "Métricas" en panel_gestion.php).
+    window.navegacionSeguraNubira = function() {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = '/perfil';
+        }
+    };
 
     function setupModal(triggerId, modalId, cardId, closeId) {
         const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
