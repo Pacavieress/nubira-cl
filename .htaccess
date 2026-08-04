@@ -183,11 +183,11 @@ RewriteRule ^reportar-servicio(?:/)?$ app/reportar-servicio.php         [L,QSA]
 ####################################
 # FINANZAS Y PAGOS
 ####################################
-# 1. Redirigimos la URL vieja (con guion bajo) a la nueva optimizada
-RewriteRule ^mis_ventas/?$ /mis-ventas [R=301,L]
-
-# 2. Asignamos la nueva URL al archivo físico
-RewriteRule ^mis-ventas/?$ app/mis_ventas.php [L,QSA]
+# [Consolidado 2026] /mis-ventas se retira como destino propio — mis_ventas.php duplicaba
+# datos de /clases-vendidas y /ventas-apuntes con una fórmula de monto distinta (bruto vs.
+# neto con comisión descontada). Redirige a /clases-vendidas, que cubre el mismo caso sin el bug.
+RewriteRule ^mis_ventas/?$ /clases-vendidas [R=301,L]
+RewriteRule ^mis-ventas/?$ /clases-vendidas [R=301,L]
 
 # 1. Redirigimos la URL vieja (con guion bajo) a la nueva optimizada
 RewriteRule ^mis_compras/?$ /mis-compras [R=301,L]
@@ -275,7 +275,7 @@ RewriteRule ^admin/novedades$          /admin/marketing-cards?tab=novedades [R=3
 
 
 # Retrocompatibilidad final (archivos .php sueltos)
-RewriteRule ^mis_ventas\.php$         /mis-ventas                       [R=301,L]
+RewriteRule ^mis_ventas\.php$         /clases-vendidas                  [R=301,L]
 RewriteRule ^solicitar_retiro\.php$   /solicitar-retiro                 [R=301,L]
 RewriteRule ^mis_compras\.php$        /mis-compras                      [R=301,L]
 RewriteRule ^mis_archivos_subidos\.php$ /mis-archivos-subidos           [R=301,L]

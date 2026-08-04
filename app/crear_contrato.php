@@ -327,7 +327,7 @@ try {
             require_once __DIR__ . '/enviar_push_nubira.php';
             $push_comp = explode(' ', trim($users['comp_nom']))[0];
             $push_vend = explode(' ', trim($users['vend_nom']))[0];
-            enviar_push_nubira($vendedor_id, '🎉 ¡Nueva venta!', $push_comp . ' contrató tu servicio: ' . $titulo, '/mis-ventas');
+            enviar_push_nubira($vendedor_id, '🎉 ¡Nueva venta!', $push_comp . ' contrató tu servicio: ' . $titulo, '/clases-vendidas');
             enviar_push_nubira($comprador_id, '✅ Contrato creado', 'Contrataste a ' . $push_vend . '. Te avisaremos cuando confirme.', '/mis-contratos');
         }
     } catch (Exception $mailErr) {

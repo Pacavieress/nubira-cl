@@ -152,7 +152,7 @@ if (!$yaProcesado) {
     require_once __DIR__ . '/enviar_push_nubira.php';
     $t = mb_substr($tituloServicio, 0, 50);
     enviar_push_nubira((int)$contrato['comprador_id'], '✅ Pago confirmado', 'Tu pago por "' . $t . '" fue procesado', '/mis-contratos');
-    enviar_push_nubira((int)$contrato['vendedor_id'], '💰 Pago recibido', 'Recibiste pago por "' . $t . '"', '/mis-ventas');
+    enviar_push_nubira((int)$contrato['vendedor_id'], '💰 Pago recibido', 'Recibiste pago por "' . $t . '"', '/clases-vendidas');
 }
 ?>
 <!doctype html>

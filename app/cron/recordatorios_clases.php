@@ -127,7 +127,7 @@ if ($res) {
             $n_tutor  = explode(' ', trim($row['nombre_tutor']))[0];
             $n_alumno = explode(' ', trim($row['nombre_alumno']))[0];
             enviar_push_nubira((int)$row['alumno_id'], '🔔 Clase próxima', 'Tu clase con ' . $n_tutor  . ' comienza en 24 horas', '/mis-contratos');
-            enviar_push_nubira((int)$row['tutor_id'],  '🔔 Clase próxima', 'Tu clase con ' . $n_alumno . ' comienza en 24 horas', '/mis-ventas');
+            enviar_push_nubira((int)$row['tutor_id'],  '🔔 Clase próxima', 'Tu clase con ' . $n_alumno . ' comienza en 24 horas', '/clases-vendidas');
         } catch (Exception $e) {
             log_cron("[24h] Push error reserva #$reserva_id: " . $e->getMessage());
         }
@@ -220,7 +220,7 @@ if ($res) {
             $n_tutor  = explode(' ', trim($row['nombre_tutor']))[0];
             $n_alumno = explode(' ', trim($row['nombre_alumno']))[0];
             enviar_push_nubira((int)$row['alumno_id'], '🔔 Clase en 1 hora', 'Tu clase con ' . $n_tutor  . ' comienza en 1 hora', '/mis-contratos');
-            enviar_push_nubira((int)$row['tutor_id'],  '🔔 Clase en 1 hora', 'Tu clase con ' . $n_alumno . ' comienza en 1 hora', '/mis-ventas');
+            enviar_push_nubira((int)$row['tutor_id'],  '🔔 Clase en 1 hora', 'Tu clase con ' . $n_alumno . ' comienza en 1 hora', '/clases-vendidas');
         } catch (Exception $e) {
             log_cron("[1h] Push error reserva #$reserva_id: " . $e->getMessage());
         }

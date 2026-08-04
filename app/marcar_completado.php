@@ -65,7 +65,7 @@ enviarCorreoCambioEstado($contrato_id, 'completado');
 
 require_once __DIR__ . '/enviar_push_nubira.php';
 enviar_push_nubira((int)$contrato['comprador_id'], '🌟 Contrato completado', 'El contrato se cerró exitosamente', '/mis-contratos');
-enviar_push_nubira((int)$contrato['vendedor_id'], '🌟 Contrato completado', 'El contrato se cerró exitosamente', '/mis-ventas');
+enviar_push_nubira((int)$contrato['vendedor_id'], '🌟 Contrato completado', 'El contrato se cerró exitosamente', '/clases-vendidas');
 
 echo "<script>alert('🎉 Contrato finalizado correctamente. ¡Gracias por usar Nubira!');window.location.href='/app/mini_aula.php?id=$contrato_id';</script>";
 exit;
