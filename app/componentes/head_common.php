@@ -30,6 +30,15 @@ define('NUBIRA_HEAD_COMMON_LOADED', true);
 <meta name="apple-mobile-web-app-title" content="Nubira">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
+<!-- [Fix zoom automático iOS] Safari hace zoom automático al enfocar un campo de
+     formulario con font-size < 16px. En vez de corregir clase por clase en decenas
+     de archivos (auditado: 46 páginas con al menos un campo en 14px), se fuerza acá
+     una sola vez, solo en el rango de ancho móvil donde el zoom realmente ocurre. -->
+<style>
+@media (max-width: 767px) {
+    input, select, textarea { font-size: 16px !important; }
+}
+</style>
 <script type="application/ld+json">
 <?php
 echo json_encode([

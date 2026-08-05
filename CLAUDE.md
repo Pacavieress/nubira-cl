@@ -1,4 +1,46 @@
 
+## Pendiente: cifras de la plataforma en sobre-nosotros.php (decisión deliberada, no descuido)
+
+Detectado el 04/08/2026 durante la auditoría de `sobre-nosotros.php`. La página hoy no muestra ningún número de tracción (tutores activos, apuntes publicados, universidades cubiertas) — decisión deliberada por ahora, no un olvido: la plataforma es joven y mostrar cifras bajas podría restar confianza en vez de sumarla, dado el tono de la página ("chico y honesto, todavía construyendo"). Retomar cuando existan cifras que valga la pena mostrar (ej. "500 estudiantes ya encontraron tutor").
+
+**Cabo suelto menor, misma página**: tras el fix de jerarquía de encabezados de esta sesión (H2/H3 invertidos corregidos), los `<h4>` bajo "Los principios" (3 ítems) y "El equipo" ("Pablo") quedan en salto de nivel — cuelgan directo de un `<h2>` sin `<h3>` intermedio. Bajo impacto (no es error de accesibilidad duro, solo no ideal), no se tocó por estar fuera del alcance pedido en esa pasada.
+
+## Pendiente: datos_bancarios.php no muestra el resultado de solicitar_retiro.php al usuario
+
+Detectado el 04/08/2026 al revisar la protección CSRF de `solicitar_retiro.php`. Ese archivo redirige con `?error=<código>` (monto_invalido, monto_minimo, saldo_insuficiente, sin_datos_bancarios, csrf_invalido, db) o `?retiro=ok` según el resultado (líneas 74-76, 107, 111), pero `datos_bancarios.php` no lee `$_GET['error']` ni `$_GET['retiro']` en ningún lugar — los parámetros llegan mudos, sin banner de éxito ni de error. Un usuario que solicita un retiro no tiene forma de saber si funcionó salvo mirando el historial más abajo en la misma página. Gap de UX en un flujo de dinero real, pendiente de resolver en sesión dedicada (mapear cada código a un mensaje visible, banner o toast).
+
+## Pendiente: residuo de "Mis Ventas" en panel_gestion.php:120 tras la consolidación a /clases-vendidas
+
+Detectado el 04/08/2026 al confirmar el alcance del commit 58b62f7 (redirect 301 de `/mis-ventas` a `/clases-vendidas`, tile eliminado, `app/mis_ventas.php` sin acceso real). El array `$herramientas_tutor` en `panel_gestion.php:120` todavía incluye `'Mis Ventas'`:
+
+```php
+$herramientas_tutor = ['Mis Publicaciones', 'Clases Vendidas', 'Apuntes Vendidos', 'Mis Ventas', 'Mis Contratos', 'Mi Billetera', 'Métricas'];
+```
+
+Confirmado que **no** reabre acceso: este array solo filtra por título contra `$accesos_user` (línea 112-126) para decidir qué tiles mostrar a un tutor — no es la lista de tiles en sí. Como el tile "Mis Ventas" ya no existe en `$accesos_user`, la entrada en `$herramientas_tutor` es inerte (no hace match con nada). Candidato a limpieza cosmética en una sesión dedicada — quitar `'Mis Ventas'` de esa lista para que no quede como referencia muerta a una ruta consolidada.
+
+## Pendiente: auditoría UX de mis_servicios.php (/mis-publicaciones) — P2 a P6 sin aplicar
+
+Auditoría completa hecha el 04/08/2026 (P1, acordeones cerrados por defecto, ya resuelto — ver commit correspondiente). Quedan 5 hallazgos priorizados por impacto real, documentados acá para retomar en sesión dedicada:
+
+- **P2 — Viewport con `user-scalable=0`**: el `<meta viewport>` de `mis_servicios.php:129` trae `maximum-scale=1, user-scalable=0`, desactivando el pinch-to-zoom en toda la página sin ninguna razón técnica aparente (no es mapa/canvas/juego). Problema real de accesibilidad para usuarios con baja visión. Ninguna otra página del sitio hace esto. Fix: quitar `maximum-scale=1, user-scalable=0` del meta tag.
+- **P3 — Fallas silenciosas en eliminar/reactivar**: las 3 acciones POST (`eliminar_servicio`, `reactivar_servicio`, `eliminar_apunte`, líneas 24-75) están envueltas en `try/catch` que silencian cualquier error ("Silenciamos el error para no dar 500"). Si un UPDATE falla, el usuario es redirigido igual sin ningún mensaje — no hay forma de saber si la acción realmente funcionó.
+- **P4 — "Reactivar" sin "Pausar"**: confirmado con grep en todo el codebase que el estado `'pausado'` de un servicio solo se LEE en `mis_servicios.php` (badge + botón "Reactivar") pero no existe ninguna acción `pausar_servicio` en ningún archivo del sitio. Un usuario no tiene forma de pausar su propio servicio — el flujo de reactivación existe para un estado que hoy es inalcanzable desde la UI.
+- **P5 — Cero estadísticas por publicación**: la lista no muestra vistas, ventas/contratos ni calificación por servicio/apunte. Mejora de valor para tutores activos, no bloquea nada.
+- **P6 — Tipografía/paleta vieja**: la página no recibió la ronda de refinamiento visual aplicada esta semana a perfil.php/guias.php/guia_post.php/vitrina.php. Usa `font-extrabold`/`font-black` y la familia de color `slate` (`text-slate-800`, `border-slate-100`, etc.) en vez de `font-medium`/`tracking-[-0.01em]` y `gray`/`#f0f0f0` que documenta el sistema de diseño. Puramente cosmético, sin impacto funcional — por eso quedó último en la priorización.
+
+## Idea en evaluación: íconos de redes sociales (Instagram/Facebook) clickeables en perfil.php
+
+Incentivar a los usuarios a seguir la cuenta de Nubira. Descartado `footer.php` como ubicación principal (oculto en móvil desde ayer). Considerado también un bloque al final de `vitrina.php`. Decisión pendiente sobre el comportamiento al hacer clic: (A) simple `target="_blank"` a pestaña nueva sin salir de Nubira, o (B) modal con vista previa antes de salir — dentro de B, evaluados 3 niveles: Nivel 1 (modal estático, foto+nombre+botón, sin API), Nivel 2 (datos reales vía Instagram/Facebook API, requiere mantenimiento de tokens que expiran), Nivel 3 (widget embebido oficial de Meta). Nubira ya tiene cuentas activas de Instagram y Facebook con contenido real. Pausado el 03/08/2026 para decidir con más calma en otra sesión — evaluar esfuerzo de mantenimiento a largo plazo antes de elegir nivel.
+
+## Resuelto (31/07/2026): margen lateral de las cards de marketing ampliado a 110px
+
+Superó al intento anterior de mover `colX=450`/140px (ver nota vieja de esta misma sección, ahora obsoleta): esta vez se movió el margen compartido (`$M = 110`) de forma uniforme a TODOS los elementos horizontales de `nb_generar_imagen_post()` a la vez (avLeft, colMaxW de nombre/institución, ancho de wrap del título, padX de features, x del botón, ancla de "Nubira.cl") en vez de solo `colX`. Verificado con `imagettfbbox()` real que las 4 frases fijas de features siguen entrando en una sola línea con margen (mínimo 11px en la más larga, "Chat anónimo antes de contratar"). `NB_IMG_VERSION` v20→v21.
+
+## Pendiente: badge "Disponible" en las cards de marketing puede colisionar con nombres largos del tutor
+
+Ej. "Sofía Valentina C.", 459px, se trunca si se reserva espacio fijo para el badge. Recomendación evaluada: reposicionar el badge a su propia línea separada (implica mover en cascada las coordenadas Y de categoría/rating/título) — no es solo un ajuste de margen horizontal. Evaluado el 31/07/2026, sin aplicar por requerir más tiempo de diseño cuidadoso.
+
 ## Pendiente: descubre.php tiene una arquitectura de página distinta al resto del sitio
 
 Sidebar como drawer JS propio (oculto en todas las resoluciones hasta clic en hamburguesa), sin `header.php` ni `nav_bottom.php` incluidos. Para alinearlo al `sidebar.php` estándar (detectado el 30/07/2026 al intentar extender el refinamiento visual del sidebar) hace falta: (1) agregar `header.php`, (2) reemplazar el `<aside>` hardcodeado por include real de `sidebar.php`, (3) agregar `nav_bottom.php` para recuperar navegación móvil, (4) eliminar JS muerto de `openSidebar`/`closeSidebar`/`overlay`, (5) ajustar el layout de `<main>` al patrón estándar (`lg:ml-64` + padding, no `flex`). Es una reestructuración de página completa, no un simple cambio de include — requiere sesión dedicada.

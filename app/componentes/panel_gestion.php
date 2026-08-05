@@ -58,6 +58,7 @@ $accesos_user = [
     ['Mis Compras', '/mis-compras', '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />', 'text-[#54A6D8]', 'bg-blue-50', null],
     ['Mis Contratos', '/mis-contratos', '<path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h-4.5h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />', 'text-[#54A6D8]', 'bg-blue-50', null],
     ['Mi Billetera', '/mi-billetera', '<path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />', 'text-[#54A6D8]', 'bg-blue-50', null],
+    ['Para Tutores', '/guias/para-tutores', '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />', 'text-[#54A6D8]', 'bg-blue-50', 'badge-guias-tutores'],
     ['Configurar Cuenta', '/configurar-cuenta', '<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />', 'text-[#54A6D8]', 'bg-blue-50', null],
     ['Mis Evaluaciones', '/mis-evaluaciones', '<path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.563.563 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />', 'text-[#54A6D8]', 'bg-blue-50', 'badge-mis-evaluaciones'],
    ['Soporte', '/soporte', '<path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />', 'text-[#54A6D8]', 'bg-blue-50', 'badge-reclamos-user'],
@@ -108,7 +109,7 @@ $accesos_admin = [
 
 <div class="w-full space-y-8 animate-fade-in">
     <div class="flex flex-col">
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 w-full">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-0.5 md:gap-y-3 w-full">
             <?php foreach($accesos_user as $au): 
             $titulo = $au[0]; $linkRaw = $au[1]; $icono = $au[2]; $color = $au[3]; $bg = $au[4]; $badgeSelector = $au[5];
             
@@ -117,7 +118,7 @@ $accesos_admin = [
             $es_comprador = (isset($ha_comprado_algo) && $ha_comprado_algo === true);
 
             // Listas de control
-            $herramientas_tutor = ['Mis Publicaciones', 'Clases Vendidas', 'Apuntes Vendidos', 'Mis Ventas', 'Mis Contratos', 'Mi Billetera', 'Métricas'];
+            $herramientas_tutor = ['Mis Publicaciones', 'Clases Vendidas', 'Apuntes Vendidos', 'Mis Ventas', 'Mis Contratos', 'Mi Billetera', 'Métricas', 'Para Tutores'];
             $herramientas_alumno = ['Mis Compras'];
 
             // 1. Si NO es tutor, eliminamos herramientas de tutor.
@@ -142,11 +143,11 @@ $accesos_admin = [
             $mostrar_punto_banco = ($titulo === 'Mi Billetera' && $alerta_banco_activa);
             $mostrar_punto_sugerencia = ($badgeSelector === 'punto-sugerencia' && isset($_SESSION['es_tutor_activo']) && $_SESSION['es_tutor_activo'] === true && isset($_SESSION['notif_sugerencia_vista']) && $_SESSION['notif_sugerencia_vista'] == 0);
         ?>
-               <a href="<?= $href ?>" <?= $onclick ?> 
-   class="group flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:scale-[1.01] active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out relative select-none cursor-pointer text-center h-full">
-                    
-                    <div class="w-12 h-12 rounded-xl <?= $bg ?> <?= $color ?> flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200 relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+               <a href="<?= $href ?>" <?= $onclick ?>
+   class="group relative flex flex-row md:flex-col items-center gap-2.5 md:gap-3 py-3 px-2 md:p-4 rounded-xl md:rounded-2xl md:bg-white md:border md:border-gray-100 hover:bg-gray-50 md:hover:bg-gray-50/50 md:hover:border-gray-200 md:hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:scale-[0.99] md:hover:scale-[1.01] md:active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out select-none cursor-pointer md:text-center h-full">
+
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl <?= $bg ?> <?= $color ?> flex items-center justify-center shrink-0 md:group-hover:scale-105 transition-transform duration-200 relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 md:w-6 md:h-6">
                             <?= $icono ?>
                         </svg>
                         
@@ -168,7 +169,7 @@ $accesos_admin = [
                         <?php endif; ?>
                     </div>
 
-                   <span class="text-[13px] font-bold text-gray-700 group-hover:text-gray-900 tracking-tight leading-tight transition-colors duration-200">
+                   <span class="text-sm md:text-[13px] font-bold text-gray-700 group-hover:text-gray-900 tracking-tight leading-snug md:leading-tight transition-colors duration-200">
     <?= htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8') ?>
 </span>
                     
@@ -180,6 +181,9 @@ $accesos_admin = [
                     <?php if ($titulo === 'Métricas'): ?>
                         <span class="feature-badge" data-feature-key="metricas" data-feature-launch="2026-05-29">Nuevo</span>
                     <?php endif; ?>
+                    <?php if ($titulo === 'Para Tutores'): ?>
+                        <span class="feature-badge" data-feature-key="para-tutores" data-feature-launch="2026-08-05">Nuevo</span>
+                    <?php endif; ?>
                 </a>
             <?php endforeach; ?>
         </div>
@@ -188,23 +192,23 @@ $accesos_admin = [
     <?php if ($es_admin): ?>
     <div class="pt-6 border-t border-gray-100 flex flex-col">
         <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4 pl-1">Administración</h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 w-full">
-            <?php foreach($accesos_admin as $aa): 
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-0.5 md:gap-y-3 w-full">
+            <?php foreach($accesos_admin as $aa):
                 $titulo = $aa[0]; $link = $aa[1]; $icono = $aa[2]; $color = $aa[3]; $bg = $aa[4]; $badgeId = $aa[5];
             ?>
-                <a href="<?= $link ?>" class="group flex flex-col items-center justify-center gap-2.5 p-3.5 rounded-xl bg-white border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:scale-[1.01] active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out relative select-none cursor-pointer text-center h-full">
-                    
-                    <div class="w-10 h-10 rounded-lg <?= $bg ?> <?= $color ?> flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200 relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <a href="<?= $link ?>" class="group relative flex flex-row md:flex-col items-center gap-2 md:gap-2.5 py-2.5 px-2 md:p-3.5 rounded-lg md:rounded-xl md:bg-white md:border md:border-gray-100 hover:bg-gray-50 md:hover:bg-gray-50/50 md:hover:border-gray-200 md:hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:scale-[0.99] md:hover:scale-[1.01] md:active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out select-none cursor-pointer md:text-center h-full">
+
+                    <div class="w-9 h-9 md:w-10 md:h-10 rounded-md md:rounded-lg <?= $bg ?> <?= $color ?> flex items-center justify-center shrink-0 md:group-hover:scale-105 transition-transform duration-200 relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px] h-[18px] md:w-5 md:h-5">
                             <?= $icono ?>
                         </svg>
-                        
+
                         <?php if(!empty($badgeId)): ?>
                             <span id="<?= $badgeId ?>" class="hidden absolute -top-1.5 -right-1.5 min-w-[1rem] px-1 h-4 flex items-center justify-center bg-red-500 text-white text-[9px] font-bold rounded-full border border-white shadow-sm">0</span>
                         <?php endif; ?>
                     </div>
-                    
-                    <span class="text-[12px] font-semibold text-gray-700 group-hover:text-gray-900 tracking-tight leading-tight transition-colors duration-200">
+
+                    <span class="text-[13px] font-semibold text-gray-700 group-hover:text-gray-900 tracking-tight leading-snug md:leading-tight transition-colors duration-200">
                         <?= $titulo ?>
                     </span>
                     <?php if ($titulo === 'Marketing / Cards'): ?>
@@ -216,7 +220,7 @@ $accesos_admin = [
     </div>
     <?php endif; ?>
 
-    <a href="/logout" class="group flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border border-red-100 text-red-500 bg-white hover:bg-red-50 hover:scale-[1.01] active:scale-[0.98] transition-[transform,background-color] duration-150 ease-out font-bold text-[13px] mt-4">
+    <a href="/logout" class="group flex items-center justify-center gap-1.5 w-full py-3 text-gray-400 hover:text-red-500 active:text-red-600 transition-colors duration-150 font-medium text-[13px] mt-4">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
         </svg>
@@ -255,7 +259,8 @@ function actualizarPanelConDatos(data) {
     renderBadge('badge-reclamos-user', data.reclamos, false);
     renderBadge('badge-soporte-user', data.soporte, false);
     renderBadge('badge-mis-evaluaciones', data.valoraciones, false);
-    
+    renderBadge('badge-guias-tutores', data.guias_tutores, false);
+
     renderBadge('badge-usuarios', data.admin_usuarios, true);
     renderBadge('badge-servicios', data.admin_servicios, true);
     renderBadge('badge-apuntes', data.admin_apuntes, true);

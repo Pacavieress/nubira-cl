@@ -47,6 +47,11 @@ $res->close();
     :root { --nubira: #54A6D8; }
     .text-nubira { color: var(--nubira); }
     .bg-nubira { background-color: var(--nubira); }
+    /* [Fix zoom automático iOS] Ver mismo comentario en componentes/head_common.php
+       — este archivo no lo incluye, así que necesita la regla por separado. */
+    @media (max-width: 767px) {
+        input, select, textarea { font-size: 16px !important; }
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800">

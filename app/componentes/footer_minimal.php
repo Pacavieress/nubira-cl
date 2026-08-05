@@ -2,7 +2,7 @@
 // app/componentes/footer_minimal.php
 // UX NUBIRA 2.0: Footer estilo App (no intrusivo, legalmente funcional)
 ?>
-<footer class="mt-12 border-t border-gray-100 pt-6 pb-28 md:pb-8 flex flex-col md:flex-row justify-between items-center gap-4 px-2 w-full">
+<footer class="hidden lg:flex mt-12 border-t border-gray-100 pt-6 pb-8 flex-col md:flex-row justify-between items-center gap-4 px-2 w-full">
     <div class="text-[12px] text-gray-400 font-medium text-center md:text-left">
         &copy; 2025 - <?= date('Y') ?> Nubira.cl. Todos los derechos reservados.
     </div>

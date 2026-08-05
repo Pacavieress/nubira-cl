@@ -47,6 +47,36 @@ if ($es_express && $contexto === 'conversacion') {
 }
 
 // =========================================================================================
+// [NUBIRA 2.0] LÍMITE DE 6 MENSAJES ANTES DE CONTRATAR (capa independiente, no altera DLP)
+// Solo aplica al chat previo a la contratación. Una vez que existe contrato_id, o en el
+// aula (contexto='aula'), el chat queda libre — mismo criterio de siempre.
+// =========================================================================================
+if ($contexto === 'conversacion') {
+    $stmt_contrato = $conn->prepare("SELECT contrato_id FROM conversaciones WHERE id = ? LIMIT 1");
+    $stmt_contrato->bind_param("i", $id_ref);
+    $stmt_contrato->execute();
+    $fila_conv = $stmt_contrato->get_result()->fetch_assoc();
+    $stmt_contrato->close();
+
+    if (empty($fila_conv['contrato_id'])) {
+        $stmt_total = $conn->prepare("SELECT COUNT(*) AS total FROM mensajes WHERE conversacion_id = ? AND visible = 1");
+        $stmt_total->bind_param("i", $id_ref);
+        $stmt_total->execute();
+        $total_mensajes = (int)($stmt_total->get_result()->fetch_assoc()['total'] ?? 0);
+        $stmt_total->close();
+
+        if ($total_mensajes >= 6) {
+            echo json_encode([
+                'success' => false,
+                'limite_alcanzado' => true,
+                'error' => 'Llegaste al límite de mensajes antes de contratar. Si quieres seguir conversando, avanza con la contratación del servicio.'
+            ]);
+            exit;
+        }
+    }
+}
+
+// =========================================================================================
 // 4. CAPA DLP NUBIRA (DATA LOSS PREVENTION) - ESTRICTO Y EDUCATIVO
 // =========================================================================================
 $mensaje_lower = mb_strtolower($mensaje, 'UTF-8');

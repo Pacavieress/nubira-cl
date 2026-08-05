@@ -20,6 +20,7 @@ try {
         throw new Exception("No se encuentra el archivo conexion.php");
     }
     require_once $ruta_conexion;
+    require_once __DIR__ . '/helpers/roles.php'; // nb_es_tutor_activo()
 
     // 3. INICIAR SESIÓN
     if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
@@ -38,6 +39,7 @@ try {
         'valoraciones' => 0,
         'falta_banco' => 0,
         'falta_perfil' => 0,
+        'guias_tutores' => 0,
         
         // --- MÉTRICAS ADMIN NUBIRA 2.0 ---
         'admin_retiros' => 0,
@@ -104,6 +106,25 @@ try {
             $sql = "SELECT COUNT(id) as total FROM valoraciones WHERE vendedor_id = $uid AND revisado = 0";
             $res = $conn->query($sql);
             if ($res) { $alertas['valoraciones'] = (int)$res->fetch_assoc()['total']; }
+        } catch (Exception $e) {}
+
+        // Guías "Para Tutores" no vistas — solo cuenta para quien realmente califica
+        // como tutor (mismo criterio que perfil.php:382 $es_creador, vía nb_es_tutor_activo()).
+        try {
+            if (nb_es_tutor_activo($conn, $uid)) {
+                $sql = "SELECT COUNT(a.id) AS total
+                        FROM guias_articulos a
+                        JOIN guias_categorias c ON c.id = a.categoria_id
+                        LEFT JOIN guias_articulos_vistos v ON v.articulo_id = a.id AND v.usuario_id = ?
+                        WHERE c.solo_tutores = 1 AND a.estado = 'publicado' AND v.id IS NULL";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("i", $uid);
+                $stmt->execute();
+                $stmt->bind_result($total_guias_tutores);
+                $stmt->fetch();
+                $alertas['guias_tutores'] = (int)$total_guias_tutores;
+                $stmt->close();
+            }
         } catch (Exception $e) {}
 
         // Datos de Perfil y Banco
@@ -264,8 +285,10 @@ try {
                       AND a.recibir_emails = 1
                       AND a.id != 1
                       AND a.correo NOT LIKE 'testpablo%'
+                      AND DATEDIFF(NOW(), a.fecha_registro) >= 31
                       AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
                       AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
+                      AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
                       AND LOWER(TRIM(a.correo)) NOT IN (
                           SELECT LOWER(TRIM(destinatario)) FROM correos_admin
                           WHERE admin_nombre = 'despertar_dormidos_jun2026' AND exito = 1

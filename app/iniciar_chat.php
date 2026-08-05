@@ -66,7 +66,13 @@ if ($comprador_id === $vendedor_id) {
 
 // 5. DETECCIÓN DE ESTADO (Idempotencia)
 // Verificamos si ya existe un hilo de conversación previo para no duplicar chats.
-$sql_check = "SELECT id FROM conversaciones WHERE servicio_id = ? AND comprador_id = ? AND vendedor_id = ? LIMIT 1";
+$sql_check = "
+    SELECT c.id,
+           (SELECT MAX(m.enviado_en) FROM mensajes m WHERE m.conversacion_id = c.id) AS ultimo_mensaje
+    FROM conversaciones c
+    WHERE c.servicio_id = ? AND c.comprador_id = ? AND c.vendedor_id = ?
+    LIMIT 1
+";
 $stmt_check = $conn->prepare($sql_check);
 
 if (!$stmt_check) {
@@ -78,7 +84,15 @@ $stmt_check->execute();
 $chat_existente = $stmt_check->get_result()->fetch_assoc();
 $stmt_check->close();
 
-if ($chat_existente) {
+// Conversación vencida: mismo servicio/comprador/vendedor, pero el último mensaje real
+// tiene 7 días o más. NO se toca ni se archiva la vieja — solo se deja de reutilizar.
+$conversacion_vencida = false;
+if ($chat_existente && !empty($chat_existente['ultimo_mensaje'])) {
+    $dias_desde_ultimo = (time() - strtotime($chat_existente['ultimo_mensaje'])) / 86400;
+    $conversacion_vencida = ($dias_desde_ultimo >= 7);
+}
+
+if ($chat_existente && !$conversacion_vencida) {
     $chat_id_final = (int)$chat_existente['id'];
     if (!empty($mensaje_inicial)) {
         $stmt_msg = $conn->prepare("INSERT INTO mensajes (conversacion_id, remitente_id, mensaje, enviado_en) VALUES (?, ?, ?, NOW())");
@@ -91,6 +105,7 @@ if ($chat_existente) {
 }
 
 // 6. CREACIÓN DE NUEVA CONVERSACIÓN (Onboarding Transparente)
+// Se llega acá tanto si no existía ninguna conversación como si la existente venció (7+ días).
 $sql_insert = "INSERT INTO conversaciones (servicio_id, comprador_id, vendedor_id) VALUES (?, ?, ?)";
 $stmt_insert = $conn->prepare($sql_insert);
 

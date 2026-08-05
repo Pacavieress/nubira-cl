@@ -733,7 +733,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
             <?php endif; ?>
 
             <?php if (($es_propio || $es_admin) && file_exists($archivo_gestion)): ?>
-            <section class="xl:hidden bg-white rounded-3xl border border-gray-200 p-8">
+            <section class="xl:hidden bg-white rounded-3xl border border-gray-200 px-4 py-6 md:p-8">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Panel de Control</h2>
                 </div>
@@ -866,6 +866,17 @@ require_once __DIR__ . '/componentes/sidebar.php';
                 </div>
                 
                 <div id="pub-container" class="flex overflow-x-auto gap-4 md:gap-5 no-scrollbar snap-x snap-mandatory scroll-smooth pb-4 pt-1 px-1">
+                    <?php if (!function_exists('render_rating_html')): ?>
+                    <?php function render_rating_html(float $rating_val, int $total_votos): string {
+                        if ($total_votos > 0) {
+                            return '<div class="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+                                        <svg class="w-3 h-3 text-gray-900 pb-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                        <span class="text-[10px] font-light tracking-[0.01em] text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
+                                    </div>';
+                        }
+                        return '';
+                    } ?>
+                    <?php endif; ?>
                     <?php if (empty($publicaciones)): ?>
                         <div class="min-w-full py-12 bg-white rounded-3xl border border-dashed border-gray-200 text-center text-gray-400 italic">No hay publicaciones activas.</div>
                     <?php else: foreach($publicaciones as $row): 
@@ -925,9 +936,11 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         elseif (stripos($mod, 'presencial') !== false) $icon_mod = icon('users', 'w-3 h-3');
                         else $icon_mod = icon('laptop', 'w-3 h-3');
 
-                        // HTML Stars
+                        // HTML Stars — render_rating_html() compartido para el caso con votos;
+                        // se mantiene el fallback "Nuevo" existente porque la función no lo cubre
+                        // (su parámetro $fallback_label nunca se usa en su implementación real).
                         if ($total_v > 0) {
-                            $html_stars = '<div class="flex items-center gap-1 px-1.5 py-0.5">'.icon('star-solid', 'w-3 h-3 text-gray-700').'<span class="text-[10px] font-extrabold text-gray-800 leading-none">'.number_format($rating_val, 1).'</span></div>';
+                            $html_stars = render_rating_html($rating_val, $total_v);
                         } else {
                             $html_stars = '<div class="flex items-center gap-1">'.icon('star-solid', 'w-3 h-3 text-gray-300').'<span class="text-[10px] font-medium text-gray-400">Nuevo</span></div>';
                         }
@@ -942,33 +955,27 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         ?>
                         
                         <a href="<?= $enlace_detalle ?>"
-                           class="w-[240px] md:w-[260px] shrink-0 snap-start block flex flex-col mb-4 bg-transparent cursor-pointer select-none group h-full active:scale-[0.97] active:opacity-80 transition-all duration-200 <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
+                           class="w-[220px] md:w-[240px] shrink-0 snap-start block flex flex-col mb-4 bg-transparent cursor-pointer select-none group h-full active:scale-[0.97] active:opacity-80 transition-all duration-200 <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
-                          <div class="relative bg-gray-100 rounded-2xl overflow-hidden w-full aspect-[3/2] border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                          <div class="relative bg-gray-100 rounded-2xl overflow-hidden w-full aspect-[4/3] border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                             <img src="<?= htmlspecialchars($portada_url) ?>"
                                  alt="<?= htmlspecialchars($titulo) ?>"
                                  class="w-full h-full object-cover transition-opacity duration-300"
                                  loading="lazy"
                                  onerror="this.src='<?= $default_pub_img ?>'">
-                            
+
                             <?php if (!$es_apunte):
                                 $categoria_overlay = $row['categoria'] ?? 'Otros';
                                 $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
                                 $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
-                            ?>
-                            <!-- [OVERLAY NUBIRA] gradient + categoría (solo servicios) -->
-                            <div class="absolute inset-0 z-[5] pointer-events-none" style="background:linear-gradient(135deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0) 70%);"></div>
-                            <div class="absolute left-3 z-10 pr-2 leading-tight" style="top:50%; transform:translateY(-50%); max-width:70%;">
-                                <?php if (!empty($prefijo_overlay)): ?>
-                                <div class="text-white text-xs md:text-sm font-medium opacity-90" style="text-shadow:0 1px 2px rgba(0,0,0,0.5);">
-                                    <?= htmlspecialchars($prefijo_overlay) ?>
-                                </div>
-                                <?php endif; ?>
-                                <div class="text-white text-base md:text-lg font-bold" style="text-shadow:0 1px 3px rgba(0,0,0,0.6);">
-                                    <?= htmlspecialchars($nombre_categoria_overlay) ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
+
+                                $ov_prefijo    = $prefijo_overlay;
+                                $ov_categoria  = $nombre_categoria_overlay;
+                                $ov_show_tutor = false;
+                                $ov_size       = 'lg';
+                                $ov_liviano    = true;
+                                include __DIR__ . '/componentes/overlay_card_servicio.php';
+                            endif; ?>
 
                             <div class="absolute top-2 left-2 flex flex-wrap gap-1 z-10 scale-90 origin-top-left">
                               <?php if ($nivel_tutor === 'leyenda'): ?>
@@ -1011,11 +1018,11 @@ require_once __DIR__ . '/componentes/sidebar.php';
                               
                               <p class="text-[9px] font-bold <?= $tag_color ?> uppercase tracking-wider mb-0.5"><?= $tag_txt ?></p>
 
-                              <div class="font-normal text-[14px] md:text-[15px] tracking-[-0.01em] leading-[1.25] text-[#222222] line-clamp-2 mb-1.5">
+                              <div class="font-medium text-[14px] md:text-[15px] tracking-[-0.01em] leading-[1.25] text-[#222222] line-clamp-2 mb-1.5 min-h-[40px]">
                                   <?= htmlspecialchars($titulo) ?>
                               </div>
 
-                              <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1.5">
+                              <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-wide mb-1.5">
                                   <?php if(!empty($inst_text)): ?>
                                       <span class="truncate max-w-[70%]"><?= $inst_text ?></span>
                                       <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0"></span>
@@ -1024,7 +1031,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
                               </div>
 
                               <div class="flex items-center justify-between mt-auto pt-1">
-                                  <div class="text-[14px] font-extrabold <?= $precio_class ?> leading-none">
+                                  <div class="text-[14px] <?= $precio_class ?> leading-none">
                                       <?= $precio ?>
                                   </div>
                                   <div class="shrink-0 flex items-center">

@@ -117,7 +117,7 @@ $orden_sql = $orden_map[$orden_param] ?? $orden_map['recientes'];
 
 // 4. OBTENER SERVICIOS
 $servicios = [];
-$res = $conn->query("SELECT s.id, s.titulo, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, a.nombre AS tutor_nombre
+$res = $conn->query("SELECT s.id, s.titulo, s.categoria, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, a.nombre AS tutor_nombre
                      FROM servicios s
                      JOIN alumnos a ON s.alumno_id = a.id
                      WHERE s.estado = 'aprobado'
@@ -171,7 +171,7 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                 <div>
                     <p class="text-[10px] uppercase font-bold text-gray-400">Ofertas Activas</p>
                     <p class="text-lg font-black text-gray-900 leading-none">
-                        <?= count(array_filter($servicios, fn($s) => $s['is_subvencionado'] == 1)) ?>
+                        <?= count(array_filter($servicios, fn($s) => $s['is_subvencionado'] == 1 && !($s['oferta_termino'] && $s['oferta_termino'] < date('Y-m-d')))) ?>
                     </p>
                 </div>
             </div>
@@ -223,6 +223,9 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                                     <?= htmlspecialchars($s['titulo']) ?>
                                 </p>
                                 <p class="text-xs text-gray-500 mt-0.5">Por <?= htmlspecialchars($s['tutor_nombre']) ?></p>
+                                <?php if (!empty($s['categoria'])): ?>
+                                <p class="text-[11px] text-gray-400 font-medium mt-0.5"><?= htmlspecialchars($s['categoria']) ?></p>
+                                <?php endif; ?>
                             </td>
 
                             <td class="px-6 py-4 font-bold text-gray-600">

@@ -52,20 +52,14 @@ if (!$es_visitante && isset($conn)) {
 
     $foto_sesion = $_SESSION['foto_perfil'] ?? '';
 
-    // [NUBIRA 2.0] Cache de sesión compartida con nav_bottom.php (mismo cache_key y TTL de 5 min):
+    // [NUBIRA 2.0] Caché en archivo compartida con nav_bottom.php (mismo TTL de 5 min):
     // evita re-consultar alumnos/datos_pago_usuario en cada request. Si header.php corre primero
     // (caso normal), deja la caché ya poblada para que nav_bottom.php/sidebar.php la reutilicen.
-    $cache_key = 'nav_cache_' . $uid_header;
-    $cache_ttl = 300; // 5 minutos
-    $ahora = time();
+    // Vive fuera de $_SESSION para poder liberar la sesión temprano (session_write_close()).
+    require_once __DIR__ . '/../helpers/nav_cache.php';
+    $nav_cache = nb_nav_cache_get($uid_header);
 
-    $cache_invalido = (
-        empty($_SESSION[$cache_key])
-        || ($ahora - ($_SESSION[$cache_key]['ts'] ?? 0)) > $cache_ttl
-        || !empty($_SESSION['nav_cache_invalidar'])
-    );
-
-    if ($cache_invalido) {
+    if ($nav_cache === null) {
         $alert_calc = false;
         $foto_calc  = '';
         $mtime_foto = 0;
@@ -111,16 +105,15 @@ if (!$es_visitante && isset($conn)) {
             }
         } catch (Throwable $e) {}
 
-        $_SESSION[$cache_key] = [
-            'ts'         => $ahora,
+        $nav_cache = [
             'alerta'     => $alert_calc,
             'foto_path'  => $foto_calc,
             'foto_mtime' => $mtime_foto,
         ];
-        unset($_SESSION['nav_cache_invalidar']);
+        nb_nav_cache_set($uid_header, $nav_cache);
     }
 
-    $perfil_incompleto    = $_SESSION[$cache_key]['alerta'];
+    $perfil_incompleto    = $nav_cache['alerta'];
     $alerta_encendida_php = $perfil_incompleto;
 }
 

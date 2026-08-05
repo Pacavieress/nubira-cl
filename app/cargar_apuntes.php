@@ -220,11 +220,11 @@ foreach ($apuntes as $i => $a):
     
     // Precio (Modificado para Promo Flash)
     if ($es_promo_activa) {
-        $txtPrecio = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio, 0, ',', '.') . "</span><span class='text-gray-700 font-semibold tracking-tight'>¡Gratis!</span>";
-        $precio_class = "text-gray-900 font-bold flex items-center";
+        $txtPrecio = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio, 0, ',', '.') . "</span><span class='text-[#54A6D8] font-normal tracking-[-0.01em]'>¡Gratis!</span>";
+        $precio_class = "flex items-center";
     } else {
         $txtPrecio = ($precio > 0) ? '$' . number_format($precio, 0, ',', '.') : 'Gratis';
-        $precio_class = ($precio > 0) ? "text-gray-600 font-medium" : "text-gray-700 font-semibold";
+        $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
     }
     
     // --- LECTURA DIRECTA DEL TOTAL DE VENTAS DESDE MYSQL ---
@@ -273,8 +273,7 @@ foreach ($apuntes as $i => $a):
          hover:-translate-y-1 cursor-pointer w-[100%] sm:w-full sm:max-w-[380px] mx-auto md:max-w-none
          bg-transparent group">
 
-    <div class="card-apunte relative bg-gray-100 rounded-xl overflow-hidden w-full <?= $compacto ? 'aspect-square' : 'aspect-[3/2]' ?>"
-         style="box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+    <div class="card-apunte relative bg-gray-100 rounded-xl overflow-hidden w-full border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] <?= $compacto ? 'aspect-square' : 'aspect-[3/2]' ?>">
         
         <img src="<?= htmlspecialchars($rutaMiniatura) ?>" 
              alt="<?= $titulo ?>" 
@@ -288,7 +287,7 @@ foreach ($apuntes as $i => $a):
                     Quedan <?= $descargas_restantes ?>
                 </span>
             <?php elseif ($es_nuevo): ?>
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 backdrop-blur-sm text-gray-900 border border-gray-200">Nuevo</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Nuevo</span>
             <?php endif; ?>
         </div>
 
@@ -303,7 +302,7 @@ foreach ($apuntes as $i => $a):
                 </span>
             </div>
 
-            <h6 class="font-bold text-[13px] md:text-[14px] leading-tight text-gray-900 line-clamp-2 h-[34px] overflow-hidden mb-0.5">
+            <h6 class="font-medium text-[13px] md:text-[14px] leading-tight tracking-[-0.01em] text-[#222222] line-clamp-2 h-[34px] overflow-hidden mb-0.5">
                 <?= $titulo ?>
             </h6>
 
@@ -312,7 +311,7 @@ foreach ($apuntes as $i => $a):
             </div>
 
             <div class="flex items-center justify-between mt-0.5">
-                <div class="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[65%]">
+                <div class="flex items-center gap-1 text-[9px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[65%]">
                     <?php if(!empty($inst_text)): ?>
                         <svg class="w-3 h-3 text-gray-300 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"></path></svg>
                         <span class="truncate"><?= $inst_text ?></span>
@@ -320,14 +319,13 @@ foreach ($apuntes as $i => $a):
                 </div>
                 <div class="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
                     <?php if ($ventas_totales > 0): ?>
-                    <svg class="w-3 h-3 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    <?= $ventas_txt ?>
+                    <?= $ventas_txt ?> descargas
                     <?php endif; ?>
                 </div>
             </div>
 
         <?php else: ?>
-            <h6 class="font-semibold text-[15px] leading-snug text-gray-900 line-clamp-2 h-[40px] overflow-hidden mb-1">
+            <h6 class="font-medium text-[15px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 h-[40px] overflow-hidden mb-1">
                 <?= $titulo ?>
             </h6>
             
@@ -340,7 +338,7 @@ foreach ($apuntes as $i => $a):
             </div>
 
             <div class="flex items-center justify-between mt-1 pt-0">
-                <div class="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate max-w-[70%]">
+                <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[70%]">
                     <?php if(!empty($inst_text)): ?>
                         <svg class="w-3 h-3 text-gray-300 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"></path></svg>
                         <span class="truncate"><?= $inst_text ?></span>
@@ -348,8 +346,7 @@ foreach ($apuntes as $i => $a):
                 </div>
                 <div class="flex items-center gap-1 text-[11px] text-gray-500">
                     <?php if ($ventas_totales > 0): ?>
-                    <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    <?= $ventas_txt ?>
+                    <?= $ventas_txt ?> descargas
                     <?php endif; ?>
                 </div>
             </div>

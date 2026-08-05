@@ -157,6 +157,21 @@ if (!$esVendedor) {
 }
 // ========================================================================
 
+// ========================================================================
+// [NUBIRA 2.0] LÍMITE DE 6 MENSAJES ANTES DE CONTRATAR
+// Mismo criterio que enviar_mensaje.php: solo cuenta visible=1, no aplica
+// si ya existe contrato_id.
+// ========================================================================
+$limite_mensajes_alcanzado = false;
+if (empty($chat['contrato_id'])) {
+    $stmt_cnt_limite = $conn->prepare("SELECT COUNT(*) AS total FROM mensajes WHERE conversacion_id = ? AND visible = 1");
+    $stmt_cnt_limite->bind_param("i", $chat_id);
+    $stmt_cnt_limite->execute();
+    $total_mensajes_chat = (int)($stmt_cnt_limite->get_result()->fetch_assoc()['total'] ?? 0);
+    $stmt_cnt_limite->close();
+    $limite_mensajes_alcanzado = ($total_mensajes_chat >= 6);
+}
+
 // 6. MARCAR LEÍDO
 $stmt_leido = $conn->prepare("UPDATE mensajes SET leido = 1 WHERE conversacion_id = ? AND remitente_id != ?");
 if ($stmt_leido) {
@@ -496,7 +511,19 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
             </div>
         <?php endif; ?>
 
-        <?php $chat_bloqueado = $tutor_inactivo || $destinatario_suspendido; ?>
+        <div id="banner-limite-mensajes" class="max-w-4xl mx-auto w-full bg-sky-50 border border-sky-200 rounded-2xl p-3 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left mb-3 <?= $limite_mensajes_alcanzado ? '' : 'hidden' ?>">
+            <div class="flex items-center gap-3">
+                 <div class="w-8 h-8 bg-sky-100 text-[#54A6D8] rounded-full flex items-center justify-center shrink-0">
+                    <?= icon('chat-bubble', 'w-4 h-4') ?>
+                </div>
+                <div>
+                    <h4 class="text-[12px] font-bold text-sky-800 tracking-tight">Llegaste al límite de mensajes</h4>
+                    <p class="text-[11px] text-sky-600 mt-0.5">Llegaste al límite de mensajes antes de contratar. Si quieres seguir conversando, avanza con la contratación del servicio.</p>
+                </div>
+            </div>
+        </div>
+
+        <?php $chat_bloqueado = $tutor_inactivo || $destinatario_suspendido || $limite_mensajes_alcanzado; ?>
         <form id="form-chat" class="flex items-end gap-2 max-w-4xl mx-auto w-full relative <?= $chat_bloqueado ? 'opacity-50 pointer-events-none grayscale-[50%]' : '' ?>">
     <input type="hidden" name="conversacion_id" value="<?= $chat_id ?>">
     
@@ -528,11 +555,16 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
     <!-- ============================================ -->
     
     <div class="relative flex-1 bg-gray-100 rounded-[24px] flex items-center px-4 py-1 border border-transparent focus-within:border-blue-200 focus-within:bg-white focus-within:shadow-sm transition-all duration-200">
-                <textarea 
-                    name="mensaje" 
+                <?php
+                    $placeholder_bloqueo = 'Chat pausado por inactividad...';
+                    if ($destinatario_suspendido) $placeholder_bloqueo = 'Esta persona no está disponible...';
+                    elseif ($limite_mensajes_alcanzado) $placeholder_bloqueo = 'Límite de mensajes alcanzado...';
+                ?>
+                <textarea
+                    name="mensaje"
                     id="input-msg"
-                    rows="1" 
-                    <?= $chat_bloqueado ? 'disabled placeholder="' . ($destinatario_suspendido ? 'Esta persona no está disponible...' : 'Chat pausado por inactividad...') . '"' : 'placeholder="Escribe un mensaje..."' ?>
+                    rows="1"
+                    <?= $chat_bloqueado ? 'disabled placeholder="' . $placeholder_bloqueo . '"' : 'placeholder="Escribe un mensaje..."' ?>
                     class="w-full bg-transparent text-gray-900 text-sm focus:outline-none resize-none max-h-32 py-1 leading-relaxed <?= $chat_bloqueado ? 'placeholder-gray-500 font-medium' : 'placeholder-gray-400' ?>"
                 ></textarea>
             </div>
@@ -904,6 +936,12 @@ window.addEventListener('orientationchange', () => {
                     }
                 } else {
                     if (data.requiere_completar) { mostrarModalExpress(); return; }
+                    if (data.limite_alcanzado) {
+                        document.getElementById('banner-limite-mensajes')?.classList.remove('hidden');
+                        input.disabled = true;
+                        input.placeholder = 'Límite de mensajes alcanzado...';
+                        form.classList.add('opacity-50', 'pointer-events-none', 'grayscale-[50%]');
+                    }
                     marcarFallido(tempId);
                     mensajesFallidos[tempId] = { texto: texto };
                     showToast(data.error || 'Error al enviar. Toca el ícono de reintentar.');

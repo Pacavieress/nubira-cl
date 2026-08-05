@@ -73,11 +73,24 @@ INSTRUCCIONES PARA "meta_description": mismo criterio, 1-2 oraciones
 completas, límite 155 caracteres — prioriza cerrar la idea antes que
 llegar al límite exacto.
 
+INSTRUCCIONES PARA "cuerpo_html": el objetivo es la misma profundidad y
+utilidad de siempre — no bajes el nivel de detalle — pero con una
+estructura fácil de escanear, no un bloque continuo de texto:
+- Párrafos cortos: máximo 2-4 líneas cada uno. Si una idea necesita más
+  espacio, divídela en varios párrafos en vez de uno largo.
+- Un subtítulo (<h2> o <h3>) nuevo cada 2-3 párrafos como máximo — el
+  contenido debe leerse como secciones cortas, no como un solo bloque.
+- Cuando el contenido enumere pasos, características, errores comunes,
+  recomendaciones o cualquier lista de elementos, usa <ul> o <ol> con
+  <li> en vez de describirlos dentro de un párrafo corrido.
+- Cubre igual todos los PUNTOS CLAVE con la misma exhaustividad de
+  siempre — lo que cambia es la estructura de lectura, no el contenido.
+
 FORMATO DE SALIDA EXACTO (JSON PURO, sin texto antes ni después):
 {
   "titulo_h1": "string, máx 100 caracteres",
   "resumen": "2-3 oraciones completas, máx 300 caracteres (ver instrucción arriba)",
-  "cuerpo_html": "string HTML — SOLO estas etiquetas: <p> <h2> <h3> <ul> <ol> <li> <strong> <em>. Nada de <a>, <script>, <style>, ni atributos.",
+  "cuerpo_html": "string HTML — SOLO estas etiquetas: <p> <h2> <h3> <ul> <ol> <li> <strong> <em>. Nada de <a>, <script>, <style>, ni atributos. Ver instrucción de estructura arriba.",
   "meta_description": "1-2 oraciones completas, máx 155 caracteres (ver instrucción arriba)",
   "faqs": [{"pregunta": "string", "respuesta": "string"}]
 }

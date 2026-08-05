@@ -7,6 +7,9 @@ require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/seo.php';
 require_once __DIR__ . '/helpers/imagen_guia.php';
 require_once __DIR__ . '/helpers/institucion.php';
+require_once __DIR__ . '/helpers/roles.php';
+
+$usuario_id_sesion = $_SESSION['usuario_id'] ?? null;
 
 // [CTA guías] Inserta HTML como hermano justo después del primer <h2> del cuerpo del
 // artículo. Usa el parser HTML tolerante de DOMDocument en ambos fragmentos (no exige
@@ -69,6 +72,23 @@ if (!$categoria) {
     header("HTTP/1.1 404 Not Found"); echo "Página no encontrada."; exit;
 }
 
+// Gating "Para Tutores" — mismo criterio que guias.php (nb_es_tutor_activo(),
+// espejo exacto de $es_creador en perfil.php:382).
+$es_tutor_activo = false;
+if ((int)$categoria['solo_tutores'] === 1) {
+    if (!$usuario_id_sesion) {
+        header("Location: /login?redir=" . urlencode($_SERVER['REQUEST_URI'])); exit;
+    }
+    $es_tutor_activo = nb_es_tutor_activo($conn, (int)$usuario_id_sesion);
+    if (!$es_tutor_activo) {
+        header("Location: /publicar-servicio"); exit;
+    }
+}
+
+// Mismo criterio que guias.php: sin breadcrumb (JSON-LD ni visible) para "Para Tutores"
+// — no indexable en la práctica, el gating de arriba ya redirige a Googlebot siempre.
+$mostrar_breadcrumb = ((int)$categoria['solo_tutores'] !== 1);
+
 $stmt = $conn->prepare("SELECT * FROM guias_articulos WHERE categoria_id = ? AND slug = ? AND estado = 'publicado' LIMIT 1");
 $stmt->bind_param("is", $categoria['id'], $art_slug);
 $stmt->execute();
@@ -77,6 +97,18 @@ $stmt->close();
 
 if (!$articulo) {
     header("HTTP/1.1 404 Not Found"); echo "Página no encontrada."; exit;
+}
+
+// Tracking de "visto" — solo aplica a contenido gateado de tutores, con sesión
+// de tutor ya validada arriba (punto 3 de Fase 3). No se pre-siembra al publicar,
+// se registra la primera vez que un tutor calificado abre el artículo.
+if ((int)$categoria['solo_tutores'] === 1 && $es_tutor_activo) {
+    $stmt = $conn->prepare("INSERT INTO guias_articulos_vistos (usuario_id, articulo_id, fecha_visto)
+                            VALUES (?, ?, NOW())
+                            ON DUPLICATE KEY UPDATE fecha_visto = NOW()");
+    $stmt->bind_param("ii", $usuario_id_sesion, $articulo['id']);
+    $stmt->execute();
+    $stmt->close();
 }
 
 // FAQs del artículo
@@ -249,12 +281,14 @@ $faqs_para_ld = array_map(fn($f) => ['q' => $f['pregunta'], 'a' => $f['respuesta
 
     echo '<script type="application/ld+json">' . json_encode($article_ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . '</script>' . "\n  ";
     echo nubira_faq_ld($faqs_para_ld) . "\n  ";
-    echo nubira_breadcrumb_ld([
-        ['name' => 'Inicio', 'item' => 'https://nubira.cl/explorar'],
-        ['name' => 'Guías', 'item' => 'https://nubira.cl/guias'],
-        ['name' => $categoria['nombre'], 'item' => "https://nubira.cl/guias/$cat_slug"],
-        ['name' => $articulo['titulo']],
-    ]) . "\n  ";
+    if ($mostrar_breadcrumb) {
+        echo nubira_breadcrumb_ld([
+            ['name' => 'Inicio', 'item' => 'https://nubira.cl/explorar'],
+            ['name' => 'Guías', 'item' => 'https://nubira.cl/guias'],
+            ['name' => $categoria['nombre'], 'item' => "https://nubira.cl/guias/$cat_slug"],
+            ['name' => $articulo['titulo']],
+        ]) . "\n  ";
+    }
   ?>
   <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -266,14 +300,16 @@ $faqs_para_ld = array_map(fn($f) => ['q' => $f['pregunta'], 'a' => $f['respuesta
 
 <?php
 $page_title = $articulo['titulo'];
+// [NUBIRA 2.0] Ocultar header global en móvil — mismo patrón que guias.php/páginas de gestión.
+echo '<div class="hidden md:block">';
 require_once __DIR__ . '/componentes/header.php';
+echo '</div>';
 require_once __DIR__ . '/componentes/sidebar.php';
 ?>
 
-<main class="flex flex-col flex-grow w-full pt-20 pb-28 md:pb-10 lg:ml-64 px-4 md:px-8">
+<main class="flex flex-col flex-grow w-full pt-4 md:pt-16 pb-28 md:pb-10 lg:ml-64 px-4 md:px-8">
 
-  <div class="max-w-[900px] w-full">
-
+  <?php if ($mostrar_breadcrumb): ?>
   <nav class="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
     <a href="/explorar" class="hover:text-gray-700">Inicio</a>
     <span class="mx-1">/</span>
@@ -281,6 +317,18 @@ require_once __DIR__ . '/componentes/sidebar.php';
     <span class="mx-1">/</span>
     <a href="/guias/<?= htmlspecialchars($cat_slug) ?>" class="hover:text-gray-700"><?= htmlspecialchars($categoria['nombre']) ?></a>
   </nav>
+  <?php endif; ?>
+
+  <div class="sticky top-0 md:top-16 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-100 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 flex items-center gap-3">
+    <button type="button" onclick="navegacionSeguraNubira()"
+            class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
+            aria-label="Volver">
+        <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
+    </button>
+    <p class="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em] truncate min-w-0 flex-1" aria-hidden="true"><?= htmlspecialchars($articulo['titulo']) ?></p>
+  </div>
+
+  <div class="max-w-[900px] w-full">
 
   <header class="mb-6">
     <h1 class="text-2xl md:text-4xl font-medium text-[#222222] tracking-[-0.01em] leading-tight"><?= htmlspecialchars($articulo['titulo']) ?></h1>
@@ -398,6 +446,17 @@ require_once __DIR__ . '/componentes/modal_explora.php';
 ?>
 
 <script>
+    // [NUBIRA 2.0] Volver — mismo patrón que guias.php: history.back() con fallback.
+    // Acá el fallback es siempre la categoría del propio artículo (único padre natural),
+    // sin ambigüedad de modo como tenía guias.php.
+    window.navegacionSeguraNubira = function() {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = <?= json_encode("/guias/$cat_slug") ?>;
+        }
+    };
+
     function setupModal(triggerId, modalId, cardId, closeId) {
         const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
         if(!btn || !modal) return;

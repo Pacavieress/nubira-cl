@@ -3,8 +3,9 @@
 
 function icon($name, $classes = "w-6 h-6") {
     // Estilos base
-    $outline = 'fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"';
-    $solid   = 'viewBox="0 0 24 24" fill="currentColor"';
+    $sizeAttrs = nb_icon_intrinsic_size($classes);
+    $outline = "fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" $sizeAttrs";
+    $solid   = "viewBox=\"0 0 24 24\" fill=\"currentColor\" $sizeAttrs";
 
     switch ($name) {
         // --- GENERALES (Outline) ---
@@ -59,5 +60,24 @@ function icon($name, $classes = "w-6 h-6") {
 
         default: return "";
     }
+}
+
+// [Fix zoom íconos] Tamaño intrínseco (width/height reales en el SVG) calculado
+// desde la clase Tailwind que ya se pasa a icon() — evita que el ícono se vea
+// gigante (tamaño por defecto del navegador para SVG sin dimensión) antes de que
+// Tailwind CDN inyecte la clase w-N/h-N real. La CSS de Tailwind, una vez cargada,
+// siempre pisa visualmente este atributo — es solo el estado antes de esa carga.
+function nb_icon_intrinsic_size($classes) {
+    static $escala = [
+        '0' => 0, '0.5' => 2, '1' => 4, '1.5' => 6, '2' => 8, '2.5' => 10,
+        '3' => 12, '3.5' => 14, '4' => 16, '5' => 20, '6' => 24, '7' => 28,
+        '8' => 32, '9' => 36, '10' => 40, '11' => 44, '12' => 48,
+        '14' => 56, '16' => 64, '20' => 80, '24' => 96,
+    ];
+    if (preg_match('/(?:^|\s)w-([0-9.]+)(?:\s|$)/', $classes, $m) && isset($escala[$m[1]])) {
+        $px = $escala[$m[1]];
+        return "width=\"$px\" height=\"$px\"";
+    }
+    return 'width="24" height="24"';
 }
 ?>

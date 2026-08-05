@@ -8,6 +8,7 @@ require_once __DIR__ . '/init_sesion.php';
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/seo.php';           // generar_slug()
 require_once __DIR__ . '/helpers/sanitizar_html.php'; // nb_sanitizar_html()
+require_once __DIR__ . '/helpers/guias_imagenes.php'; // nb_guia_subir_portada() / nb_guia_subir_imagen_inline()
 
 if (($_SESSION['rol'] ?? '') !== 'admin') {
     header("Location: /"); exit;
@@ -17,53 +18,35 @@ $csrf = $_SESSION['csrf_token'];
 $DIR_FS  = $_SERVER['DOCUMENT_ROOT'] . '/upload/guias/';
 $DIR_WEB = '/upload/guias/';
 
-/* ----------------- HELPER: subida de portada (3 tamaños WebP) ----------------- */
-function nb_guia_generar_tamano($src, int $w0, int $h0, int $max_w, string $dest, int $q): bool {
-    if ($w0 <= $max_w) return imagewebp($src, $dest, $q);
-    $new_w = $max_w;
-    $new_h = (int) round(($h0 / $w0) * $max_w);
-    $dst = imagecreatetruecolor($new_w, $new_h);
-    imagealphablending($dst, false);
-    imagesavealpha($dst, true);
-    imagecopyresampled($dst, $src, 0, 0, 0, 0, $new_w, $new_h, $w0, $h0);
-    $ok = imagewebp($dst, $dest, $q);
-    imagedestroy($dst);
-    return $ok;
-}
-
-function nb_guia_subir_portada(array $file, string $dir_fs): ?string {
-    if (empty($file['name']) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) return null;
-    if ($file['size'] > 15 * 1024 * 1024) return null;
-
-    $info = @getimagesize($file['tmp_name']);
-    if ($info === false) return null;
-    $mime = $info['mime'];
-    if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) return null;
-
-    $img = match ($mime) {
-        'image/jpeg' => @imagecreatefromjpeg($file['tmp_name']),
-        'image/png'  => @imagecreatefrompng($file['tmp_name']),
-        'image/webp' => @imagecreatefromwebp($file['tmp_name']),
-        default => null,
-    };
-    if (!$img) return null;
-
-    if (!is_dir($dir_fs)) @mkdir($dir_fs, 0755, true);
-    $w0 = imagesx($img); $h0 = imagesy($img);
-    $base = 'guia_' . uniqid();
-
-    nb_guia_generar_tamano($img, $w0, $h0, 240,  $dir_fs . $base . '_thumb.webp', 78);
-    nb_guia_generar_tamano($img, $w0, $h0, 480,  $dir_fs . $base . '_card.webp',  80);
-    $ok_main = nb_guia_generar_tamano($img, $w0, $h0, 1200, $dir_fs . $base . '.webp', 82);
-    imagedestroy($img);
-
-    return $ok_main ? $base . '.webp' : null;
-}
+// Tags + atributos permitidos en el cuerpo del artículo — único lugar que
+// define esta lista (usado tanto al guardar acá como en el borrador de IA,
+// ajax_generar_borrador_guia.php, que hoy usa el default más chico sin img).
+$TAGS_CUERPO = ['p','h2','h3','ul','ol','li','strong','em','img'];
+$ATRIBUTOS_CUERPO = [
+    'img' => [
+        'src' => '#^/upload/guias/[a-zA-Z0-9_\-]+\.(jpg|jpeg|png|webp)$#',
+        'alt' => null,
+    ],
+];
 
 /* ----------------- CATEGORÍAS HABILITADAS (para el <select>) ----------------- */
 $categorias_habilitadas = [];
-$res_cat = $conn->query("SELECT id, nombre, slug FROM guias_categorias WHERE habilitada = 1 ORDER BY orden");
+$res_cat = $conn->query("SELECT id, nombre, slug, solo_tutores FROM guias_categorias WHERE habilitada = 1 ORDER BY orden");
 while ($res_cat && $row = $res_cat->fetch_assoc()) $categorias_habilitadas[] = $row;
+
+// Categoría "Para Tutores" — resuelta por el flag de schema (solo_tutores=1),
+// no por un id hardcodeado (el auto_increment puede diferir entre local y producción).
+$categoria_tutores = null;
+foreach ($categorias_habilitadas as $c) {
+    if ((int)$c['solo_tutores'] === 1) { $categoria_tutores = $c; break; }
+}
+
+// Tab del listado admin: "todas" (default, sin filtro) o "tutores" (aísla la
+// categoría Para Tutores). Se propaga por los links de navegación de abajo
+// para que moverse dentro del panel no pierda el filtro activo.
+$tab = (($_GET['tab'] ?? '') === 'tutores' && $categoria_tutores) ? 'tutores' : 'todas';
+$tab_amp = $tab === 'tutores' ? '&tab=tutores' : ''; // para anexar a URLs con "?xxx=" existente
+$tab_qs  = $tab === 'tutores' ? '?tab=tutores' : ''; // para URLs base sin querystring
 
 /* ----------------- ACCIONES (POST + PRG) ----------------- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -91,12 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($titulo === '' || !$categoria_valida || trim(strip_tags($cuerpo_raw)) === '') {
             $_SESSION['alerta_error'] = "Faltan campos obligatorios (título, categoría o cuerpo).";
-            header("Location: /admin/guias?" . ($id ? "editar=$id" : "nuevo=1")); exit;
+            header("Location: /admin/guias?" . ($id ? "editar=$id" : "nuevo=1") . $tab_amp); exit;
         }
 
         // Sanitización — momento 2 de 2 (el 1 ocurrió en ajax_generar_borrador_guia.php si vino de IA;
         // acá se aplica SIEMPRE, sin importar el origen, por si se editó a mano).
-        $cuerpo = nb_sanitizar_html($cuerpo_raw);
+        $cuerpo = nb_sanitizar_html($cuerpo_raw, $TAGS_CUERPO, $ATRIBUTOS_CUERPO);
 
         $imagen_portada = null;
         if (!empty($_FILES['imagen_portada']['name'])) {
@@ -192,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $stmt->close();
         $_SESSION['alerta_ok'] = "Artículo archivado.";
-        header("Location: /admin/guias"); exit;
+        header("Location: /admin/guias{$tab_qs}"); exit;
     }
 }
 
@@ -224,12 +207,29 @@ if (isset($_GET['nuevo'])) {
     }
 }
 
+// $categoria_candado: candado del <select> real de categoría — SOLO al crear desde
+// el tab "Para Tutores" (nunca al editar, para no trabar una recategorización legítima).
+$categoria_candado = ($tab === 'tutores' && !$articulo && $categoria_tutores);
+
+// $es_categoria_tutores: gate de "esto es contenido interno para tutores" — true al
+// crear desde el tab (vía $categoria_candado) O al editar un artículo cuya categoría
+// real ya es "Para Tutores" (se mira $articulo['categoria_id'] en BD, no el tab de la
+// URL — se puede llegar a editar ese artículo desde el tab "todas" también). Controla
+// ocultar IA / meta description / FAQs, que no tienen sentido para este contenido sin
+// importar si estás creando o editando.
+$es_categoria_tutores = $categoria_candado
+    || ($articulo && $categoria_tutores && (int)($articulo['categoria_id'] ?? 0) === (int)$categoria_tutores['id']);
+
 $articulos_listado = [];
 if ($modo === 'listado') {
-    $res = $conn->query("SELECT a.id, a.titulo, a.estado, a.fecha_publicacion, a.fuente_ia, a.revisado_humano, c.nombre AS categoria_nombre
-                         FROM guias_articulos a
-                         JOIN guias_categorias c ON c.id = a.categoria_id
-                         ORDER BY a.fecha_actualizacion DESC");
+    $sql_listado = "SELECT a.id, a.titulo, a.estado, a.fecha_publicacion, a.fuente_ia, a.revisado_humano, c.nombre AS categoria_nombre
+                     FROM guias_articulos a
+                     JOIN guias_categorias c ON c.id = a.categoria_id";
+    // "todas" = todas las categorías PÚBLICAS, nunca incluye contenido de tutores —
+    // los 2 tabs quedan mutuamente excluyentes, un artículo aparece en uno u otro, nunca en ambos.
+    $sql_listado .= ($tab === 'tutores') ? " WHERE c.solo_tutores = 1" : " WHERE c.solo_tutores = 0";
+    $sql_listado .= " ORDER BY a.fecha_actualizacion DESC";
+    $res = $conn->query($sql_listado);
     while ($res && $row = $res->fetch_assoc()) $articulos_listado[] = $row;
 }
 ?>
@@ -260,9 +260,9 @@ if ($modo === 'listado') {
             <h1 class="text-2xl font-semibold tracking-tight">Guías Nubira</h1>
         </div>
         <?php if ($modo === 'listado'): ?>
-        <a href="/admin/guias?nuevo=1" class="px-4 py-2 rounded-full bg-[#54A6D8] text-white text-sm font-bold hover:opacity-90 transition">Nuevo artículo</a>
+        <a href="/admin/guias?nuevo=1<?= $tab_amp ?>" class="px-4 py-2 rounded-full bg-[#54A6D8] text-white text-sm font-bold hover:opacity-90 transition">Nuevo artículo</a>
         <?php else: ?>
-        <a href="/admin/guias" class="text-sm font-bold text-gray-500 hover:text-gray-700">← Volver al listado</a>
+        <a href="/admin/guias<?= $tab_qs ?>" class="text-sm font-bold text-gray-500 hover:text-gray-700">← Volver al listado</a>
         <?php endif; ?>
     </div>
 
@@ -276,6 +276,12 @@ if ($modo === 'listado') {
     <?php endif; ?>
 
     <?php if ($modo === 'listado'): ?>
+    <?php if ($categoria_tutores): ?>
+    <div class="flex gap-2 mb-4">
+        <a href="/admin/guias" class="px-4 py-1.5 rounded-full text-sm font-bold transition <?= $tab === 'todas' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200' ?>">Recursos públicos</a>
+        <a href="/admin/guias?tab=tutores" class="px-4 py-1.5 rounded-full text-sm font-bold transition <?= $tab === 'tutores' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200' ?>">Para Tutores</a>
+    </div>
+    <?php endif; ?>
     <section class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
@@ -305,7 +311,7 @@ if ($modo === 'listado') {
                         <?php else: ?>manual<?php endif; ?>
                     </td>
                     <td class="p-3 text-gray-500"><?= $a['fecha_publicacion'] ? htmlspecialchars($a['fecha_publicacion']) : '—' ?></td>
-                    <td class="p-3"><a href="/admin/guias?editar=<?= (int)$a['id'] ?>" class="text-[#54A6D8] font-bold hover:underline">Editar</a></td>
+                    <td class="p-3"><a href="/admin/guias?editar=<?= (int)$a['id'] ?><?= $tab_amp ?>" class="text-[#54A6D8] font-bold hover:underline">Editar</a></td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($articulos_listado)): ?>
@@ -317,6 +323,7 @@ if ($modo === 'listado') {
 
     <?php else: /* ---------- FORMULARIO CREAR/EDITAR ---------- */ ?>
 
+    <?php if (!$es_categoria_tutores): // "Para Tutores" es redacción manual, sin asistencia IA ?>
     <section class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
         <h2 class="text-base font-semibold mb-4">Generar borrador con IA</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -348,6 +355,7 @@ if ($modo === 'listado') {
         <button type="button" id="btn_generar_ia" class="px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-bold hover:opacity-90 transition">Generar con IA</button>
         <span id="ia_estado" class="ml-3 text-xs text-gray-500"></span>
     </section>
+    <?php endif; ?>
 
     <form method="POST" enctype="multipart/form-data" class="bg-white rounded-2xl border border-gray-200 p-6">
         <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
@@ -355,14 +363,25 @@ if ($modo === 'listado') {
         <input type="hidden" name="id" value="<?= (int)($articulo['id'] ?? 0) ?>">
         <input type="hidden" name="fuente_ia" id="campo_fuente_ia" value="<?= (int)($articulo['fuente_ia'] ?? 0) ?>">
 
+        <?php // $categoria_candado ya calculado más arriba ?>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
                 <label class="text-xs font-bold text-gray-500 uppercase">Categoría</label>
+                <?php if ($categoria_candado): ?>
+                <!-- Un <select disabled> no viaja en el POST del <form>, así que el valor real
+                     se manda por input hidden y el select se reemplaza por un badge de solo lectura. -->
+                <input type="hidden" name="categoria_id" value="<?= (int)$categoria_tutores['id'] ?>">
+                <div class="w-full border border-gray-200 bg-gray-50 rounded-xl p-2 mt-1 text-gray-600 font-medium">
+                    <?= htmlspecialchars($categoria_tutores['nombre']) ?>
+                    <span class="text-xs text-gray-400 font-normal">(fijo — creado desde el tab "Para Tutores")</span>
+                </div>
+                <?php else: ?>
                 <select name="categoria_id" required class="w-full border border-gray-200 rounded-xl p-2 mt-1">
                     <?php foreach ($categorias_habilitadas as $c): ?>
                     <option value="<?= (int)$c['id'] ?>" <?= (($articulo['categoria_id'] ?? null) == $c['id']) ? 'selected' : '' ?>><?= htmlspecialchars($c['nombre']) ?></option>
                     <?php endforeach; ?>
                 </select>
+                <?php endif; ?>
             </div>
             <div>
                 <label class="text-xs font-bold text-gray-500 uppercase">Autor</label>
@@ -385,14 +404,21 @@ if ($modo === 'listado') {
         </div>
 
         <div class="mb-3">
-            <label class="text-xs font-bold text-gray-500 uppercase">Cuerpo (HTML simple: p, h2, h3, ul, ol, li, strong, em)</label>
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-gray-500 uppercase">Cuerpo (HTML simple: p, h2, h3, ul, ol, li, strong, em, img)</label>
+                <button type="button" id="btn_insertar_imagen" class="text-xs font-bold text-[#54A6D8] hover:underline">+ Insertar imagen</button>
+            </div>
+            <input type="file" id="input_imagen_inline" accept="image/jpeg,image/png,image/webp" class="hidden">
+            <p id="estado_imagen_inline" class="text-xs text-gray-400 mt-1 hidden"></p>
             <textarea name="cuerpo" id="campo_cuerpo" rows="14" required class="w-full border border-gray-200 rounded-xl p-2 mt-1 font-mono text-sm"><?= /* Sin htmlspecialchars(): cuerpo ya viene sanitizado por nb_sanitizar_html() antes de guardarse (único punto de escritura, ver admin_guias.php:99) — envolverlo de nuevo produce doble-escape (&#039; visible). */ $articulo['cuerpo'] ?? '' ?></textarea>
         </div>
 
+        <?php if (!$es_categoria_tutores): // contenido interno para tutores: sin SEO ?>
         <div class="mb-3">
             <label class="text-xs font-bold text-gray-500 uppercase">Meta description (máx 155 caracteres)</label>
             <textarea name="meta_description" id="campo_meta" rows="2" maxlength="200" class="w-full border border-gray-200 rounded-xl p-2 mt-1"><?= htmlspecialchars($articulo['meta_description'] ?? '') ?></textarea>
         </div>
+        <?php endif; ?>
 
         <div class="mb-3">
             <label class="text-xs font-bold text-gray-500 uppercase">Imagen de portada</label>
@@ -402,6 +428,7 @@ if ($modo === 'listado') {
             <?php endif; ?>
         </div>
 
+        <?php if (!$es_categoria_tutores): // contenido interno para tutores: sin FAQs de SEO ?>
         <div class="mb-4 border-t border-gray-100 pt-4">
             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">FAQs (opcional)</label>
             <div id="lista_faqs">
@@ -414,6 +441,7 @@ if ($modo === 'listado') {
             </div>
             <button type="button" id="btn_agregar_faq" class="text-xs font-bold text-[#54A6D8] hover:underline">+ Agregar pregunta</button>
         </div>
+        <?php endif; ?>
 
         <div class="mb-4 border-t border-gray-100 pt-4">
             <label class="flex items-center gap-2 text-sm">
@@ -448,7 +476,12 @@ if ($modo === 'listado') {
     <?php endif; ?>
 
     <script>
-    document.getElementById('btn_agregar_faq').addEventListener('click', function() {
+    // btn_agregar_faq / btn_generar_ia no existen en el DOM cuando el formulario está
+    // bloqueado en "Para Tutores" (secciones ocultas más arriba) — sin este guard,
+    // .addEventListener sobre null corta la ejecución de TODO el script de acá para
+    // abajo, incluyendo el handler de "+ Insertar imagen" que sí debe correr siempre.
+    var btnAgregarFaq = document.getElementById('btn_agregar_faq');
+    if (btnAgregarFaq) btnAgregarFaq.addEventListener('click', function() {
         var div = document.createElement('div');
         div.className = 'faq-row grid grid-cols-1 md:grid-cols-2 gap-2 mb-2';
         div.innerHTML = '<input type="text" name="faq_pregunta[]" placeholder="Pregunta" class="border border-gray-200 rounded-xl p-2">' +
@@ -456,7 +489,8 @@ if ($modo === 'listado') {
         document.getElementById('lista_faqs').appendChild(div);
     });
 
-    document.getElementById('btn_generar_ia').addEventListener('click', function() {
+    var btnGenerarIa = document.getElementById('btn_generar_ia');
+    if (btnGenerarIa) btnGenerarIa.addEventListener('click', function() {
         var btn = this;
         var estado = document.getElementById('ia_estado');
         var tema = document.getElementById('ia_tema').value.trim();
@@ -503,6 +537,41 @@ if ($modo === 'listado') {
             estado.textContent = avisos.length ? avisos.join(' ') : 'Borrador generado. Revisa y edita antes de tildar "Revisé".';
         })
         .catch(() => { btn.disabled = false; estado.textContent = 'Error de red. Intenta de nuevo.'; });
+    });
+
+    document.getElementById('btn_insertar_imagen').addEventListener('click', function() {
+        document.getElementById('input_imagen_inline').click();
+    });
+
+    document.getElementById('input_imagen_inline').addEventListener('change', function() {
+        var file = this.files[0];
+        if (!file) return;
+
+        var estado = document.getElementById('estado_imagen_inline');
+        var campoCuerpo = document.getElementById('campo_cuerpo');
+        estado.classList.remove('hidden');
+        estado.textContent = 'Subiendo imagen...';
+
+        var formData = new FormData();
+        formData.append('imagen', file);
+
+        fetch('/app/ajax_subir_imagen_guia.php', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            this.value = ''; // permite volver a elegir el mismo archivo si falla
+            if (!data.exito) { estado.textContent = data.error || 'Error al subir la imagen.'; return; }
+
+            var alt = window.prompt('Texto alternativo de la imagen (describe qué muestra):', '') || '';
+            var tag = '<img src="' + data.url + '" alt="' + alt.replace(/"/g, '') + '">';
+
+            var inicio = campoCuerpo.selectionStart ?? campoCuerpo.value.length;
+            var fin = campoCuerpo.selectionEnd ?? campoCuerpo.value.length;
+            campoCuerpo.value = campoCuerpo.value.slice(0, inicio) + tag + campoCuerpo.value.slice(fin);
+            campoCuerpo.focus();
+
+            estado.textContent = 'Imagen insertada en el cuerpo.';
+        })
+        .catch(() => { this.value = ''; estado.textContent = 'Error de red. Intenta de nuevo.'; });
     });
     </script>
     <?php endif; ?>

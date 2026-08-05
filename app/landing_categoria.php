@@ -234,5 +234,38 @@ require_once __DIR__ . '/componentes/sidebar.php';
 </main>
 
 <?php require_once __DIR__ . '/componentes/nav_bottom.php'; ?>
+
+<?php
+require_once __DIR__ . '/componentes/modal_publicar.php';
+require_once __DIR__ . '/componentes/modal_explora.php';
+?>
+
+<script>
+    function setupModal(triggerId, modalId, cardId, closeId) {
+        const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
+        if(!btn || !modal) return;
+        const open = () => { modal.classList.remove('hidden'); requestAnimationFrame(() => card.classList.remove('translate-y-full', 'opacity-0')); document.body.style.overflow = 'hidden'; };
+        const shut = () => { card.classList.add('translate-y-full', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300); };
+        btn.onclick = (e) => { e.preventDefault(); open(); };
+        if(close) close.onclick = shut;
+        modal.onclick = (e) => { if(e.target === modal) shut(); };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        <?php if (!isset($_SESSION['usuario_id'])): ?>
+            const btnPublicar = document.getElementById('btn-publicar');
+            if(btnPublicar) {
+                btnPublicar.onclick = (e) => {
+                    e.preventDefault();
+                    window.location.href = '/login?redir=' + encodeURIComponent(window.location.pathname + window.location.search);
+                };
+            }
+        <?php else: ?>
+            setupModal('btn-publicar', 'modal-quick', 'quick-card', 'quick-close');
+        <?php endif; ?>
+
+        setupModal('btn-explora', 'modal-explora', 'explora-card', 'explora-close');
+    });
+</script>
 </body>
 </html>
