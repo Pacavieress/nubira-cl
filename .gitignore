@@ -28,6 +28,7 @@ app/cron/logs/
 app/chat_archivos/
 app/uploads_entregas/
 app/cache_ia/
+app/cache_nav/
 
 # Dependencias (se reinstalan con composer)
 /vendor/
