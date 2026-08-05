@@ -177,6 +177,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['alerta_ok'] = "Artículo archivado.";
         header("Location: /admin/guias{$tab_qs}"); exit;
     }
+
+    // --- ELIMINAR (hard-delete real — "archivar" ya cubre el soft-delete y no
+    // limpia el listado admin; sin FK en el schema, hay que borrar a mano en
+    // guias_articulo_faqs/guias_articulos_vistos antes de borrar la fila) ---
+    if ($accion === 'eliminar') {
+        $id = (int)($_POST['id'] ?? 0);
+
+        $stmt = $conn->prepare("DELETE FROM guias_articulo_faqs WHERE articulo_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $conn->prepare("DELETE FROM guias_articulos_vistos WHERE articulo_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $conn->prepare("DELETE FROM guias_articulos WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+
+        $_SESSION['alerta_ok'] = "Artículo eliminado.";
+        header("Location: /admin/guias{$tab_qs}"); exit;
+    }
 }
 
 /* ----------------- CARGA PARA RENDER (GET) ----------------- */
@@ -311,7 +336,15 @@ if ($modo === 'listado') {
                         <?php else: ?>manual<?php endif; ?>
                     </td>
                     <td class="p-3 text-gray-500"><?= $a['fecha_publicacion'] ? htmlspecialchars($a['fecha_publicacion']) : '—' ?></td>
-                    <td class="p-3"><a href="/admin/guias?editar=<?= (int)$a['id'] ?><?= $tab_amp ?>" class="text-[#54A6D8] font-bold hover:underline">Editar</a></td>
+                    <td class="p-3 flex items-center gap-3">
+                        <a href="/admin/guias?editar=<?= (int)$a['id'] ?><?= $tab_amp ?>" class="text-[#54A6D8] font-bold hover:underline">Editar</a>
+                        <form method="POST" onsubmit="return confirm('¿Eliminar este artículo? Esta acción no se puede deshacer.');" class="inline">
+                            <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>">
+                            <input type="hidden" name="accion" value="eliminar">
+                            <input type="hidden" name="id" value="<?= (int)$a['id'] ?>">
+                            <button type="submit" class="text-red-400 hover:text-red-600 font-bold">Eliminar</button>
+                        </form>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($articulos_listado)): ?>
