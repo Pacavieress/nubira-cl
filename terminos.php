@@ -25,8 +25,10 @@ $ocultar_botones_publicar = true;
   <?php require_once __DIR__ . '/app/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- [NUBIRA 2.0] Fuente Inter — carga directa, mismo patrón que vitrina.php/sobre-nosotros.php -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
     
     /* Patrón de fondo sutil */
@@ -49,7 +51,7 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
 }
 ?>
 
-<main class="flex-grow pt-24 pb-28 md:pb-16 w-full relative md:ml-64 transition-all duration-300 max-w-[1600px] mx-auto">
+<main class="flex-grow pt-24 pb-28 md:pb-16 w-full relative lg:ml-64 transition-all duration-300 max-w-[1600px] mx-auto">
   
   <div class="absolute inset-0 pointer-events-none -z-10 bg-pattern"></div>
 
@@ -59,39 +61,40 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
       <span class="inline-block py-1.5 px-4 rounded-full bg-blue-50 text-[#54A6D8] text-xs font-bold uppercase tracking-wider mb-4 border border-blue-100 shadow-sm">
         Documento Legal
       </span>
-      <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4 tracking-tight leading-tight">
+      <h1 class="text-3xl md:text-5xl font-extrabold text-[#222222] mb-4 tracking-[-0.01em] leading-tight">
         Términos y Condiciones
       </h1>
-      <p class="text-gray-500 font-medium">Última actualización: <?= date('d/m/Y') ?></p>
+      <p class="text-gray-500 font-medium">Última actualización: 05/08/2026</p>
     </div>
 
     <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-gray-100 mb-12">
         <div class="space-y-10 text-gray-700 leading-relaxed">
             
             <section>
-                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                <h2 class="text-xl font-bold text-[#222222] tracking-[-0.01em] mb-4 flex items-center gap-3">
                     <span class="bg-blue-50 w-10 h-10 rounded-xl flex items-center justify-center text-lg text-[#54A6D8]">1</span>
                     ¿Qué es Nubira?
                 </h2>
                 <p class="ml-1 md:ml-13 text-gray-600">
-                    Nubira es una plataforma universitaria digital diseñada para conectar estudiantes, compartir apuntes, encontrar oportunidades y ofrecer servicios académicos. Al registrarte o utilizar nuestros servicios, aceptas cumplir con estos términos.
+                    Nubira es una plataforma universitaria digital donde estudiantes y tutores publican servicios de clases particulares (por categoría académica y preparación PAES), apuntes y material de estudio, y oportunidades académicas. Al registrarte o utilizar nuestros servicios, aceptas cumplir con estos términos.
                 </p>
             </section>
 
             <section>
-                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                <h2 class="text-xl font-bold text-[#222222] tracking-[-0.01em] mb-4 flex items-center gap-3">
                     <span class="bg-blue-50 w-10 h-10 rounded-xl flex items-center justify-center text-lg text-[#54A6D8]">2</span>
                     Usuarios Permitidos
                 </h2>
                 <ul class="list-disc pl-5 md:pl-16 space-y-2 text-gray-600 marker:text-[#54A6D8]">
-                    <li>Estudiantes, egresados y personal académico con correo institucional válido.</li>
+                    <li>Cualquier persona con un correo electrónico válido puede registrarse en Nubira.</li>
+                    <li>Los usuarios que se registran con correo de una institución educativa reconocida por Nubira obtienen automáticamente el sello "Verificado" en su perfil. Registrarse con otro correo no impide usar la plataforma, solo no otorga ese sello.</li>
                     <li>Mayores de 14 años o con autorización de apoderados.</li>
                     <li>Las cuentas son personales e intransferibles.</li>
                 </ul>
             </section>
 
             <section>
-                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                <h2 class="text-xl font-bold text-[#222222] tracking-[-0.01em] mb-4 flex items-center gap-3">
                     <span class="bg-blue-50 w-10 h-10 rounded-xl flex items-center justify-center text-lg text-[#54A6D8]">3</span>
                     Uso Correcto
                 </h2>
@@ -104,18 +107,34 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
             </section>
 
             <section>
-                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                <h2 class="text-xl font-bold text-[#222222] tracking-[-0.01em] mb-4 flex items-center gap-3">
                     <span class="bg-blue-50 w-10 h-10 rounded-xl flex items-center justify-center text-lg text-[#54A6D8]">4</span>
-                    Transacciones
+                    Transacciones y clases
                 </h2>
+                <p class="mb-3 ml-1 md:ml-13 text-gray-600">
+                    Los pagos se procesan a través de MercadoPago. Nubira retiene el monto pagado hasta que el servicio se entrega — el apunte se descarga o la clase se realiza — antes de liberarlo al tutor o vendedor, descontando la comisión correspondiente de la plataforma.
+                </p>
+                <p class="mb-3 ml-1 md:ml-13 text-gray-600">
+                    Las clases particulares se realizan dentro de la misma plataforma, mediante videollamada integrada — no es necesario coordinar ni moverse a otra aplicación externa.
+                </p>
                 <p class="ml-1 md:ml-13 text-gray-600">
-                    Nubira facilita la conexión entre compradores y vendedores. Los pagos se procesan de forma segura. Nubira actúa como intermediario para asegurar la entrega del servicio o archivo, pero la responsabilidad final de la calidad recae en el usuario vendedor.
+                    Nubira actúa como intermediario para asegurar la entrega del servicio o archivo, pero la responsabilidad final de la calidad de la clase o el apunte recae en el usuario vendedor.
                 </p>
             </section>
 
             <section>
-                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                <h2 class="text-xl font-bold text-[#222222] tracking-[-0.01em] mb-4 flex items-center gap-3">
                     <span class="bg-blue-50 w-10 h-10 rounded-xl flex items-center justify-center text-lg text-[#54A6D8]">5</span>
+                    Incumplimiento y suspensión
+                </h2>
+                <p class="ml-1 md:ml-13 text-gray-600">
+                    Nubira puede suspender temporalmente una cuenta, con motivo y plazo definidos, o bloquearla de forma permanente, ante incumplimiento de estos términos. La suspensión cierra la sesión activa del usuario de inmediato.
+                </p>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-bold text-[#222222] tracking-[-0.01em] mb-4 flex items-center gap-3">
+                    <span class="bg-blue-50 w-10 h-10 rounded-xl flex items-center justify-center text-lg text-[#54A6D8]">6</span>
                     Contacto
                 </h2>
                 <p class="ml-1 md:ml-13 text-gray-600">
@@ -132,15 +151,15 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
         </div>
     </div>
 
-    <?php 
-    if (file_exists($app_dir . '/componentes/footer_minimal.php')) {
-        require_once $app_dir . '/componentes/footer_minimal.php';
-    } elseif (file_exists(__DIR__ . '/app/componentes/footer_minimal.php')) {
-        require_once __DIR__ . '/app/componentes/footer_minimal.php';
-    }
-    ?>
-
   </div>
+
+  <?php
+  if (file_exists($app_dir . '/componentes/footer_minimal.php')) {
+      require_once $app_dir . '/componentes/footer_minimal.php';
+  } elseif (file_exists(__DIR__ . '/app/componentes/footer_minimal.php')) {
+      require_once __DIR__ . '/app/componentes/footer_minimal.php';
+  }
+  ?>
 </main>
 
 <?php 
