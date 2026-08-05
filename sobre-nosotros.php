@@ -25,8 +25,10 @@ $ocultar_botones_publicar = true;
   <?php require_once __DIR__ . '/app/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- [NUBIRA 2.0] Fuente Inter — carga directa, mismo patrón que vitrina.php -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
 
     /* Animación sutil de entrada para los bloques */
@@ -87,7 +89,7 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
 }
 ?>
 
-<main class="flex-grow pt-20 md:pt-24 pb-28 md:pb-16 w-full md:ml-64 transition-all duration-300 max-w-[1600px] mx-auto">
+<main class="flex-grow pt-20 md:pt-24 pb-28 md:pb-16 w-full lg:ml-64 transition-all duration-300 max-w-[1600px] mx-auto">
 
   <article class="w-full max-w-2xl mx-auto px-5 md:px-8">
 
@@ -96,7 +98,7 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
       <span class="inline-block py-1 px-3 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-widest mb-6">
         Una nota del fundador
       </span>
-      <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight leading-[1.1]">
+      <h1 class="text-3xl md:text-5xl font-extrabold text-[#222222] mb-6 tracking-[-0.01em] leading-[1.1]">
         Hola. Soy Pablo,<br>
         y esto es <span class="text-[#54A6D8]">Nubira</span>.
       </h1>
@@ -107,10 +109,10 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
 
     <!-- EL PROBLEMA -->
     <section class="mb-16 md:mb-20 reveal reveal-delay-1">
-      <h2 class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">El problema</h2>
-      <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 tracking-tight leading-tight">
+      <p class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">El problema</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-[#222222] mb-6 tracking-[-0.01em] leading-tight">
         Estudiar en Chile no debería depender de la suerte.
-      </h3>
+      </h2>
       <p class="text-base text-gray-600 leading-relaxed mb-6">
         Si has buscado un tutor o un apunte para tu próxima prueba, ya conoces el camino:
       </p>
@@ -129,10 +131,10 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
 
     <!-- LA SOLUCIÓN -->
     <section class="mb-16 md:mb-20 reveal reveal-delay-2">
-      <h2 class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">Lo que estoy construyendo</h2>
-      <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 tracking-tight leading-tight">
+      <p class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">Lo que estoy construyendo</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-[#222222] mb-6 tracking-[-0.01em] leading-tight">
         Un solo lugar. Sin estafas. Sin perseguir a nadie.
-      </h3>
+      </h2>
 
       <p class="text-base text-gray-600 leading-relaxed mb-6">
         Nubira reúne en un mismo lugar lo que hoy está roto y disperso:
@@ -154,10 +156,10 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
 
     <!-- PRINCIPIOS -->
     <section class="mb-16 md:mb-20 reveal reveal-delay-3">
-      <h2 class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">Los principios</h2>
-      <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-8 tracking-tight leading-tight">
+      <p class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">Los principios</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-[#222222] mb-8 tracking-[-0.01em] leading-tight">
         Tres reglas que no se negocian.
-      </h3>
+      </h2>
 
       <div class="space-y-8">
         <div>
@@ -194,10 +196,10 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
 
     <!-- EL EQUIPO REAL -->
     <section class="mb-16 md:mb-20 reveal reveal-delay-3">
-      <h2 class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">El equipo</h2>
-      <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-8 tracking-tight leading-tight">
+      <p class="text-xs font-bold uppercase tracking-widest text-[#54A6D8] mb-4">El equipo</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-[#222222] mb-8 tracking-[-0.01em] leading-tight">
         Hoy somos uno. Mañana, los que se sumen.
-      </h3>
+      </h2>
 
       <div class="bg-gray-50 border border-gray-100 rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-6 md:gap-8">
         <img src="/img/team_pablo.webp"
@@ -240,15 +242,15 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) {
       <?php endif; ?>
     </section>
 
-    <?php
-    if (file_exists($app_dir . '/componentes/footer_minimal.php')) {
-        require_once $app_dir . '/componentes/footer_minimal.php';
-    } elseif (file_exists(__DIR__ . '/app/componentes/footer_minimal.php')) {
-        require_once __DIR__ . '/app/componentes/footer_minimal.php';
-    }
-    ?>
-
   </article>
+
+  <?php
+  if (file_exists($app_dir . '/componentes/footer_minimal.php')) {
+      require_once $app_dir . '/componentes/footer_minimal.php';
+  } elseif (file_exists(__DIR__ . '/app/componentes/footer_minimal.php')) {
+      require_once __DIR__ . '/app/componentes/footer_minimal.php';
+  }
+  ?>
 </main>
 
 <?php
