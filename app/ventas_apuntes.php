@@ -34,7 +34,7 @@ if (!function_exists('formatearNombrePrivado')) {
 $usuario_id = (int)$_SESSION['usuario_id'];
 
 // CONSULTA DE APUNTES
-$sqlVentas = "SELECT v.*, a.titulo, a.precio, a.portada, a.archivo, al.nombre AS comprador_nombre
+$sqlVentas = "SELECT v.*, a.titulo, a.precio AS precio_actual_apunte, a.portada, a.archivo, al.nombre AS comprador_nombre
               FROM ventas_apuntes v
               JOIN apuntes a ON v.apunte_id = a.id
               JOIN alumnos al ON v.comprador_id = al.id

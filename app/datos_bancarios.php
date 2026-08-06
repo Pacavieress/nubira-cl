@@ -43,9 +43,13 @@ $resS = $stmtResS->get_result()->fetch_assoc();
 $stmtResS->close();
 $ganancias_servicios = $resS['total'] ?? 0;
 
-// FIX PHP 8: Declarar la variable apuntes en 0 por defecto para evitar Error 500
-$ganancias_apuntes = 0; 
-// TODO: Si a futuro agregas ventas de apuntes, su consulta SQL iría aquí reemplazando el 0.
+// Ganancias Apuntes [NUBIRA 2.0] — mismo criterio que solicitar_retiro.php
+$stmtResA = $conn->prepare("SELECT SUM(precio) AS total FROM ventas_apuntes WHERE vendedor_id = ? AND pagado_al_vendedor = 1");
+$stmtResA->bind_param("i", $usuario_id);
+$stmtResA->execute();
+$resA = $stmtResA->get_result()->fetch_assoc();
+$stmtResA->close();
+$ganancias_apuntes = $resA['total'] ?? 0;
 
 $total_ganancias = $ganancias_apuntes + $ganancias_servicios;
 // Total Retirado
