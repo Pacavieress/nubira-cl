@@ -46,18 +46,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $correos_raw = $_POST['correos'] ?? [];
-    if (!is_array($correos_raw) || empty($correos_raw)) {
+    $correos_raw          = $_POST['correos'] ?? [];
+    $correos_forzados_raw = $_POST['correos_forzados'] ?? [];
+    if ((!is_array($correos_raw) || empty($correos_raw)) && (!is_array($correos_forzados_raw) || empty($correos_forzados_raw))) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'Sin destinatarios seleccionados.']);
         exit;
     }
 
-    $candidatos = array_values(array_unique(array_filter(
-        array_map(fn($c) => strtolower(trim((string)$c)), $correos_raw),
+    $limpiar = fn(array $raw) => array_values(array_unique(array_filter(
+        array_map(fn($c) => strtolower(trim((string)$c)), is_array($raw) ? $raw : []),
         fn($c) => filter_var($c, FILTER_VALIDATE_EMAIL)
     )));
-    if (empty($candidatos)) {
+    $candidatos          = $limpiar($correos_raw);
+    $candidatos_forzados = $limpiar($correos_forzados_raw);
+    if (empty($candidatos) && empty($candidatos_forzados)) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'Correos inválidos.']);
         exit;
@@ -65,66 +68,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Re-validar contra la BD: misma regla de elegibilidad que enviar_recuperar_gmails.php.
     // Nunca confiamos en el estado que venía marcado en el HTML del panel.
-    $placeholders = implode(',', array_fill(0, count($candidatos), '?'));
-    $tipos        = str_repeat('s', count($candidatos));
-    $sql_validos = "
-        SELECT DISTINCT LOWER(TRIM(ir.correo)) AS correo
-        FROM interesados_registro ir
-        WHERE LOWER(TRIM(ir.correo)) IN ($placeholders)
-          AND ir.correo LIKE '%@gmail.com'
-          AND LOWER(TRIM(ir.correo)) NOT IN (
-              SELECT LOWER(TRIM(correo)) FROM unsubscribed
-          )
-          AND LOWER(TRIM(ir.correo)) NOT IN (
-              SELECT LOWER(TRIM(correo)) FROM alumnos WHERE visible = 1
-          )
-          AND LOWER(TRIM(ir.correo)) NOT IN (
-              SELECT LOWER(TRIM(destinatario)) FROM correos_admin
-               WHERE admin_nombre = ? AND exito = 1
-          )
-    ";
-    $params = $candidatos;
-    $params[] = $admin_nombre;
-    $stmt = $conn->prepare($sql_validos);
-    $stmt->bind_param($tipos . 's', ...$params);
-    $stmt->execute();
-    $validos = array_column($stmt->get_result()->fetch_all(MYSQLI_ASSOC), 'correo');
-    $stmt->close();
+    // $con_exclusion_enviado=true -> flujo normal (bloquea 'enviado'); false -> reenvío
+    // forzado (salta ESA exclusión puntual, pero unsubscribed/registrado siguen intactos).
+    $validar = function (array $lista, bool $con_exclusion_enviado) use ($conn, $admin_nombre) {
+        if (empty($lista)) return [];
+        $placeholders = implode(',', array_fill(0, count($lista), '?'));
+        $tipos        = str_repeat('s', count($lista));
+        $sql = "
+            SELECT DISTINCT LOWER(TRIM(ir.correo)) AS correo
+            FROM interesados_registro ir
+            WHERE LOWER(TRIM(ir.correo)) IN ($placeholders)
+              AND ir.correo LIKE '%@gmail.com'
+              AND LOWER(TRIM(ir.correo)) NOT IN (
+                  SELECT LOWER(TRIM(correo)) FROM unsubscribed
+              )
+              AND LOWER(TRIM(ir.correo)) NOT IN (
+                  SELECT LOWER(TRIM(correo)) FROM alumnos WHERE visible = 1
+              )"
+              . ($con_exclusion_enviado ? "
+              AND LOWER(TRIM(ir.correo)) NOT IN (
+                  SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+                   WHERE admin_nombre = ? AND exito = 1
+              )" : "") . "
+        ";
+        $params = $lista;
+        if ($con_exclusion_enviado) $params[] = $admin_nombre;
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param($tipos . ($con_exclusion_enviado ? 's' : ''), ...$params);
+        $stmt->execute();
+        $out = array_column($stmt->get_result()->fetch_all(MYSQLI_ASSOC), 'correo');
+        $stmt->close();
+        return $out;
+    };
 
-    $omitidos = count($candidatos) - count($validos);
+    $validos          = $validar($candidatos, true);
+    $validos_forzados = array_diff($validar($candidatos_forzados, false), $validos);
 
-    if (empty($validos)) {
-        echo json_encode(['ok' => true, 'enviados' => 0, 'fallidos' => 0, 'omitidos' => $omitidos]);
+    $omitidos = (count($candidatos) - count($validos)) + (count($candidatos_forzados) - count($validos_forzados));
+
+    if (empty($validos) && empty($validos_forzados)) {
+        echo json_encode(['ok' => true, 'enviados' => 0, 'fallidos' => 0, 'omitidos' => $omitidos, 'forzados' => 0]);
         exit;
     }
 
     $admin_id = (int)$_SESSION['usuario_id'];
     $stmt_log = $conn->prepare(
-        "INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito)
-         VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito, forzado)
+         VALUES (?, ?, ?, ?, ?, ?, ?)"
     );
 
-    $enviados = 0; $fallidos = 0;
+    $envios = [];
+    foreach ($validos as $c) $envios[] = [$c, false];
+    foreach ($validos_forzados as $c) $envios[] = [$c, true];
 
-    foreach ($validos as $correo) {
+    $enviados = 0; $fallidos = 0; $forzados_ok = 0;
+
+    foreach ($envios as [$correo, $forzado]) {
         $unsubUrl    = generarUnsubUrl($correo);
         $bloqueCupon = $cupon_info ? nb_bloque_cupon_html($codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion']) : '';
         $html        = generarHtmlEmailRecuperarGmail($unsubUrl, $bloqueCupon);
         $exito       = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply');
-        $exito_int = $exito ? 1 : 0;
+        $exito_int   = $exito ? 1 : 0;
+        $forzado_int = $forzado ? 1 : 0;
 
-        $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
+        $stmt_log->bind_param('issssii', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int, $forzado_int);
         $stmt_log->execute();
-        logCampana('[RECUPERAR ' . ($exito ? 'OK' : 'FAIL') . '] ' . $correo);
+        logCampana('[RECUPERAR' . ($forzado ? ' FORZADO' : '') . ' ' . ($exito ? 'OK' : 'FAIL') . '] ' . $correo);
 
-        if ($exito) $enviados++; else $fallidos++;
+        if ($exito) { $enviados++; if ($forzado) $forzados_ok++; } else { $fallidos++; }
         sleep(2);
     }
 
     $stmt_log->close();
     $conn->close();
 
-    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos]);
+    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos, 'forzados' => $forzados_ok]);
     exit;
 }
 
@@ -252,13 +270,23 @@ require_once $app_dir . '/componentes/sidebar.php';
         </h1>
         <p class="text-sm text-gray-500 mt-0.5">Seguimiento de los ~93 Gmails históricos invitados a registrarse.</p>
       </div>
-      <a href="/app/enviar_recuperar_gmails.php?limite=5"
-         class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-        </svg>
-        Reenviar campaña
-      </a>
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" id="btn-preview-cupon"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Ver preview del email
+        </button>
+        <a href="/app/enviar_recuperar_gmails.php?limite=5"
+           class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+          </svg>
+          Reenviar campaña
+        </a>
+      </div>
     </div>
 
     <!-- Cards de estadísticas -->
@@ -304,14 +332,6 @@ require_once $app_dir . '/componentes/sidebar.php';
         <div class="flex items-center gap-2">
           <input type="text" id="input-codigo" placeholder="REACTIVACION-LEADS-JUL26"
                  class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-mono uppercase text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
-          <button type="button" id="btn-preview-cupon"
-                  class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:border-[#54A6D8] hover:text-[#54A6D8] transition"
-                  title="Ver preview del correo">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
         </div>
         <p id="info-cupon" class="text-xs text-gray-400 mt-2 hidden"></p>
       </div>
@@ -347,6 +367,19 @@ require_once $app_dir . '/componentes/sidebar.php';
       <p class="text-gray-400 text-sm font-medium">No hay leads en este estado.</p>
     </div>
     <?php else: ?>
+
+    <!-- Filtro correo + fecha (client-side, sobre el set ya filtrado por estado) -->
+    <div class="flex flex-wrap gap-3 items-center">
+      <input type="text" id="filtro-correo" placeholder="Buscar por correo..."
+             class="px-4 py-2 border border-gray-200 rounded-xl text-sm font-mono focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none flex-1 min-w-[200px]">
+      <div class="flex items-center gap-2 text-sm text-gray-500">
+        <span class="text-xs font-bold uppercase tracking-wide text-gray-400">Último email</span>
+        <input type="date" id="filtro-fecha-desde" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+        <span>—</span>
+        <input type="date" id="filtro-fecha-hasta" class="px-3 py-2 border border-gray-200 rounded-xl text-sm">
+      </div>
+    </div>
+
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs font-semibold uppercase tracking-wider">
@@ -361,7 +394,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             <th class="px-5 py-3.5 text-right">Acción</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50">
+        <tbody id="tabla-leads-tbody" class="divide-y divide-gray-50">
           <?php foreach ($leads as $lead):
             $estado = $lead['_estado'];
 
@@ -377,12 +410,17 @@ require_once $app_dir . '/componentes/sidebar.php';
                 ? '/perfil/' . rtrim(base64_encode($lead['alumno_id'] . '-nubira_secreto'), '=')
                 : null;
           ?>
-          <tr class="hover:bg-gray-50/70 transition-colors">
+          <tr class="hover:bg-gray-50/70 transition-colors"
+              data-correo="<?= htmlspecialchars(strtolower($lead['correo'])) ?>"
+              data-fecha-email="<?= $lead['fecha_email'] ? date('Y-m-d', strtotime($lead['fecha_email'])) : '' ?>">
 
             <td class="px-4 py-3.5 text-center">
               <?php if (in_array($estado, ['sin_contacto', 'fallo'], true)): ?>
                 <input type="checkbox" class="row-check w-4 h-4 rounded accent-[#54A6D8] cursor-pointer"
                        value="<?= htmlspecialchars($lead['correo']) ?>">
+              <?php elseif ($estado === 'enviado'): ?>
+                <input type="checkbox" class="forced-check w-4 h-4 rounded accent-amber-500 cursor-pointer"
+                       value="<?= htmlspecialchars($lead['correo']) ?>" title="Ya se envió — marcar para forzar reenvío">
               <?php else: ?>
                 <span class="text-gray-200">—</span>
               <?php endif; ?>
@@ -426,7 +464,7 @@ require_once $app_dir . '/componentes/sidebar.php';
       </table>
 
       <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
-        <?= count($leads) ?> de <?= $total ?> leads
+        <span id="contador-visibles"><?= count($leads) ?></span> de <?= count($leads) ?> leads
       </div>
     </div>
     <?php endif; ?>
@@ -484,15 +522,56 @@ require_once $app_dir . '/componentes/modal_explora.php';
 <script>
 const CSRF_TOKEN = <?= json_encode($csrf_token) ?>;
 
-const checkAll  = document.getElementById('check-all');
-const rowChecks = [...document.querySelectorAll('.row-check')];
+// Filtro de correo + rango de fechas ("Último email"), 100% client-side sobre
+// las filas ya filtradas por estado en el servidor — no toca la query PHP.
+const filtroCorreo     = document.getElementById('filtro-correo');
+const filtroFechaDesde = document.getElementById('filtro-fecha-desde');
+const filtroFechaHasta = document.getElementById('filtro-fecha-hasta');
+const filasLeads       = [...document.querySelectorAll('#tabla-leads-tbody tr')];
+const contadorVisibles = document.getElementById('contador-visibles');
+
+function aplicarFiltrosTabla() {
+  const q     = filtroCorreo.value.trim().toLowerCase();
+  const desde = filtroFechaDesde.value; // 'YYYY-MM-DD' o ''
+  const hasta = filtroFechaHasta.value;
+  const hayFiltroFecha = !!(desde || hasta);
+  let visibles = 0;
+
+  filasLeads.forEach(tr => {
+    const correo      = tr.dataset.correo || '';
+    const fechaEmail  = tr.dataset.fechaEmail || '';
+
+    const matchCorreo = !q || correo.includes(q);
+    // Sin filtro de fecha activo: no restringe. Con filtro activo: un lead que
+    // nunca recibió email (fechaEmail vacío) no puede matchear ningún rango.
+    const matchFecha = !hayFiltroFecha || (
+      fechaEmail !== '' &&
+      (!desde || fechaEmail >= desde) &&
+      (!hasta || fechaEmail <= hasta)
+    );
+
+    const visible = matchCorreo && matchFecha;
+    tr.classList.toggle('hidden', !visible);
+    if (visible) visibles++;
+  });
+
+  contadorVisibles.textContent = visibles;
+}
+
+filtroCorreo?.addEventListener('input', aplicarFiltrosTabla);
+filtroFechaDesde?.addEventListener('change', aplicarFiltrosTabla);
+filtroFechaHasta?.addEventListener('change', aplicarFiltrosTabla);
+
+const checkAll     = document.getElementById('check-all');
+const rowChecks    = [...document.querySelectorAll('.row-check')];
+const forcedChecks = [...document.querySelectorAll('.forced-check')];
 const actionBar = document.getElementById('action-bar');
 const barCount  = document.getElementById('bar-count');
 const barPlural = document.getElementById('bar-plural');
 const btnEnviar = document.getElementById('btn-enviar');
 
 function syncBar() {
-  const n = rowChecks.filter(c => c.checked).length;
+  const n = rowChecks.filter(c => c.checked).length + forcedChecks.filter(c => c.checked).length;
   barCount.textContent = n;
   barPlural.textContent = n === 1 ? '' : 's';
   btnEnviar.disabled = n === 0;
@@ -501,6 +580,8 @@ function syncBar() {
 }
 
 checkAll?.addEventListener('change', () => {
+  // "Seleccionar todos" nunca toca los checkboxes de reenvío forzado — esos son
+  // opt-in individual únicamente, para que un clic acá no dispare reenvíos sin querer.
   rowChecks.forEach(cb => cb.checked = checkAll.checked);
   checkAll.indeterminate = false;
   syncBar();
@@ -514,11 +595,26 @@ rowChecks.forEach(cb => cb.addEventListener('change', () => {
   syncBar();
 }));
 
+forcedChecks.forEach(cb => cb.addEventListener('change', syncBar));
+
 btnEnviar?.addEventListener('click', async () => {
-  const checked = rowChecks.filter(c => c.checked);
-  const n = checked.length;
-  if (!n) return;
-  if (!confirm(`¿Confirmas el envío del correo a ${n} lead${n !== 1 ? 's' : ''}?`)) return;
+  const checked        = rowChecks.filter(c => c.checked);
+  const checkedForzado = forcedChecks.filter(c => c.checked);
+  const nNormal   = checked.length;
+  const nForzados = checkedForzado.length;
+  if (!nNormal && !nForzados) return;
+
+  // Confirmación explícita y distinta cuando hay reenvíos forzados incluidos —
+  // nunca el mismo texto genérico del envío normal.
+  let msg;
+  if (nForzados > 0 && nNormal > 0) {
+    msg = `Vas a enviar a ${nNormal} lead${nNormal !== 1 ? 's' : ''} nuevo${nNormal !== 1 ? 's' : ''} y REENVIAR a ${nForzados} lead${nForzados !== 1 ? 's' : ''} que ya recibió este correo. ¿Confirmas?`;
+  } else if (nForzados > 0) {
+    msg = `Est${nForzados !== 1 ? 'os' : 'e'} ${nForzados} lead${nForzados !== 1 ? 's' : ''} ya recibi${nForzados !== 1 ? 'eron' : 'ó'} este correo. ¿Reenviar de todas formas?`;
+  } else {
+    msg = `¿Confirmas el envío del correo a ${nNormal} lead${nNormal !== 1 ? 's' : ''}?`;
+  }
+  if (!confirm(msg)) return;
 
   btnEnviar.disabled = true;
   btnEnviar.innerHTML = `
@@ -530,6 +626,7 @@ btnEnviar?.addEventListener('click', async () => {
   const body = new URLSearchParams();
   body.append('csrf_token', CSRF_TOKEN);
   checked.forEach(cb => body.append('correos[]', cb.value));
+  checkedForzado.forEach(cb => body.append('correos_forzados[]', cb.value));
   const codigoEnvio = chkIncluirCupon.checked ? document.getElementById('input-codigo').value.trim() : '';
   if (codigoEnvio) body.append('codigo', codigoEnvio);
 
@@ -538,6 +635,7 @@ btnEnviar?.addEventListener('click', async () => {
     const data = await res.json();
     if (data.ok) {
       let msg = `${data.enviados} enviado${data.enviados !== 1 ? 's' : ''}`;
+      if (data.forzados > 0) msg += ` (${data.forzados} forzado${data.forzados !== 1 ? 's' : ''})`;
       if (data.fallidos > 0) msg += `, ${data.fallidos} fallido${data.fallidos !== 1 ? 's' : ''}`;
       if (data.omitidos > 0) msg += `, ${data.omitidos} omitido${data.omitidos !== 1 ? 's' : ''} (ya no elegible)`;
       mostrarToast(msg, 'ok');
