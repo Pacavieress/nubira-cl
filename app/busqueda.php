@@ -24,6 +24,15 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // --- FUNCIONES HELPER NUBIRA 2.0 ---
+if (!function_exists('url_toggle')) {
+    // [NUBIRA 2.0] Activa/desactiva un parámetro booleano en la URL actual, preservando el resto.
+    function url_toggle($param) {
+        $qs = $_GET;
+        if (!empty($qs[$param])) { unset($qs[$param]); } else { $qs[$param] = '1'; }
+        return '?' . http_build_query($qs);
+    }
+}
+
 if (!function_exists('resaltarTermino')) {
     function resaltarTermino($texto, $busqueda) {
         if (empty(trim($busqueda))) return htmlspecialchars($texto);
@@ -107,29 +116,40 @@ $uid = $_SESSION['usuario_id'] ?? 0;
 // LÓGICA DE BÚSQUEDA
 // =============================================================================
 $q = trim($_GET['q'] ?? '');
-$mod_filtro = trim($_GET['modalidad'] ?? '');
-$orden_usuario = trim($_GET['orden'] ?? ''); 
+$orden_usuario = trim($_GET['orden'] ?? '');
+$categoria_filtro = trim($_GET['categoria'] ?? '');
+$precio_min = isset($_GET['precio_min']) && $_GET['precio_min'] !== '' ? max(0, (int)$_GET['precio_min']) : null;
+$precio_max = isset($_GET['precio_max']) && $_GET['precio_max'] !== '' ? max(0, (int)$_GET['precio_max']) : null;
+$con_video = !empty($_GET['video']);
 
 // [NUBIRA 2.0] WHITELIST SEGURA DE FILTROS
 $ORDENES_VALIDOS = ['', 'precio_asc', 'precio_desc', 'calificacion'];
-$MODALIDADES_VALIDAS = ['', 'Presencial', 'Online', 'Híbrido'];
+// [NUBIRA 2.0] Misma lista canónica que usa publicar_servicio.php al publicar un servicio.
+// Solo aplica a SERVICIOS — apuntes.categoria es texto libre generado por IA (confirmado:
+// 93% de los apuntes en producción caen en "general", no en esta taxonomía), filtrar
+// apuntes por esta lista los dejaría casi todos invisibles.
+$CATEGORIAS_VALIDAS = ['', 'Matemáticas','Química','Física','Biología','Programación','Idiomas','Historia','Lenguaje','Economía','Diseño','Derecho','Asesoría','Otros'];
 
 if (!in_array($orden_usuario, $ORDENES_VALIDOS, true)) $orden_usuario = '';
-if (!in_array($mod_filtro, $MODALIDADES_VALIDAS, true)) $mod_filtro = '';
+if (!in_array($categoria_filtro, $CATEGORIAS_VALIDAS, true)) $categoria_filtro = '';
+
+// [NUBIRA 2.0] Un solo flag para saber si hay algún filtro activo aparte de q —
+// reemplaza los chequeos sueltos de !empty($mod_filtro) que existían antes.
+$hay_filtros_activos = ($categoria_filtro !== '' || $precio_min !== null || $precio_max !== null || $con_video);
 
 // =============================================================================
 // [SENSOR NUBIRA] REGISTRO DE BÚSQUEDA GLOBAL
 // =============================================================================
-if (!empty($q) || !empty($mod_filtro)) {
+if (!empty($q) || $hay_filtros_activos) {
     $rutas_logger = [__DIR__ . '/logger.php', __DIR__ . '/../logger.php', $_SERVER['DOCUMENT_ROOT'] . '/app/logger.php'];
     foreach($rutas_logger as $r) {
-        if(file_exists($r)) { 
-            require_once $r; 
+        if(file_exists($r)) {
+            require_once $r;
             $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
             $is_bot = preg_match('/bot|crawl|spider|slurp|yahoo|mediapartners/i', strtolower($user_agent));
             if (!$is_bot && function_exists('registrar_actividad')) {
                 $is_guest = !isset($_SESSION['usuario_id']);
-                $termino_limpio = substr($q . (!empty($mod_filtro) ? " | Mod: $mod_filtro" : ""), 0, 100);
+                $termino_limpio = substr($q, 0, 100);
                 if ($is_guest) {
                     $guest_hash = substr(md5(session_id()), 0, 8);
                     registrar_actividad($conn, 0, 'BUSQUEDA_GLOBAL_GUEST', "Invitado [$guest_hash] buscó: " . $termino_limpio);
@@ -145,8 +165,9 @@ if (!empty($q) || !empty($mod_filtro)) {
 $titulo_pag = "Resultados";
 $resultados_servicios = [];
 $resultados_apuntes = [];
+$categorias_con_resultados = [];
 
-if (strlen($q) > 1 || !empty($mod_filtro)) {
+if (strlen($q) > 1 || $hay_filtros_activos) {
     $titulo_pag = "Resultados para: " . htmlspecialchars($q);
     
     $mapa_ordenes = [
@@ -156,25 +177,47 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
         'calificacion' => "s.score_nubira DESC, rating_promedio DESC, total_votos DESC",
     ];
     $order_sql_servicios = $mapa_ordenes[$orden_usuario] ?? $mapa_ordenes[''];
-    $order_sql_apuntes = "ap.id DESC";
+    // [NUBIRA 2.0] El mismo criterio elegido ahora también reordena apuntes.
+    // "calificacion" no tiene columna real en apuntes (no hay valoraciones de apuntes) —
+    // se usa descargas como proxy de "bien valorado", el dato de popularidad real más cercano.
+    $mapa_ordenes_apuntes = [
+        ''             => "ap.id DESC",
+        'precio_asc'   => "ap.precio ASC",
+        'precio_desc'  => "ap.precio DESC",
+        'calificacion' => "ap.descargas DESC",
+    ];
+    $order_sql_apuntes = $mapa_ordenes_apuntes[$orden_usuario] ?? $mapa_ordenes_apuntes[''];
 
-    $sql_mod_s = "";
-    $params_mod = [];
-    $tipos_mod = "";
-    if (!empty($mod_filtro)) {
-        if ($mod_filtro === 'Híbrido') {
-            $sql_mod_s = " AND (s.modalidad LIKE ? OR s.modalidad LIKE ?)";
-            $params_mod = ['%Híbrido%', '%Hibrido%'];
-            $tipos_mod = "ss";
-        } else {
-            $sql_mod_s = " AND s.modalidad LIKE ?";
-            $params_mod = ['%' . $mod_filtro . '%'];
-            $tipos_mod = "s";
-        }
+    // [NUBIRA 2.0] Filtros: categoría, video (solo servicios — ver notas) y rango de
+    // precio (ambas tablas). $sql_extra_s_facet es la misma combinación SIN categoría,
+    // para poder calcular qué categorías tienen resultados reales sin que la categoría
+    // ya elegida se auto-excluya de la agregación.
+    $sql_extra_s = ""; $params_extra_s = []; $tipos_extra_s = "";
+    $sql_extra_s_facet = ""; $params_extra_s_facet = []; $tipos_extra_s_facet = "";
+    $sql_extra_a = ""; $params_extra_a = []; $tipos_extra_a = "";
+
+    if ($categoria_filtro !== '') {
+        $sql_extra_s .= " AND s.categoria = ?"; $params_extra_s[] = $categoria_filtro; $tipos_extra_s .= "s";
+    }
+    if ($precio_min !== null) {
+        $sql_extra_s .= " AND s.precio >= ?";  $params_extra_s[] = $precio_min; $tipos_extra_s .= "i";
+        $sql_extra_s_facet .= " AND s.precio >= ?"; $params_extra_s_facet[] = $precio_min; $tipos_extra_s_facet .= "i";
+        $sql_extra_a .= " AND ap.precio >= ?"; $params_extra_a[] = $precio_min; $tipos_extra_a .= "i";
+    }
+    if ($precio_max !== null) {
+        $sql_extra_s .= " AND s.precio <= ?";  $params_extra_s[] = $precio_max; $tipos_extra_s .= "i";
+        $sql_extra_s_facet .= " AND s.precio <= ?"; $params_extra_s_facet[] = $precio_max; $tipos_extra_s_facet .= "i";
+        $sql_extra_a .= " AND ap.precio <= ?"; $params_extra_a[] = $precio_max; $tipos_extra_a .= "i";
+    }
+    if ($con_video) {
+        $sql_extra_s .= " AND s.video_estado = 'aprobado'";
+        $sql_extra_s_facet .= " AND s.video_estado = 'aprobado'";
     }
 
- 
-    
+    // [NUBIRA 2.0 - FIX] El OR de PAES ya NO es incondicional: solo se activa
+    // si la búsqueda del usuario realmente tiene relación con PAES.
+    $es_busqueda_paes = (stripos($q, 'paes') !== false);
+
 // [NUBIRA 2.0] Búsqueda multi-palabra con raíz tolerante a typos
     // "matematicas fisica" → cada palabra como raíz independiente, todas deben matchear
     $conds_s = ["1=1"]; $conds_a = ["1=1"];
@@ -225,8 +268,31 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
     }
     $where_s = implode(" OR ", $conds_s);
     $where_a = implode(" OR ", $conds_a);
-    $params_s_full = array_merge($params_servicios, $params_mod);
-    $tipos_s_full = $tipos_servicios . $tipos_mod;
+    if ($es_busqueda_paes) {
+        $where_s = "($where_s) OR s.es_paes = 1";
+        $where_a = "($where_a) OR ap.nivel_academico = 'paes'";
+    }
+    $params_s_full = array_merge($params_servicios, $params_extra_s);
+    $tipos_s_full = $tipos_servicios . $tipos_extra_s;
+    $params_a_full = array_merge($params_apuntes, $params_extra_a);
+    $tipos_a_full = $tipos_apuntes . $tipos_extra_a;
+
+    // [NUBIRA 2.0] Categorías con al menos 1 resultado real bajo los filtros actuales
+    // (sin la categoría misma) — query liviana, sin JOINs de banco_imagenes/rating/LIMIT.
+    $stmtCat = $conn->prepare("SELECT s.categoria, COUNT(*) AS total
+            FROM servicios s
+            LEFT JOIN alumnos a ON s.alumno_id = a.id
+            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s) $sql_extra_s_facet
+            GROUP BY s.categoria");
+    if ($stmtCat) {
+        $params_cat_full = array_merge($params_servicios, $params_extra_s_facet);
+        $tipos_cat_full = $tipos_servicios . $tipos_extra_s_facet;
+        if (!empty($params_cat_full)) $stmtCat->bind_param($tipos_cat_full, ...$params_cat_full);
+        $stmtCat->execute();
+        $resCat = $stmtCat->get_result();
+        while ($rc = $resCat->fetch_assoc()) $categorias_con_resultados[] = $rc['categoria'];
+        $stmtCat->close();
+    }
 
     // BÚSQUEDA SERVICIOS
     $stmtS = $conn->prepare("SELECT s.*, 
@@ -240,7 +306,7 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
             LEFT JOIN alumnos a ON s.alumno_id = a.id
             LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s OR s.es_paes = 1) $sql_mod_s
+            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s) $sql_extra_s
             ORDER BY $order_sql_servicios LIMIT 20");
             
     if ($stmtS) {
@@ -258,11 +324,11 @@ if (strlen($q) > 1 || !empty($mod_filtro)) {
             FROM apuntes ap 
             LEFT JOIN alumnos a ON ap.id_alumno = a.id
             LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-            WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a OR ap.nivel_academico = 'paes')
+            WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a) $sql_extra_a
             ORDER BY $order_sql_apuntes LIMIT 20");
-            
+
 if ($stmtA) {
-        if(!empty($params_apuntes)) $stmtA->bind_param($tipos_apuntes, ...$params_apuntes);
+        if(!empty($params_a_full)) $stmtA->bind_param($tipos_a_full, ...$params_a_full);
         $stmtA->execute();
         $resultados_apuntes = $stmtA->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmtA->close();
@@ -304,7 +370,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
 
 <main class="pt-20 pb-28 md:pb-20 lg:ml-64 px-4 max-w-[1600px] mx-auto md:px-8 min-h-[80vh]">
     
-    <?php if (empty($q) && empty($mod_filtro)): ?>
+    <?php if (empty($q) && !$hay_filtros_activos): ?>
         <div class="flex flex-col items-center justify-center py-12 md:py-24 px-4 animate-fade-in-up">
             <div class="w-20 h-20 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center mb-6">
                 <i class="fa-solid fa-fire text-3xl text-[#54A6D8]"></i>
@@ -355,7 +421,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
 
             <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 md:mx-0 md:px-0">
                 <div class="relative shrink-0">
-                    <select id="ordenar_por" onchange="window.location.href='<?= $url_base ?>' + this.value" class="appearance-none pl-3 pr-7 py-1.5 text-xs font-bold bg-gray-900 text-white border border-gray-900 rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
+                    <select id="ordenar_por" onchange="irA('orden', this.value)" class="appearance-none pl-3 pr-7 py-1.5 text-xs font-bold bg-gray-900 text-white border border-gray-900 rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
                         <option value="" <?= (empty($orden_usuario))?'selected':'' ?>>Recomendados</option>
                         <option value="calificacion" <?= ($orden_usuario=='calificacion')?'selected':'' ?>>Mejor Calificados</option>
                         <option value="precio_desc" <?= ($orden_usuario=='precio_desc')?'selected':'' ?>>Mayor Precio</option>
@@ -368,15 +434,37 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
 
                 <div class="h-4 w-px bg-gray-200 shrink-0 mx-0.5"></div>
 
-                <a href="?q=<?= urlencode($q) ?>&orden=precio_asc" class="shrink-0 px-3 py-1.5 bg-white border <?= $orden_usuario=='precio_asc' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
-                    Económicos
+                <div class="relative shrink-0">
+                    <select id="filtro_categoria" onchange="irA('categoria', this.value)" class="appearance-none pl-3 pr-7 py-1.5 text-xs font-bold bg-white border <?= $categoria_filtro ? 'border-gray-900 text-gray-900' : 'border-gray-200 text-gray-600' ?> rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
+                        <option value="">Toda categoría</option>
+                        <?php foreach (array_filter($CATEGORIAS_VALIDAS) as $cat): ?>
+                        <?php if (!in_array($cat, $categorias_con_resultados, true) && $cat !== $categoria_filtro) continue; ?>
+                        <option value="<?= htmlspecialchars($cat) ?>" <?= $categoria_filtro===$cat?'selected':'' ?>><?= htmlspecialchars($cat) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center <?= $categoria_filtro ? 'text-gray-900' : 'text-gray-400' ?>"><i class="fa-solid fa-chevron-down text-[9px]"></i></div>
+                </div>
+
+                <a href="<?= url_toggle('video') ?>" class="shrink-0 px-3 py-1.5 bg-white border <?= $con_video ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-video text-[10px]"></i> Con video
                 </a>
-                <a href="?q=<?= urlencode($q) ?>&orden=calificacion" class="shrink-0 px-3 py-1.5 bg-white border <?= $orden_usuario=='calificacion' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
-                    Mejor Calificados
-                </a>
-                <a href="?q=<?= urlencode($q) ?>&modalidad=Online" class="shrink-0 px-3 py-1.5 bg-white border <?= $mod_filtro=='Online' ? 'border-gray-900 text-gray-900 bg-gray-50' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> rounded-full text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5">
-                    100% Online
-                </a>
+
+                <div class="h-4 w-px bg-gray-200 shrink-0 mx-0.5"></div>
+
+                <form id="form_precio" method="GET" class="flex items-center gap-1.5 shrink-0">
+                    <input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>">
+                    <?php if ($orden_usuario) : ?><input type="hidden" name="orden" value="<?= htmlspecialchars($orden_usuario) ?>"><?php endif; ?>
+                    <?php if ($categoria_filtro) : ?><input type="hidden" name="categoria" value="<?= htmlspecialchars($categoria_filtro) ?>"><?php endif; ?>
+                    <?php if ($con_video) : ?><input type="hidden" name="video" value="1"><?php endif; ?>
+                    <input type="number" name="precio_min" min="0" step="1000" placeholder="Mín $" value="<?= $precio_min !== null ? (int)$precio_min : '' ?>"
+                           class="w-[72px] px-2 py-1.5 text-xs font-bold bg-white border border-gray-200 rounded-full outline-none focus:ring-2 focus:ring-gray-300 transition-all">
+                    <span class="text-gray-300 text-xs">–</span>
+                    <input type="number" name="precio_max" min="0" step="1000" placeholder="Máx $" value="<?= $precio_max !== null ? (int)$precio_max : '' ?>"
+                           class="w-[72px] px-2 py-1.5 text-xs font-bold bg-white border border-gray-200 rounded-full outline-none focus:ring-2 focus:ring-gray-300 transition-all">
+                    <button type="submit" class="shrink-0 w-7 h-7 flex items-center justify-center bg-gray-900 hover:bg-[#54A6D8] text-white rounded-full transition-colors" aria-label="Aplicar rango de precio">
+                        <i class="fa-solid fa-check text-[10px]"></i>
+                    </button>
+                </form>
             </div>
         </div>
 
@@ -643,6 +731,13 @@ if(file_exists($ruta_comp.'/modal_explora.php')) require_once $ruta_comp.'/modal
 ?>
 
 <script>
+    // [NUBIRA 2.0] Navega manteniendo TODOS los filtros activos, cambiando solo uno.
+    function irA(param, valor) {
+        const url = new URL(window.location.href);
+        if (valor === '') { url.searchParams.delete(param); } else { url.searchParams.set(param, valor); }
+        window.location.href = url.toString();
+    }
+
     function setupModal(triggerId, modalId, cardId, closeId) {
         const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
         if(!btn || !modal) return;
