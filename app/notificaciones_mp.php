@@ -97,12 +97,18 @@ try {
                         $vendedor_id = (int)$apunte_row['id_alumno'];
                         $precio      = (int)$apunte_row['precio'];
                         $pagado      = 1;
-                        $stmtV = $conn->prepare(
-                            "INSERT INTO ventas_apuntes (apunte_id, comprador_id, vendedor_id, precio, pagado_al_vendedor) VALUES (?, ?, ?, ?, ?)"
-                        );
-                        $stmtV->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
-                        $stmtV->execute();
-                        $stmtV->close();
+                        try {
+                            $stmtV = $conn->prepare(
+                                "INSERT INTO ventas_apuntes (apunte_id, comprador_id, vendedor_id, precio, pagado_al_vendedor) VALUES (?, ?, ?, ?, ?)"
+                            );
+                            $stmtV->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
+                            $stmtV->execute();
+                            $stmtV->close();
+                        } catch (mysqli_sql_exception $dupEx) {
+                            // Carrera con pago_exitoso.php: la otra ruta ya registró esta venta
+                            // primero. El UNIQUE(apunte_id, comprador_id) frenó el duplicado — no es un error real.
+                            if ($dupEx->getCode() !== 1062) throw $dupEx;
+                        }
                     }
                 } else {
                     $chk2->close();

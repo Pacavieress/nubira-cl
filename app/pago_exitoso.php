@@ -98,10 +98,16 @@ try {
                     $archivo_apunte = $apunte['archivo'];
                     $pagado      = 1;
 
-                    $stmtVenta = $conn->prepare("INSERT INTO ventas_apuntes (apunte_id, comprador_id, vendedor_id, precio, pagado_al_vendedor) VALUES (?, ?, ?, ?, ?)");
-                    $stmtVenta->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
-                    $stmtVenta->execute();
-                    $stmtVenta->close();
+                    try {
+                        $stmtVenta = $conn->prepare("INSERT INTO ventas_apuntes (apunte_id, comprador_id, vendedor_id, precio, pagado_al_vendedor) VALUES (?, ?, ?, ?, ?)");
+                        $stmtVenta->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
+                        $stmtVenta->execute();
+                        $stmtVenta->close();
+                    } catch (mysqli_sql_exception $dupEx) {
+                        // Carrera con notificaciones_mp.php: la otra ruta ya registró esta venta
+                        // primero. El UNIQUE(apunte_id, comprador_id) frenó el duplicado — no es un error real.
+                        if ($dupEx->getCode() !== 1062) throw $dupEx;
+                    }
                 } else {
                     throw new RuntimeException(
                         "apunte_id=$apunte_id no encontrado al registrar venta para payment_id=$payment_id usuario=$usuario_id"
