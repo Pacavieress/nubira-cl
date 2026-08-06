@@ -393,7 +393,7 @@ session_write_close();
     }
     $ld = [
         '@context'    => 'https://schema.org',
-        '@type'       => 'Service',
+        '@type'       => 'Course',
         'name'        => $servicio['titulo'],
         'description' => mb_strimwidth(strip_tags($servicio['descripcion']), 0, 300, '…'),
         'url'         => $url_canonical,
