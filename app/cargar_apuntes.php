@@ -173,7 +173,7 @@ switch ($order) {
 }
 
 // --- FIX ABSOLUTO NUBIRA: CÁLCULO DE VENTAS DIRECTO EN MYSQL ---
-$cols = "ap.id, ap.id_alumno, ap.titulo, ap.precio, ap.archivo, ap.descripcion, ap.fecha_subida, ap.portada, ap.preview, ap.asignatura, COALESCE(dp.institucion, NULLIF(ap.institucion,''), al.institucion) AS institucion, ap.ia_used, ap.categoria, ap.promo_gratis, ap.promo_limite, ap.promo_contador, ((SELECT COUNT(*) FROM ventas_apuntes WHERE apunte_id = ap.id AND precio > 0) + COALESCE(ap.descargas, 0)) AS ventas_totales";
+$cols = "ap.id, ap.id_alumno, ap.titulo, ap.precio, ap.archivo, ap.descripcion, ap.fecha_subida, ap.portada, ap.preview, ap.asignatura, COALESCE(dp.institucion, NULLIF(ap.institucion,''), al.institucion) AS institucion, ap.ia_used, ap.categoria, ap.promo_gratis, ap.promo_limite, ap.promo_contador, ap.descargas AS ventas_totales";
 
 $sql = "SELECT $cols FROM apuntes ap JOIN alumnos al ON al.id = ap.id_alumno LEFT JOIN dominios_permitidos dp ON al.dominio = dp.dominio WHERE " . implode(" AND ", $filtros) . " ORDER BY $orderBy LIMIT ? OFFSET ?";
 $params[] = $limite; 

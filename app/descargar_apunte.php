@@ -101,31 +101,46 @@ if (!$acceso) salir(403);
 ================================================== */
 if ($usuario_id !== (int)$apunte['id_alumno'] && $rol !== 'admin') {
     try {
-        // Verificar si ya lo descargó/compró antes para no inflar contador artificialmente
-        $check = $conn->prepare("SELECT id FROM ventas_apuntes WHERE comprador_id = ? AND apunte_id = ? LIMIT 1");
+        // La fila en ventas_apuntes puede existir por la COMPRA (creada por el flujo de pago,
+        // antes de cualquier descarga) sin que eso signifique que ya se contó una descarga real.
+        // fecha_primera_descarga es lo único que distingue "compró" de "descargó".
+        $check = $conn->prepare("SELECT id, fecha_primera_descarga FROM ventas_apuntes WHERE comprador_id = ? AND apunte_id = ? LIMIT 1");
         $check->bind_param("ii", $usuario_id, $id_apunte);
         $check->execute();
-        $ya_descargado = $check->get_result()->num_rows > 0;
+        $fila_venta = $check->get_result()->fetch_assoc();
         $check->close();
+
+        $ya_descargado = $fila_venta && $fila_venta['fecha_primera_descarga'] !== null;
 
         if (!$ya_descargado) {
             $vendedor_id = (int)$apunte['id_alumno'];
-            
+
+            $conn->begin_transaction();
+
             // 1. Aumentamos el contador general usando Sentencia Preparada (Estricto Nubira)
             $stmt_upd = $conn->prepare("UPDATE apuntes SET descargas = descargas + 1 WHERE id = ?");
             $stmt_upd->bind_param("i", $id_apunte);
             $stmt_upd->execute();
             $stmt_upd->close();
 
-            // 2. Registramos el evento de la descarga
-            $ins = $conn->prepare("INSERT INTO ventas_apuntes (comprador_id, vendedor_id, apunte_id, precio) VALUES (?, ?, ?, 0)");
-            if ($ins) {
+            if ($fila_venta) {
+                // Ya existía la fila (la creó el pago): solo marcamos la descarga, sin duplicar la fila.
+                $upd = $conn->prepare("UPDATE ventas_apuntes SET fecha_primera_descarga = NOW() WHERE id = ?");
+                $upd->bind_param("i", $fila_venta['id']);
+                $upd->execute();
+                $upd->close();
+            } else {
+                // No existía (apunte gratis): se crea ya marcada como descargada.
+                $ins = $conn->prepare("INSERT INTO ventas_apuntes (comprador_id, vendedor_id, apunte_id, precio, fecha_primera_descarga) VALUES (?, ?, ?, 0, NOW())");
                 $ins->bind_param("iii", $usuario_id, $vendedor_id, $id_apunte);
                 $ins->execute();
                 $ins->close();
             }
+
+            $conn->commit();
         }
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
+        $conn->rollback();
         // Error silencioso, no bloqueamos la entrega del archivo por un fallo de log
         error_log("Error registrando descarga Nubira: " . $e->getMessage());
     }
