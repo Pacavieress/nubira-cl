@@ -343,7 +343,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
   <?php if ($portada_main): ?>
   <img src="<?= htmlspecialchars($portada_main) ?>"
-       alt="<?= htmlspecialchars($articulo['titulo']) ?>" class="w-full rounded-2xl object-cover mb-8" style="max-height:420px">
+       alt="<?= htmlspecialchars($articulo['titulo']) ?>" class="w-full aspect-video md:aspect-[21/9] rounded-2xl border border-gray-100 object-cover mb-8">
   <?php endif; ?>
 
   <article class="prose prose-lg prose-headings:text-[#222222] prose-headings:font-medium prose-headings:tracking-[-0.01em] prose-strong:text-[#222222] prose-strong:font-semibold prose-a:text-[#54A6D8] prose-a:no-underline hover:prose-a:underline prose-li:marker:text-gray-400">
