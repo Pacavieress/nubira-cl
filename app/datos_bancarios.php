@@ -62,7 +62,10 @@ $stmtRet->close();
 $total_retirado = $retiroRes['total_retirado'] ?? 0;
 
 $saldo_disponible = $total_ganancias - $total_retirado;
-$porcentaje_progreso = min(($saldo_disponible / $minimo_retiro) * 100, 100);
+// Variable de PRESENTACIÓN: nunca se le muestra al usuario un saldo negativo.
+// $saldo_disponible (sin recortar) sigue siendo la fuente de verdad para solicitar_retiro.php.
+$saldo_para_mostrar = max(0, $saldo_disponible);
+$porcentaje_progreso = min(($saldo_para_mostrar / $minimo_retiro) * 100, 100);
 
 // 2. DATOS BANCARIOS REGISTRADOS
 $datosBancarios = null;
@@ -129,7 +132,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             <div class="bg-white rounded-2xl md:rounded-3xl p-5 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 overflow-hidden relative border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div class="relative z-10">
                     <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Saldo Disponible</p>
-                    <p class="text-3xl md:text-4xl font-medium text-[#222222] tracking-[-0.01em]">$<?= number_format(max(0, $saldo_disponible), 0, ',', '.') ?></p>
+                    <p class="text-3xl md:text-4xl font-medium text-[#222222] tracking-[-0.01em]">$<?= number_format($saldo_para_mostrar, 0, ',', '.') ?></p>
                     <?php if ($saldo_disponible < $minimo_retiro): ?>
                     <span class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 text-[10px] font-semibold uppercase tracking-wide">
                         <i class="fa-solid fa-lock text-[9px]"></i> Aún no retirable
@@ -160,6 +163,12 @@ require_once $app_dir . '/componentes/sidebar.php';
                             Servicios: $<?= number_format($ganancias_servicios, 0, ',', '.') ?>
                         </span>
                         <?php endif; ?>
+                        <?php if ($total_retirado > 0): ?>
+                        <span class="flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-md">
+                            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                            Ya retirado/en proceso: $<?= number_format($total_retirado, 0, ',', '.') ?>
+                        </span>
+                        <?php endif; ?>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -182,15 +191,19 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
-                        <div class="w-full">
+                        <div class="w-full space-y-3">
                             <div class="flex justify-between items-baseline mb-1.5">
-                                <span class="text-[12px] font-semibold text-[#222222]">Te faltan $<?= number_format(max(0, $minimo_retiro - $saldo_disponible), 0, ',', '.') ?></span>
+                                <span class="text-[12px] font-semibold text-[#222222]">Te faltan $<?= number_format(max(0, $minimo_retiro - $saldo_para_mostrar), 0, ',', '.') ?> para retirar</span>
                                 <span class="text-[11px] font-bold text-[#54A6D8]"><?= round($porcentaje_progreso) ?>%</span>
                             </div>
                             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                                 <div class="bg-[#54A6D8] h-full transition-all duration-1000 ease-out" style="width: <?= $porcentaje_progreso ?>%"></div>
                             </div>
                             <p class="text-[10px] text-gray-400 font-medium text-right mt-1.5">Mínimo: $<?= number_format($minimo_retiro, 0, ',', '.') ?></p>
+                            <button type="button" disabled
+                                    class="w-full bg-[#54A6D8] text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md border border-transparent opacity-40 cursor-not-allowed">
+                                <i class="fa-solid fa-lock"></i> Mínimo $<?= number_format($minimo_retiro, 0, ',', '.') ?>
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>
