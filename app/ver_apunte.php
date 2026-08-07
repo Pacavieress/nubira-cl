@@ -281,8 +281,9 @@ if ($es_promo_activa) {
 
 // BACKER URL (NUBIRA SHIELD)
 $token_seguro = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($id_apunte) : $id_apunte;
-$url_apunte_masked = $base_url . "/apunte/" . $token_seguro; 
+$url_apunte_masked = $base_url . "/apunte/" . $token_seguro;
 $url_canonical = $url_apunte_masked;
+$share_txt = urlencode("¡Mira este apunte en Nubira.cl! " . ($apunte['titulo'] ?? ''));
 
 /* ===============================
    PERMISOS Y ACCESO
@@ -403,6 +404,9 @@ if (!empty($thumb_url)) {
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     .overflow-hidden-strict { overflow: hidden !important; }
+    @media (hover: hover) {
+        .btn-compartir-hover:hover { background-color: #54A6D8; color: #fff; }
+    }
     @media (max-width: 1023px) {
         nav.fixed.bottom-0,
         .fixed.bottom-0[id*="nav"] {
@@ -474,9 +478,9 @@ if (!empty($thumb_url)) {
       </button>
       <div class="w-10 h-1.5 bg-gray-200 rounded-full"></div>
       <button type="button"
-          class="js-compartir-apunte flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200/60 shadow-sm active:scale-95 transition-all"
+          class="js-abrir-sheet-compartir btn-compartir-hover flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#54A6D8] border border-gray-200/60 shadow-sm active:scale-95 transition-all"
           aria-label="Compartir">
-          <span class="share-icon"><?= icon('share-outline', 'w-5 h-5') ?></span>
+          <?= icon('share-outline', 'w-5 h-5') ?>
       </button>
   </div>
 
@@ -701,9 +705,9 @@ if (!empty($thumb_url)) {
                                 Asignatura: <?= htmlspecialchars($apunte['asignatura'] ?? 'Apunte') ?>
                             </span>
                             <button type="button"
-                                    class="js-compartir-apunte inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200 text-sm font-bold transition-all shrink-0"
+                                    class="js-abrir-sheet-compartir btn-compartir-hover inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 text-[#54A6D8] border border-gray-200 text-sm font-bold transition-all shrink-0"
                                     aria-label="Compartir">
-                                <span class="share-icon"><?= icon('share-outline', 'w-4 h-4') ?></span> <span class="share-label">Compartir</span>
+                                <?= icon('share-outline', 'w-4 h-4') ?> Compartir
                             </button>
                         </div>
                         <p class="text-2xl font-bold text-gray-900 leading-tight"><?= $titulo ?></p>
@@ -939,6 +943,7 @@ if (file_exists($modal_alumno_path)) {
 require_once $base_path . '/componentes/nav_bottom.php';
 require_once $base_path . '/componentes/modal_publicar.php';
 require_once $base_path . '/componentes/modal_explora.php';
+require_once $base_path . '/componentes/sheet_compartir_apunte.php';
 ?>
 
 <?php if (!$es_dueno): ?>
@@ -990,54 +995,6 @@ require_once $base_path . '/componentes/modal_explora.php';
 <?php endif; ?>
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } };
-
-// Compartir apunte: Web Share API con fallback a copiar link
-document.querySelectorAll('.js-compartir-apunte').forEach((btn) => {
-    btn.addEventListener('click', async function() {
-        const shareData = { title: <?= json_encode($titulo, JSON_UNESCAPED_UNICODE) ?>, url: window.location.href };
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-                return; // compartido con éxito
-            } catch (e) {
-                if (e && e.name === 'AbortError') return; // usuario cerró el sheet nativo sin elegir, no hacer nada más
-                // cualquier otro fallo (ej. no permitido en contexto sin HTTPS): cae al fallback de copiar
-            }
-        }
-        const mostrarLinkCopiado = () => {
-            const iconEl = btn.querySelector('.share-icon');
-            const labelEl = btn.querySelector('.share-label');
-            const originalIcon = iconEl ? iconEl.innerHTML : '';
-            const originalLabel = labelEl ? labelEl.textContent : '';
-            if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-check text-green-500"></i>';
-            if (labelEl) labelEl.textContent = 'Link copiado';
-            setTimeout(() => {
-                if (iconEl) iconEl.innerHTML = originalIcon;
-                if (labelEl) labelEl.textContent = originalLabel;
-            }, 1800);
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            try {
-                await navigator.clipboard.writeText(window.location.href);
-                mostrarLinkCopiado();
-                return;
-            } catch (e) {}
-        }
-        // Fallback para contextos sin Clipboard API (ej. HTTP no seguro)
-        try {
-            const tmp = document.createElement('textarea');
-            tmp.value = window.location.href;
-            tmp.style.position = 'fixed';
-            tmp.style.opacity = '0';
-            document.body.appendChild(tmp);
-            tmp.focus();
-            tmp.select();
-            document.execCommand('copy');
-            document.body.removeChild(tmp);
-            mostrarLinkCopiado();
-        } catch (e) {}
-    });
-});
 
 // Promo Flash: Descarga con iframe + recarga
 document.addEventListener('DOMContentLoaded', () => {
