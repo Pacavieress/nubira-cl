@@ -262,7 +262,7 @@ $sql_recs = "SELECT s.id, s.slug, s.titulo, s.precio, s.imagen, s.imagen_banco_i
                 CASE WHEN s.categoria = ? THEN 1 ELSE 2 END,
                 CASE WHEN s.categoria = ? THEN 1 ELSE 2 END,
                 s.id DESC
-             LIMIT 4";
+             LIMIT 7";
 
 if ($stmt_recs = $conn->prepare($sql_recs)) {
     $stmt_recs->bind_param("iss", $id, $cat_favorita, $servicio['categoria']);
@@ -476,7 +476,7 @@ session_write_close();
       data-track-id="<?= (int)$servicio['id'] ?>" 
       data-track-type="servicio">
 
-    <div class="max-w-[1100px] mx-auto">
+    <div class="max-w-[1400px] mx-auto">
 
         <?php if ($es_propietario): ?>
             <?php if ($servicio['estado'] === 'pendiente'): ?>
@@ -535,9 +535,9 @@ session_write_close();
                     <a href="/perfil/<?= (int)$servicio['alumno_id'] ?>" 
                        class="flex items-center gap-4 pb-6 border-b border-[#f0f0f0] w-full hover:bg-gray-50 p-3 rounded-xl transition -mx-3 track-seller"
                        data-track-click="perfil:<?= (int)$servicio['alumno_id'] ?>">
-                        <div class="w-14 h-14 rounded-full border border-[#f0f0f0] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex-shrink-0">
+                        <div class="w-24 h-24 rounded-full border border-[#f0f0f0] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex-shrink-0">
                              <?php $pf = (!empty($servicio['foto_perfil'])) ? "/app/perfil/fotos/".htmlspecialchars($servicio['foto_perfil']) : ""; ?>
-                            <?php if($pf): ?><img src="<?= $pf ?>" class="w-full h-full object-cover"><?php else: ?><div class="w-full h-full flex items-center justify-center bg-blue-50 text-[#54A6D8] font-bold text-lg"><?= $inicPub ?></div><?php endif; ?>
+                            <?php if($pf): ?><img src="<?= $pf ?>" class="w-full h-full object-cover"><?php else: ?><div class="w-full h-full flex items-center justify-center bg-blue-50 text-[#54A6D8] font-bold text-2xl"><?= $inicPub ?></div><?php endif; ?>
                         </div>
                         <div>
                             <div class="flex items-center gap-1.5">
@@ -872,12 +872,6 @@ function reproducirVideoTutor() {
                     <?php endif; ?>
                 </div>
 
-               <div class="flex justify-end px-2 pt-2">
-                    <a href="/reportar-servicio?id=<?= $id ?>" class="text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1.5 group">
-                        <i class="fa-solid fa-flag text-[10px] group-hover:animate-pulse"></i> Reportar publicación
-                    </a>
-                </div>
-
             </div>
 
             <div class="lg:col-span-4">
@@ -1028,7 +1022,7 @@ $is_oferta = oferta_vigente($servicio);
         </div>
         
       <?php if ($recs && $recs->num_rows > 0): ?>
-        <div class="mt-16 border-t border-gray-100 pt-10">
+        <div class="mt-8 border-t border-gray-100 pt-6">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Otros tutores disponibles ahora</h2>
             
             <div class="relative group">
@@ -1162,6 +1156,12 @@ $is_oferta = oferta_vigente($servicio);
             </div>
         </div>
         <?php endif; ?>
+
+        <div class="text-center mt-10 pt-6 border-t border-gray-100">
+            <a href="/reportar-servicio?id=<?= $id ?>" class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-flag text-[10px] mr-1"></i>Reportar publicación
+            </a>
+        </div>
     </div>
 </main>
 
