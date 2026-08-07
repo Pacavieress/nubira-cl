@@ -254,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?= nubira_canonical_tag() ?>
   <?php if (!empty($_GET['redir'])): ?>
-  <meta name="robots" content="noindex,follow" />
+  <meta name="robots" content="noindex,nofollow" />
   <?php endif; ?>
   <?php require_once __DIR__ . '/app/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
