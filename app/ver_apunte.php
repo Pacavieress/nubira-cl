@@ -199,7 +199,7 @@ $stmtRec = $conn->prepare("
         (ap.asignatura = ?) DESC,
         (ap.institucion = ?) DESC,
         ap.id DESC
-    LIMIT 4
+    LIMIT 7
 ");
 if ($stmtRec) {
     $stmtRec->bind_param("iss", $apunte['id'], $asignatura_actual, $institucion_actual);
@@ -261,7 +261,7 @@ if ($has_ia && !empty($apunte['ia_keywords'])) {
 $id_apunte = (int)$apunte['id'];
 $titulo = htmlspecialchars($apunte['titulo'] ?? '');
 $precio = (int)$apunte['precio'];
-$descripcion = nl2br(htmlspecialchars(html_entity_decode($apunte['descripcion'] ?? '')));
+$descripcion_raw = html_entity_decode(trim($apunte['descripcion'] ?? ''));
 $total_ventas = (int)$apunte['total_ventas'];
 $es_dueno = ((int)$apunte['id_alumno'] === $usuario_id);
 $rol = $_SESSION['rol'] ?? 'alumno';
@@ -476,7 +476,7 @@ require_once $base_path . '/componentes/sidebar.php';
       <div class="w-10 h-10"></div>
   </div>
 
-  <div class="w-full max-w-[1600px] mx-auto">
+  <div class="w-full max-w-[1400px] mx-auto">
 
         <?php if ($es_dueno && isset($apunte['estado'])): ?>
             <?php if ($apunte['estado'] === 'pendiente'): ?>
@@ -512,8 +512,8 @@ require_once $base_path . '/componentes/sidebar.php';
                 </div>
 
                 <a href="/perfil/<?= (int)$apunte['id_alumno'] ?>" class="flex items-center gap-3 py-3 border-y border-gray-100 active:bg-gray-50 transition-colors track-seller">
-                    <div class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#54A6D8] font-bold shrink-0 overflow-hidden relative">
-                         <?php 
+                    <div class="w-24 h-24 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#54A6D8] font-bold text-2xl shrink-0 overflow-hidden relative">
+                         <?php
                             $fotoUrlMovil = "";
                             if (!empty($publicador['foto_perfil'])) {
                                 $fotoUrlMovil = "/app/perfil/fotos/" . htmlspecialchars($publicador['foto_perfil']);
@@ -529,9 +529,9 @@ require_once $base_path . '/componentes/sidebar.php';
                         <p class="text-[10px] text-gray-400 font-bold uppercase leading-none mb-1">Publicado por</p>
                         <p class="font-bold text-gray-900 truncate flex items-center gap-1">
                             <?= htmlspecialchars($nombreDisplay) ?>
-                            <i class="fa-solid fa-circle-check text-[#54A6D8] text-[10px]"></i>
+                            <?php if ($publicador_verificado ?? false): ?><i class="fa-solid fa-circle-check text-[#54A6D8] text-[10px]"></i><?php endif; ?>
                         </p>
-                        <p class="text-xs text-gray-500 truncate"><?= htmlspecialchars($institucionPublicador) ?></p>
+                        <p class="text-xs text-gray-500 truncate"><?= htmlspecialchars($institucionPublicador ?: 'Estudiante') ?></p>
                     </div>
                 </a>
             </div>
@@ -649,11 +649,38 @@ require_once $base_path . '/componentes/sidebar.php';
                 </div>
                 <?php endif; ?>
                 
-                <?php if (!empty($descripcion)): ?>
+                <?php if (!empty($descripcion_raw)): ?>
+                    <?php
+                        $desc_ap_larga = mb_strlen($descripcion_raw) > 150;
+                        $desc_ap_corta = $desc_ap_larga ? mb_strimwidth($descripcion_raw, 0, 150, '…') : $descripcion_raw;
+                    ?>
                     <div class="text-sm md:text-base text-gray-600 bg-white p-5 md:p-6 rounded-2xl border border-gray-100">
                         <p class="text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-3">Descripción del Apunte</p>
-                        <p class="leading-relaxed text-gray-700"><?= $descripcion ?></p>
+                        <p id="desc-apunte-corta" class="leading-relaxed text-gray-700"><?= nl2br(htmlspecialchars($desc_ap_corta, ENT_QUOTES, 'UTF-8')) ?></p>
+                        <?php if ($desc_ap_larga): ?>
+                        <p id="desc-apunte-completa" class="hidden leading-relaxed text-gray-700"><?= nl2br(htmlspecialchars($descripcion_raw, ENT_QUOTES, 'UTF-8')) ?></p>
+                        <button type="button" onclick="toggleDescripcionApunte(this)" class="text-[#54A6D8] text-[11px] font-bold mt-1.5 hover:underline outline-none tracking-wide uppercase">Leer más</button>
+                        <?php endif; ?>
                     </div>
+                    <?php if ($desc_ap_larga): ?>
+                    <script>
+                    function toggleDescripcionApunte(btn) {
+                        var corta = document.getElementById('desc-apunte-corta');
+                        var completa = document.getElementById('desc-apunte-completa');
+                        if (!corta || !completa) return;
+                        var expandido = !completa.classList.contains('hidden');
+                        if (expandido) {
+                            completa.classList.add('hidden');
+                            corta.classList.remove('hidden');
+                            btn.innerText = 'Leer más';
+                        } else {
+                            completa.classList.remove('hidden');
+                            corta.classList.add('hidden');
+                            btn.innerText = 'Leer menos';
+                        }
+                    }
+                    </script>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
             
@@ -741,8 +768,8 @@ require_once $base_path . '/componentes/sidebar.php';
                 <!-- PUBLICADOR (DESKTOP) -->
                 <div class="hidden lg:block bg-gray-50 rounded-2xl p-5 border border-gray-100 space-y-4">
                     <a href="/perfil/<?= (int)$apunte['id_alumno'] ?>" class="group flex items-center gap-4 pb-4 w-full transition-colors track-seller">
-                        <div class="w-14 h-14 rounded-full border border-gray-200 bg-white overflow-hidden flex-shrink-0 relative">
-                            <?php 
+                        <div class="w-24 h-24 rounded-full border border-gray-200 bg-white overflow-hidden flex-shrink-0 relative">
+                            <?php
                                 $fotoUrl = "";
                                 if (!empty($publicador['foto_perfil'])) {
                                     $fotoUrl = "/app/perfil/fotos/" . htmlspecialchars($publicador['foto_perfil']);
@@ -751,7 +778,7 @@ require_once $base_path . '/componentes/sidebar.php';
                             <?php if($fotoUrl): ?>
                                 <img src="<?= $fotoUrl ?>" class="w-full h-full object-cover">
                             <?php else: ?>
-                                <div class="w-full h-full flex items-center justify-center bg-blue-50 text-[#54A6D8] font-bold text-lg"><?= $iniciales_publicador ?></div>
+                                <div class="w-full h-full flex items-center justify-center bg-blue-50 text-[#54A6D8] font-bold text-2xl"><?= $iniciales_publicador ?></div>
                             <?php endif; ?>
                         </div>
                         <div class="flex-1 min-w-0">
