@@ -1,9 +1,8 @@
 <?php
-// Resolver de links cortos de compartir: /r/{codigo} → /detalle-servicio/{hash}
-// Público, sin login. Cuenta clicks. No expone el id interno (redirige al hash).
+// Resolver de links cortos de compartir: /r/{codigo} → /servicios/{id}
+// Público, sin login. Cuenta clicks.
 
 require_once __DIR__ . '/conexion.php';
-require_once __DIR__ . '/seguridad_url.php';
 
 $codigo = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['codigo'] ?? '');
 
@@ -24,6 +23,5 @@ $upd->bind_param('s', $codigo);
 $upd->execute();
 $upd->close();
 
-$hash = nubira_encriptar_id($servicio_id);
-header('Location: /detalle-servicio/' . $hash, true, 302);
+header('Location: /servicios/' . $servicio_id, true, 302);
 exit;
