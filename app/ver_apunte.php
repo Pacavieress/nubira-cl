@@ -209,7 +209,7 @@ if ($stmtRec) {
 }
 
 // PUBLICADOR
-$stmtP = $conn->prepare("SELECT nombre, carrera, institucion, foto_perfil, verificacion_estado FROM alumnos WHERE id = ? LIMIT 1");
+$stmtP = $conn->prepare("SELECT al.nombre, al.carrera, al.institucion, al.foto_perfil, al.verificacion_estado, dp.institucion AS institucion_dominio FROM alumnos al LEFT JOIN dominios_permitidos dp ON al.dominio = dp.dominio WHERE al.id = ? LIMIT 1");
 if ($stmtP) {
     $stmtP->bind_param("i", $apunte['id_alumno']);
     $stmtP->execute();
@@ -238,7 +238,7 @@ if (!empty($publicador['nombre'])) {
         $iniciales_publicador = $iniciales_calc;
     }
 }
-$institucionPublicador = ucfirst(strtolower($publicador['institucion'] ?? $apunte['institucion'] ?? ''));
+$institucionPublicador = ucfirst(strtolower($publicador['institucion'] ?: ($publicador['institucion_dominio'] ?: ($apunte['institucion'] ?: ''))));
 $publicador_verificado = ($publicador['verificacion_estado'] === 'aprobado')
     || ($publicador['verificacion_estado'] === null && !empty($publicador['institucion']));
 
@@ -283,7 +283,6 @@ if ($es_promo_activa) {
 $token_seguro = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($id_apunte) : $id_apunte;
 $url_apunte_masked = $base_url . "/apunte/" . $token_seguro; 
 $url_canonical = $url_apunte_masked;
-$share_txt = urlencode("¡Mira este apunte en Nubira.cl! " . $titulo);
 
 /* ===============================
    PERMISOS Y ACCESO
@@ -455,12 +454,13 @@ if (!empty($thumb_url)) {
   <div class="animate-spin h-10 w-10 border-4 border-blue-200 border-t-[#54A6D8] rounded-full"></div>
 </div>
 
-<?php 
-require_once $base_path . '/componentes/header.php'; 
-require_once $base_path . '/componentes/sidebar.php'; 
-?>
+<!-- [NUBIRA 2.0] Ocultar Header global en móvil para experiencia Inmersiva -->
+<div class="hidden md:block">
+    <?php require_once $base_path . '/componentes/header.php'; ?>
+</div>
+<?php require_once $base_path . '/componentes/sidebar.php'; ?>
 
-<main class="pt-20 pb-32 lg:pb-16 lg:ml-64 px-4 w-auto"
+<main class="pt-4 md:pt-20 pb-32 lg:pb-16 lg:ml-64 px-4 w-auto"
       data-track-type="apunte" 
       data-track-id="<?= (int)$id_apunte ?>">
 
@@ -473,7 +473,11 @@ require_once $base_path . '/componentes/sidebar.php';
           <?= icon('arrow-left', 'w-5 h-5 text-gray-700') ?>
       </button>
       <div class="w-10 h-1.5 bg-gray-200 rounded-full"></div>
-      <div class="w-10 h-10"></div>
+      <button type="button"
+          class="js-compartir-apunte flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200/60 shadow-sm active:scale-95 transition-all"
+          aria-label="Compartir">
+          <span class="share-icon"><?= icon('share-outline', 'w-5 h-5') ?></span>
+      </button>
   </div>
 
   <div class="w-full max-w-[1400px] mx-auto">
@@ -692,9 +696,16 @@ require_once $base_path . '/componentes/sidebar.php';
                 
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
                     <div class="hidden lg:block mb-6 pb-6 border-b border-gray-100">
-                        <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3 inline-block border border-gray-200">
-                            Asignatura: <?= htmlspecialchars($apunte['asignatura'] ?? 'Apunte') ?>
-                        </span>
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide inline-block border border-gray-200">
+                                Asignatura: <?= htmlspecialchars($apunte['asignatura'] ?? 'Apunte') ?>
+                            </span>
+                            <button type="button"
+                                    class="js-compartir-apunte inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-[#54A6D8] hover:text-white text-[#54A6D8] border border-gray-200 text-sm font-bold transition-all shrink-0"
+                                    aria-label="Compartir">
+                                <span class="share-icon"><?= icon('share-outline', 'w-4 h-4') ?></span> <span class="share-label">Compartir</span>
+                            </button>
+                        </div>
                         <p class="text-2xl font-bold text-gray-900 leading-tight"><?= $titulo ?></p>
                     </div>
 
@@ -744,25 +755,6 @@ require_once $base_path . '/componentes/sidebar.php';
                             </a>
                         <?php endif; ?>
                     <?php endif; ?>
-
-                    <!-- COMPARTIR -->
-                    <div class="mt-6 pt-6 border-t border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-3">Compartir apunte</p>
-                        <div class="flex flex-wrap justify-center gap-3">
-                            <a href="https://api.whatsapp.com/send?text=<?= $share_txt ?>%20<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#25D366] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#25D366] hover:text-white hover:border-[#25D366] transition-all duration-300" title="Compartir en WhatsApp">
-                                <i class="fab fa-whatsapp text-lg"></i>
-                            </a>
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#1877F2] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-all duration-300" title="Compartir en Facebook">
-                                <i class="fab fa-facebook-f text-lg"></i>
-                            </a>
-                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode($url_apunte_masked) ?>" target="_blank" class="w-11 h-11 bg-gray-50 text-[#0A66C2] border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-[#0A66C2] hover:text-white hover:border-[#0A66C2] transition-all duration-300" title="Compartir en LinkedIn">
-                                <i class="fab fa-linkedin-in text-lg"></i>
-                            </a>
-                            <button id="btn-copiar-enlace" data-url="<?= htmlspecialchars($url_apunte_masked) ?>" class="w-11 h-11 bg-gray-50 text-gray-500 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-600 hover:text-white hover:border-gray-600 transition-all duration-300" title="Copiar Enlace">
-                                <i class="fas fa-link text-lg" id="copy-icon"></i>
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- PUBLICADOR (DESKTOP) -->
@@ -800,10 +792,17 @@ require_once $base_path . '/componentes/sidebar.php';
 
     <!-- RECOMENDADOS -->
     <?php if ($recomendados && $recomendados->num_rows > 0): ?>
-    <section class="mt-12 mb-12 overflow-hidden">
+    <section class="mt-12 mb-12">
         <h3 class="text-lg md:text-xl font-bold text-gray-900 tracking-tight mb-6">Quizás te interese</h3>
-        <div class="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory">
-            <?php while ($rec = $recomendados->fetch_assoc()): 
+
+        <div class="relative group">
+
+            <button onclick="scrollCarrusel('carrusel-recomendados-apuntes', -1)" class="hidden md:flex absolute -left-5 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition">
+                <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+
+        <div id="carrusel-recomendados-apuntes" class="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory">
+            <?php while ($rec = $recomendados->fetch_assoc()):
                 $p_fmt = ($rec['precio'] > 0) ? "$" . number_format($rec['precio'], 0, ',', '.') : "Gratis";
                 $thumb = miniatura_apunte($rec['id'], $rec['portada'] ?? '', $rec['archivo'] ?? '');
                 $rec_hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($rec['id']) : $rec['id'];
@@ -835,6 +834,12 @@ require_once $base_path . '/componentes/sidebar.php';
                 </div>
             </a>
             <?php endwhile; ?>
+        </div>
+
+            <button onclick="scrollCarrusel('carrusel-recomendados-apuntes', 1)" class="hidden md:flex absolute -right-5 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-gray-200 transition">
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+
         </div>
     </section>
     <?php endif; ?>
@@ -986,17 +991,53 @@ require_once $base_path . '/componentes/modal_explora.php';
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } };
 
-// Copiar Enlace
-const bc = document.getElementById('btn-copiar-enlace');
-if(bc) {
-    bc.addEventListener('click', function(e) {
-        e.preventDefault();
-        navigator.clipboard.writeText(this.getAttribute('data-url')).then(() => {
-            const i = document.getElementById('copy-icon');
-            if(i) { i.className = 'fa-solid fa-check text-green-500'; setTimeout(() => i.className = 'fas fa-link', 2000); }
-        });
+// Compartir apunte: Web Share API con fallback a copiar link
+document.querySelectorAll('.js-compartir-apunte').forEach((btn) => {
+    btn.addEventListener('click', async function() {
+        const shareData = { title: <?= json_encode($titulo, JSON_UNESCAPED_UNICODE) ?>, url: window.location.href };
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+                return; // compartido con éxito
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // usuario cerró el sheet nativo sin elegir, no hacer nada más
+                // cualquier otro fallo (ej. no permitido en contexto sin HTTPS): cae al fallback de copiar
+            }
+        }
+        const mostrarLinkCopiado = () => {
+            const iconEl = btn.querySelector('.share-icon');
+            const labelEl = btn.querySelector('.share-label');
+            const originalIcon = iconEl ? iconEl.innerHTML : '';
+            const originalLabel = labelEl ? labelEl.textContent : '';
+            if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-check text-green-500"></i>';
+            if (labelEl) labelEl.textContent = 'Link copiado';
+            setTimeout(() => {
+                if (iconEl) iconEl.innerHTML = originalIcon;
+                if (labelEl) labelEl.textContent = originalLabel;
+            }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                mostrarLinkCopiado();
+                return;
+            } catch (e) {}
+        }
+        // Fallback para contextos sin Clipboard API (ej. HTTP no seguro)
+        try {
+            const tmp = document.createElement('textarea');
+            tmp.value = window.location.href;
+            tmp.style.position = 'fixed';
+            tmp.style.opacity = '0';
+            document.body.appendChild(tmp);
+            tmp.focus();
+            tmp.select();
+            document.execCommand('copy');
+            document.body.removeChild(tmp);
+            mostrarLinkCopiado();
+        } catch (e) {}
     });
-}
+});
 
 // Promo Flash: Descarga con iframe + recarga
 document.addEventListener('DOMContentLoaded', () => {
@@ -1155,6 +1196,12 @@ function cerrarModalAlumno() {
     card.classList.add('translate-y-full', 'scale-95'); modal.classList.add('opacity-0');
     setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300);
 }
+
+// Función global para mover los carruseles
+window.scrollCarrusel = (id, dir) => {
+    const c = document.getElementById(id);
+    if(c) c.scrollBy({ left: dir * 300, behavior: 'smooth' });
+};
 </script>
 
 <?php if (!$es_dueno): ?>
