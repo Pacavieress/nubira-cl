@@ -132,7 +132,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
             <h1 class="text-xl font-extrabold text-slate-900 mb-2 tracking-tight">Ya reportaste este servicio</h1>
             <p class="text-slate-500 text-sm mb-6 leading-relaxed">Nuestro equipo de moderación ya tiene tu reporte en revisión. Tomaremos las acciones necesarias si corresponde.</p>
-            <a href="/detalle-servicio/<?= (int)$servicio_id ?>" class="inline-flex items-center justify-center gap-2 w-full bg-[#54A6D8] text-white rounded-xl font-bold py-3.5 hover:bg-blue-600 transition shadow-sm">
+            <a href="/servicios/<?= (int)$servicio_id ?>" class="inline-flex items-center justify-center gap-2 w-full bg-[#54A6D8] text-white rounded-xl font-bold py-3.5 hover:bg-blue-600 transition shadow-sm">
               <i class="fa-solid fa-arrow-left"></i> Volver al servicio
             </a>
         </div>
@@ -147,7 +147,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             <h1 class="text-2xl font-extrabold text-slate-900 mb-2 tracking-tight relative z-10">¡Reporte enviado!</h1>
             <p class="text-slate-500 text-sm mb-8 leading-relaxed relative z-10">Gracias por ayudarnos a mantener la comunidad segura. Nuestro equipo revisará la publicación en breve.</p>
             
-            <a href="/detalle-servicio/<?= (int)$servicio_id ?>" class="inline-flex items-center justify-center gap-2 w-full bg-slate-800 text-white rounded-xl font-bold py-3.5 hover:bg-slate-700 transition shadow-sm relative z-10 hover:-translate-y-0.5">
+            <a href="/servicios/<?= (int)$servicio_id ?>" class="inline-flex items-center justify-center gap-2 w-full bg-slate-800 text-white rounded-xl font-bold py-3.5 hover:bg-slate-700 transition shadow-sm relative z-10 hover:-translate-y-0.5">
                 <i class="fa-solid fa-arrow-left text-sm"></i> Volver al servicio
             </a>
         </div>
@@ -201,7 +201,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <i class="fa-solid fa-paper-plane"></i> Enviar reporte a moderación
                 </button>
                 
-                <a href="/detalle-servicio/<?= (int)$servicio_id ?>" class="w-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors text-sm font-bold text-center py-3 rounded-xl">
+                <a href="/servicios/<?= (int)$servicio_id ?>" class="w-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors text-sm font-bold text-center py-3 rounded-xl">
                     Cancelar y volver
                 </a>
             </div>

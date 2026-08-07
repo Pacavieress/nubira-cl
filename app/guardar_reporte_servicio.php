@@ -41,6 +41,6 @@ if (!$stmt->execute()) {
 $stmt->close();
 $conn->close();
 
-header("Location: /detalle-servicio/$servicio_id?ok=Tu reporte fue enviado. ¡Gracias por ayudarnos a mantener la comunidad segura!");
+header("Location: /servicios/$servicio_id?ok=Tu reporte fue enviado. ¡Gracias por ayudarnos a mantener la comunidad segura!");
 exit;
 ?>

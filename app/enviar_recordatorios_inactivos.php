@@ -100,7 +100,7 @@ function generar_explorar_data($cmp_explorar, $conn) {
             $titulo = esc(trunc($c['titulo'], 40));
             $inst = esc(strtoupper($c['institucion']));
             $src = imagen_email_servicio($id);
-            $link = "https://nubira.cl/detalle-servicio/$id?src=email&cmp=$cmp_explorar";
+            $link = "https://nubira.cl/servicios/$id?src=email&cmp=$cmp_explorar";
 
             $cards_html .= '
             <td width="33%" style="padding:5px; vertical-align:top;">

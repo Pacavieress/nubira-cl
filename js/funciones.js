@@ -5,16 +5,16 @@ window.sumarVisitaYEntrar = function(id) {
     .then(res => res.json())
     .then(data => {
       if (data.ok) {
-        window.location = '/detalle-servicio/' + id;
+        window.location = '/servicios/' + id;
       } else if (data.error === 'No cuenta visitas del dueño') {
         alert('No puedes sumar visitas a tu propia publicación.');
-        window.location = '/detalle-servicio/' + id;
+        window.location = '/servicios/' + id;
       } else {
-        window.location = '/detalle-servicio/' + id;
+        window.location = '/servicios/' + id;
       }
     })
     .catch(() => {
-      window.location = '/detalle-servicio/' + id;
+      window.location = '/servicios/' + id;
     });
   return false;
 };

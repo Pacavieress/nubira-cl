@@ -10,7 +10,7 @@ $id_real = (int)str_replace("nubi", "", $decoded);
 
 if ($id_real > 0) {
     // Redirige a la raíz, donde está el detalle real
-    header("Location: /detalle-servicio/" . $id_real);
+    header("Location: /servicios/" . $id_real);
 } else {
     header("Location: /vitrina");
 }

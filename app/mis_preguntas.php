@@ -131,7 +131,7 @@ $conn->close();
               <p class="text-sm text-gray-600 truncate">👤 <?= htmlspecialchars($conv['usuario']['nombre']) ?></p>
             </div>
             <div class="flex gap-2 mt-2 sm:mt-0 shrink-0">
-              <a href="/detalle-servicio/<?= (int)$conv['servicio']['id'] ?>"
+              <a href="/servicios/<?= (int)$conv['servicio']['id'] ?>"
                  class="px-3 py-1.5 text-sm font-medium text-white bg-[#54A6D8] rounded-lg hover:bg-blue-600 transition">
                  🔎 Ver servicio
               </a>

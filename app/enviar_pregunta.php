@@ -41,5 +41,5 @@ $stmt->close();
 $conn->close();
 
 // ✅ Redirección segura con parámetro de éxito
-header("Location: /detalle-servicio/$id_servicio?ok=1");
+header("Location: /servicios/$id_servicio?ok=1");
 exit;

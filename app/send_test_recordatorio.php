@@ -287,7 +287,7 @@ else {
             $titulo = esc(trunc($c['titulo']));
             $inst   = strtoupper($c['institucion']);
             $src    = imagen_email_servicio($id);
-            $link_serv = 'https://nubira.cl/detalle-servicio/'.$id.'?src=email&cmp='.$cmp;
+            $link_serv = 'https://nubira.cl/servicios/'.$id.'?src=email&cmp='.$cmp;
 
             $cards_html .= '
     <td align="center" valign="top" width="33%" style="padding:5px;">
@@ -390,7 +390,7 @@ else {
     if (!empty($cards)) {
         foreach ($cards as $c) {
             $txt .= "- ".$c['titulo']." (".$c['institucion'].")\n";
-            $txt .= "  https://nubira.cl/detalle-servicio/".$c['id']."?src=email&cmp=".$cmp."\n";
+            $txt .= "  https://nubira.cl/servicios/".$c['id']."?src=email&cmp=".$cmp."\n";
         }
     } else {
         $txt .= "- Aún no hay servicios para mostrar.\n";
