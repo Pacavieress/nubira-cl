@@ -815,13 +815,13 @@ require_once __DIR__ . '/componentes/header.php';
 
 <main data-track-id="home" data-track-type="vitrina"
       class="pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full mx-auto block">
-    <div class="px-4 md:px-10 max-w-[1600px] mx-auto pt-0 pb-0 md:pt-1 md:pb-2">
+    <div class="px-4 md:px-10 pt-0 pb-0 md:pt-1 md:pb-2">
       <h1 class="sr-only md:not-sr-only text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Tutores, apuntes y clases particulares universitarias en Chile</h1>
     </div>
 
 <?php if (!$is_guest): ?>
     <section id="sec-recientes-wrapper" class="mb-3 md:mb-5 relative animate-fade-in-up transition-all duration-500 delay-100">
-      <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+      <div class="flex items-end justify-between mb-3 px-4 md:px-10">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Sigue donde lo dejaste</h2>
         </div>
         <div class="relative group">
@@ -844,7 +844,7 @@ require_once __DIR__ . '/componentes/header.php';
 <?php endif; ?>
 
 <section class="mb-3 md:mb-5 relative ">
-<div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
+<div class="flex items-end justify-between mb-3 px-4 md:px-10 gap-3">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]"><?= $titulo_servicios ?></h2>
         <a href="/servicios" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
@@ -1109,7 +1109,7 @@ if ($mostrar_seccion_rapidos && $res_rapidos && $res_rapidos->num_rows > 0): ?>
 <?php endif; ?>
 
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
- <div class="mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+ <div class="mb-3 px-4 md:px-10">
     <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Tutorías nuevas</h2>
 </div>
     
@@ -1231,7 +1231,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
 </section>
 
 <section class="mb-3 md:mb-5 relative">
-<div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+<div class="flex items-center justify-between mb-3 px-4 md:px-10">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]"><?= $titulo_apuntes ?></h2>
         <a href="/apuntes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
@@ -1337,7 +1337,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
 
 <?php if ($res_clases_paes && $res_clases_paes->num_rows > 0): ?>
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
- <div class="flex items-center justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+ <div class="flex items-center justify-between mb-3 px-4 md:px-10">
     <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">PAES</h2>
     <a href="/clases/paes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
 </div>
@@ -1433,7 +1433,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
 
  <?php if ($tiene_ofertas_activas): ?>
      <section class="mb-3 md:mb-5 relative">
-           <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto">
+           <div class="flex items-end justify-between mb-3 px-4 md:px-10">
                 <div class="flex items-center gap-2">
                     <div>
                         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em] leading-none">Precios de última hora</h2>
