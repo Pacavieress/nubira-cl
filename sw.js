@@ -57,12 +57,19 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // NetworkFirst para HTML — páginas PHP siempre frescas
+    // NetworkFirst para HTML — páginas PHP siempre frescas.
+    // Timeout de 6s: si la red no responde (común en datos móviles), aborta y
+    // cae al fallback en vez de dejar la navegación colgada indefinidamente.
     if (event.request.method === 'GET' && event.request.headers.get('accept')?.includes('text/html')) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
         event.respondWith(
-            fetch(event.request).catch(() =>
-                caches.match(event.request).then(cached => cached || Response.error())
-            )
+            fetch(event.request, { signal: controller.signal })
+                .then(response => { clearTimeout(timeoutId); return response; })
+                .catch(() => {
+                    clearTimeout(timeoutId);
+                    return caches.match(event.request).then(cached => cached || Response.error());
+                })
         );
         return;
     }
