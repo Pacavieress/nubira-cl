@@ -4,19 +4,37 @@ require_once __DIR__ . '/conexion.php';
 
 if (!isset($_SESSION['usuario_id'])) { header("Location: /login"); exit; }
 
+// [NUBIRA 2.0] Auto-migración (mismo patrón que login.php) — cubre el caso de una
+// sesión ya activa que llega directo acá sin volver a pasar por login.php.
+try { $conn->query("ALTER TABLE alumnos ADD COLUMN intencion_uso ENUM('vender','comprar') DEFAULT NULL"); } catch (Throwable $e) {}
+
 $usuario_id = (int)$_SESSION['usuario_id'];
 $nombre = htmlspecialchars($_SESSION['usuario_nombre'] ?? '', ENT_QUOTES, 'UTF-8');
 
 // Cargar datos actuales
-$stmt = $conn->prepare("SELECT bio, tipo, carrera, universidad, anio_egreso, anios_experiencia FROM alumnos WHERE id = ? LIMIT 1");
+$stmt = $conn->prepare("SELECT bio, tipo, carrera, universidad, anio_egreso, anios_experiencia, intencion_uso, institucion, dominio FROM alumnos WHERE id = ? LIMIT 1");
 $stmt->bind_param("i", $usuario_id);
 $stmt->execute();
-$stmt->bind_result($bio_actual, $tipo_actual, $carrera_actual, $univ_actual, $anio_eg_actual, $anios_exp_actual);
+$stmt->bind_result($bio_actual, $tipo_actual, $carrera_actual, $univ_actual, $anio_eg_actual, $anios_exp_actual, $intencion_actual, $institucion_actual, $dominio_actual);
 $stmt->fetch();
 $stmt->close();
 
-// Si el perfil ya tiene bio, no quedar atrapado aquí
-if (!empty(trim($bio_actual ?? ''))) {
+// [NUBIRA 2.0] Prellenar institución para usuarios de dominio institucional — misma
+// fuente (dominios_permitidos) que usa el resto del sitio para mostrar la institución.
+if (empty(trim($institucion_actual ?? '')) && !empty($dominio_actual)) {
+    $stmt_dom = $conn->prepare("SELECT institucion FROM dominios_permitidos WHERE dominio = ?");
+    $stmt_dom->bind_param("s", $dominio_actual);
+    $stmt_dom->execute();
+    $stmt_dom->bind_result($inst_dom);
+    if ($stmt_dom->fetch()) { $institucion_actual = $inst_dom; }
+    $stmt_dom->close();
+}
+
+// Si el perfil ya está completo (bio llena = ruta vender, o institución llena con
+// intención "comprar" = ruta comprar), no quedar atrapado aquí.
+$ya_completo = !empty(trim($bio_actual ?? ''))
+    || ($intencion_actual === 'comprar' && !empty(trim($institucion_actual ?? '')));
+if ($ya_completo) {
     header("Location: /vitrina");
     exit;
 }
@@ -33,7 +51,38 @@ $errores  = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals($csrf, $_POST['csrf'] ?? '')) {
         $errores[] = 'Sesión inválida. Recarga la página e intenta nuevamente.';
-    } else {
+
+    } elseif (($_POST['paso'] ?? '') === 'elegir') {
+        // Paso 1: elegir intención de uso
+        $intencion_post = $_POST['intencion_uso'] ?? '';
+        if (!in_array($intencion_post, ['vender', 'comprar'], true)) {
+            $errores[] = 'Selecciona una opción válida.';
+        } else {
+            $stmt = $conn->prepare("UPDATE alumnos SET intencion_uso = ? WHERE id = ?");
+            $stmt->bind_param("si", $intencion_post, $usuario_id);
+            $stmt->execute();
+            $stmt->close();
+            $intencion_actual = $intencion_post;
+        }
+
+    } elseif (($_POST['paso'] ?? '') === 'guardar' && $intencion_actual === 'comprar') {
+        // Paso 2, ruta "comprar": solo institución
+        $institucion_post = trim(strip_tags($_POST['institucion'] ?? ''));
+        if (empty($institucion_post)) {
+            $errores[] = 'Cuéntanos en qué institución estudias.';
+        } else {
+            $stmt = $conn->prepare("UPDATE alumnos SET institucion = ? WHERE id = ?");
+            $stmt->bind_param("si", $institucion_post, $usuario_id);
+            if ($stmt->execute()) {
+                $guardado = true;
+            } else {
+                $errores[] = 'Error al guardar. Intenta nuevamente.';
+            }
+            $stmt->close();
+        }
+
+    } elseif (($_POST['paso'] ?? '') === 'guardar' && $intencion_actual === 'vender') {
+        // Paso 2, ruta "vender": formulario completo (sin cambios respecto al original)
         $tipos_validos = ['egresado', 'profesor', 'particular'];
         $tipo     = trim($_POST['tipo'] ?? '');
         $carrera  = trim(strip_tags($_POST['carrera'] ?? ''));
@@ -90,14 +139,88 @@ $tipo_form = $_POST['tipo'] ?? $tipo_actual ?? '';
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
           </svg>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900 mb-3 tracking-tight">¡Perfil enviado!</h1>
-        <p class="text-gray-500 text-sm leading-relaxed mb-8">
-          Recibimos tu información. El equipo de Nubira la revisará en las próximas 24 horas y te avisaremos por correo.
-        </p>
+        <?php if ($intencion_actual === 'comprar'): ?>
+          <h1 class="text-2xl font-bold text-gray-900 mb-3 tracking-tight">¡Listo!</h1>
+          <p class="text-gray-500 text-sm leading-relaxed mb-8">
+            Ya puedes buscar tutores y apuntes en Nubira.
+          </p>
+        <?php else: ?>
+          <h1 class="text-2xl font-bold text-gray-900 mb-3 tracking-tight">¡Listo!</h1>
+          <p class="text-gray-500 text-sm leading-relaxed mb-8">
+            Ya puedes publicar tus clases o apuntes en Nubira.
+          </p>
+        <?php endif; ?>
         <a href="/vitrina" class="block w-full bg-[#54A6D8] hover:bg-[#4592c0] text-white font-bold py-3.5 rounded-xl transition-all text-center text-sm">
           Ir a la vitrina
         </a>
       </div>
+
+    <?php elseif (empty($intencion_actual)): ?>
+
+      <h1 class="text-2xl font-bold text-gray-900 mb-1 tracking-tight">¿Para qué vienes a Nubira?</h1>
+      <p class="text-sm text-gray-500 mb-8 leading-relaxed">
+        <?= $nombre ? "Hola $nombre. Elige" : "Elige" ?> la opción que mejor te describe.
+      </p>
+
+      <?php if (!empty($errores)): ?>
+        <div class="mb-6 bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1">
+          <?php foreach ($errores as $e): ?>
+            <p class="text-sm text-red-700 font-medium"><?= htmlspecialchars($e) ?></p>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <form method="POST" class="space-y-3">
+        <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
+        <input type="hidden" name="paso" value="elegir">
+
+        <button type="submit" name="intencion_uso" value="vender"
+                class="w-full text-left bg-gray-50 hover:bg-blue-50 border-2 border-gray-200 hover:border-[#54A6D8] rounded-2xl px-5 py-4 transition-all">
+          <span class="block font-bold text-gray-900 text-sm">Quiero enseñar / vender</span>
+          <span class="block text-xs text-gray-500 mt-0.5">Publicar clases o apuntes y generar ingresos</span>
+        </button>
+
+        <button type="submit" name="intencion_uso" value="comprar"
+                class="w-full text-left bg-gray-50 hover:bg-blue-50 border-2 border-gray-200 hover:border-[#54A6D8] rounded-2xl px-5 py-4 transition-all">
+          <span class="block font-bold text-gray-900 text-sm">Solo quiero comprar / contratar</span>
+          <span class="block text-xs text-gray-500 mt-0.5">Buscar tutores o apuntes para estudiar</span>
+        </button>
+      </form>
+
+    <?php elseif ($intencion_actual === 'comprar'): ?>
+
+      <h1 class="text-2xl font-bold text-gray-900 mb-1 tracking-tight">Cuéntanos dónde estudias</h1>
+      <p class="text-sm text-gray-500 mb-8 leading-relaxed">
+        <?= $nombre ? "Hola $nombre. Esto" : "Esto" ?> nos ayuda a verificar tu cuenta más rápido.
+      </p>
+
+      <?php if (!empty($errores)): ?>
+        <div class="mb-6 bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1">
+          <?php foreach ($errores as $e): ?>
+            <p class="text-sm text-red-700 font-medium"><?= htmlspecialchars($e) ?></p>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <form method="POST" class="space-y-5">
+        <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
+        <input type="hidden" name="paso" value="guardar">
+
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+            Institución <span class="text-red-400">*</span>
+          </label>
+          <input type="text" name="institucion" required maxlength="100"
+                 value="<?= htmlspecialchars($_POST['institucion'] ?? $institucion_actual ?? '') ?>"
+                 placeholder="Ej: USACH, UC, PUCV"
+                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] outline-none transition">
+        </div>
+
+        <button type="submit"
+                class="w-full bg-[#54A6D8] hover:bg-[#4592c0] text-white font-bold py-3.5 rounded-xl transition-all text-sm mt-2">
+          Continuar
+        </button>
+      </form>
 
     <?php else: ?>
 
@@ -116,6 +239,7 @@ $tipo_form = $_POST['tipo'] ?? $tipo_actual ?? '';
 
       <form method="POST" class="space-y-5">
         <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
+        <input type="hidden" name="paso" value="guardar">
 
         <div>
           <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">

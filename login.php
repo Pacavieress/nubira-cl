@@ -8,6 +8,7 @@ try { $conn->query("ALTER TABLE alumnos ADD COLUMN verificacion_estado VARCHAR(2
 try { $conn->query("ALTER TABLE alumnos ADD COLUMN universidad VARCHAR(100) DEFAULT NULL"); } catch (Throwable $e) {}
 try { $conn->query("ALTER TABLE alumnos ADD COLUMN anio_egreso INT DEFAULT NULL"); } catch (Throwable $e) {}
 try { $conn->query("ALTER TABLE alumnos ADD COLUMN anios_experiencia INT DEFAULT NULL"); } catch (Throwable $e) {}
+try { $conn->query("ALTER TABLE alumnos ADD COLUMN intencion_uso ENUM('vender','comprar') DEFAULT NULL"); } catch (Throwable $e) {}
 
 // 0. CAPTURAR REDIRECCIÓN (LAZY REGISTRATION)
 $redir_destino = $_GET['redir'] ?? $_SESSION['redirigir_despues_login'] ?? '';
@@ -59,7 +60,11 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
         $_SESSION['dominio']             = $dominio;
         $_SESSION['institucion']         = $institucion;
         $_SESSION['verificacion_estado'] = $usuario_auto['verificacion_estado'] ?? null;
-        $_SESSION['perfil_completo']     = !empty(trim($usuario_auto['bio'] ?? ''));
+        // [NUBIRA 2.0] "Completo" es bio llena (ruta vender) O institución llena + eligió
+        // comprar (ruta comprar, no requiere bio) — sin esto, la ruta comprar nunca se
+        // marcaría completa y login volvería a mandar a /completar_perfil en cada sesión.
+        $_SESSION['perfil_completo']     = !empty(trim($usuario_auto['bio'] ?? ''))
+            || (($usuario_auto['intencion_uso'] ?? '') === 'comprar' && !empty(trim($usuario_auto['institucion'] ?? '')));
 
         // --- [NUBIRA 2.0] CACHÉ DE TUTOR Y SUGERENCIAS (AUTO-LOGIN) ---
         $_SESSION['notif_sugerencia_vista'] = (int)($usuario_auto['notif_sugerencia_vista'] ?? 0);
@@ -205,7 +210,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // --- REDIRECCIÓN POST-LOGIN SEGÚN ESTADO DE VERIFICACIÓN ---
                         $_SESSION['verificacion_estado'] = $usuario['verificacion_estado'] ?? null;
-                        $_SESSION['perfil_completo']     = !empty(trim($usuario['bio'] ?? ''));
+                        // [NUBIRA 2.0] Mismo criterio que el bloque de auto-login (remember_token) más arriba.
+                        $_SESSION['perfil_completo']     = !empty(trim($usuario['bio'] ?? ''))
+                            || (($usuario['intencion_uso'] ?? '') === 'comprar' && !empty(trim($usuario['institucion'] ?? '')));
                         $est = $_SESSION['verificacion_estado'];
 
                         if ($est === 'pendiente') {
