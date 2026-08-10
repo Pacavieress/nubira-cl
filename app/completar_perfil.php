@@ -305,7 +305,7 @@ $tipo_form = $_POST['tipo'] ?? $tipo_actual ?? '';
 
         <button type="submit"
                 class="w-full bg-[#54A6D8] hover:bg-[#4592c0] text-white font-bold py-3.5 rounded-xl transition-all text-sm mt-2">
-          Enviar para revisión
+          Guardar y continuar
         </button>
       </form>
 
