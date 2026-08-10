@@ -77,6 +77,88 @@ if ($stmt) {
     $stmt->close();
 }
 
+// ── Período anterior (mismos 30 días, corridos 30 días atrás) para comparación ─────
+
+$stats_prev = ['visitas' => 0, 'tiempo_promedio' => 0, 'pct_leyo' => 0.0, 'hubo_datos' => false];
+
+$stmt = $conn->prepare("
+    SELECT
+        COUNT(*) as total,
+        COALESCE(ROUND(AVG(tiempo_segundos)), 0) as tiempo_prom,
+        COALESCE(ROUND(SUM(leyo_completo) / COUNT(*) * 100, 1), 0) as pct_leyo
+    FROM vistas_detalle
+    WHERE tipo = ? AND publicacion_id = ?
+      AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 60 DAY)
+      AND fecha_inicio <  DATE_SUB(NOW(), INTERVAL 30 DAY)");
+if ($stmt) {
+    $stmt->bind_param("si", $tipo, $id);
+    $stmt->execute();
+    $r = $stmt->get_result()->fetch_assoc();
+    $stats_prev['visitas']         = (int)$r['total'];
+    $stats_prev['tiempo_promedio'] = (int)$r['tiempo_prom'];
+    $stats_prev['pct_leyo']        = (float)$r['pct_leyo'];
+    $stats_prev['hubo_datos']      = $stats_prev['visitas'] > 0;
+    $stmt->close();
+}
+
+// ── Funnel de conversión (solo visitas identificadas, últimos 30 días) ─────────────
+// [NUBIRA 2.0] "¿Tiene ALGUNA conversación/contrato sobre esta publicación?" (correlación),
+// no "¿el chat ocurrió cronológicamente después de ESTA visita puntual?" (causalidad
+// estricta) — un visitante puede haber visitado varias veces; exigir orden temporal
+// exacto es frágil y no cambia el mensaje honesto que ya da la etiqueta del bloque.
+$funnel = ['visitas_id' => 0, 'chatearon' => 0, 'contrataron' => 0, 'compraron' => 0];
+
+$stmt = $conn->prepare("
+    SELECT COUNT(DISTINCT user_id) as total FROM vistas_detalle
+    WHERE tipo = ? AND publicacion_id = ? AND user_id IS NOT NULL
+      AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+if ($stmt) {
+    $stmt->bind_param("si", $tipo, $id);
+    $stmt->execute();
+    $funnel['visitas_id'] = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+    $stmt->close();
+}
+
+if ($funnel['visitas_id'] > 0) {
+    if ($tipo === 'servicio') {
+        $stmt = $conn->prepare("
+            SELECT COUNT(DISTINCT user_id) as total FROM vistas_detalle
+            WHERE tipo = 'servicio' AND publicacion_id = ? AND user_id IS NOT NULL
+              AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+              AND user_id IN (SELECT comprador_id FROM conversaciones WHERE servicio_id = ?)");
+        if ($stmt) {
+            $stmt->bind_param("ii", $id, $id);
+            $stmt->execute();
+            $funnel['chatearon'] = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+            $stmt->close();
+        }
+
+        $stmt = $conn->prepare("
+            SELECT COUNT(DISTINCT user_id) as total FROM vistas_detalle
+            WHERE tipo = 'servicio' AND publicacion_id = ? AND user_id IS NOT NULL
+              AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+              AND user_id IN (SELECT comprador_id FROM contratos WHERE servicio_id = ?)");
+        if ($stmt) {
+            $stmt->bind_param("ii", $id, $id);
+            $stmt->execute();
+            $funnel['contrataron'] = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+            $stmt->close();
+        }
+    } else {
+        $stmt = $conn->prepare("
+            SELECT COUNT(DISTINCT user_id) as total FROM vistas_detalle
+            WHERE tipo = 'apunte' AND publicacion_id = ? AND user_id IS NOT NULL
+              AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+              AND user_id IN (SELECT comprador_id FROM ventas_apuntes WHERE apunte_id = ?)");
+        if ($stmt) {
+            $stmt->bind_param("ii", $id, $id);
+            $stmt->execute();
+            $funnel['compraron'] = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+            $stmt->close();
+        }
+    }
+}
+
 // ── Visitas por día (sparkline) ────────────────────────────────────────────
 
 $daily_raw = [];
@@ -161,6 +243,36 @@ if ($stmt) {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+// [NUBIRA 2.0] Delta relativo (%) vs. período anterior. anterior=0 no tiene base
+// matemática para un porcentaje real — en vez de forzar un "+100%" engañoso,
+// se marca como "Nuevo" sin número.
+function det_delta_pct($actual, $anterior): ?array {
+    $actual = (float)$actual; $anterior = (float)$anterior;
+    if ($anterior <= 0) return $actual > 0 ? ['dir' => 'up', 'label' => 'Nuevo'] : null;
+    $pct = round((($actual - $anterior) / $anterior) * 100);
+    if ($pct === 0.0 || $pct === 0) return ['dir' => 'flat', 'label' => '0%'];
+    return ['dir' => $pct > 0 ? 'up' : 'down', 'label' => ($pct > 0 ? '+' : '') . $pct . '%'];
+}
+
+// [NUBIRA 2.0] Delta en puntos porcentuales — para comparar un valor que YA es un
+// porcentaje (ej. % leyó completo). Pasar de 40% a 50% es "+10 pts", no "+25%".
+function det_delta_pts(float $actual, float $anterior, bool $huboAnterior): ?array {
+    if (!$huboAnterior) return null;
+    $diff = round($actual - $anterior, 1);
+    if ($diff == 0) return ['dir' => 'flat', 'label' => '0 pts'];
+    return ['dir' => $diff > 0 ? 'up' : 'down', 'label' => ($diff > 0 ? '+' : '') . $diff . ' pts'];
+}
+
+// [NUBIRA 2.0] Chip de flecha/badge de delta — mismo look en todos los bloques que comparan período.
+function det_delta_badge(?array $delta): string {
+    if ($delta === null) return '';
+    $colores = ['up' => 'text-green-600 bg-green-50', 'down' => 'text-red-500 bg-red-50', 'flat' => 'text-gray-400 bg-gray-50'];
+    $flechas = ['up' => '↑', 'down' => '↓', 'flat' => '·'];
+    $cls = $colores[$delta['dir']] ?? $colores['flat'];
+    $fl  = $flechas[$delta['dir']] ?? '';
+    return '<span class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ' . $cls . '">' . $fl . ' ' . htmlspecialchars($delta['label']) . '</span>';
+}
+
 function det_format_tiempo(int $s): string {
     if ($s <= 0) return '—';
     if ($s < 60)  return "{$s}s";
@@ -204,6 +316,25 @@ if ($tipo === 'servicio') {
     $img_url = obtenerMiniaturaApunte($pub['id'], $pub['portada'] ?? '', $pub['preview'] ?? '', $pub['archivo'] ?? '');
     $badge_lbl  = 'APUNTE';
     $edit_href  = '/app/editar_apunte.php?id=' . $pub['id'];
+}
+
+// ── Deltas vs. período anterior ─────────────────────────────────────────────
+
+$delta_visitas = det_delta_pct($stats['visitas_30d'], $stats_prev['visitas']);
+$delta_tiempo  = det_delta_pct($stats['tiempo_promedio'], $stats_prev['tiempo_promedio']);
+$delta_leyo    = det_delta_pts($stats['pct_leyo'], $stats_prev['pct_leyo'], $stats_prev['hubo_datos']);
+
+// ── Etapas del funnel a mostrar (3 para servicios, 2 para apuntes) ─────────
+
+$funnel_etapas = [];
+if ($funnel['visitas_id'] > 0) {
+    $funnel_etapas[] = ['label' => 'Visitas identificadas', 'valor' => $funnel['visitas_id']];
+    if ($tipo === 'servicio') {
+        $funnel_etapas[] = ['label' => 'Iniciaron chat', 'valor' => $funnel['chatearon']];
+        $funnel_etapas[] = ['label' => 'Contrataron', 'valor' => $funnel['contrataron']];
+    } else {
+        $funnel_etapas[] = ['label' => 'Compraron', 'valor' => $funnel['compraron']];
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -265,27 +396,69 @@ require_once $app_dir . '/componentes/sidebar.php';
       </div>
     </div>
 
-    <!-- Bloque 1: Stats principales -->
+    <!-- Hero: visitas totales (todas, incluidas anónimas) -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 text-center">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Visitas totales · últimos 30 días</p>
+      <div class="flex items-center justify-center gap-2">
+        <span class="text-4xl font-extrabold text-gray-900 leading-none"><?= number_format($stats['visitas_30d']) ?></span>
+        <?= det_delta_badge($delta_visitas) ?>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-2">Incluye visitas anónimas y de usuarios con sesión iniciada</p>
+    </div>
+
+    <!-- Funnel de conversión (solo visitas identificadas) -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <div class="flex items-center flex-wrap gap-1.5 mb-3">
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Cómo avanzan hacia contratarte</p>
+        <span class="text-[9px] font-semibold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full border border-gray-100">Basado en visitas identificadas</span>
+      </div>
+      <?php if (empty($funnel_etapas)): ?>
+        <p class="text-xs text-gray-400">Aún no hay suficientes visitas identificadas (de usuarios con sesión iniciada) para calcular esto.</p>
+      <?php else: ?>
+        <?php $base = $funnel_etapas[0]['valor'] ?: 1; foreach ($funnel_etapas as $i => $et):
+            $pct_barra = round($et['valor'] / $base * 100);
+        ?>
+        <div class="mb-3 last:mb-0">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-gray-600"><?= htmlspecialchars($et['label']) ?></span>
+            <span class="text-xs font-semibold text-gray-700"><?= $et['valor'] ?></span>
+          </div>
+          <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-[#54A6D8] rounded-full" style="width:<?= $pct_barra ?>%"></div>
+          </div>
+          <?php if ($i > 0):
+              $valor_anterior = $funnel_etapas[$i - 1]['valor'];
+              $pct_conversion = $valor_anterior > 0 ? round($et['valor'] / $valor_anterior * 100) : 0;
+          ?>
+          <p class="text-[10px] text-gray-400 mt-1"><?= $pct_conversion ?>% de la etapa anterior</p>
+          <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+
+    <!-- Resumen: tiempo promedio, % leyó completo, visitas histórico -->
     <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
       <div class="px-4 pt-4 pb-2">
         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Resumen</p>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-50 border-t border-gray-50">
-        <div class="flex flex-col items-center justify-center px-3 py-4 text-center">
-          <span class="text-2xl font-extrabold text-gray-900 leading-none"><?= number_format($stats['visitas_30d']) ?></span>
-          <span class="text-[11px] text-gray-400 mt-1 leading-tight">Visitas<br>30 días</span>
-        </div>
-        <div class="flex flex-col items-center justify-center px-3 py-4 text-center">
+      <div class="grid grid-cols-3 divide-x divide-gray-50 border-t border-gray-50">
+        <div class="flex flex-col items-center justify-center px-3 py-4 text-center gap-1">
           <span class="text-2xl font-extrabold text-gray-900 leading-none"><?= det_format_tiempo($stats['tiempo_promedio']) ?></span>
-          <span class="text-[11px] text-gray-400 mt-1 leading-tight">Tiempo<br>promedio</span>
+          <span class="text-[11px] text-gray-400 leading-tight">Tiempo<br>promedio</span>
+          <?= det_delta_badge($delta_tiempo) ?>
         </div>
-        <div class="flex flex-col items-center justify-center px-3 py-4 text-center">
+        <div class="flex flex-col items-center justify-center px-3 py-4 text-center gap-1">
           <span class="text-2xl font-extrabold text-gray-900 leading-none"><?= number_format($stats['pct_leyo'], 1) ?>%</span>
-          <span class="text-[11px] text-gray-400 mt-1 leading-tight">Leyó<br>completo</span>
+          <span class="text-[11px] text-gray-400 leading-tight">Leyó<br>completo</span>
+          <?= det_delta_badge($delta_leyo) ?>
         </div>
-        <div class="flex flex-col items-center justify-center px-3 py-4 text-center bg-gray-50/70">
+        <div class="flex flex-col items-center justify-center px-3 py-4 text-center gap-1 bg-gray-50/70">
           <span class="text-2xl font-extrabold text-gray-900 leading-none"><?= number_format($stats['visitas_total']) ?></span>
-          <span class="text-[11px] text-gray-400 mt-1 leading-tight">Visitas<br>histórico</span>
+          <span class="text-[11px] text-gray-400 leading-tight">Visitas<br>histórico</span>
+          <?php if ($stats['visitas_30d'] > 0): ?>
+          <span class="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full text-gray-500 bg-gray-100">+<?= number_format($stats['visitas_30d']) ?> últimos 30d</span>
+          <?php endif; ?>
         </div>
       </div>
     </div>

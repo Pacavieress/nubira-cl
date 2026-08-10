@@ -53,6 +53,7 @@ usort($publicaciones, fn($a, $b) => $b['fecha_orden'] - $a['fecha_orden']);
 // ── Visitas 30d por publicación (agregado por tipo, evita N+1) ─────────────
 
 $visitas_map = [];
+$visitas_prev_map = [];
 foreach (['servicio', 'apunte'] as $tipo_v) {
     $ids = array_values(array_map(fn($p) => (int)$p['id'], array_filter($publicaciones, fn($p) => $p['tipo'] === $tipo_v)));
     if (empty($ids)) continue;
@@ -72,10 +73,31 @@ foreach (['servicio', 'apunte'] as $tipo_v) {
         }
         $stmt_v->close();
     }
+
+    // [NUBIRA 2.0] Mismo período, corrido 30 días atrás — solo para la flecha de tendencia.
+    // Mismo patrón batcheado que arriba (evita N+1) y misma lista de $ids.
+    $stmt_p = $conn->prepare("SELECT publicacion_id, COUNT(*) as total FROM vistas_detalle WHERE tipo = ? AND publicacion_id IN ($placeholders) AND fecha_inicio >= DATE_SUB(NOW(), INTERVAL 60 DAY) AND fecha_inicio < DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY publicacion_id");
+    if ($stmt_p) {
+        $types  = 's' . str_repeat('i', count($ids));
+        $params = array_merge([$types], [$tipo_v], $ids);
+        $tmp = [];
+        foreach ($params as $k => $v) $tmp[$k] = &$params[$k];
+        call_user_func_array([$stmt_p, 'bind_param'], $tmp);
+        $stmt_p->execute();
+        $res_p = $stmt_p->get_result();
+        while ($row = $res_p->fetch_assoc()) {
+            $visitas_prev_map[$tipo_v . ':' . $row['publicacion_id']] = (int)$row['total'];
+        }
+        $stmt_p->close();
+    }
 }
 
 foreach ($publicaciones as &$pub) {
     $pub['visitas_30d'] = $visitas_map[$pub['tipo'] . ':' . $pub['id']] ?? 0;
+    $anterior = $visitas_prev_map[$pub['tipo'] . ':' . $pub['id']] ?? 0;
+    if ($pub['visitas_30d'] > $anterior)      $pub['tendencia'] = 'up';
+    elseif ($pub['visitas_30d'] < $anterior)  $pub['tendencia'] = 'down';
+    else                                       $pub['tendencia'] = null; // iguales (incluye 0 vs 0) — sin flecha, no inventar movimiento
 }
 unset($pub);
 ?>
@@ -159,6 +181,11 @@ require_once $app_dir . '/componentes/sidebar.php';
         <p class="text-xs text-gray-400 mt-0.5">
           <?php if (!empty($pub['precio'])): ?>CLP <?= number_format((int)$pub['precio'], 0, ',', '.') ?> &nbsp;·&nbsp; <?php endif; ?>
           <?= $pub['visitas_30d'] ?> visitas · últimos 30 días
+          <?php if ($pub['tendencia'] === 'up'): ?>
+            <span class="text-green-600 font-bold">↑</span>
+          <?php elseif ($pub['tendencia'] === 'down'): ?>
+            <span class="text-red-500 font-bold">↓</span>
+          <?php endif; ?>
         </p>
       </div>
 
