@@ -63,18 +63,21 @@ $institucion         = $_SESSION['institucion'] ?? '';
 $correo              = $_SESSION['email'] ?? '';
 
 // Fallback: si la sesión no trae institución real (dominio no institucional, cuenta express,
-// o el placeholder 'Excepción Gmail' de login.php), usar la universidad que el propio usuario
-// ya escribió en su perfil (alumnos.universidad), normalizada con el mismo diccionario de
-// institucion.php — sin HTML-escape (se guarda texto plano en BD, no para mostrar), con 50
+// o el placeholder 'Excepción Gmail' de login.php), usar lo que el propio usuario ya escribió
+// en su perfil. Primero alumnos.institucion (la que llena la ruta "comprar" de
+// completar_perfil.php y la que usa el resto del sitio, ej. busqueda.php/vitrina.php vía
+// COALESCE(dp.institucion, a.institucion)); si está vacía, alumnos.universidad como respaldo
+// (tutores con ese campo lleno de antes de este cambio). Normalizado con el mismo diccionario
+// de institucion.php — sin HTML-escape (se guarda texto plano en BD, no para mostrar), con 50
 // caracteres de tope (igual al ancho real de la columna servicios.institucion).
 if ($institucion === '' || $institucion === 'Excepción Gmail') {
-    $stmt_univ = $conn->prepare("SELECT universidad FROM alumnos WHERE id = ? LIMIT 1");
+    $stmt_univ = $conn->prepare("SELECT COALESCE(NULLIF(institucion, ''), NULLIF(universidad, '')) AS institucion_perfil FROM alumnos WHERE id = ? LIMIT 1");
     $stmt_univ->bind_param("i", $usuario_id);
     $stmt_univ->execute();
-    $universidad_perfil = trim((string)($stmt_univ->get_result()->fetch_assoc()['universidad'] ?? ''));
+    $institucion_perfil = trim((string)($stmt_univ->get_result()->fetch_assoc()['institucion_perfil'] ?? ''));
     $stmt_univ->close();
-    if ($universidad_perfil !== '') {
-        $institucion = abreviar_institucion($universidad_perfil, 50, false);
+    if ($institucion_perfil !== '') {
+        $institucion = abreviar_institucion($institucion_perfil, 50, false);
     }
 }
 
