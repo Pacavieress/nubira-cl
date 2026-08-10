@@ -26,9 +26,15 @@ require_once $app_dir . '/helpers/institucion.php';
 
 // 2. CANDADO ESTRICTO (Visitantes fuera)
 if (function_exists('proteger_ruta')) {
-    proteger_ruta(); 
+    proteger_ruta();
 } else {
     die("Error de seguridad: No se pudo cargar el control de sesión.");
+}
+
+// [NUBIRA 2.0] Quien eligió "solo comprar" en completar_perfil.php no publica servicios.
+if (($_SESSION['intencion_uso'] ?? '') === 'comprar') {
+    header("Location: /vitrina");
+    exit;
 }
 
 // 3. CONEXIÓN

@@ -22,13 +22,25 @@ $es_mensaje = (strpos($uri_actual, 'bandeja') !== false || strpos($uri_actual, '
 $uid_nb = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : 0;
 $es_visita_nb = ($uid_nb === 0);
 
+// [NUBIRA SHIELD] Link de perfil con hash, no ID numérico crudo (evita el 301 de perfil.php)
+if (!function_exists('nubira_encriptar_id')) {
+    $ruta_shield_nb = __DIR__ . '/../seguridad_url.php';
+    if (file_exists($ruta_shield_nb)) require_once $ruta_shield_nb;
+}
+$perfil_hash_nb = ($uid_nb > 0 && function_exists('nubira_encriptar_id')) ? nubira_encriptar_id($uid_nb) : $uid_nb;
+
 // Destinos Dinámicos (Lazy Registration)
 $link_home   = '/vitrina';
 $link_chat   = $es_visita_nb ? '/login?redir=' . urlencode('/bandeja-entrada') : '/bandeja-entrada';
-$link_perfil = $es_visita_nb ? '/login?redir=' . urlencode('/perfil') : '/perfil/' . $uid_nb;
+$link_perfil = $es_visita_nb ? '/login?redir=' . urlencode('/perfil') : '/perfil/' . $perfil_hash_nb;
 
 // Lógica del Botón Publicar
 $onclick_publicar = $es_visita_nb ? "event.preventDefault(); window.location.href='/login?redir=" . urlencode($uri_actual) . "';" : "";
+
+// [NUBIRA 2.0] Usuarios que eligieron "solo comprar" en completar_perfil.php no ven el
+// botón de publicar en ningún lado de la nav — grid pasa de 5 a 4 columnas para no dejar
+// un hueco vacío donde iba el botón central.
+$ocultar_publicar_nb = (($_SESSION['intencion_uso'] ?? '') === 'comprar');
 
 // --- ESTILOS NATIVOS UNIFICADOS ---
 $cls_base     = 'flex flex-col items-center justify-center gap-1 w-full outline-none select-none transition-transform duration-150 active:scale-[0.92] relative';
@@ -142,7 +154,7 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
 </style>
 
 <nav id="nav-bottom" class="nav-native-feel lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-gray-100/80 pb-[env(safe-area-inset-bottom)] pt-2 px-1" aria-label="Navegación principal">
-  <ul class="grid grid-cols-5 text-[11px] text-center pb-1 items-end relative">
+  <ul class="grid <?= $ocultar_publicar_nb ? 'grid-cols-4' : 'grid-cols-5' ?> text-[11px] text-center pb-1 items-end relative">
 
     <li>
         <a href="<?= htmlspecialchars($link_home, ENT_QUOTES, 'UTF-8') ?>" aria-label="Inicio" class="<?= $cls_base ?> <?= $es_inicio ? $cls_activo : $cls_inactivo ?>">
@@ -172,10 +184,11 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
         </button>
     </li>
 
+    <?php if (!$ocultar_publicar_nb): ?>
     <li class="relative w-full h-full flex justify-center">
-        <button id="btn-publicar" 
+        <button id="btn-publicar"
                 aria-label="Publicar"
-                onclick="<?= $onclick_publicar ?>" 
+                onclick="<?= $onclick_publicar ?>"
                 class="outline-none relative transition-transform duration-150 active:scale-[0.88] select-none h-full w-full">
             <div class="absolute bottom-3 left-1/2 -translate-x-1/2 w-14 h-14 bg-[#54A6D8] rounded-[18px] flex items-center justify-center text-white z-10 overflow-hidden shadow-md">
                 <div class="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine" aria-hidden="true"></div>
@@ -185,6 +198,7 @@ if (!isset($alerta_encendida_php) && !$es_visita_nb && isset($conn)) {
             </div>
         </button>
     </li>
+    <?php endif; ?>
 
     <li>
         <a href="<?= htmlspecialchars($link_chat, ENT_QUOTES, 'UTF-8') ?>" aria-label="Mensajes" class="<?= $cls_base ?> <?= $es_mensaje ? $cls_activo : $cls_inactivo ?>">

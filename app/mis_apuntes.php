@@ -233,8 +233,12 @@ require_once $app_dir . '/componentes/sidebar.php';
                 <?= icon('publish-doc', 'w-8 h-8') ?>
             </div>
             <h3 class="text-lg font-bold text-gray-900">No has subido apuntes aún</h3>
-            <p class="text-gray-500 text-sm mt-1 mb-6">Comparte tus resúmenes y ayuda a la comunidad.</p>
-            <a href="/formulario-subir-apunte" class="text-sm font-bold text-[#54A6D8] hover:underline">Subir mi primer apunte</a>
+            <?php if (($_SESSION['intencion_uso'] ?? '') === 'comprar'): ?>
+                <p class="text-gray-500 text-sm mt-1">Los apuntes que compres van a aparecer en <a href="/mis-compras" class="font-bold text-[#54A6D8] hover:underline">Mis Compras</a>.</p>
+            <?php else: ?>
+                <p class="text-gray-500 text-sm mt-1 mb-6">Comparte tus resúmenes y ayuda a la comunidad.</p>
+                <a href="/formulario-subir-apunte" class="text-sm font-bold text-[#54A6D8] hover:underline">Subir mi primer apunte</a>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 

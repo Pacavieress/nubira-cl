@@ -65,6 +65,9 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
         // marcaría completa y login volvería a mandar a /completar_perfil en cada sesión.
         $_SESSION['perfil_completo']     = !empty(trim($usuario_auto['bio'] ?? ''))
             || (($usuario_auto['intencion_uso'] ?? '') === 'comprar' && !empty(trim($usuario_auto['institucion'] ?? '')));
+        // [NUBIRA 2.0] Usado en la nav (nav_bottom.php/header.php/vitrina.php) para ocultar
+        // los botones de publicar a quien eligió "solo comprar" en completar_perfil.php.
+        $_SESSION['intencion_uso']       = $usuario_auto['intencion_uso'] ?? null;
 
         // --- [NUBIRA 2.0] CACHÉ DE TUTOR Y SUGERENCIAS (AUTO-LOGIN) ---
         $_SESSION['notif_sugerencia_vista'] = (int)($usuario_auto['notif_sugerencia_vista'] ?? 0);
@@ -213,6 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // [NUBIRA 2.0] Mismo criterio que el bloque de auto-login (remember_token) más arriba.
                         $_SESSION['perfil_completo']     = !empty(trim($usuario['bio'] ?? ''))
                             || (($usuario['intencion_uso'] ?? '') === 'comprar' && !empty(trim($usuario['institucion'] ?? '')));
+                        $_SESSION['intencion_uso']       = $usuario['intencion_uso'] ?? null;
                         $est = $_SESSION['verificacion_estado'];
 
                         if ($est === 'pendiente') {

@@ -63,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             $stmt->close();
             $intencion_actual = $intencion_post;
+            // [NUBIRA 2.0] Refleja en sesión de inmediato — nav_bottom.php/header.php la leen
+            // en la misma carga siguiente, sin esperar a un nuevo login.
+            $_SESSION['intencion_uso'] = $intencion_post;
         }
 
     } elseif (($_POST['paso'] ?? '') === 'guardar' && $intencion_actual === 'comprar') {

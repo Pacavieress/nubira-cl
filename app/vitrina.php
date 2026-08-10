@@ -1865,8 +1865,10 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
         <div class="p-4 md:p-6 bg-white border-t border-gray-100 shrink-0">
             <?php if ($is_guest): ?>
                 <a href="/registro?rol=tutor" class="block w-full text-center py-3 md:py-4 rounded-2xl font-medium text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_14px_rgba(84,166,216,0.35)] hover:scale-[1.01] transition-[transform,box-shadow] duration-150 ease-out text-sm md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Crea tu cuenta gratis</a>
-            <?php else: ?>
+            <?php elseif (($_SESSION['intencion_uso'] ?? '') !== 'comprar'): ?>
                 <button onclick="cerrarModalCaptacion(); document.getElementById('btn-publicar')?.click();" class="block w-full text-center py-3 md:py-4 rounded-2xl font-medium text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_14px_rgba(84,166,216,0.35)] hover:scale-[1.01] transition-[transform,box-shadow] duration-150 ease-out text-sm md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Comenzar a enseñar ahora</button>
+            <?php else: ?>
+                <button onclick="cerrarModalCaptacion();" class="block w-full text-center py-3 md:py-4 rounded-2xl font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors text-sm md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2">Entendido</button>
             <?php endif; ?>
         </div>
     </div>

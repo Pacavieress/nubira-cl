@@ -23,7 +23,18 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
-ignore_user_abort(true); 
+// [NUBIRA 2.0] Quien eligió "solo comprar" en completar_perfil.php no publica apuntes.
+if (($_SESSION['intencion_uso'] ?? '') === 'comprar') {
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        http_response_code(403);
+        echo json_encode(['error' => 'No disponible para esta cuenta']);
+        exit;
+    }
+    header("Location: /vitrina");
+    exit;
+}
+
+ignore_user_abort(true);
 set_time_limit(300); 
 ini_set('memory_limit', '512M'); 
 

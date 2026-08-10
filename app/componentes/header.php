@@ -129,7 +129,10 @@ if (!empty($foto_sesion)) {
 }
 
 $mostrar_buscador = !isset($ocultar_buscador) || $ocultar_buscador === false;
-$mostrar_botones = !isset($ocultar_botones_publicar) || $ocultar_botones_publicar === false;
+// [NUBIRA 2.0] Además del opt-out por página, oculta los botones de publicar a quien
+// eligió "solo comprar" en completar_perfil.php.
+$mostrar_botones = (!isset($ocultar_botones_publicar) || $ocultar_botones_publicar === false)
+    && (($_SESSION['intencion_uso'] ?? '') !== 'comprar');
 
 $url_subir_apunte   = $es_visitante ? '/login?redir=' . $current_url : '/formulario-subir-apunte';
 $url_publicar_clase = $es_visitante ? '/login?redir=' . $current_url : '/publicar-servicio';
