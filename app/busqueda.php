@@ -26,9 +26,33 @@ ini_set('display_errors', 1);
 // --- FUNCIONES HELPER NUBIRA 2.0 ---
 if (!function_exists('url_toggle')) {
     // [NUBIRA 2.0] Activa/desactiva un parámetro booleano en la URL actual, preservando el resto.
+    // Cambiar un filtro invalida la página en la que estaba parado el usuario, así que
+    // también resetea la paginación a la página 1.
     function url_toggle($param) {
         $qs = $_GET;
         if (!empty($qs[$param])) { unset($qs[$param]); } else { $qs[$param] = '1'; }
+        unset($qs['pagina']);
+        return '?' . http_build_query($qs);
+    }
+}
+
+if (!function_exists('url_pagina')) {
+    // [NUBIRA 2.0] Link a otra página de resultados, preservando todos los filtros y el tab activo.
+    function url_pagina($param, $valor) {
+        $qs = $_GET;
+        $qs[$param] = $valor;
+        return '?' . http_build_query($qs);
+    }
+}
+
+if (!function_exists('url_tab')) {
+    // [NUBIRA 2.0] Link a otro tab (todo/clases/apuntes), preservando filtros activos.
+    // "todo" es el default: se omite de la URL para no ensuciarla. Cambiar de tab también
+    // resetea la paginación — la página 3 de "Clases" no significa nada al entrar a "Apuntes".
+    function url_tab($tipo) {
+        $qs = $_GET;
+        if ($tipo === 'todo') { unset($qs['tipo']); } else { $qs['tipo'] = $tipo; }
+        unset($qs['pagina']);
         return '?' . http_build_query($qs);
     }
 }
@@ -121,6 +145,15 @@ $categoria_filtro = trim($_GET['categoria'] ?? '');
 $precio_min = isset($_GET['precio_min']) && $_GET['precio_min'] !== '' ? max(0, (int)$_GET['precio_min']) : null;
 $precio_max = isset($_GET['precio_max']) && $_GET['precio_max'] !== '' ? max(0, (int)$_GET['precio_max']) : null;
 $con_video = !empty($_GET['video']);
+// [NUBIRA 2.0] Tabs: "todo" (preview corto de ambos tipos, default), "clases" o "apuntes"
+// (esa sección sola, con paginación clásica completa). Nunca hay dos secciones paginadas
+// a la vez, así que un solo $pagina alcanza — su significado depende del tab activo.
+$TIPOS_VALIDOS = ['todo', 'clases', 'apuntes'];
+$tab_activo = $_GET['tipo'] ?? 'todo';
+if (!in_array($tab_activo, $TIPOS_VALIDOS, true)) $tab_activo = 'todo';
+$pagina = max(1, (int)($_GET['pagina'] ?? 1));
+$por_pagina = 20;
+$preview = 8; // ítems por tipo mostrados en el tab "Todo"
 
 // [NUBIRA 2.0] WHITELIST SEGURA DE FILTROS
 $ORDENES_VALIDOS = ['', 'precio_asc', 'precio_desc', 'calificacion'];
@@ -269,13 +302,89 @@ if (strlen($q) > 1 || $hay_filtros_activos) {
     $where_s = implode(" OR ", $conds_s);
     $where_a = implode(" OR ", $conds_a);
     if ($es_busqueda_paes) {
-        $where_s = "($where_s) OR s.es_paes = 1";
-        $where_a = "($where_a) OR ap.nivel_academico = 'paes'";
+        // [NUBIRA 2.0] Match explícito de "paes" (no depende de la raíz tolerante a typos
+        // del loop de arriba, que para "paes" corta a "pae" — frágil e implícito). Cubre
+        // también s.categoria/ap.categoria, que el loop de arriba NO revisa para apuntes.
+        $t_paes = "%paes%";
+        $where_s = "($where_s) OR s.es_paes = 1 OR s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ?";
+        array_push($params_servicios, $t_paes, $t_paes, $t_paes);
+        $tipos_servicios .= "sss";
+
+        $where_a = "($where_a) OR ap.nivel_academico = 'paes' OR ap.titulo LIKE ? OR ap.descripcion LIKE ? OR ap.asignatura LIKE ? OR ap.categoria LIKE ?";
+        array_push($params_apuntes, $t_paes, $t_paes, $t_paes, $t_paes);
+        $tipos_apuntes .= "ssss";
     }
     $params_s_full = array_merge($params_servicios, $params_extra_s);
     $tipos_s_full = $tipos_servicios . $tipos_extra_s;
     $params_a_full = array_merge($params_apuntes, $params_extra_a);
     $tipos_a_full = $tipos_apuntes . $tipos_extra_a;
+
+    // [NUBIRA 2.0] Total real de cada sección (mismo WHERE, sin LIMIT). Se usa para:
+    // los contadores de los tabs, decidir el LIMIT/OFFSET según tab, el banner de "cero
+    // resultados" y el sensor de búsquedas fallidas — nunca el array de la página actual,
+    // que con "Todo" es solo un preview y no representa el total real.
+    $total_servicios = 0;
+    $stmtCountS = $conn->prepare("SELECT COUNT(*) AS total
+            FROM servicios s
+            LEFT JOIN alumnos a ON s.alumno_id = a.id
+            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s) $sql_extra_s");
+    if ($stmtCountS) {
+        if (!empty($params_s_full)) $stmtCountS->bind_param($tipos_s_full, ...$params_s_full);
+        $stmtCountS->execute();
+        $total_servicios = (int)($stmtCountS->get_result()->fetch_assoc()['total'] ?? 0);
+        $stmtCountS->close();
+    }
+
+    $total_apuntes = 0;
+    $stmtCountA = $conn->prepare("SELECT COUNT(*) AS total
+            FROM apuntes ap
+            LEFT JOIN alumnos a ON ap.id_alumno = a.id
+            WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a) $sql_extra_a");
+    if ($stmtCountA) {
+        if (!empty($params_a_full)) $stmtCountA->bind_param($tipos_a_full, ...$params_a_full);
+        $stmtCountA->execute();
+        $total_apuntes = (int)($stmtCountA->get_result()->fetch_assoc()['total'] ?? 0);
+        $stmtCountA->close();
+    }
+
+    // [NUBIRA 2.0] LIMIT/OFFSET según el tab activo. En "todo" ambos tipos se traen como
+    // preview corto (sin paginar); en "clases"/"apuntes" solo se ejecuta esa sección, con
+    // paginación completa — por eso un $stmtS o $stmtA de la sección inactiva es puro gasto.
+    $ejecutar_servicios = ($tab_activo !== 'apuntes');
+    $ejecutar_apuntes   = ($tab_activo !== 'clases');
+    $total_paginas = 1;
+
+    if ($tab_activo === 'clases') {
+        $total_paginas = max(1, (int)ceil($total_servicios / $por_pagina));
+        $pagina = min($pagina, $total_paginas);
+        $limit_s = $por_pagina; $offset_s = ($pagina - 1) * $por_pagina;
+    } elseif ($tab_activo === 'apuntes') {
+        $total_paginas = max(1, (int)ceil($total_apuntes / $por_pagina));
+        $pagina = min($pagina, $total_paginas);
+        $limit_a = $por_pagina; $offset_a = ($pagina - 1) * $por_pagina;
+    } else {
+        $limit_s = $preview; $offset_s = 0;
+        $limit_a = $preview; $offset_a = 0;
+    }
+
+    // [NUBIRA 2.0] Estado vacío consciente del tab: si el tab activo no tiene resultados
+    // pero el otro tipo sí, se ofrece saltar directo a ese en vez de un "cero resultados"
+    // genérico que ignora que sí hay algo útil en el otro tab.
+    $mostrar_vacio = false;
+    $vacio_contexto = 'ambos'; // 'ambos' | 'clases' | 'apuntes'
+    $vacio_otro_total = 0;
+    $vacio_otro_tipo = null;
+    if (strlen($q) > 0) {
+        if ($tab_activo === 'todo' && $total_servicios === 0 && $total_apuntes === 0) {
+            $mostrar_vacio = true;
+        } elseif ($tab_activo === 'clases' && $total_servicios === 0) {
+            $mostrar_vacio = true; $vacio_contexto = 'clases';
+            if ($total_apuntes > 0) { $vacio_otro_total = $total_apuntes; $vacio_otro_tipo = 'apuntes'; }
+        } elseif ($tab_activo === 'apuntes' && $total_apuntes === 0) {
+            $mostrar_vacio = true; $vacio_contexto = 'apuntes';
+            if ($total_servicios > 0) { $vacio_otro_total = $total_servicios; $vacio_otro_tipo = 'clases'; }
+        }
+    }
 
     // [NUBIRA 2.0] Categorías con al menos 1 resultado real bajo los filtros actuales
     // (sin la categoría misma) — query liviana, sin JOINs de banco_imagenes/rating/LIMIT.
@@ -294,48 +403,57 @@ if (strlen($q) > 1 || $hay_filtros_activos) {
         $stmtCat->close();
     }
 
-    // BÚSQUEDA SERVICIOS
-    $stmtS = $conn->prepare("SELECT s.*, 
-            a.nombre as tutor_nombre,
-            a.foto_perfil as tutor_foto,
-            COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-          (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
-            (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
-            bi.archivo as banco_archivo
-            FROM servicios s
-            LEFT JOIN alumnos a ON s.alumno_id = a.id
-            LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-            LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-            WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s) $sql_extra_s
-            ORDER BY $order_sql_servicios LIMIT 20");
-            
-    if ($stmtS) {
-        if(!empty($params_s_full)) $stmtS->bind_param($tipos_s_full, ...$params_s_full);
-        $stmtS->execute();
-        $resultados_servicios = $stmtS->get_result()->fetch_all(MYSQLI_ASSOC);
-        $stmtS->close();
+    // BÚSQUEDA SERVICIOS — se salta por completo en el tab "apuntes" (no hay para qué
+    // pagar el JOIN de valoraciones/banco de imágenes si la sección no se va a mostrar).
+    if ($ejecutar_servicios) {
+        $stmtS = $conn->prepare("SELECT s.*,
+                a.nombre as tutor_nombre,
+                a.foto_perfil as tutor_foto,
+                COALESCE(dp.institucion, a.institucion) as institucion_maestra,
+              (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+                (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
+                bi.archivo as banco_archivo
+                FROM servicios s
+                LEFT JOIN alumnos a ON s.alumno_id = a.id
+                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+                LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
+                WHERE s.estado='aprobado' AND a.bloqueado = 0 AND ($where_s) $sql_extra_s
+                ORDER BY $order_sql_servicios LIMIT ? OFFSET ?");
+
+        if ($stmtS) {
+            $params_s_page = array_merge($params_s_full, [$limit_s, $offset_s]);
+            $tipos_s_page = $tipos_s_full . "ii";
+            $stmtS->bind_param($tipos_s_page, ...$params_s_page);
+            $stmtS->execute();
+            $resultados_servicios = $stmtS->get_result()->fetch_all(MYSQLI_ASSOC);
+            $stmtS->close();
+        }
     }
 
-    // BÚSQUEDA APUNTES
-    $stmtA = $conn->prepare("SELECT ap.*,
-            a.nombre as tutor_nombre,
-            a.foto_perfil as tutor_foto,
-            COALESCE(dp.institucion, a.institucion) as institucion_maestra
-            FROM apuntes ap 
-            LEFT JOIN alumnos a ON ap.id_alumno = a.id
-            LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-            WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a) $sql_extra_a
-            ORDER BY $order_sql_apuntes LIMIT 20");
+    // BÚSQUEDA APUNTES — se salta por completo en el tab "clases".
+    if ($ejecutar_apuntes) {
+        $stmtA = $conn->prepare("SELECT ap.*,
+                a.nombre as tutor_nombre,
+                a.foto_perfil as tutor_foto,
+                COALESCE(dp.institucion, a.institucion) as institucion_maestra
+                FROM apuntes ap
+                LEFT JOIN alumnos a ON ap.id_alumno = a.id
+                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+                WHERE ap.publico=1 AND a.bloqueado = 0 AND ($where_a) $sql_extra_a
+                ORDER BY $order_sql_apuntes LIMIT ? OFFSET ?");
 
-if ($stmtA) {
-        if(!empty($params_a_full)) $stmtA->bind_param($tipos_a_full, ...$params_a_full);
-        $stmtA->execute();
-        $resultados_apuntes = $stmtA->get_result()->fetch_all(MYSQLI_ASSOC);
-        $stmtA->close();
+        if ($stmtA) {
+            $params_a_page = array_merge($params_a_full, [$limit_a, $offset_a]);
+            $tipos_a_page = $tipos_a_full . "ii";
+            $stmtA->bind_param($tipos_a_page, ...$params_a_page);
+            $stmtA->execute();
+            $resultados_apuntes = $stmtA->get_result()->fetch_all(MYSQLI_ASSOC);
+            $stmtA->close();
+        }
     }
     
     // --- [SENSOR NUBIRA] ZERO-RESULTS TRACKING ---
-    if (strlen($q) > 2 && empty($resultados_servicios) && empty($resultados_apuntes)) {
+    if (strlen($q) > 2 && $total_servicios === 0 && $total_apuntes === 0) {
         $uid_fallida = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : 0;
         $stmt_fallida = $conn->prepare("INSERT INTO busquedas_fallidas (termino, usuario_id, fecha) VALUES (?, ?, NOW())");
         if ($stmt_fallida) {
@@ -368,7 +486,7 @@ if(file_exists($ruta_comp.'/header.php')) require_once $ruta_comp.'/header.php';
 if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php';
 ?>
 
-<main class="pt-20 pb-28 md:pb-20 lg:ml-64 px-4 max-w-[1600px] mx-auto md:px-8 min-h-[80vh]">
+<main class="pt-16 md:pt-20 pb-28 md:pb-20 lg:ml-64 px-4 max-w-[1600px] mx-auto md:px-8 min-h-[80vh]">
     
     <?php if (empty($q) && !$hay_filtros_activos): ?>
         <div class="flex flex-col items-center justify-center py-12 md:py-24 px-4 animate-fade-in-up">
@@ -414,11 +532,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
         </div>
 
     <?php else: ?>
-       <div class="mb-4 md:mb-6 border-b border-gray-100 pb-3">
-            <h1 class="text-xl md:text-3xl font-extrabold text-gray-900 mb-2 md:mb-3 tracking-tight truncate">
-                Resultados para <span class="text-[#54A6D8]">"<?= htmlspecialchars($q) ?>"</span>
-            </h1>
-
+       <div class="mb-3 md:mb-4 border-b border-gray-100 pb-2">
             <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 md:mx-0 md:px-0">
                 <div class="relative shrink-0">
                     <select id="ordenar_por" onchange="irA('orden', this.value)" class="appearance-none pl-3 pr-7 py-1.5 text-xs font-bold bg-gray-900 text-white border border-gray-900 rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
@@ -456,6 +570,7 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                     <?php if ($orden_usuario) : ?><input type="hidden" name="orden" value="<?= htmlspecialchars($orden_usuario) ?>"><?php endif; ?>
                     <?php if ($categoria_filtro) : ?><input type="hidden" name="categoria" value="<?= htmlspecialchars($categoria_filtro) ?>"><?php endif; ?>
                     <?php if ($con_video) : ?><input type="hidden" name="video" value="1"><?php endif; ?>
+                    <?php if ($tab_activo !== 'todo') : ?><input type="hidden" name="tipo" value="<?= htmlspecialchars($tab_activo) ?>"><?php endif; ?>
                     <input type="number" name="precio_min" min="0" step="1000" placeholder="Mín $" value="<?= $precio_min !== null ? (int)$precio_min : '' ?>"
                            class="w-[72px] px-2 py-1.5 text-xs font-bold bg-white border border-gray-200 rounded-full outline-none focus:ring-2 focus:ring-gray-300 transition-all">
                     <span class="text-gray-300 text-xs">–</span>
@@ -466,11 +581,22 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                     </button>
                 </form>
             </div>
+
+            <div class="flex items-center gap-1 mt-3 border-b border-gray-100">
+                <a href="<?= url_tab('todo') ?>" class="px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors <?= $tab_activo === 'todo' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">Todo</a>
+                <a href="<?= url_tab('clases') ?>" class="px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors <?= $tab_activo === 'clases' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600' ?>"><span class="md:hidden">Clases</span><span class="hidden md:inline">Clases y Servicios</span> (<?= $total_servicios ?>)</a>
+                <a href="<?= url_tab('apuntes') ?>" class="px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors <?= $tab_activo === 'apuntes' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">Apuntes (<?= $total_apuntes ?>)</a>
+            </div>
         </div>
 
-       <?php if (!empty($resultados_servicios)): ?>
+       <?php if (($tab_activo === 'todo' || $tab_activo === 'clases') && $total_servicios > 0): ?>
             <section class="mb-12">
-                <h2 class="text-xl font-extrabold text-gray-900 mb-4 tracking-tight">Clases y Servicios</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-extrabold text-gray-900 tracking-tight">Clases y Servicios</h2>
+                    <?php if ($tab_activo === 'todo' && $total_servicios > $preview): ?>
+                        <a href="<?= url_tab('clases') ?>" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todos (<?= $total_servicios ?>) <?= icon('arrow-right', 'w-3 h-3') ?></a>
+                    <?php endif; ?>
+                </div>
                 <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                     <?php 
                     $idx_srv = 0;
@@ -625,12 +751,32 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                     </a>
                     <?php endforeach; ?>
                 </div>
+                <?php if ($tab_activo === 'clases' && $total_paginas > 1): ?>
+                <div class="flex items-center justify-center gap-3 mt-8">
+                    <?php if ($pagina > 1): ?>
+                        <a href="<?= url_pagina('pagina', $pagina - 1) ?>" class="px-4 py-2 bg-gray-900 hover:bg-[#54A6D8] text-white text-xs font-bold rounded-full transition-colors">Anterior</a>
+                    <?php else: ?>
+                        <span class="px-4 py-2 bg-gray-100 text-gray-300 text-xs font-bold rounded-full cursor-not-allowed">Anterior</span>
+                    <?php endif; ?>
+                    <span class="text-xs font-bold text-gray-500">Página <?= $pagina ?> de <?= $total_paginas ?></span>
+                    <?php if ($pagina < $total_paginas): ?>
+                        <a href="<?= url_pagina('pagina', $pagina + 1) ?>" class="px-4 py-2 bg-gray-900 hover:bg-[#54A6D8] text-white text-xs font-bold rounded-full transition-colors">Siguiente</a>
+                    <?php else: ?>
+                        <span class="px-4 py-2 bg-gray-100 text-gray-300 text-xs font-bold rounded-full cursor-not-allowed">Siguiente</span>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             </section>
         <?php endif; ?>
 
-        <?php if (!empty($resultados_apuntes)): ?>
+        <?php if (($tab_activo === 'todo' || $tab_activo === 'apuntes') && $total_apuntes > 0): ?>
             <section class="mb-12">
-                <h2 class="text-xl font-extrabold text-gray-900 mb-4 tracking-tight">Apuntes</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-extrabold text-gray-900 tracking-tight">Apuntes</h2>
+                    <?php if ($tab_activo === 'todo' && $total_apuntes > $preview): ?>
+                        <a href="<?= url_tab('apuntes') ?>" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todos (<?= $total_apuntes ?>) <?= icon('arrow-right', 'w-3 h-3') ?></a>
+                    <?php endif; ?>
+                </div>
                 <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                     <?php 
                     $idx_ap = 0;
@@ -705,19 +851,42 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                     </a>
                     <?php endforeach; ?>
                 </div>
+                <?php if ($tab_activo === 'apuntes' && $total_paginas > 1): ?>
+                <div class="flex items-center justify-center gap-3 mt-8">
+                    <?php if ($pagina > 1): ?>
+                        <a href="<?= url_pagina('pagina', $pagina - 1) ?>" class="px-4 py-2 bg-gray-900 hover:bg-[#54A6D8] text-white text-xs font-bold rounded-full transition-colors">Anterior</a>
+                    <?php else: ?>
+                        <span class="px-4 py-2 bg-gray-100 text-gray-300 text-xs font-bold rounded-full cursor-not-allowed">Anterior</span>
+                    <?php endif; ?>
+                    <span class="text-xs font-bold text-gray-500">Página <?= $pagina ?> de <?= $total_paginas ?></span>
+                    <?php if ($pagina < $total_paginas): ?>
+                        <a href="<?= url_pagina('pagina', $pagina + 1) ?>" class="px-4 py-2 bg-gray-900 hover:bg-[#54A6D8] text-white text-xs font-bold rounded-full transition-colors">Siguiente</a>
+                    <?php else: ?>
+                        <span class="px-4 py-2 bg-gray-100 text-gray-300 text-xs font-bold rounded-full cursor-not-allowed">Siguiente</span>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             </section>
         <?php endif; ?>
 
-        <?php if (empty($resultados_servicios) && empty($resultados_apuntes) && strlen($q) > 0): ?>
+        <?php if ($mostrar_vacio): ?>
             <div class="flex flex-col items-center justify-center py-20 px-4 text-center animate-fade-in-up">
                 <div class="w-24 h-24 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mb-6">
                     <i class="fa-solid fa-magnifying-glass text-4xl text-gray-300"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Cero resultados</h2>
-                <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">No encontramos clases ni apuntes exactos para "<strong><?= htmlspecialchars($q) ?></strong>". <br>Ya le enviamos una alerta a nuestros tutores para que lo agreguen pronto.</p>
-                <a href="/busqueda" class="px-5 py-2.5 bg-gray-900 hover:bg-[#54A6D8] text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2">
-                    <i class="fa-solid fa-fire"></i> Ver lo más popular
-                </a>
+                <?php if ($vacio_otro_tipo): ?>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Sin resultados en <?= $vacio_contexto === 'clases' ? 'Clases' : 'Apuntes' ?></h2>
+                    <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">No encontramos <?= $vacio_contexto === 'clases' ? 'clases' : 'apuntes' ?> para "<strong><?= htmlspecialchars($q) ?></strong>", pero sí hay <?= $vacio_otro_total ?> <?= $vacio_otro_tipo === 'apuntes' ? ($vacio_otro_total === 1 ? 'apunte' : 'apuntes') : ($vacio_otro_total === 1 ? 'clase' : 'clases') ?>.</p>
+                    <a href="<?= url_tab($vacio_otro_tipo) ?>" class="px-5 py-2.5 bg-gray-900 hover:bg-[#54A6D8] text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-right"></i> Ver <?= $vacio_otro_tipo === 'apuntes' ? 'apuntes' : 'clases' ?>
+                    </a>
+                <?php else: ?>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Cero resultados</h2>
+                    <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">No encontramos clases ni apuntes exactos para "<strong><?= htmlspecialchars($q) ?></strong>". <br>Ya le enviamos una alerta a nuestros tutores para que lo agreguen pronto.</p>
+                    <a href="/busqueda" class="px-5 py-2.5 bg-gray-900 hover:bg-[#54A6D8] text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-fire"></i> Ver lo más popular
+                    </a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
@@ -735,6 +904,8 @@ if(file_exists($ruta_comp.'/modal_explora.php')) require_once $ruta_comp.'/modal
     function irA(param, valor) {
         const url = new URL(window.location.href);
         if (valor === '') { url.searchParams.delete(param); } else { url.searchParams.set(param, valor); }
+        // Cambiar un filtro invalida la página en la que estaba el usuario.
+        url.searchParams.delete('pagina');
         window.location.href = url.toString();
     }
 
