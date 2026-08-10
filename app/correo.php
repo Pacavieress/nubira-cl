@@ -163,8 +163,11 @@ function plantillaMaestra($titulo, $contenido, $botonTexto = null, $botonLink = 
    Mantenemos los nombres EXACTOS para no romper nada.
    ========================================================== */
 
-function enviarCorreoConfirmacion($correo, $nombre, $token) {
+function enviarCorreoConfirmacion($correo, $nombre, $token, $redir = '') {
     $link = "https://nubira.cl/confirmar.php?token=$token&e=" . urlencode($correo);
+    if (!empty($redir)) {
+        $link .= "&redir=" . urlencode($redir);
+    }
     $html = "<p>Hola <strong>$nombre</strong>,</p>
              <p>Gracias por unirte a la comunidad estudiantil. Para comenzar a publicar y conectar, por favor confirma tu cuenta.</p>";
     

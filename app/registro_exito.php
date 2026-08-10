@@ -1,9 +1,17 @@
 <?php
 session_start();
 
+// [NUBIRA 2.0] redir: si no hay sesión (recarga tardía de la página), cae al valor
+// que venga en la URL; con sesión, usa el que quedó guardado desde register.php.
+$redir = $_GET['redir'] ?? ($_SESSION['registro_pendiente']['redir'] ?? '');
+if (!empty($redir) && (strpos($redir, '/') !== 0 || strpos($redir, '//') === 0)) {
+    $redir = '';
+}
+$login_url = '/login' . (!empty($redir) ? '?redir=' . urlencode($redir) : '');
+
 // Si no hay registro pendiente en sesión, redirigir a login
 if (!isset($_SESSION['registro_pendiente'])) {
-    header("Location: /login");
+    header("Location: " . $login_url);
     exit;
 }
 
@@ -88,7 +96,7 @@ $cooldown_inicial = max(0, 60 - $segundos_transcurridos);
     </button>
 
     <div class="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-2 text-sm">
-        <a href="/login" class="text-[#54A6D8] font-bold hover:underline">
+        <a href="<?= htmlspecialchars($login_url, ENT_QUOTES, 'UTF-8') ?>" class="text-[#54A6D8] font-bold hover:underline">
             Ya confirmé mi cuenta · Ir al login
         </a>
         <a href="/register" class="text-gray-400 font-medium hover:text-gray-600 transition text-xs">
@@ -104,6 +112,7 @@ $cooldown_inicial = max(0, 60 - $segundos_transcurridos);
 
   <script>
     const correo = <?= json_encode($correo) ?>;
+    const loginUrl = <?= json_encode($login_url) ?>;
     const btnReenviar = document.getElementById('btn-reenviar');
     const btnTexto = document.getElementById('btn-reenviar-texto');
     const statusConfirmacion = document.getElementById('status-confirmacion');
@@ -169,7 +178,7 @@ $cooldown_inicial = max(0, 60 - $segundos_transcurridos);
             const data = await res.json();
             if (data.confirmado) {
                 statusConfirmacion.classList.remove('hidden');
-                setTimeout(() => window.location.href = '/login', 2500);
+                setTimeout(() => window.location.href = loginUrl, 2500);
                 return true;
             }
         } catch (e) {}

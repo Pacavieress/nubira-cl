@@ -14,6 +14,7 @@ if (!isset($_SESSION['registro_pendiente'])) {
 $datos = $_SESSION['registro_pendiente'];
 $correo = $datos['correo'];
 $nombre = $datos['nombre'];
+$redir = $datos['redir'] ?? '';
 
 // Cooldown server-side (60s)
 $ultimo_reenvio_sesion = $_SESSION['registro_pendiente']['ultimo_reenvio'] ?? $datos['timestamp'];
@@ -52,7 +53,7 @@ if (empty($token)) {
 }
 
 // Enviar correo
-if (enviarCorreoConfirmacion($correo, $nombre, $token)) {
+if (enviarCorreoConfirmacion($correo, $nombre, $token, $redir)) {
     // Actualizar timestamps
     $_SESSION['registro_pendiente']['ultimo_reenvio'] = time();
     $stmt_upd = $conn->prepare("UPDATE alumnos SET ultimo_reenvio = NOW() WHERE id = ?");

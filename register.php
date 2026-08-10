@@ -10,6 +10,12 @@ $tipo_alerta = ''; // 'error' o 'success'
 // Prefill del correo desde el link de campaña (/register?email=...)
 $correo = strtolower(trim($_GET['email'] ?? ''));
 
+// 0. CAPTURAR REDIRECCIÓN (mismo mecanismo y filtro anti open-redirect que login.php)
+$redir_destino = $_GET['redir'] ?? '';
+if (!empty($redir_destino) && (strpos($redir_destino, '/') !== 0 || strpos($redir_destino, '//') === 0)) {
+    $redir_destino = '';
+}
+
 // --- NUEVO: Atrapar respuestas del ticket de soporte ---
 if (isset($_GET['ticket'])) {
     if ($_GET['ticket'] === 'exito') {
@@ -31,6 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $contrasena = $_POST['contrasena'] ?? '';
     $carrera = ''; // Campo eliminado del registro; se completa en /completar_perfil
     $ip_actual = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+    $redir_post = $_POST['redir'] ?? $redir_destino;
+    if (!empty($redir_post) && (strpos($redir_post, '/') !== 0 || strpos($redir_post, '//') === 0)) {
+        $redir_post = '';
+    }
 
     $dominio = substr(strrchr($correo, "@"), 1);
 
@@ -111,13 +122,15 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
     }
 
    if ($ok_db) {
-        $envio_ok = enviarCorreoConfirmacion($correo, $nombre, $token);
-        // Guardamos el contexto en sesión para registro_exito.php
+        $envio_ok = enviarCorreoConfirmacion($correo, $nombre, $token, $redir_post);
+        // Guardamos el contexto en sesión para registro_exito.php (incluye redir para
+        // que sobreviva el resto de la cadena: reenvío de correo y el link de confirmación).
         $_SESSION['registro_pendiente'] = [
             'correo' => $correo,
             'nombre' => $nombre,
             'envio_ok' => $envio_ok,
-            'timestamp' => time()
+            'timestamp' => time(),
+            'redir' => $redir_post
         ];
   header("Location: /app/registro_exito.php");
         exit;
@@ -180,6 +193,9 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
         <?php endif; ?>
 
         <form method="POST" class="space-y-4" id="registerForm" autocomplete="off">
+            <?php if (!empty($redir_destino)): ?>
+            <input type="hidden" name="redir" value="<?= htmlspecialchars($redir_destino, ENT_QUOTES, 'UTF-8') ?>">
+            <?php endif; ?>
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">Nombre Completo</label>
                 <input type="text" name="nombre" required value="<?= htmlspecialchars($nombre ?? '', ENT_QUOTES, 'UTF-8') ?>"
@@ -212,7 +228,7 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
         </form>
 
         <p class="mt-5 text-center text-sm text-gray-500 font-medium">
-            ¿Ya tienes cuenta? <a href="/login" class="text-[#54A6D8] font-bold hover:underline">Inicia sesión</a>
+            ¿Ya tienes cuenta? <a href="/login<?= !empty($redir_destino) ? '?redir=' . urlencode($redir_destino) : '' ?>" class="text-[#54A6D8] font-bold hover:underline">Inicia sesión</a>
         </p>
     </div>
   </div>
