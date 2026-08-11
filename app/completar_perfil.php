@@ -2,6 +2,19 @@
 session_start();
 require_once __DIR__ . '/conexion.php';
 
+$destino_post_onboarding = '/vitrina';
+if (!empty($_SESSION['redirigir_despues_login'])) {
+    $candidato = $_SESSION['redirigir_despues_login'];
+    // Filtro anti-open-redirect, mismo patrón que login.php
+    if (strpos($candidato, '/') === 0 && strpos($candidato, '//') !== 0) {
+        $destino_post_onboarding = $candidato;
+    }
+}
+// [NUBIRA 2.0] El unset NO va aquí: este archivo se recarga varias veces (elegir →
+// guardar → éxito) y cada carga es un request nuevo — borrar la sesión en la primera
+// carga deja a las siguientes sin destino, cayendo siempre a /vitrina. El unset se
+// hace recién en los 2 puntos donde el flujo termina de verdad (líneas más abajo).
+
 if (!isset($_SESSION['usuario_id'])) { header("Location: /login"); exit; }
 
 // [NUBIRA 2.0] Auto-migración (mismo patrón que login.php) — cubre el caso de una
@@ -35,7 +48,8 @@ if (empty(trim($institucion_actual ?? '')) && !empty($dominio_actual)) {
 $ya_completo = !empty(trim($bio_actual ?? ''))
     || ($intencion_actual === 'comprar' && !empty(trim($institucion_actual ?? '')));
 if ($ya_completo) {
-    header("Location: /vitrina");
+    unset($_SESSION['redirigir_despues_login']);
+    header("Location: " . $destino_post_onboarding);
     exit;
 }
 
@@ -135,6 +149,7 @@ $tipo_form = $_POST['tipo'] ?? $tipo_actual ?? '';
     <img src="/img/logo.webp" alt="Nubira" class="h-8 mb-8">
 
     <?php if ($guardado): ?>
+      <?php unset($_SESSION['redirigir_despues_login']); ?>
 
       <div class="text-center">
         <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5">
@@ -153,8 +168,8 @@ $tipo_form = $_POST['tipo'] ?? $tipo_actual ?? '';
             Ya puedes publicar tus clases o apuntes en Nubira.
           </p>
         <?php endif; ?>
-        <a href="/vitrina" class="block w-full bg-[#54A6D8] hover:bg-[#4592c0] text-white font-bold py-3.5 rounded-xl transition-all text-center text-sm">
-          Ir a la vitrina
+        <a href="<?= htmlspecialchars($destino_post_onboarding, ENT_QUOTES, 'UTF-8') ?>" class="block w-full bg-[#54A6D8] hover:bg-[#4592c0] text-white font-bold py-3.5 rounded-xl transition-all text-center text-sm">
+          <?= $destino_post_onboarding === '/vitrina' ? 'Ir a la vitrina' : 'Continuar donde estabas' ?>
         </a>
       </div>
 

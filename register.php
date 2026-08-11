@@ -11,7 +11,7 @@ $tipo_alerta = ''; // 'error' o 'success'
 $correo = strtolower(trim($_GET['email'] ?? ''));
 
 // 0. CAPTURAR REDIRECCIÓN (mismo mecanismo y filtro anti open-redirect que login.php)
-$redir_destino = $_GET['redir'] ?? '';
+$redir_destino = $_GET['redir'] ?? $_SESSION['redirigir_despues_login'] ?? '';
 if (!empty($redir_destino) && (strpos($redir_destino, '/') !== 0 || strpos($redir_destino, '//') === 0)) {
     $redir_destino = '';
 }
@@ -105,10 +105,18 @@ if ($usuario_existente && (int)$usuario_existente['visible'] === 1) {
 
     if ($usuario_existente && (int)$usuario_existente['visible'] === 0) {
         // Caso 2: Cuenta soft-deleted → REACTIVAR con los nuevos datos
+        // [NUBIRA 2.0] Limpieza completa del "perfil de la vida anterior": sin esto, bio/
+        // institucion/intencion_uso sobrevivían al soft-delete y hacían que perfil_completo
+        // se calculara true de inmediato, saltándose completar_perfil en el login siguiente.
         $stmt_react = $conn->prepare("UPDATE alumnos
             SET nombre = ?, password = ?, carrera = ?, dominio = ?, token = ?,
                 confirmado = 0, visible = 1, bloqueado = 0, ultimo_reenvio = NULL,
-                tipo = ?, verificacion_estado = ?
+                tipo = ?, verificacion_estado = ?,
+                bio = NULL, institucion = NULL, intencion_uso = NULL, foto_perfil = NULL,
+                universidad = NULL, anio_egreso = NULL, anios_experiencia = NULL,
+                calificacion_promedio = 0.00, cantidad_votos = 0, vistas_perfil = 0,
+                tiempo_respuesta_promedio = NULL, suspendido_hasta = NULL, motivo_suspension = NULL,
+                onboarding_visto = 0, cuenta_express = 0, fecha_registro = NOW()
             WHERE id = ?");
         $stmt_react->bind_param("sssssssi", $nombre, $hash, $carrera, $dominio, $token, $tipo_registro, $verificacion_registro, $usuario_existente['id']);
         $ok_db = $stmt_react->execute();

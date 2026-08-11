@@ -97,7 +97,13 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
 // -------------------------------------------------------------------------
 if (isset($_SESSION['usuario_id'])) {
     $est = $_SESSION['verificacion_estado'] ?? null;
-    if ($est === 'pendiente' && !($_SESSION['perfil_completo'] ?? false)) { header("Location: /completar_perfil"); exit; }
+    if ($est === 'pendiente' && !($_SESSION['perfil_completo'] ?? false)) {
+        if (!empty($redir_destino)) {
+            $_SESSION['redirigir_despues_login'] = $redir_destino;
+        }
+        header("Location: /completar_perfil");
+        exit;
+    }
     if (!empty($redir_destino)) { header("Location: " . $redir_destino); exit; }
     header("Location: " . ($est === 'pendiente' ? '/vitrina?aviso=verificacion_pendiente' : '/vitrina'));
     exit;
@@ -220,6 +226,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $est = $_SESSION['verificacion_estado'];
 
                         if ($est === 'pendiente') {
+                            if (!empty($redir_post)) {
+                                $redir_sanitizado = filter_var($redir_post, FILTER_SANITIZE_URL);
+                                if (strpos($redir_sanitizado, '/') === 0 && strpos($redir_sanitizado, '//') !== 0) {
+                                    $_SESSION['redirigir_despues_login'] = $redir_sanitizado;
+                                }
+                            }
                             header("Location: " . ($_SESSION['perfil_completo'] ? '/vitrina?aviso=verificacion_pendiente' : '/completar_perfil'));
                             exit;
                         }

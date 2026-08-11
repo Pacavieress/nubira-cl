@@ -1732,7 +1732,7 @@ window.borrarOpinionUI = async function(botonDom, id, tipo) {
         Empezar conversación
       </button>
       <p class="text-center text-xs text-gray-500">
-        ¿Ya tienes cuenta? <a href="/login" class="text-[#54A6D8] underline">Inicia sesión</a>
+        ¿Ya tienes cuenta? <a href="/login?redir=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="text-[#54A6D8] underline">Inicia sesión</a>
       </p>
     </form>
   </div>
