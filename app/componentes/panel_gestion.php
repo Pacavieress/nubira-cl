@@ -307,11 +307,11 @@ window.addEventListener('pageshow', function(event) {
     if (event.persisted) window.updateNubiraPanel();
 });
 
-let lastFocusUpdate = 0;
+window.__lastFocusUpdate = window.__lastFocusUpdate || 0;
 window.addEventListener('focus', () => {
     const now = Date.now();
-    if (now - lastFocusUpdate > 3000) {
-        lastFocusUpdate = now;
+    if (now - window.__lastFocusUpdate > 3000) {
+        window.__lastFocusUpdate = now;
         window.updateNubiraPanel();
     }
 });
