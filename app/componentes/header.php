@@ -111,6 +111,18 @@ if (!$es_visitante && isset($conn)) {
             'foto_mtime' => $mtime_foto,
         ];
         nb_nav_cache_set($uid_header, $nav_cache);
+    } else {
+        // [NUBIRA 2.0] Cache HIT: refresca $_SESSION['foto_perfil']/$foto_sesion desde
+        // el caché compartido. Sin esto, una sesión de PHP que nunca pasó por un MISS
+        // (otro dispositivo, sesión regenerada) se queda sin foto aunque el caché sí la
+        // tenga — la construcción de $foto_url_header más abajo depende de $foto_sesion,
+        // no del caché directamente. Cachés legado (sin 'foto_path', escritos antes de
+        // este fix) o sin foto real no tocan lo que ya hubiera en sesión, para no romper
+        // sesiones que ya la tenían poblada.
+        if (!empty($nav_cache['foto_path'])) {
+            $foto_sesion = basename($nav_cache['foto_path']);
+            $_SESSION['foto_perfil'] = $foto_sesion;
+        }
     }
 
     $perfil_incompleto    = $nav_cache['alerta'];
