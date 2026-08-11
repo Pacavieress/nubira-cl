@@ -22,7 +22,18 @@ function nb_nav_cache_get(int $uid): ?array {
 
 function nb_nav_cache_set(int $uid, array $data): void {
     if (!is_dir(NAV_CACHE_DIR)) @mkdir(NAV_CACHE_DIR, 0775, true);
-    @file_put_contents(nb_nav_cache_ruta($uid), json_encode($data, JSON_UNESCAPED_UNICODE));
+    // [NUBIRA 2.0] Escritura atómica: escribe a un archivo temporal único por proceso
+    // (uniqid evita que 2 requests concurrentes del mismo usuario compartan el mismo
+    // .tmp) y recién al final hace rename() al nombre real. rename() es atómico a nivel
+    // de sistema de archivos — cualquier lector ve el archivo viejo completo o el nuevo
+    // completo, nunca un estado a medio truncar/escribir.
+    $ruta = nb_nav_cache_ruta($uid);
+    $tmp  = $ruta . '.' . uniqid('', true) . '.tmp';
+    if (@file_put_contents($tmp, json_encode($data, JSON_UNESCAPED_UNICODE)) !== false) {
+        @rename($tmp, $ruta);
+    } else {
+        @unlink($tmp);
+    }
 }
 
 function nb_nav_cache_invalidar(int $uid): void {
