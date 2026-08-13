@@ -1,4 +1,12 @@
 
+## Pendiente: verificacion_estado='pendiente' es un estado huérfano sin camino a 'aprobado'
+
+Detectado el 10/08/2026 al corregir el mensaje de éxito de `completar_perfil.php`. `verificacion_estado='pendiente'` en `alumnos` es un estado huérfano — cuando un usuario se registra sin correo institucional/VIP y completa el formulario de "vender" en `completar_perfil.php`, queda en `'pendiente'` sin ningún camino real en el código actual hacia `'aprobado'`. El mecanismo de aprobación manual (pestaña admin con botones aprobar/rechazar, correos de notificación) fue eliminado el 10/07/2026, pero nada lo reemplazó. Efecto real: el usuario nunca obtiene el ✓ de "Verificado" en su perfil, aunque esto no bloquea publicar ni comprar. Pendiente decidir en sesión dedicada: reactivar algún mecanismo real de aprobación, o simplificar/eliminar el sistema de verificación por ahora.
+
+## Pendiente: busqueda.php sin ningún `<h1>` en ninguno de sus 2 estados
+
+Detectado el 10/08/2026 al compactar el espacio vertical entre el header y las cards de resultados. `busqueda.php` no tiene ningún `<h1>` en ninguno de sus dos estados: el estado "resultados" se quedó sin `<h1>` tras eliminar hoy el que decía `Resultados para "xxx"` (redundante — el buscador del header, fijo y con el término precargado, ya cumplía esa función), y el estado vacío "¿Qué quieres aprender hoy?" ya usaba `<h2>` en vez de `<h1>` desde antes de esta sesión. Impacto bajo (no es error duro de accesibilidad ni penalización directa de SEO), pendiente para retomar con un `<h1 class="sr-only">` visualmente oculto que mantenga la jerarquía semántica sin ocupar espacio visual.
+
 ## Pendiente: cifras de la plataforma en sobre-nosotros.php (decisión deliberada, no descuido)
 
 Detectado el 04/08/2026 durante la auditoría de `sobre-nosotros.php`. La página hoy no muestra ningún número de tracción (tutores activos, apuntes publicados, universidades cubiertas) — decisión deliberada por ahora, no un olvido: la plataforma es joven y mostrar cifras bajas podría restar confianza en vez de sumarla, dado el tono de la página ("chico y honesto, todavía construyendo"). Retomar cuando existan cifras que valga la pena mostrar (ej. "500 estudiantes ya encontraron tutor").
@@ -457,7 +465,6 @@ Google Gemini 2.0 Flash via `app/datos/ia_nubira.php`. Cached in `app/cache_ia/`
 | Profile | `app/perfil.php`, `app/editar_datos.php`, `app/actualizar_foto.php` |
 
 ## Known Technical Debt (explicitly deferred)
-- SQL injection via string interpolation in `motor_ia.php` and `render_card.php`
 - Hardcoded Gemini API key in source
 - `CURLOPT_SSL_VERIFYPEER = false` in production
 - `$es_admin = true` hardcoded in `contar_alertas_sistema.php`

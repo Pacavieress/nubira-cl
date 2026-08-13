@@ -21,6 +21,8 @@ require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
 require_once __DIR__ . '/helpers/institucion.php';     // institucion_tutor()
 require_once __DIR__ . '/helpers/seo.php';
+require_once __DIR__ . '/helpers/ofertas.php';         // oferta_vigente() — espejo de cargar_servicios.php
+require_once __DIR__ . '/helpers/portada_helper.php';  // obtenerMiniaturaApunte()
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -276,9 +278,6 @@ if (!empty($foto_field)) {
     $foto_url = "https://ui-avatars.com/api/?name=" . urlencode($nombre_real) . "&background=54A6D8&color=fff";
 }
 
-// Fallback image para publicaciones
-$default_pub_img = 'https://nubira.cl/upload/servicios/default_clases.webp';
-
 // 9. SENSOR NUBIRA
 if (file_exists(__DIR__ . '/logger.php') && !$es_visitante) {
     require_once __DIR__ . '/logger.php';
@@ -347,7 +346,10 @@ $qr_ra->close();
 $publicaciones = []; 
 
 // 1. Cargar Servicios (Solo aprobados y NO eliminados lógicamente)
-$qs = $conn->prepare("SELECT s.*, 'servicio' AS tipo_pub, bi.archivo AS banco_archivo FROM servicios s LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id WHERE s.alumno_id = ? AND s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 ORDER BY s.fecha_publicacion DESC LIMIT 30");
+$qs = $conn->prepare("SELECT s.*, 'servicio' AS tipo_pub, bi.archivo AS banco_archivo,
+        (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+        (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio
+    FROM servicios s LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id WHERE s.alumno_id = ? AND s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 ORDER BY s.fecha_publicacion DESC LIMIT 30");
 $qs->bind_param("i", $perfil_id_ver); 
 $qs->execute(); 
 $res_s = $qs->get_result(); 
@@ -532,6 +534,9 @@ require_once __DIR__ . '/componentes/sidebar.php';
                                 <input type="file" id="foto-input" class="hidden" accept="image/jpeg,image/png,image/webp" onchange="subirFotoPerfil()">
                                 <div id="foto-spinner" class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full hidden z-20"><div class="w-5 h-5 border-2 border-[#54A6D8] border-t-transparent rounded-full animate-spin"></div></div>
                             <?php endif; ?>
+                            <a href="https://instagram.com/nubira.cl" target="_blank" rel="noopener noreferrer" title="Síguenos en Instagram" class="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md hover:scale-110 transition-transform text-pink-600 z-10">
+                                <?= icon('instagram', 'w-5 h-5') ?>
+                            </a>
                         </div>
 
                         <div class="flex-1 min-w-0 w-full pt-1">
@@ -652,9 +657,9 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
                         <?php if ($es_propio): ?>
                         <div id="bio-edit-container" class="hidden mt-4 space-y-4">
-                            <textarea id="bio-input" maxlength="250" class="w-full p-4 border border-gray-200 rounded-2xl focus:border-[#54A6D8] focus:ring-4 focus:ring-[#54A6D8]/10 outline-none text-gray-800 font-normal leading-relaxed tracking-wide bg-gray-50 transition-all duration-200 text-base md:text-sm resize-none" rows="3"><?= htmlspecialchars($bio_actual) ?></textarea>
+                            <textarea id="bio-input" maxlength="500" oninput="document.getElementById('bio-counter').textContent = this.value.length + '/500'" class="w-full p-4 border border-gray-200 rounded-2xl focus:border-[#54A6D8] focus:ring-4 focus:ring-[#54A6D8]/10 outline-none text-gray-800 font-normal leading-relaxed tracking-wide bg-gray-50 transition-all duration-200 text-base md:text-sm resize-none" rows="5"><?= htmlspecialchars($bio_actual) ?></textarea>
                             <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <span class="text-[10px] font-medium text-gray-400 uppercase tracking-widest text-center sm:text-left">Máx. 250 caracteres</span>
+                                <span id="bio-counter" class="text-[10px] font-medium text-gray-400 uppercase tracking-widest text-center sm:text-left"><?= mb_strlen($bio_actual ?? '') ?>/500</span>
                                 <div class="flex justify-end gap-3 w-full sm:w-auto">
                                     <button onclick="toggleEditBio()" class="flex-1 sm:flex-none px-4 py-3 sm:py-2 text-[11px] sm:text-[10px] font-medium uppercase text-gray-500 hover:text-red-500 bg-gray-100 hover:bg-red-50 sm:bg-transparent rounded-xl transition-colors duration-150">Cancelar</button>
                                     <button onclick="saveBio()" id="btn-save-bio" class="flex-1 sm:flex-none px-6 py-3 sm:py-2 bg-[#54A6D8] text-white text-[11px] sm:text-[10px] font-medium uppercase rounded-xl hover:bg-[#3d91c7] active:bg-[#347fae] transition-all duration-150">Guardar</button>
@@ -866,180 +871,210 @@ require_once __DIR__ . '/componentes/sidebar.php';
                 </div>
                 
                 <div id="pub-container" class="flex overflow-x-auto gap-4 md:gap-5 no-scrollbar snap-x snap-mandatory scroll-smooth pb-4 pt-1 px-1">
-                    <?php if (!function_exists('render_rating_html')): ?>
-                    <?php function render_rating_html(float $rating_val, int $total_votos): string {
-                        if ($total_votos > 0) {
-                            return '<div class="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
-                                        <svg class="w-3 h-3 text-gray-900 pb-[1px]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                                        <span class="text-[10px] font-light tracking-[0.01em] text-gray-800 leading-none">'.number_format($rating_val, 1).'</span>
-                                    </div>';
-                        }
-                        return '';
+                    <?php if (!function_exists('abreviar_conteo_perfil')): ?>
+                    <?php function abreviar_conteo_perfil($n): string {
+                        $n = (int)$n;
+                        if ($n >= 1000000) return round($n / 1000000, 1) . 'M';
+                        if ($n >= 1000) return round($n / 1000, 1) . 'K';
+                        return (string)$n;
                     } ?>
                     <?php endif; ?>
                     <?php if (empty($publicaciones)): ?>
                         <div class="min-w-full py-12 bg-white rounded-3xl border border-dashed border-gray-200 text-center text-gray-400 italic">No hay publicaciones activas.</div>
-                    <?php else: foreach($publicaciones as $row): 
-                        
+                    <?php else: foreach($publicaciones as $row):
+
                         $sid_raw = (int)($row['id'] ?? 0);
                         $tipo_pub = $row['tipo_pub'] ?? 'servicio';
                         $es_apunte = ($tipo_pub === 'apunte');
-
-                        // Data Prep
-                        $titulo = (string)($row['titulo'] ?? '');
-                        $precio_val = $row['precio'] ?? 0;
-                        if ($es_apunte) {
-                            $img = (string)($row['portada'] ?? '');
-                            $portada_url = !empty($img) ? "/upload/preview/" . $img : $default_pub_img;
-                        } else {
-                            $portada_url = url_portada($row); // [BANCO] banco → legacy → placeholder
-                        }
 
                         if ($es_apunte) {
                             $enlace_detalle = "/apunte/" . nubira_encriptar_id($sid_raw);
                         } else {
                             $enlace_detalle = url_servicio($sid_raw, $row['slug'] ?? null);
                         }
-                        
-                        // Formato de Precio
-                        if (is_numeric($precio_val) && $precio_val > 0) {
-                            $precio = "$" . number_format($precio_val, 0, ',', '.') . "";
-                            $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
-                        } else {
-                            $precio = "Gratis";
-                            $precio_class = "text-gray-600 font-normal tracking-[-0.01em]";
-                        }
-
-                        // Lógica de Score y Tiers Youtube Edition
-                        $score = (int)($row['score_nubira'] ?? 0); 
-                        $total_v = isset($row['total_votos']) ? (int)$row['total_votos'] : 0;
-                        $rating_val = isset($row['rating_promedio']) ? (float)$row['rating_promedio'] : 0;
-                        
-                        $nivel_tutor = '';
-                        $es_basico = ($score < 60);
-
-                        if ($score >= 100 && $total_v >= 10 && $rating_val >= 4.7) $nivel_tutor = 'leyenda';
-                        elseif ($score >= 80 && $total_v >= 3 && $rating_val >= 4.0) $nivel_tutor = 'elite';
-                        elseif ($score >= 80) $nivel_tutor = 'pro';
-                        elseif ($score >= 60) $nivel_tutor = 'top';
-
-                        // Lógica Nuevo
-                        $fecha_pub = !empty($row['fecha_publicacion']) ? new DateTime($row['fecha_publicacion']) : new DateTime();
-                        $es_nuevo  = ((new DateTime())->diff($fecha_pub)->days <= 14); 
-
-                        // Tutor
-                        $foto_tutor = !empty($foto_field) ? '/app/perfil/fotos/' . $foto_field : "https://ui-avatars.com/api/?name=".urlencode($nombre_display)."&background=f1f5f9&color=64748b";
-
-                        // Modalidad
-                        $mod = ucfirst($row['modalidad'] ?? '');
-                        if (stripos($mod, 'online') !== false) $icon_mod = icon('wifi', 'w-3 h-3');
-                        elseif (stripos($mod, 'presencial') !== false) $icon_mod = icon('users', 'w-3 h-3');
-                        else $icon_mod = icon('laptop', 'w-3 h-3');
-
-                        // HTML Stars — render_rating_html() compartido para el caso con votos;
-                        // se mantiene el fallback "Nuevo" existente porque la función no lo cubre
-                        // (su parámetro $fallback_label nunca se usa en su implementación real).
-                        if ($total_v > 0) {
-                            $html_stars = render_rating_html($rating_val, $total_v);
-                        } else {
-                            $html_stars = '<div class="flex items-center gap-1">'.icon('star-solid', 'w-3 h-3 text-gray-300').'<span class="text-[10px] font-medium text-gray-400">Nuevo</span></div>';
-                        }
-
-                        // Institucion (Truncada)
-                        $inst_raw = $row['institucion_maestra'] ?? ($row['institucion'] ?? $inst_display);
-                        $inst_text = htmlspecialchars(mb_strimwidth($inst_raw, 0, 22, '...'));
-                        
-                        // Etiqueta Superior
-                        $tag_txt = $es_apunte ? "APUNTE" : "CLASES";
-                        $tag_color = $es_apunte ? "text-orange-500" : "text-[#54A6D8]";
                         ?>
-                        
-                        <a href="<?= $enlace_detalle ?>"
-                           class="w-[220px] md:w-[240px] shrink-0 snap-start block flex flex-col mb-4 bg-transparent cursor-pointer select-none group h-full active:scale-[0.97] active:opacity-80 transition-all duration-200 <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
 
-                          <div class="relative bg-gray-100 rounded-2xl overflow-hidden w-full aspect-[4/3] border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-                            <img src="<?= htmlspecialchars($portada_url) ?>"
-                                 alt="<?= htmlspecialchars($titulo) ?>"
-                                 class="w-full h-full object-cover transition-opacity duration-300"
-                                 loading="lazy"
-                                 onerror="this.src='<?= $default_pub_img ?>'">
+                        <?php if (!$es_apunte):
+                            // ===== CARD SERVICIO — espejo visual de cargar_servicios.php:279-359 =====
+                            $portada_url = url_portada($row);
 
-                            <?php if (!$es_apunte):
-                                $categoria_overlay = $row['categoria'] ?? 'Otros';
-                                $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
-                                $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
+                            $categoria_overlay = $row['categoria'] ?? 'Otros';
+                            $prefijo_overlay = in_array($categoria_overlay, ['Otros','Asesoría']) ? '' : 'Clase de';
+                            $nombre_categoria_overlay = ($categoria_overlay === 'Otros') ? 'Clase' : $categoria_overlay;
 
+                            $rating_val = isset($row['rating_promedio']) ? (float)$row['rating_promedio'] : 0;
+                            $total_v    = isset($row['total_votos']) ? (int)$row['total_votos'] : 0;
+
+                            $precio_val = $row['precio'] ?? 0;
+                            $es_oferta = oferta_vigente($row);
+                            $pct_descuento = ($es_oferta && (int)$precio_val > 0) ? round(((int)$precio_val - (int)$row['precio_oferta']) / (int)$precio_val * 100) : 0;
+
+                            if ($es_oferta) {
+                                $precio_oferta = (int)$row['precio_oferta'];
+                                $precio_html = '<div class="flex items-baseline gap-1.5 mb-0.5"><span class="text-[11px] text-gray-400 line-through font-medium leading-none">$' . number_format($precio_val, 0, ',', '.') . '</span><span class="text-[14px] text-[#222222] font-normal tracking-[-0.01em] leading-none">$' . number_format($precio_oferta, 0, ',', '.') . '</span>' . ($pct_descuento > 0 ? '<span class="bg-green-600 text-white text-[9px] font-semibold px-1 py-px rounded ml-1.5 leading-none relative -top-0.5">-' . $pct_descuento . '%</span>' : '') . '</div>';
+                            } elseif (is_numeric($precio_val) && $precio_val > 0) {
+                                $precio_html = '<div class="text-[13px] text-[#222222] font-normal tracking-[-0.01em] leading-none mb-0.5">$' . number_format($precio_val, 0, ',', '.') . '</div>';
+                            } else {
+                                $precio_html = '<div class="text-[13px] text-[#222222] font-normal tracking-[-0.01em] leading-none mb-0.5">Gratis</div>';
+                            }
+
+                            $score = (int)($row['score_nubira'] ?? 0);
+                            $nivel_tutor = '';
+                            $es_basico = ($score < 60);
+                            if ($score >= 100 && $total_v >= 10 && $rating_val >= 4.7) $nivel_tutor = 'leyenda';
+                            elseif ($score >= 80 && $total_v >= 3 && $rating_val >= 4.0) $nivel_tutor = 'elite';
+                            elseif ($score >= 80) $nivel_tutor = 'pro';
+                            elseif ($score >= 60) $nivel_tutor = 'top';
+
+                            $html_stars = '';
+                            if ($total_v > 0) {
+                                $html_stars = '<div class="flex items-center gap-1">
+                                    <svg class="w-3 h-3 text-gray-700" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                    <span class="text-[11px] text-gray-700 font-semibold leading-none">'.number_format($rating_val, 1).'</span>
+                                </div>';
+                            }
+
+                            $inst_text = htmlspecialchars((string)$inst_display);
+                            ?>
+                            <a href="<?= $enlace_detalle ?>"
+                               class="w-[220px] md:w-[240px] shrink-0 snap-start block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer bg-transparent group h-full <?= $es_basico ? 'opacity-90 grayscale-[15%]' : '' ?>">
+
+                              <div class="card-apunte relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                                <img src="<?= htmlspecialchars($portada_url) ?>"
+                                     alt="<?= htmlspecialchars($row['titulo']) ?>"
+                                     class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                     loading="lazy"
+                                     onerror="this.src='/upload/preview/default_file.webp'">
+
+                                <?php
                                 $ov_prefijo    = $prefijo_overlay;
                                 $ov_categoria  = $nombre_categoria_overlay;
                                 $ov_show_tutor = false;
+                                $ov_foto       = $foto_url;
+                                $ov_nombre     = $nombre_display;
                                 $ov_size       = 'lg';
                                 $ov_liviano    = true;
                                 include __DIR__ . '/componentes/overlay_card_servicio.php';
-                            endif; ?>
+                                ?>
 
-                            <div class="absolute top-2 left-2 flex flex-wrap gap-1 z-10 scale-90 origin-top-left">
-                              <?php if ($nivel_tutor === 'leyenda'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
-                                      Leyenda
-                                  </span>
-                              <?php elseif ($nivel_tutor === 'elite'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
-                                      Élite
-                                  </span>
-                              <?php elseif ($nivel_tutor === 'pro'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
-                                      Pro
-                                  </span>
-                              <?php elseif ($nivel_tutor === 'top'): ?>
-                                  <span class="bg-white/95 backdrop-blur-sm text-[9px] font-medium text-[#222222] px-2 py-1 rounded-full flex items-center border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
-                                      Top
-                                  </span>
-                              <?php endif; ?>
-                              
-                              <?php if($es_apunte): ?>
-                                <span class="bg-white/95 backdrop-blur-sm text-orange-600 text-[8px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md border border-slate-100 flex items-center gap-1 shadow-sm">
-                                    PDF
-                                </span>
-                              <?php elseif ($es_nuevo): ?>
-                                <span class="bg-white/95 backdrop-blur-sm text-emerald-600 text-[9px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-full border border-slate-100 flex items-center gap-1 shadow-sm">
-                                    Nuevo
-                                </span>
-                              <?php endif; ?>
-                            </div>
+                                <?php if (!$es_oferta): ?>
+                                <div class="absolute top-2.5 right-2.5 z-10">
+                                    <?php if ($nivel_tutor === 'leyenda'): ?>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Leyenda</span>
+                                    <?php elseif ($nivel_tutor === 'elite'): ?>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Élite</span>
+                                    <?php elseif ($nivel_tutor === 'pro'): ?>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Pro</span>
+                                    <?php elseif ($nivel_tutor === 'top'): ?>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Top</span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endif; ?>
 
-                            <div class="absolute top-2 right-2 z-20 shrink-0">
-                                <img src="<?= htmlspecialchars($foto_tutor, ENT_QUOTES, 'UTF-8') ?>" 
-                                     class="w-8 h-8 rounded-full object-cover shadow-sm border-2 border-white bg-gray-50"
-                                     alt="Tutor">
-                            </div>
-                          </div>
-
-                          <div class="pt-2.5 pb-1 flex flex-col flex-1 text-left px-0.5 text-shadow-none">
-                              
-                              <p class="text-[9px] font-bold <?= $tag_color ?> uppercase tracking-wider mb-0.5"><?= $tag_txt ?></p>
-
-                              <div class="font-medium text-[14px] md:text-[15px] tracking-[-0.01em] leading-[1.25] text-[#222222] line-clamp-2 mb-1.5 min-h-[40px]">
-                                  <?= htmlspecialchars($titulo) ?>
+                                <?php if ($es_oferta): ?>
+                                <div class="absolute top-1 right-1 z-10">
+                                    <span class="inline-flex items-center px-1.5 py-0 md:px-2 md:py-0.5 rounded-full text-[9px] md:text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                        <?= (int)($row['cupos_oferta'] ?? 0) ?> <?= (int)($row['cupos_oferta'] ?? 0) === 1 ? 'cupo' : 'cupos' ?>
+                                    </span>
+                                </div>
+                                <?php endif; ?>
                               </div>
 
-                              <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-wide mb-1.5">
-                                  <?php if(!empty($inst_text)): ?>
-                                      <span class="truncate max-w-[70%]"><?= $inst_text ?></span>
-                                      <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0"></span>
-                                  <?php endif; ?>
-                                  <span class="shrink-0"><?= $icon_mod ?></span>
-                              </div>
+                              <div class="pl-1 pr-1 pt-3 pb-1 flex flex-col flex-1 text-left min-h-[90px]">
+                                  <h6 class="font-medium text-[14px] leading-[1.3] tracking-[-0.01em] text-[#222222] line-clamp-2 h-[36px] overflow-hidden mb-1">
+                                      <?= htmlspecialchars($row['titulo']) ?>
+                                  </h6>
 
-                              <div class="flex items-center justify-between mt-auto pt-1">
-                                  <div class="text-[14px] <?= $precio_class ?> leading-none">
-                                      <?= $precio ?>
-                                  </div>
-                                  <div class="shrink-0 flex items-center">
-                                      <?= $html_stars ?>
+                                  <?= $precio_html ?>
+
+                                  <div class="flex items-center justify-between pt-1">
+                                      <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[70%]">
+                                          <?php if (!empty($inst_text)): ?>
+                                              <span class="truncate"><?= $inst_text ?></span>
+                                          <?php endif; ?>
+                                      </div>
+                                      <?php if ($html_stars): ?><div class="shrink-0"><?= $html_stars ?></div><?php endif; ?>
                                   </div>
                               </div>
-                          </div>
-                        </a>
+                            </a>
+
+                        <?php else:
+                            // ===== CARD APUNTE — espejo visual de cargar_apuntes.php:271-356 =====
+                            $portada_url = obtenerMiniaturaApunte($row['id'], $row['portada'] ?? '', $row['preview'] ?? '', $row['archivo'] ?? '');
+
+                            $precio_raw = (int)($row['precio'] ?? 0);
+                            $promo_gratis = isset($row['promo_gratis']) ? (int)$row['promo_gratis'] : 0;
+                            $promo_limite = isset($row['promo_limite']) ? (int)$row['promo_limite'] : 0;
+                            $promo_contador = isset($row['promo_contador']) ? (int)$row['promo_contador'] : 0;
+                            $es_promo_activa = ($promo_gratis === 1 && $promo_contador < $promo_limite);
+                            $descargas_restantes = $promo_limite - $promo_contador;
+
+                            if ($es_promo_activa) {
+                                $txtPrecio = "<span class='line-through text-gray-400 text-[10px] md:text-xs font-medium mr-1'>$" . number_format($precio_raw, 0, ',', '.') . "</span><span class='text-[#54A6D8] font-normal tracking-[-0.01em]'>¡Gratis!</span>";
+                                $precio_class = "flex items-center";
+                            } else {
+                                $txtPrecio = ($precio_raw > 0) ? '$' . number_format($precio_raw, 0, ',', '.') : 'Gratis';
+                                $precio_class = "text-[#222222] font-normal tracking-[-0.01em]";
+                            }
+
+                            $ventas_totales = (int)($row['descargas'] ?? 0);
+                            $ventas_txt = abreviar_conteo_perfil($ventas_totales);
+
+                            $desc = !empty($row['descripcion']) ? mb_substr($row['descripcion'], 0, 120, 'UTF-8') . '...' : '';
+                            $es_nuevo = (!empty($row['fecha_subida']) && strtotime($row['fecha_subida']) > strtotime('-7 days'));
+
+                            $inst_text = htmlspecialchars((string)$inst_display);
+                            ?>
+                            <a href="<?= $enlace_detalle ?>"
+                               class="w-[220px] md:w-[240px] shrink-0 snap-start block rounded-xl flex flex-col mb-2 transition-transform duration-300 hover:-translate-y-1 cursor-pointer bg-transparent group">
+
+                                <div class="card-apunte relative bg-gray-100 rounded-xl overflow-hidden w-full border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] aspect-[3/2]">
+                                    <img src="<?= htmlspecialchars($portada_url) ?>"
+                                         alt="<?= htmlspecialchars($row['titulo']) ?>"
+                                         class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                                         loading="lazy"
+                                         onerror="this.src='/img/logo2.webp'">
+
+                                    <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-2 z-10">
+                                        <?php if ($es_promo_activa): ?>
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                                Quedan <?= $descargas_restantes ?>
+                                            </span>
+                                        <?php elseif ($es_nuevo): ?>
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/95 backdrop-blur-sm text-[#222222] border border-[#f0f0f0] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">Nuevo</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <div class="pl-1 pr-2 pt-2 pb-2 flex flex-col gap-0 flex-1 text-left">
+                                    <h6 class="font-medium text-[15px] leading-snug tracking-[-0.01em] text-[#222222] line-clamp-2 h-[40px] overflow-hidden mb-1">
+                                        <?= htmlspecialchars($row['titulo']) ?>
+                                    </h6>
+
+                                    <p class="text-[13px] text-gray-600 line-clamp-2 h-[36px] overflow-hidden mb-1.5">
+                                        <?= htmlspecialchars($desc) ?>
+                                    </p>
+
+                                    <div class="text-[14px] <?= $precio_class ?> leading-none mb-0">
+                                        <?= $txtPrecio ?>
+                                    </div>
+
+                                    <div class="flex items-center justify-between mt-1 pt-0">
+                                        <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[70%]">
+                                            <?php if (!empty($inst_text)): ?>
+                                                <svg class="w-3 h-3 text-gray-300 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"></path></svg>
+                                                <span class="truncate"><?= $inst_text ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="flex items-center gap-1 text-[11px] text-gray-500">
+                                            <?php if ($ventas_totales > 0): ?>
+                                            <?= $ventas_txt ?> descargas
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        <?php endif; ?>
                     <?php endforeach; endif; ?>
                 </div>
             </section>

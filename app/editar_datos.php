@@ -303,7 +303,7 @@ require_once $app_dir . '/componentes/sidebar.php';
 
             <div>
                 <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Bio profesional</label>
-                <textarea name="bio" rows="4" maxlength="800"
+                <textarea name="bio" rows="4" maxlength="500"
                           placeholder="Cuéntanos tu experiencia y qué enseñas..."
                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm focus:ring-[#54A6D8] focus:border-[#54A6D8] transition outline-none resize-none"><?= htmlspecialchars($bio_actual ?? '') ?></textarea>
             </div>

@@ -62,11 +62,11 @@ if ($bio === '') {
 }
 
 // 4.2 Largo máximo
-if (strlen($bio) > 250) {
+if (strlen($bio) > 500) {
     ob_clean();
     echo json_encode([
         'success' => false,
-        'message' => 'MÁXIMO 250 CARACTERES PERMITIDOS'
+        'message' => 'MÁXIMO 500 CARACTERES PERMITIDOS'
     ]);
     exit;
 }
