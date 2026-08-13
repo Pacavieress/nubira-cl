@@ -2,7 +2,7 @@
   "name": "Nubira",
   "short_name": "Nubira",
   "description": "Marketplace educativo para estudiantes universitarios chilenos",
-  "start_url": "/vitrina",
+  "start_url": "/explorar",
   "display": "standalone",
   "background_color": "#54A6D8",
   "theme_color": "#54A6D8",
