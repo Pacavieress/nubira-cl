@@ -284,6 +284,7 @@ foreach ($servicios as $i => $row):
          alt="<?= htmlspecialchars($row['titulo']) ?>"
        class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
          loading="lazy"
+         width="<?= $compacto ? 400 : 600 ?>" height="400"
          onerror="this.src='/upload/preview/default_file.webp'">
     
   <?php

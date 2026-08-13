@@ -275,10 +275,11 @@ foreach ($apuntes as $i => $a):
 
     <div class="card-apunte relative bg-gray-100 rounded-xl overflow-hidden w-full border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] <?= $compacto ? 'aspect-square' : 'aspect-[3/2]' ?>">
         
-        <img src="<?= htmlspecialchars($rutaMiniatura) ?>" 
-             alt="<?= $titulo ?>" 
-             class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" 
+        <img src="<?= htmlspecialchars($rutaMiniatura) ?>"
+             alt="<?= $titulo ?>"
+             class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
              loading="lazy"
+             width="<?= $compacto ? 400 : 600 ?>" height="400"
              onerror="this.src='/img/logo2.webp'">
         
         <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-2 z-10">

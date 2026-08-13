@@ -99,7 +99,7 @@ RewriteRule ^mi-billetera/?$ app/datos_bancarios.php [L,QSA]
 ####################################
 # PÁGINAS INFORMATIVAS
 ####################################
-RewriteRule ^$                        /explorar                         [R=301,L]
+RewriteRule ^$                        app/vitrina.php                   [L,QSA]
 RewriteRule ^inicio$                  /explorar                         [R=301,L]
 RewriteRule ^sobre-nosotros$          sobre-nosotros.php                [L,QSA]
 RewriteRule ^privacidad$              privacidad.php                    [L,QSA]
