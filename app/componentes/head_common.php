@@ -34,7 +34,8 @@ else setTimeout(nbLoadFbq, 0);
      cargarlo o no, y el modal de avisos (header.php) podía aparecer en páginas sin FA,
      dejando sus íconos invisibles. Con esto, toda página que incluya head_common.php
      tiene FA garantizado, sin depender de que cada una lo agregue por su cuenta. -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"></noscript>
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/png" href="/img/icon-192.png">
 <link rel="apple-touch-icon" href="/img/icon-192.png">
