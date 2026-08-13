@@ -1941,25 +1941,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <script>
-  // [NUBIRA 2.0] Facebook Pixel diferido a idle callback
-  // No bloquea LCP ni compite con la carga inicial de la vitrina
-  (window.requestIdleCallback || function(cb){ setTimeout(cb, 2000); })(function() {
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    
-    fbq('init', '949858788026352'); 
-    fbq('track', 'PageView');
-  });
-</script>
-<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=949858788026352&ev=PageView&noscript=1" /></noscript>
-
-<script>
     // =============================================
     // JS NUBIRA 2.0 - PROTECCIÓN 3G (FAILSAFES)
     // =============================================

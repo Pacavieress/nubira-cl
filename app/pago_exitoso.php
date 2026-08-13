@@ -145,28 +145,21 @@ try {
             <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
             <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
             <title>Procesando Pago | Nubira</title>
-            
+
             <script>
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              
-              fbq('init', '949858788026352'); 
-              fbq('track', 'Purchase', {
-                  value: <?= (int)$monto ?>,
-                  currency: 'CLP',
-                  content_ids: ['<?= (int)$apunte_id ?>'],
-                  content_type: 'product'
-              });
+              if (typeof fbq === 'function') {
+                  fbq('track', 'Purchase', {
+                      value: <?= (int)$monto ?>,
+                      currency: 'CLP',
+                      content_ids: ['<?= (int)$apunte_id ?>'],
+                      content_type: 'product'
+                  });
+              }
             </script>
             <noscript>
-              <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=949858788026352&ev=Purchase&noscript=1" />
+              <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2149832959284130&ev=Purchase&noscript=1" />
             </noscript>
+
             <style>
                 body { margin: 0; background: #ffffff; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; flex-direction: column; }
                 .loader { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid #54A6D8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }

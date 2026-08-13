@@ -165,34 +165,21 @@ if (!$yaProcesado) {
 
     <?php if (!$yaProcesado): ?>
     <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      
-      fbq('init', '949858788026352'); 
-      fbq('track', 'Purchase', {
-          value: <?= (int)$contrato['monto'] ?>,
-          currency: 'CLP',
-          content_ids: ['<?= (int)$contrato['servicio_id'] ?>'],
-          content_type: 'product',
-          content_name: 'Tutoría: <?= htmlspecialchars($contrato['servicio_titulo'], ENT_QUOTES, 'UTF-8') ?>'
-      });
+      if (typeof fbq === 'function') {
+          fbq('track', 'Purchase', {
+              value: <?= (int)$contrato['monto'] ?>,
+              currency: 'CLP',
+              content_ids: ['<?= (int)$contrato['servicio_id'] ?>'],
+              content_type: 'product',
+              content_name: 'Tutoría: <?= htmlspecialchars($contrato['servicio_titulo'], ENT_QUOTES, 'UTF-8') ?>'
+          });
+      }
     </script>
     <noscript>
-      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=949858788026352&ev=Purchase&noscript=1" />
+      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2149832959284130&ev=Purchase&noscript=1" />
     </noscript>
-    <?php else: ?>
-    <script>
-      // Pixel base solo para no duplicar compras si recarga la página
-      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '949858788026352'); fbq('track', 'PageView');
-    </script>
     <?php endif; ?>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');

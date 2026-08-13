@@ -21,6 +21,7 @@ $nombre_alumno = '';
 $mensaje = '';
 $tipo = '';
 $icono = '';
+$es_confirmacion_nueva = false; // [PIXEL META] true solo si esta carga confirmó la cuenta recién ahora
 
 if ($token) {
     // 1. Intentar confirmar por token (caso normal)
@@ -43,6 +44,7 @@ if ($token) {
         $mensaje = "¡Hola <strong>$nombre_alumno</strong>!<br>Tu cuenta ha sido activada con éxito.";
         $tipo = "success";
         $icono = "fa-circle-check text-green-500";
+        $es_confirmacion_nueva = true;
 
     } else {
         // 2. Token no encontrado → verificar si ya está confirmado vía correo
@@ -137,6 +139,16 @@ $conn->close();
             if(seg > 1) { seg--; cont.innerText = seg; }
         }, 1000);
     </script>
+
+    <?php if ($es_confirmacion_nueva): ?>
+    <script>
+        // [PIXEL META] fbq ya está definido de forma síncrona por head_common.php,
+        // pero el chequeo se mantiene como red de seguridad ante cualquier orden inesperado.
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'CompleteRegistration');
+        }
+    </script>
+    <?php endif; ?>
 
 </body>
 </html>

@@ -5,6 +5,31 @@
 if (defined('NUBIRA_HEAD_COMMON_LOADED')) return;
 define('NUBIRA_HEAD_COMMON_LOADED', true);
 ?>
+<!-- [META PIXEL] Base Code sitewide (Meta Ads). El stub de fbq() es síncrono e
+     inmediato (definir una función y encolar una llamada no bloquea nada); solo
+     se difiere la DESCARGA real de fbevents.js. Así fbq() ya existe para
+     cualquier evento (ViewContent, Purchase, CompleteRegistration) que se
+     dispare en la misma carga, sin depender del timing de requestIdleCallback. -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[]}(window, document);
+fbq('init', '2149832959284130');
+fbq('track', 'PageView');
+
+var nbLoadFbq = function(){
+  var t = document.createElement('script');
+  t.async = true;
+  t.src = 'https://connect.facebook.net/en_US/fbevents.js';
+  var s = document.getElementsByTagName('script')[0];
+  s.parentNode.insertBefore(t, s);
+};
+if ('requestIdleCallback' in window) requestIdleCallback(nbLoadFbq);
+else setTimeout(nbLoadFbq, 0);
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2149832959284130&ev=PageView&noscript=1"/></noscript>
 <!-- [Fix modal de avisos] Font Awesome centralizado acá — antes cada página decidía si
      cargarlo o no, y el modal de avisos (header.php) podía aparecer en páginas sin FA,
      dejando sus íconos invisibles. Con esto, toda página que incluya head_common.php
