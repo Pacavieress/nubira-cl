@@ -704,10 +704,14 @@ try {
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <!-- [FIX pantalla blanca] Color crítico, antes de cualquier otra cosa — se pinta
-         antes de que el script bloqueante de Tailwind CDN detenga el parseo del HTML.
-         Mismo azul que background_color/theme_color del manifest y #loader-nativo. -->
-    <style>html,body{background:#54A6D8}</style>
+    <!-- [FIX pantalla blanca — solo mobile] Color crítico, antes de cualquier otra cosa —
+         se pinta antes de que el script bloqueante de Tailwind CDN detenga el parseo del
+         HTML. Mismo azul que background_color/theme_color del manifest y #loader-nativo.
+         Acotado a mobile (mismo breakpoint que head_common.php usa para el fix de zoom
+         iOS): en desktop la carga es tan rápida que este mismo azul se percibía como un
+         parpadeo en vez de pasar desapercibido — el problema real (bloqueo de Tailwind
+         en redes lentas) es de todos modos un caso mobile, no desktop. -->
+    <style>@media (max-width: 767px) { html,body { background: #54A6D8; transition: background-color 0.3s ease; } }</style>
     <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_seo_meta('Nubira — Tutores, apuntes y clases particulares universitarias en Chile', 'Encuentra tutores verificados con correo institucional, apuntes universitarios y clases particulares en Chile. Pagos protegidos con Garantía Nubira.'); ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
@@ -741,7 +745,9 @@ try {
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
     
    <style>
-        html, body { background-color: #54A6D8; }
+        @media (max-width: 767px) {
+            html, body { background-color: #54A6D8; transition: background-color 0.3s ease; }
+        }
         body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
