@@ -704,6 +704,10 @@ try {
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
+    <!-- [FIX pantalla blanca] Color crítico, antes de cualquier otra cosa — se pinta
+         antes de que el script bloqueante de Tailwind CDN detenga el parseo del HTML.
+         Mismo azul que background_color/theme_color del manifest y #loader-nativo. -->
+    <style>html,body{background:#54A6D8}</style>
     <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_seo_meta('Nubira — Tutores, apuntes y clases particulares universitarias en Chile', 'Encuentra tutores verificados con correo institucional, apuntes universitarios y clases particulares en Chile. Pagos protegidos con Garantía Nubira.'); ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
@@ -737,7 +741,7 @@ try {
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
     
    <style>
-        html, body { background-color: #ffffff; }
+        html, body { background-color: #54A6D8; }
         body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
