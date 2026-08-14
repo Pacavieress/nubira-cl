@@ -30,8 +30,9 @@ app/uploads_entregas/
 app/cache_ia/
 app/cache_nav/
 
-# Dependencias (se reinstalan con composer)
+# Dependencias (se reinstalan con composer / npm)
 /vendor/
+/node_modules/
 
 # Backups locales
 backup_*/

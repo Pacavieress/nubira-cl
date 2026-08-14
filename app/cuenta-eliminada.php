@@ -23,7 +23,7 @@ header('Expires: 0');
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <meta name="robots" content="noindex, nofollow" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/tailwind.min.css">
 </head>
 <body class="bg-gradient-to-tr from-blue-100 via-purple-100 to-green-100 min-h-screen flex items-center justify-center text-gray-800">
 

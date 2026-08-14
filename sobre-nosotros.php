@@ -21,7 +21,7 @@ $ocultar_botones_publicar = true;
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?php require_once __DIR__ . '/app/componentes/head_common.php'; ?>
   <?php require_once __DIR__ . '/app/helpers/seo.php'; echo nubira_seo_meta('Sobre Nubira | Plataforma universitaria chilena', 'Nubira nace de estudiantes para estudiantes. Marketplace chileno de tutorías y apuntes con pago protegido y verificación institucional.'); ?>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/tailwind.min.css">
   <?php require_once __DIR__ . '/app/helpers/seo.php'; echo nubira_canonical_tag(); ?>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">

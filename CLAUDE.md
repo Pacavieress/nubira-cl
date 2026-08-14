@@ -354,10 +354,30 @@ Validación clave: ¿cuántos usuarios COMPLETAN los 5 slides vs cuántos saltan
 ## Tech Stack (STRICT — no deviations)
 
 - **Backend:** PHP 8.x, procedural mysqli, prepared statements MANDATORY everywhere
-- **Frontend:** HTML5 semantic, Tailwind CSS (CDN), NO custom CSS except minimal `<style>` adjustments
+- **Frontend:** HTML5 semantic, Tailwind CSS (CDN, migrando página por página a build compilado — ver "Build de CSS" abajo), NO custom CSS except minimal `<style>` adjustments
 - **JS:** Vanilla ES6+ only, NO jQuery. Animations via `classList`, `transform`, `opacity`
 - **Icons:** Custom SVG system via `icon('name')` in `app/iconos.php`. FontAwesome only if already present in file. Migrating to Heroicons-style outline SVGs (stroke-width 1.5)
 - **Libraries:** MercadoPago SDK, PHPMailer, pdf.js, viewerjs (only if already in file)
+
+## Build de CSS (Tailwind CLI)
+
+Migración en curso desde Tailwind Play CDN a un build compilado con Tailwind CLI v3
+(misma versión mayor que el CDN, `tailwindcss@3.4.19`, para minimizar diferencias de
+comportamiento). Página por página, no de una sola vez — ver estado abajo.
+
+- **Config fuente:** `tailwind.config.js` (content, color `nubira`, safelist, 3 plugins:
+  forms/typography/aspect-ratio), `src/input.css` (entrada `@tailwind base/components/utilities`).
+- **Salida:** `css/tailwind.min.css` — servida como `<link>` estático, reemplaza el
+  `<script src="cdn.tailwindcss.com">` página por página.
+- **Regenerar tras CUALQUIER cambio de clases Tailwind:** `npm run build:css`
+  (usa `npm run watch:css` para iterar en vivo). Subir `css/tailwind.min.css` junto
+  con los `.php` que cambiaste en el mismo deploy — nunca por separado.
+- **Rollback por página:** cada página mantiene su propio bloque `<head>`
+  autocontenido (deliberado — NO centralizar el `<link>` en `head_common.php`
+  hasta que las 132 páginas estén migradas y confirmadas estables). Revertir una
+  página específica es de un solo archivo (`git checkout <commit> -- archivo.php`),
+  sin afectar a las demás.
+- **Estado de migración:** 0/132 páginas migradas (pipeline listo, piloto sin iniciar).
 
 ## Design System — Nubira 2.0 (Airbnb-inspired)
 
