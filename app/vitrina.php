@@ -721,24 +721,10 @@ try {
 
 <!-- [NUBIRA 2.0] Preload de imagen fallback default (la más usada) -->
 <link rel="preload" as="image" href="https://nubira.cl/upload/servicios/default_clases.webp" fetchpriority="high">
-    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-   <!-- [NUBIRA 2.0] Preconnect a Tailwind CDN para acelerar descarga -->
-<link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
-<script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        nubira: '#54A6D8', 
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/css/tailwind.min.css">
 
     <!-- [NUBIRA 2.0] Fuente Inter optimizada - carga directa sin trick de media="print" -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">

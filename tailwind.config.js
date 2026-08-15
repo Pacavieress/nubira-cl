@@ -28,9 +28,13 @@ module.exports = {
     'bg-emerald-50', 'border-emerald-100', 'text-emerald-700',
     'bg-red-50', 'border-red-100', 'text-red-700',
   ],
+  // aspect-ratio: quitado (10/08/2026) — su theme.aspectRatio pisaba las claves
+  // nativas (auto/square/video) que el core de Tailwind v3 ya trae sin plugin,
+  // dejando aspect-square/aspect-video/aspect-[N/M] sin generar CSS. El sitio
+  // usa 100% sintaxis nativa, cero uso de la sintaxis vieja del plugin
+  // (aspect-w-N/aspect-h-N), así que no hace falta.
   plugins: [
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
-    require('@tailwindcss/aspect-ratio'),
   ],
 }
