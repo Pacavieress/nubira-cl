@@ -54,9 +54,10 @@ echo '</div>';
 require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[640px]">
-  <div class="w-full">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 max-w-full">
 
+  <!-- Contenedor angosto: header + selector de materia + preguntas -->
+  <div class="max-w-[640px] mx-auto">
     <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-gray-100 px-4 md:px-6 py-4 flex items-center gap-3">
         <button type="button" onclick="navegacionSeguraNubira()"
                 class="lg:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200/60 shadow-sm active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2"
@@ -94,11 +95,14 @@ require_once $app_dir . '/componentes/sidebar.php';
         </button>
       </div>
 
-      <!-- PANTALLA 3: resultado -->
-      <div id="desafio-pantalla-resultado" class="hidden"></div>
-
     </div>
   </div>
+
+  <!-- PANTALLA 3: resultado — fuera del contenedor angosto: si el resultado es "mal",
+       las recomendaciones necesitan el ancho completo (mismo criterio que las listas
+       de vitrina.php: max-w-[1600px], no max-w-[640px]). -->
+  <div id="desafio-pantalla-resultado" class="hidden px-4 md:px-6 pt-6"></div>
+
 </main>
 
 <script>
@@ -229,24 +233,33 @@ require_once $app_dir . '/componentes/sidebar.php';
   function renderResultado(data) {
     if (data.resultado === 'bien') {
       pantallaResultado.innerHTML = `
-        <div class="py-6 text-center">
+        <div class="max-w-[640px] mx-auto py-6 text-center">
           <p class="text-base font-medium text-[#222222] mb-1">¡Bien hecho! ${data.aciertos}/3 correctas.</p>
           <p class="text-sm text-gray-500 mb-5">Vas por buen camino en ${nombreMateria(data.materia)}.</p>
           <button type="button" class="desafio-jugar-de-nuevo text-sm font-medium text-[#54A6D8] hover:underline">Jugar de nuevo</button>
         </div>
       `;
     } else {
+      // Recomendaciones a ancho completo (mismas clases de grid que clases_servicios.php
+      // y vitrina_apuntes.php en producción) — servicios/tutores primero, apuntes después.
       pantallaResultado.innerHTML = `
-        <div class="py-2">
-          <p class="text-base font-medium text-[#222222] mb-1 text-center">${data.aciertos}/3 correctas.</p>
-          <p class="text-sm text-gray-500 mb-4 text-center">Un tutor o un apunte de ${nombreMateria(data.materia)} te puede ayudar a reforzar esto.</p>
+        <div class="max-w-[640px] mx-auto text-center mb-6">
+          <p class="text-base font-medium text-[#222222] mb-1">${data.aciertos}/3 correctas.</p>
+          <p class="text-sm text-gray-500">Un tutor o un apunte de ${nombreMateria(data.materia)} te puede ayudar a reforzar esto.</p>
+        </div>
 
-          <div id="desafio-recom-apuntes" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"></div>
-          <div id="desafio-recom-tutores" class="flex gap-3 overflow-x-auto no-scrollbar pb-2 mt-2"></div>
+        <section class="max-w-[1600px] mx-auto mb-8">
+          <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em] mb-3">Tutores de ${nombreMateria(data.materia)}</h2>
+          <div id="desafio-recom-tutores" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full min-h-[200px]"></div>
+        </section>
 
-          <div class="text-center mt-3">
-            <button type="button" class="desafio-jugar-de-nuevo text-sm font-medium text-[#54A6D8] hover:underline">Jugar de nuevo</button>
-          </div>
+        <section class="max-w-[1600px] mx-auto mb-8">
+          <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em] mb-3">Apuntes de ${nombreMateria(data.materia)}</h2>
+          <div id="desafio-recom-apuntes" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 w-full min-h-[200px]"></div>
+        </section>
+
+        <div class="max-w-[640px] mx-auto text-center">
+          <button type="button" class="desafio-jugar-de-nuevo text-sm font-medium text-[#54A6D8] hover:underline">Jugar de nuevo</button>
         </div>
       `;
       cargarRecomendaciones(data.materia, data.categoria_servicio);
@@ -261,17 +274,21 @@ require_once $app_dir . '/componentes/sidebar.php';
     return btn ? btn.textContent.trim() : slug;
   }
 
+  // Servicios/tutores primero, apuntes después — mismos endpoints de siempre,
+  // sin compacto=1: la card completa (mismo tamaño/info que /servicios,
+  // vitrina.php y búsqueda — ver landing_categoria.php, que usa esta misma
+  // card vía render_card_servicio_grid con compacto=false).
   async function cargarRecomendaciones(materia, categoriaServicio) {
-    const contApuntes = document.getElementById('desafio-recom-apuntes');
     const contTutores = document.getElementById('desafio-recom-tutores');
+    const contApuntes = document.getElementById('desafio-recom-apuntes');
 
-    if (contApuntes) {
-      fetch('/app/cargar_apuntes.php?materia=' + encodeURIComponent(materia) + '&compacto=1&no_banners=1&pagina=1')
-        .then(r => r.text()).then(html => { contApuntes.innerHTML = html; }).catch(() => {});
-    }
     if (contTutores && categoriaServicio) {
-      fetch('/app/cargar_servicios.php?categoria=' + encodeURIComponent(categoriaServicio) + '&compacto=1&pagina=1')
+      fetch('/app/cargar_servicios.php?categoria=' + encodeURIComponent(categoriaServicio) + '&pagina=1')
         .then(r => r.text()).then(html => { contTutores.innerHTML = html; }).catch(() => {});
+    }
+    if (contApuntes) {
+      fetch('/app/cargar_apuntes.php?materia=' + encodeURIComponent(materia) + '&no_banners=1&pagina=1')
+        .then(r => r.text()).then(html => { contApuntes.innerHTML = html; }).catch(() => {});
     }
   }
 })();
