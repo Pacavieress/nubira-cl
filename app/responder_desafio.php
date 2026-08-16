@@ -4,10 +4,11 @@ require_once __DIR__ . '/conexion.php';
 header('Content-Type: application/json; charset=utf-8');
 
 // Calcula el resultado del "Desafío de hoy" y guarda el intento.
-// Requiere sesión iniciada: sin login no se revela ni el puntaje ni la
-// respuesta correcta (evita que alguien use este endpoint para "pescar"
-// respuestas sin registrarse). El front-end debe guardar las respuestas
-// elegidas (sessionStorage) y reintentar esta misma llamada después del login.
+// El único punto de entrada de la UI es un tile en panel_gestion.php, que ya
+// exige sesión iniciada — así que en el flujo normal esto nunca se llama sin
+// login. Igual se valida acá como barrera de seguridad server-side (nunca
+// confiar solo en que el cliente no muestre el botón): sin sesión, no se
+// revela ni el puntaje ni la respuesta correcta.
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

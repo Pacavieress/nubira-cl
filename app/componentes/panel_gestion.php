@@ -56,6 +56,7 @@ $accesos_user = [
     ['Clases Vendidas', '/clases-vendidas', '<path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.499 5.516 50.636 50.636 0 0 1-2.657.813m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 10.499-3.342M6.75 12V18.75m10.5-6V18.75" />', 'text-[#54A6D8]', 'bg-blue-50', 'badge-ventas-clases'],
     ['Apuntes Vendidos', '/ventas-apuntes', '<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />', 'text-[#54A6D8]', 'bg-blue-50', 'badge-ventas-apuntes'],
     ['Mis Compras', '/mis-compras', '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />', 'text-[#54A6D8]', 'bg-blue-50', null],
+    ['Desafío de hoy', 'javascript:document.dispatchEvent(new CustomEvent(\'nb:abrir-desafio\'))', '<path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />', 'text-[#54A6D8]', 'bg-blue-50', null],
     ['Mis Contratos', '/mis-contratos', '<path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h-4.5h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />', 'text-[#54A6D8]', 'bg-blue-50', null],
     ['Mi Billetera', '/mi-billetera', '<path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />', 'text-[#54A6D8]', 'bg-blue-50', null],
     ['Para Tutores', '/guias/para-tutores', '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />', 'text-[#54A6D8]', 'bg-blue-50', 'badge-guias-tutores'],
@@ -120,6 +121,7 @@ $accesos_admin = [
             // Listas de control
             $herramientas_tutor = ['Mis Publicaciones', 'Clases Vendidas', 'Apuntes Vendidos', 'Mis Ventas', 'Mis Contratos', 'Mi Billetera', 'Métricas', 'Para Tutores'];
             $herramientas_alumno = ['Mis Compras'];
+            $ocultar_para_tutor = ['Desafío de hoy'];
 
             // 1. Si NO es tutor, eliminamos herramientas de tutor.
             if (!$es_tutor && in_array($titulo, $herramientas_tutor)) {
@@ -128,6 +130,11 @@ $accesos_admin = [
 
             // 2. Si NO es comprador real (pagado), eliminamos herramientas de alumno.
             if (!$es_comprador && in_array($titulo, $herramientas_alumno)) {
+                continue;
+            }
+
+            // 3. Si ES tutor, ocultamos herramientas exclusivas de comprador.
+            if ($es_tutor && in_array($titulo, $ocultar_para_tutor)) {
                 continue;
             }
 
