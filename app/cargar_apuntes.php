@@ -90,6 +90,7 @@ $no_banners = !empty($_GET['no_banners']);
 // Filtros
 $q            = trim($_GET['q'] ?? '');
 $asignatura   = trim($_GET['asignatura'] ?? '');
+$materiaFiltro = trim($_GET['materia'] ?? '');
 $anio         = trim($_GET['anio'] ?? '');
 $precioFiltro = $_GET['precio'] ?? '';
 $order        = $_GET['orden'] ?? '';
@@ -145,6 +146,7 @@ if ($q !== '') {
     $tipos .= "sssss";
 }
 if ($asignatura !== '') { $filtros[] = "ap.asignatura = ?"; $params[] = $asignatura; $tipos .= "s"; }
+if ($materiaFiltro !== '') { $filtros[] = "ap.materia = ?"; $params[] = $materiaFiltro; $tipos .= "s"; }
 if ($anio !== '') { $filtros[] = "ap.anio = ?"; $params[] = (int)$anio; $tipos .= "i"; }
 if ($precioFiltro === 'gratis') $filtros[] = "ap.precio = 0";
 elseif ($precioFiltro === 'pagado') $filtros[] = "ap.precio > 0";
