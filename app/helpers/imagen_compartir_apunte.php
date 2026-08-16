@@ -244,6 +244,14 @@ if (!function_exists('nb_generar_imagen_apunte_post')) {
         nb_texto_centrado($img, $fReg, 24, $cTxt2, $lineaMateria, $W, $y);
         $y += 66;
 
+        /* ===== PARTE 3.5: descargas (solo si > 0 — no mostrar "0 descargas") ===== */
+        $descargas = (int)($a['descargas'] ?? 0);
+        if ($descargas > 0) {
+            $txtDescargas = ($descargas === 1) ? '1 descarga' : $descargas . ' descargas';
+            nb_texto_centrado($img, $fReg, 22, $cTxt2, $txtDescargas, $W, $y);
+            $y += 44;
+        }
+
         /* ===== PARTE 4: autor — foto + nombre, secundario (no protagonista) ===== */
         $diamAv = 72;
         $avCx = $M + (int)($diamAv / 2);
@@ -318,6 +326,14 @@ if (!function_exists('nb_generar_imagen_apunte_history')) {
         nb_texto_izquierda($img, $fReg, 26, $cTxt2, $lineaMateria, $padL, $y);
         $y += 60;
 
+        /* Descargas (solo si > 0 — no mostrar "0 descargas") */
+        $descargas = (int)($a['descargas'] ?? 0);
+        if ($descargas > 0) {
+            $txtDescargas = ($descargas === 1) ? '1 descarga' : $descargas . ' descargas';
+            nb_texto_izquierda($img, $fReg, 24, $cTxt2, $txtDescargas, $padL, $y);
+            $y += 46;
+        }
+
         /* Autor: foto + nombre, secundario */
         $diamAv = 64;
         nb_dibujar_avatar($img, $a, $padL + (int)($diamAv / 2), $y, $diamAv, $cAzul, $cBlanco, $fBold);
@@ -342,7 +358,7 @@ if (!function_exists('nb_fingerprint_apunte')) {
     function nb_fingerprint_apunte(array $a): string {
         $base = NB_IMG_VERSION_APUNTE . '|' . ($a['id'] ?? '') . '|' . ($a['titulo'] ?? '') . '|' . ($a['precio'] ?? '')
               . '|' . ($a['portada'] ?? '') . '|' . ($a['categoria'] ?? '') . '|' . ($a['foto_perfil'] ?? '')
-              . '|' . ($a['promo_gratis'] ?? '') . '|' . ($a['promo_contador'] ?? '');
+              . '|' . ($a['promo_gratis'] ?? '') . '|' . ($a['promo_contador'] ?? '') . '|' . ($a['descargas'] ?? '');
         return substr(md5($base), 0, 10);
     }
 }
@@ -353,7 +369,7 @@ if (!function_exists('nb_version_imagen_apunte')) {
         if (!isset($conn) || !($conn instanceof mysqli) || $apunte_id <= 0) return '0';
 
         $sql = "SELECT ap.id, ap.titulo, ap.precio, ap.portada, ap.categoria, ap.promo_gratis, ap.promo_contador,
-                       a.foto_perfil
+                       ap.descargas, a.foto_perfil
                 FROM apuntes ap
                 JOIN alumnos a ON a.id = ap.id_alumno
                 WHERE ap.id = ? LIMIT 1";
