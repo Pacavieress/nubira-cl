@@ -28,6 +28,11 @@
         <span class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center"><i class="fas fa-link text-lg" id="copy-icon"></i></span>
         <span class="font-semibold text-gray-800 text-sm">Copiar enlace</span>
       </button>
+      <button id="btn-compartir-imagen" type="button"
+              class="w-full flex items-center gap-4 px-4 min-h-[52px] rounded-xl hover:bg-blue-50 transition text-left" data-track-click="share:imagen">
+        <span class="w-10 h-10 rounded-full bg-[#54A6D8]/10 text-[#54A6D8] flex items-center justify-center"><?= icon('paper-airplane','w-5 h-5') ?></span>
+        <span class="font-semibold text-[#54A6D8] text-sm">Compartir como imagen</span>
+      </button>
     </div>
   </div>
 </div>
@@ -64,5 +69,9 @@
       } catch(e) {}
     });
   }
+
+  // "Compartir como imagen" abre el modal (lo cablea modal_compartir_apunte.php) y además cierra el sheet
+  const bi = document.getElementById('btn-compartir-imagen');
+  if(bi) bi.addEventListener('click', shut);
 })();
 </script>

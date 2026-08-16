@@ -22,6 +22,13 @@ RewriteEngine On
 # ... (El resto del código sigue igual)
 RewriteEngine On
 RewriteBase /
+
+####################################
+# CANONICALIZACIÓN DE DOMINIO — nubira.cl (sin www) es la versión oficial
+####################################
+RewriteCond %{HTTP_HOST} ^www\.nubira\.cl$ [NC]
+RewriteRule ^(.*)$ https://nubira.cl/$1 [R=301,L]
+
 # === BLOQUEAR ARCHIVOS SENSIBLES (CRITICO) ===
 <FilesMatch "^\.(env|env\..*|git.*|htaccess|htpasswd)$">
     Require all denied
@@ -47,6 +54,9 @@ RewriteRule ^r/([a-zA-Z0-9]+)$ app/redirigir_corto.php?codigo=$1 [L,QSA]
 # Imagen compartible de servicio (POST/HISTORY) → endpoint que sirve JPG
 RewriteRule ^api/img/servicio/([a-zA-Z0-9_-]+)/post\.jpg$    app/img_servicio.php?id=$1&f=post     [L,QSA]
 RewriteRule ^api/img/servicio/([a-zA-Z0-9_-]+)/history\.jpg$ app/img_servicio.php?id=$1&f=history [L,QSA]
+# Imagen compartible de apunte (POST/HISTORY) → endpoint que sirve JPG
+RewriteRule ^api/img/apunte/([a-zA-Z0-9_-]+)/post\.jpg$    app/img_apunte.php?id=$1&f=post     [L,QSA]
+RewriteRule ^api/img/apunte/([a-zA-Z0-9_-]+)/history\.jpg$ app/img_apunte.php?id=$1&f=history [L,QSA]
 # Imagen compartible de novedad (POST/HISTORY) → endpoint que sirve JPG (Fase 2 Marketing/Cards)
 RewriteRule ^api/img/novedad/([a-zA-Z0-9_-]+)/post\.jpg$    app/img_novedad.php?id=$1&f=post     [L,QSA]
 RewriteRule ^api/img/novedad/([a-zA-Z0-9_-]+)/history\.jpg$ app/img_novedad.php?id=$1&f=history [L,QSA]

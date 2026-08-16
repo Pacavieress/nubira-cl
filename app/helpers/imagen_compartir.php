@@ -297,8 +297,24 @@ if (!function_exists('nb_dibujar_avatar')) {
             // Círculo relleno + inicial blanca
             imagefilledellipse($img, $cx, $cy, $diam, $diam, $cAcento);
             $nombre = trim((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '?'));
-            $ini = mb_strtoupper(mb_substr($nombre !== '' ? $nombre : '?', 0, 1));
-            $sz = 130;
+            // 2 iniciales (nombre + apellido) — mismo patrón que obtener_iniciales()
+            // en bandeja_entrada.php y el cálculo inline de header.php/header_aula.php.
+            // Antes esta función tomaba solo mb_substr($nombre, 0, 1) — 1 sola letra,
+            // inconsistente con el resto del sitio (bug real, no el de recorte que se
+            // sospechó antes: la imagen no estaba cortada, le faltaba la 2da inicial).
+            $partesNombre = explode(' ', $nombre !== '' ? $nombre : '?');
+            $ini = mb_substr($partesNombre[0], 0, 1, 'UTF-8');
+            if (isset($partesNombre[1]) && $partesNombre[1] !== '') {
+                $ini .= mb_substr($partesNombre[1], 0, 1, 'UTF-8');
+            }
+            $ini = mb_strtoupper($ini, 'UTF-8');
+            // Tamaño de fuente proporcional a $diam (antes fijo en 130 sin importar el
+            // diámetro) — calibrado para que a diam=400 (servicio POST, el caso que ya
+            // se veía bien en producción) el resultado sea idéntico a 130, sin cambio
+            // visual ahí. A diámetros chicos (ej. avatar secundario de apunte, 72px) la
+            // letra fija de 130 desbordaba masivamente el círculo — bug real encontrado
+            // al integrar el avatar en el contexto de apunte.
+            $sz = max(12, (int)round($diam * 0.325));
             $bb = imagettfbbox($sz, 0, $fontBold, $ini);
             $tx = $cx - (abs($bb[2] - $bb[0]) / 2);
             $ty = $cy + (abs($bb[7] - $bb[1]) / 2);

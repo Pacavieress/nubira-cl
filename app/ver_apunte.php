@@ -944,6 +944,7 @@ require_once $base_path . '/componentes/nav_bottom.php';
 require_once $base_path . '/componentes/modal_publicar.php';
 require_once $base_path . '/componentes/modal_explora.php';
 require_once $base_path . '/componentes/sheet_compartir_apunte.php';
+require_once $base_path . '/componentes/modal_compartir_apunte.php';
 ?>
 
 <?php if (!$es_dueno): ?>
