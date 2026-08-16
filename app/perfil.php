@@ -1109,7 +1109,6 @@ require_once __DIR__ . '/componentes/sidebar.php';
 require_once __DIR__ . '/componentes/nav_bottom.php';
 require_once __DIR__ . '/componentes/modal_publicar.php';
 require_once __DIR__ . '/componentes/modal_explora.php';
-require_once __DIR__ . '/componentes/modal_desafio.php';
 ?>
 <?php if ($es_admin && !$es_propio): ?>
 <div id="modal-msg-admin" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-4">

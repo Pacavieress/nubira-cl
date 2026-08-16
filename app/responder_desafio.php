@@ -4,11 +4,11 @@ require_once __DIR__ . '/conexion.php';
 header('Content-Type: application/json; charset=utf-8');
 
 // Calcula el resultado del "Desafío de hoy" y guarda el intento.
-// El único punto de entrada de la UI es un tile en panel_gestion.php, que ya
-// exige sesión iniciada — así que en el flujo normal esto nunca se llama sin
-// login. Igual se valida acá como barrera de seguridad server-side (nunca
-// confiar solo en que el cliente no muestre el botón): sin sesión, no se
-// revela ni el puntaje ni la respuesta correcta.
+// El único punto de entrada de la UI es la página /desafio, que ya exige
+// sesión iniciada antes de renderizar nada — así que en el flujo normal esto
+// nunca se llama sin login. Igual se valida acá como barrera de seguridad
+// server-side (nunca confiar solo en que el cliente no muestre el botón):
+// sin sesión, no se revela ni el puntaje ni la respuesta correcta.
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

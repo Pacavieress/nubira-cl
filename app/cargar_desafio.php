@@ -10,8 +10,16 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/conexion.php';
 
 // Sirve 3 preguntas al azar de una materia para el "Desafío de hoy".
-// Público (no requiere login) — el login se exige recién en responder_desafio.php,
-// al momento de calcular y guardar el resultado.
+// La página /desafio (único punto de entrada de la UI) ya exige sesión
+// iniciada antes de renderizar nada, así que este endpoint replica el mismo
+// gate como barrera de seguridad server-side (no depender solo de que la
+// página no muestre el link).
+
+if (!isset($_SESSION['usuario_id'])) {
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'error' => 'login_requerido']);
+    exit;
+}
 
 $materia = trim($_GET['materia'] ?? '');
 

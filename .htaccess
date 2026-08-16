@@ -209,6 +209,10 @@ RewriteRule ^mis_compras/?$ /mis-compras [R=301,L]
 # 2. Asignamos la nueva URL al archivo físico
 RewriteRule ^mis-compras/?$ app/mis_compras.php [L,QSA]
 
+# Desafío de hoy
+RewriteRule ^desafio\.php$ /desafio [R=301,L]
+RewriteRule ^desafio/?$    app/desafio.php [L,QSA]
+
 RewriteRule ^solicitar-retiro$        app/solicitar_retiro.php          [L,QSA]
 RewriteRule ^editar-datos-bancarios$  app/editar_datos_bancarios.php    [L,QSA]
 RewriteRule ^iniciar-pago$            app/iniciar_pago.php              [L,QSA]
