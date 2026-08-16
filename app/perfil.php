@@ -476,6 +476,14 @@ $archivo_gestion = __DIR__ . '/componentes/panel_gestion.php';
         
         /* FIX: Reset text-shadow a nivel css para asegurar que Tailwind no pierda la batalla */
         .force-no-shadow * { text-shadow: none !important; }
+
+        /* [NUBIRA 2.0] "Leer más/menos" de la biografía */
+        #bio-view.bio-clamped {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="text-[#222222] antialiased overflow-x-hidden fouc-lock">
@@ -654,10 +662,11 @@ require_once __DIR__ . '/componentes/sidebar.php';
                         <div id="bio-view" class="text-gray-800 md:text-gray-700 text-base md:text-sm font-normal leading-relaxed tracking-wide break-words text-left mt-2 md:mt-0">
                             <?= !empty($bio_actual) ? nl2br(htmlspecialchars($bio_actual)) : ($es_propio ? "Añade una breve biografía para que estudiantes y tutores confíen en ti." : "Aún preparando mi biografía...") ?>
                         </div>
+                        <button id="btn-bio-toggle" onclick="toggleBioClamp()" class="hidden text-[#54A6D8] text-xs font-semibold mt-2 hover:underline">Leer más</button>
 
                         <?php if ($es_propio): ?>
                         <div id="bio-edit-container" class="hidden mt-4 space-y-4">
-                            <textarea id="bio-input" maxlength="500" oninput="document.getElementById('bio-counter').textContent = this.value.length + '/500'" class="w-full p-4 border border-gray-200 rounded-2xl focus:border-[#54A6D8] focus:ring-4 focus:ring-[#54A6D8]/10 outline-none text-gray-800 font-normal leading-relaxed tracking-wide bg-gray-50 transition-all duration-200 text-base md:text-sm resize-none" rows="5"><?= htmlspecialchars($bio_actual) ?></textarea>
+                            <textarea id="bio-input" maxlength="520" oninput="actualizarContadorBio()" class="w-full p-4 border border-gray-200 rounded-2xl focus:border-[#54A6D8] focus:ring-4 focus:ring-[#54A6D8]/10 outline-none text-gray-800 font-normal leading-relaxed tracking-wide bg-gray-50 transition-all duration-200 text-base md:text-sm resize-none" rows="5"><?= htmlspecialchars($bio_actual) ?></textarea>
                             <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <span id="bio-counter" class="text-[10px] font-medium text-gray-400 uppercase tracking-widest text-center sm:text-left"><?= mb_strlen($bio_actual ?? '') ?>/500</span>
                                 <div class="flex justify-end gap-3 w-full sm:w-auto">
@@ -1284,7 +1293,70 @@ function switchReviews(tipo) {
 }
 
 // BIO
-function toggleEditBio() { document.getElementById('bio-view')?.classList.toggle('hidden'); document.getElementById('bio-edit-container')?.classList.toggle('hidden'); document.getElementById('btn-edit-bio')?.classList.toggle('hidden'); }
+function toggleEditBio() {
+    const entrandoAEditar = document.getElementById('bio-edit-container')?.classList.contains('hidden');
+    document.getElementById('bio-view')?.classList.toggle('hidden');
+    document.getElementById('bio-edit-container')?.classList.toggle('hidden');
+    document.getElementById('btn-edit-bio')?.classList.toggle('hidden');
+    const toggleBtn = document.getElementById('btn-bio-toggle');
+    if (toggleBtn) {
+        if (entrandoAEditar) { toggleBtn.classList.add('hidden'); }
+        else { actualizarBotonBioToggle(); }
+    }
+    if (entrandoAEditar) { actualizarContadorBio(); }
+}
+
+// [NUBIRA 2.0] Contador de bio con alerta de color + prevención de corte a media
+// palabra: si el texto supera los 500 caracteres, recorta en el último espacio
+// antes del límite (nunca a mitad de palabra); si no hay espacio (palabra
+// rarísimamente larga), recorta duro en 500 como fallback.
+function actualizarContadorBio() {
+    const input = document.getElementById('bio-input');
+    const counter = document.getElementById('bio-counter');
+    if (!input || !counter) return;
+
+    if (input.value.length > 500) {
+        const cortado = input.value.slice(0, 500);
+        const ultimoEspacio = cortado.lastIndexOf(' ');
+        input.value = ultimoEspacio > 0 ? cortado.slice(0, ultimoEspacio) : cortado;
+    }
+
+    const largo = input.value.length;
+    const restantes = 500 - largo;
+    counter.textContent = largo + '/500';
+    counter.classList.remove('text-gray-400', 'text-orange-500', 'text-red-500');
+    if (restantes <= 15) {
+        counter.classList.add('text-red-500');
+    } else if (restantes <= 50) {
+        counter.classList.add('text-orange-500');
+    } else {
+        counter.classList.add('text-gray-400');
+    }
+}
+
+// [NUBIRA 2.0] "Leer más/menos" de la biografía
+function actualizarBotonBioToggle() {
+    const view = document.getElementById('bio-view');
+    const btn = document.getElementById('btn-bio-toggle');
+    if (!view || !btn) return;
+    view.classList.add('bio-clamped');
+    requestAnimationFrame(() => {
+        if (view.scrollHeight > view.clientHeight) {
+            btn.classList.remove('hidden');
+            btn.textContent = 'Leer más';
+        } else {
+            view.classList.remove('bio-clamped');
+            btn.classList.add('hidden');
+        }
+    });
+}
+function toggleBioClamp() {
+    const view = document.getElementById('bio-view');
+    const btn = document.getElementById('btn-bio-toggle');
+    const clamped = view.classList.toggle('bio-clamped');
+    btn.textContent = clamped ? 'Leer más' : 'Leer menos';
+}
+document.addEventListener('DOMContentLoaded', actualizarBotonBioToggle);
 function saveBio() {
     const input = document.getElementById('bio-input'), btn = document.getElementById('btn-save-bio');
     if (!input || !btn) return;
@@ -1315,8 +1387,7 @@ function saveBio() {
     .then(d => {
         if(d.success) {
             const bioView = document.getElementById('bio-view');
-            // Optimistic UI: Usamos el valor del input en vez de esperar 'd.newBio'
-            bioView.innerText = input.value; 
+            bioView.innerHTML = d.newBio; // ya viene nl2br(htmlspecialchars()) del servidor
             toggleEditBio();
 
             // [UX NUBIRA] Recargar suavemente para actualizar la barra de nivel

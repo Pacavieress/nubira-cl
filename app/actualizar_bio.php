@@ -97,18 +97,31 @@ foreach ($odio as $p) {
     }
 }
 
-// 4.5 Filtro de contacto / redes (al final, más caro)
-$pattern = "/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})
-            |(\+?\d{1,3}[- ]?)?\d{7,12}
-            |(wa\.me|whatsapp|wsp|ig:|insta|fb:|facebook|@|celular|fono|llama|escribeme|contacto)/ix";
+// 4.5 Filtro de contacto / redes (mismo patrón DLP del chat, ver app/enviar_mensaje.php —
+// mensaje específico por categoría, sin loggear a dlp_intentos porque esa tabla exige
+// conversacion_id NOT NULL, que la bio no tiene)
+$nucleo_digitos_tel = '(?:\d[\s\-\.]*){7,}';
 
-if (preg_match($pattern, $bio)) {
-    ob_clean();
-    echo json_encode([
-        'success' => false,
-        'message' => 'POR SEGURIDAD, NO PUBLIQUES CONTACTO O REDES'
-    ]);
-    exit;
+$patrones_bloqueo = [
+    'email'    => ['/[a-z0-9._%+-]+(?:@|\s+arroba\s+|\[arroba\]|\(arroba\))[a-z0-9.-]+(?:\.|\s+punto\s+|\[punto\])[a-z]{2,}/i',
+                   'Tu biografía no puede incluir un correo electrónico. Bórralo para poder guardar.'],
+    'telefono' => ['/(?:\+?56\s*9|9)?[\s\-\.]*' . $nucleo_digitos_tel . '/',
+                   'Tu biografía no puede incluir un número de teléfono. Bórralo para poder guardar.'],
+    'redes'    => ['/\b(wh?a[ts]+s?[aá]pp?|wasap|watsap|whsatap|guatsap|wsp|wa\.me|instagram|insta|ig|face|fb|tiktok|tk|telegram|tg|t\.me|discord|dc|linktree|x\.com|twitter|tw|linkedin|in)\b/i',
+                   'Tu biografía no puede mencionar redes sociales o apps de mensajería. Bórralo para poder guardar.'],
+    'urls'     => ['/(http|https|www\.)/i',
+                   'Tu biografía no puede incluir enlaces. Bórralo para poder guardar.'],
+];
+
+foreach ($patrones_bloqueo as $categoria => [$pattern, $mensaje_error]) {
+    if (preg_match($pattern, $bio)) {
+        ob_clean();
+        echo json_encode([
+            'success' => false,
+            'message' => $mensaje_error
+        ]);
+        exit;
+    }
 }
 
 // ─────────────────────────────
