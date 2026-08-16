@@ -231,6 +231,13 @@ try {
                 if ($res) { $alertas['admin_chats_moderacion'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
 
+            // 10c. Compras de apuntes sin revisar por el admin (revisado_por_admin,
+            // distinto de 'revisado' que es la notificación propia del vendedor)
+            try {
+                $res = $conn->query("SELECT COUNT(id) AS total FROM ventas_apuntes WHERE precio > 0 AND revisado_por_admin = 0");
+                if ($res) { $alertas['admin_compras_apuntes'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
             // 12. Tutores con perfil incompleto (sin foto, bio, tipo o servicios sin horario)
             try {
                 $res = $conn->query("SELECT COUNT(*) AS total FROM (

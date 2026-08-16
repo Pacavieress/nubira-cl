@@ -26,6 +26,11 @@ if (file_exists($app_dir . '/iconos.php')) {
     if (!function_exists('icon')) { function icon($n, $c = '') { return "<i class='fa-solid fa-$n $c'></i>"; } }
 }
 
+// Marca como vistas todas las compras pendientes de revisión del admin (badge del panel
+// de gestión). Mismo filtro que contar_alertas_sistema.php (precio > 0), no toca la
+// columna 'revisado' (esa es la notificación propia del vendedor, semántica distinta).
+$conn->query("UPDATE ventas_apuntes SET revisado_por_admin = 1 WHERE precio > 0 AND revisado_por_admin = 0");
+
 // ── Filtros ────────────────────────────────────────────────────────────────
 $q_apunte    = trim($_GET['q_apunte']    ?? '');
 $q_comprador = trim($_GET['q_comprador'] ?? '');
