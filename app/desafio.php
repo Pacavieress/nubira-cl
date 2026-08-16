@@ -236,7 +236,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         <div class="max-w-[640px] mx-auto pt-1 pb-6 md:py-6 text-left md:text-center">
           <p class="text-base font-medium text-[#222222] mb-1">¡Bien hecho! ${data.aciertos}/3 correctas.</p>
           <p class="text-sm text-gray-500 mb-5">Vas por buen camino en ${nombreMateria(data.materia)}.</p>
-          <button type="button" class="desafio-jugar-de-nuevo inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all">Jugar de nuevo</button>
+          <button type="button" class="desafio-jugar-de-nuevo inline-flex items-center gap-1 text-sm font-bold px-4 py-2 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all">Jugar de nuevo</button>
         </div>
       `;
     } else {
@@ -259,7 +259,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         </section>
 
         <div class="max-w-[640px] mx-auto text-left md:text-center">
-          <button type="button" class="desafio-jugar-de-nuevo inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all">Jugar de nuevo</button>
+          <button type="button" class="desafio-jugar-de-nuevo inline-flex items-center gap-1 text-sm font-bold px-4 py-2 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all">Jugar de nuevo</button>
         </div>
       `;
       cargarRecomendaciones(data.materia, data.categoria_servicio);
