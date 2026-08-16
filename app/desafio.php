@@ -101,7 +101,7 @@ require_once $app_dir . '/componentes/sidebar.php';
   <!-- PANTALLA 3: resultado — fuera del contenedor angosto: si el resultado es "mal",
        las recomendaciones necesitan el ancho completo (mismo criterio que las listas
        de vitrina.php: max-w-[1600px], no max-w-[640px]). -->
-  <div id="desafio-pantalla-resultado" class="hidden px-4 md:px-6 pt-6"></div>
+  <div id="desafio-pantalla-resultado" class="hidden px-4 md:px-6 pt-2 md:pt-6"></div>
 
 </main>
 
@@ -233,17 +233,17 @@ require_once $app_dir . '/componentes/sidebar.php';
   function renderResultado(data) {
     if (data.resultado === 'bien') {
       pantallaResultado.innerHTML = `
-        <div class="max-w-[640px] mx-auto py-6 text-center">
+        <div class="max-w-[640px] mx-auto pt-1 pb-6 md:py-6 text-left md:text-center">
           <p class="text-base font-medium text-[#222222] mb-1">¡Bien hecho! ${data.aciertos}/3 correctas.</p>
           <p class="text-sm text-gray-500 mb-5">Vas por buen camino en ${nombreMateria(data.materia)}.</p>
-          <button type="button" class="desafio-jugar-de-nuevo text-sm font-medium text-[#54A6D8] hover:underline">Jugar de nuevo</button>
+          <button type="button" class="desafio-jugar-de-nuevo inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all">Jugar de nuevo</button>
         </div>
       `;
     } else {
       // Recomendaciones a ancho completo (mismas clases de grid que clases_servicios.php
       // y vitrina_apuntes.php en producción) — servicios/tutores primero, apuntes después.
       pantallaResultado.innerHTML = `
-        <div class="max-w-[640px] mx-auto text-center mb-6">
+        <div class="max-w-[640px] mx-auto pt-1 text-left md:text-center mb-6">
           <p class="text-base font-medium text-[#222222] mb-1">${data.aciertos}/3 correctas.</p>
           <p class="text-sm text-gray-500">Un tutor o un apunte de ${nombreMateria(data.materia)} te puede ayudar a reforzar esto.</p>
         </div>
@@ -258,8 +258,8 @@ require_once $app_dir . '/componentes/sidebar.php';
           <div id="desafio-recom-apuntes" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 w-full min-h-[200px]"></div>
         </section>
 
-        <div class="max-w-[640px] mx-auto text-center">
-          <button type="button" class="desafio-jugar-de-nuevo text-sm font-medium text-[#54A6D8] hover:underline">Jugar de nuevo</button>
+        <div class="max-w-[640px] mx-auto text-left md:text-center">
+          <button type="button" class="desafio-jugar-de-nuevo inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all">Jugar de nuevo</button>
         </div>
       `;
       cargarRecomendaciones(data.materia, data.categoria_servicio);
