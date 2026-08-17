@@ -111,6 +111,21 @@ $visto->close();
 
 $resultado = ($aciertos >= 2) ? 'bien' : 'mal';
 
+// Progresión de dificultad ENTRE sesiones (Punto 3): bien sube 1 nivel (tope 3),
+// mal baja 1 (piso 1). UPSERT atómico en una sola sentencia — evita el race
+// condition de leer nivel_actual y escribirlo en dos pasos separados. Para un
+// usuario nuevo en esta materia (INSERT), el valor inicial ya sale del baseline
+// 2 (medio) ajustado por este resultado, no un 2 plano seguido de un segundo ajuste.
+$delta = ($resultado === 'bien') ? 1 : -1;
+$nivel_inicial = max(1, min(3, 2 + $delta));
+$prog = $conn->prepare(
+    "INSERT INTO desafio_progreso (usuario_id, materia_slug, nivel_actual) VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE nivel_actual = LEAST(3, GREATEST(1, nivel_actual + ?))"
+);
+$prog->bind_param('isii', $usuario_id, $materia, $nivel_inicial, $delta);
+$prog->execute();
+$prog->close();
+
 $categoria_servicio = null;
 if ($resultado === 'mal') {
     $catStmt = $conn->prepare("SELECT categoria_servicio FROM materia_categoria_map WHERE materia_slug = ?");
