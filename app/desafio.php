@@ -92,7 +92,12 @@ require_once $app_dir . '/componentes/sidebar.php';
 
       <!-- PANTALLA 2: preguntas -->
       <div id="desafio-pantalla-preguntas" class="hidden">
-        <button id="desafio-volver-materia" type="button" class="flex items-center gap-1 text-xs text-gray-400 hover:text-[#54A6D8] mb-4"><?= icon('chevron-left', 'w-3.5 h-3.5') ?> Cambiar ramo</button>
+        <div class="flex items-center justify-between mb-4">
+          <button id="desafio-volver-materia" type="button" class="flex items-center gap-1 text-xs text-gray-400 hover:text-[#54A6D8]"><?= icon('chevron-left', 'w-3.5 h-3.5') ?> Cambiar ramo</button>
+          <button type="button" id="btn-compartir-desafio-preguntas" class="flex items-center gap-1 text-xs font-medium text-[#54A6D8] hover:underline shrink-0">
+            <?= icon('share-outline', 'w-3.5 h-3.5') ?> Compartir
+          </button>
+        </div>
         <div id="desafio-preguntas-contenido" class="space-y-5"></div>
         <button id="desafio-enviar" type="button" disabled
                 class="mt-6 w-full py-3 rounded-2xl font-medium text-white bg-gradient-to-r from-sky-400 to-[#54A6D8] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
@@ -118,8 +123,10 @@ require_once $app_dir . '/componentes/sidebar.php';
   const preguntasContenido = document.getElementById('desafio-preguntas-contenido');
   const btnEnviar = document.getElementById('desafio-enviar');
   const btnVolver = document.getElementById('desafio-volver-materia');
+  const btnCompartirPreguntas = document.getElementById('btn-compartir-desafio-preguntas');
 
   let materiaActual = null;
+  let preguntasActuales = [];
 
   function mostrarPantalla(nombre) {
     pantallaMateria.classList.toggle('hidden', nombre !== 'materia');
@@ -131,11 +138,23 @@ require_once $app_dir . '/componentes/sidebar.php';
     temporizadoresActivos.forEach((id) => clearInterval(id));
     temporizadoresActivos.length = 0;
     materiaActual = null;
+    preguntasActuales = [];
     preguntasContenido.innerHTML = '';
     btnEnviar.disabled = true;
     mostrarPantalla('materia');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  if (btnCompartirPreguntas) btnCompartirPreguntas.onclick = () => {
+    if (preguntasActuales.length !== 3 || !materiaActual) return;
+    document.dispatchEvent(new CustomEvent('nb-compartir-desafio-preguntas', {
+      detail: {
+        ids: preguntasActuales.map((p) => p.id),
+        materiaSlug: materiaActual,
+        materiaNombre: nombreMateria(materiaActual),
+      },
+    }));
+  };
 
   if (btnVolver) btnVolver.onclick = resetFlujo;
 
@@ -170,6 +189,7 @@ require_once $app_dir . '/componentes/sidebar.php';
   function renderPreguntas(preguntas) {
     temporizadoresActivos.forEach((id) => clearInterval(id));
     temporizadoresActivos.length = 0;
+    preguntasActuales = preguntas;
 
     preguntasContenido.innerHTML = preguntas.map((p, i) => `
       <div class="desafio-pregunta" data-pregunta-id="${p.id}">

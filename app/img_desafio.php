@@ -88,6 +88,24 @@ function check_img_desafio_rate_limit(mysqli $conn): void {
 }
 check_img_desafio_rate_limit($conn);
 
+// Rama "3 preguntas de sesión" (?ids=1,2,3 → HISTORY) — separada de la rama de
+// invitación genérica por materia (?materia=slug → POST) de más abajo.
+if (isset($_GET['ids'])) {
+    $ids = array_filter(explode(',', (string)$_GET['ids']), fn($v) => ctype_digit($v));
+    $ids = array_map('intval', $ids);
+    if (count($ids) !== 3 || count(array_unique($ids)) !== 3) nb_servir_placeholder_desafio();
+
+    $file = nb_obtener_imagen_desafio_preguntas($ids);
+    if ($file === '' || !is_file($file)) nb_servir_placeholder_desafio(404);
+
+    if (ob_get_level() > 0) ob_clean();
+    header('Content-Type: image/jpeg');
+    header('Cache-Control: public, max-age=86400, immutable');
+    header('Content-Length: ' . filesize($file));
+    readfile($file);
+    exit;
+}
+
 $materia_slug = preg_replace('/[^a-z0-9_]/', '', (string)($_GET['materia'] ?? ''));
 if ($materia_slug === '') nb_servir_placeholder_desafio();
 

@@ -60,9 +60,12 @@ RewriteRule ^api/img/apunte/([a-zA-Z0-9_-]+)/history\.jpg$ app/img_apunte.php?id
 # Imagen compartible de novedad (POST/HISTORY) → endpoint que sirve JPG (Fase 2 Marketing/Cards)
 RewriteRule ^api/img/novedad/([a-zA-Z0-9_-]+)/post\.jpg$    app/img_novedad.php?id=$1&f=post     [L,QSA]
 RewriteRule ^api/img/novedad/([a-zA-Z0-9_-]+)/history\.jpg$ app/img_novedad.php?id=$1&f=history [L,QSA]
-# Imagen compartible del Desafío de hoy (solo POST por ahora) → endpoint que sirve JPG.
+# Imagen compartible del Desafío de hoy (invitación por materia, POST) → endpoint que sirve JPG.
 # $1 es un slug público de materias (no un ID de BD), por eso sin (?:/) opcional de otros.
 RewriteRule ^api/img/desafio/([a-z0-9_]+)/post\.jpg$ app/img_desafio.php?materia=$1 [L,QSA]
+# Imagen compartible de las 3 preguntas de UNA sesión de Desafío (HISTORY) → endpoint que sirve JPG.
+# $1-$2-$3 son los 3 pregunta_id de esa sesión (públicos, no encriptados — ver nota en helpers/imagen_compartir_desafio.php).
+RewriteRule ^api/img/desafio-preguntas/([0-9]+)-([0-9]+)-([0-9]+)/history\.jpg$ app/img_desafio.php?ids=$1,$2,$3 [L,QSA]
 
 # Adjuntos de chat (URL bonita: /archivo-chat/646)
 RewriteRule ^archivo-chat/([0-9]+)/?$ app/ver_archivo_chat.php?m=$1 [L,QSA]

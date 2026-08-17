@@ -54,6 +54,23 @@ foreach ($dh_materias as $m) {
         <p class="text-[11px] text-gray-400 text-center pt-1">Descarga la imagen y súbela a tu historia o feed de Instagram.</p>
       </div>
     </div>
+
+    <!-- Paso 3: compartir las 3 preguntas de ESTA sesión (trigger propio, sin pasar
+         por "elegir materia" — las preguntas ya están elegidas por el juego en curso) -->
+    <div id="compartir-desafio-paso-preguntas" class="hidden px-5 pb-5">
+      <div class="flex justify-center pb-4 pt-1">
+        <img id="compartir-desafio-preguntas-preview-img" src="" alt="Vista previa" loading="lazy"
+             class="w-[220px] aspect-[9/16] object-cover rounded-xl border border-gray-100 shadow-sm bg-gray-50">
+      </div>
+
+      <div class="space-y-2.5">
+        <a id="compartir-desafio-preguntas-descargar" href="#" download
+           class="block text-center bg-[#54A6D8] hover:bg-blue-600 text-white text-sm font-bold py-3 rounded-xl transition-all">Descargar imagen</a>
+        <button id="compartir-desafio-preguntas-copiar" type="button" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold py-3 rounded-xl transition-all">Copiar texto</button>
+        <button id="compartir-desafio-preguntas-share" type="button" class="w-full border border-[#54A6D8] text-[#54A6D8] hover:bg-blue-50 text-sm font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"><?= icon('paper-airplane', 'w-4 h-4') ?> Compartir</button>
+        <p class="text-[11px] text-gray-400 text-center pt-1">Sin spoilers: la imagen no muestra cuál opción es la correcta.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -73,10 +90,18 @@ foreach ($dh_materias as $m) {
   const btnCopiar = document.getElementById('compartir-desafio-copiar');
   const btnShare = document.getElementById('compartir-desafio-share');
 
+  const pasoPreguntas = document.getElementById('compartir-desafio-paso-preguntas');
+  const imgPreviewPreguntas = document.getElementById('compartir-desafio-preguntas-preview-img');
+  const btnDescargarPreguntas = document.getElementById('compartir-desafio-preguntas-descargar');
+  const btnCopiarPreguntas = document.getElementById('compartir-desafio-preguntas-copiar');
+  const btnSharePreguntas = document.getElementById('compartir-desafio-preguntas-share');
+
   if (!modal || !btnAbrir) return;
 
   let slugActual = null;
   let captionActual = '';
+  let materiaSlugPreguntas = null;
+  let captionPreguntas = '';
 
   const open = () => { modal.classList.remove('hidden'); requestAnimationFrame(()=>card.classList.remove('translate-y-full','opacity-0')); document.body.style.overflow='hidden'; };
   const shut = () => { card.classList.add('translate-y-full','opacity-0'); setTimeout(()=>{ modal.classList.add('hidden'); document.body.style.overflow=''; },300); };
@@ -84,6 +109,7 @@ foreach ($dh_materias as $m) {
   function mostrarPasoMateria() {
     pasoMateria.classList.remove('hidden');
     pasoPreview.classList.add('hidden');
+    pasoPreguntas.classList.add('hidden');
   }
 
   function mostrarPasoPreview(slug) {
@@ -103,7 +129,46 @@ foreach ($dh_materias as $m) {
 
     pasoMateria.classList.add('hidden');
     pasoPreview.classList.remove('hidden');
+    pasoPreguntas.classList.add('hidden');
   }
+
+  function mostrarPasoPreguntas(ids, materiaSlug, materiaNombre) {
+    materiaSlugPreguntas = materiaSlug;
+
+    const url = '/api/img/desafio-preguntas/' + ids.join('-') + '/history.jpg';
+    imgPreviewPreguntas.src = url;
+    btnDescargarPreguntas.href = url;
+    btnDescargarPreguntas.setAttribute('download', 'nubira-desafio-preguntas.jpg');
+
+    captionPreguntas = '🧠 ¿Te animas con estas 3 preguntas de ' + materiaNombre + '?\n\n'
+      + 'Sin spoilers — respóndelas tú también en 👉 https://nubira.cl/desafio\n\n'
+      + '#Nubira #DesafioDeHoy';
+
+    pasoMateria.classList.add('hidden');
+    pasoPreview.classList.add('hidden');
+    pasoPreguntas.classList.remove('hidden');
+  }
+
+  document.addEventListener('nb-compartir-desafio-preguntas', (e) => {
+    const d = e.detail || {};
+    if (!Array.isArray(d.ids) || d.ids.length !== 3 || !d.materiaSlug) return;
+    mostrarPasoPreguntas(d.ids, d.materiaSlug, d.materiaNombre || '');
+    open();
+  });
+
+  const trackSharePreguntas = () => {
+    if (!materiaSlugPreguntas) return;
+    try {
+      const body = new URLSearchParams({ id: materiaSlugPreguntas, f: 'preguntas', tipo: 'desafio' });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/app/track_share.php', body);
+      } else {
+        fetch('/app/track_share.php', { method: 'POST', body, keepalive: true }).catch(()=>{});
+      }
+    } catch(e){}
+  };
+
+  btnDescargarPreguntas.addEventListener('click', () => trackSharePreguntas());
 
   const trackShare = (formato) => {
     if (!slugActual) return;
@@ -157,6 +222,38 @@ foreach ($dh_materias as $m) {
         await navigator.share({ files: [file], text: captionActual });
       } else {
         const a = document.createElement('a'); a.href = imgPreview.src; a.download = 'nubira-desafio.jpg'; a.click();
+      }
+    } catch (e) {}
+  };
+
+  btnDescargarPreguntas.addEventListener('click', async (e) => {
+    if (!esStandalone) return;
+    e.preventDefault();
+    try {
+      const resp = await fetch(btnDescargarPreguntas.href);
+      const blob = await resp.blob();
+      const file = new File([blob], 'nubira-desafio-preguntas.jpg', { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: captionPreguntas });
+      }
+    } catch (e) {}
+  });
+
+  if (btnCopiarPreguntas) btnCopiarPreguntas.onclick = async () => {
+    trackSharePreguntas();
+    try { await navigator.clipboard.writeText(captionPreguntas); const t = btnCopiarPreguntas.textContent; btnCopiarPreguntas.textContent = '¡Copiado!'; setTimeout(()=>btnCopiarPreguntas.textContent=t, 1500); } catch(e){}
+  };
+
+  if (btnSharePreguntas) btnSharePreguntas.onclick = async () => {
+    trackSharePreguntas();
+    try {
+      const resp = await fetch(imgPreviewPreguntas.src);
+      const blob = await resp.blob();
+      const file = new File([blob], 'nubira-desafio-preguntas.jpg', { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: captionPreguntas });
+      } else {
+        const a = document.createElement('a'); a.href = imgPreviewPreguntas.src; a.download = 'nubira-desafio-preguntas.jpg'; a.click();
       }
     } catch (e) {}
   };

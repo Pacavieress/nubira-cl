@@ -141,3 +141,226 @@ if (!function_exists('nb_obtener_imagen_desafio')) {
         return $ok && is_file($file) ? $file : '';
     }
 }
+
+/* ============================================================
+   Compartir las 3 preguntas de UNA sesión concreta (no la invitación
+   genérica de materia) — HISTORY 9:16 únicamente. El usuario ya vio las 3
+   preguntas en pantalla antes de responder; comparte exactamente esas,
+   sin revelar cuál opción es la correcta (respuesta_correcta NUNCA se
+   selecciona en esta query, a diferencia de responder_desafio.php).
+   ============================================================ */
+
+if (!function_exists('nb_datos_preguntas_desafio')) {
+    // Valida y trae las 3 preguntas por ID. Exige: exactamente 3 IDs positivos
+    // distintos, las 3 filas existen/activas/revisadas, y las 3 comparten la
+    // MISMA materia (evita mezclar preguntas de materias distintas en una sola
+    // card — no tendría badge de materia coherente). Devuelve null si algo no calza.
+    function nb_datos_preguntas_desafio(array $ids): ?array {
+        global $conn;
+        if (!isset($conn) || !($conn instanceof mysqli)) return null;
+
+        $ids = array_map('intval', $ids);
+        if (count($ids) !== 3 || count(array_unique($ids)) !== 3) return null;
+        foreach ($ids as $id) if ($id <= 0) return null;
+
+        $st = $conn->prepare(
+            "SELECT id, materia_slug, tipo, enunciado, opcion_a, opcion_b, opcion_c, opcion_d
+             FROM desafio_preguntas
+             WHERE id IN (?,?,?) AND activa = 1 AND revisado_por_admin = 1"
+        );
+        if (!$st) return null;
+        $st->bind_param('iii', $ids[0], $ids[1], $ids[2]);
+        $st->execute();
+        $res = $st->get_result();
+        $porId = [];
+        while ($row = $res->fetch_assoc()) $porId[(int)$row['id']] = $row;
+        $st->close();
+
+        if (count($porId) !== 3) return null;
+
+        $slugs = array_unique(array_column($porId, 'materia_slug'));
+        if (count($slugs) !== 1) return null;
+
+        $m = nb_datos_materia_desafio($slugs[0]);
+        if (!$m) return null;
+
+        $preguntas = [];
+        foreach ($ids as $id) { // reordenado según el orden pedido (el orden en que se mostraron)
+            $row = $porId[$id];
+            $opciones = [];
+            foreach (['a' => 'opcion_a', 'b' => 'opcion_b', 'c' => 'opcion_c', 'd' => 'opcion_d'] as $letra => $col) {
+                if ($row[$col] !== null && $row[$col] !== '') $opciones[$letra] = $row[$col];
+            }
+            $preguntas[] = [
+                'id' => (int)$row['id'],
+                'tipo' => $row['tipo'],
+                'enunciado' => $row['enunciado'],
+                'opciones' => $opciones,
+            ];
+        }
+
+        return ['materia' => $m, 'preguntas' => $preguntas];
+    }
+}
+
+if (!function_exists('nb_fingerprint_desafio_preguntas')) {
+    function nb_fingerprint_desafio_preguntas(array $ids, array $datos): string {
+        $base = NB_IMG_VERSION_DESAFIO . '|preguntas|' . implode(',', $ids) . '|' . ($datos['materia']['nombre'] ?? '');
+        foreach ($datos['preguntas'] as $p) {
+            $base .= '|' . $p['tipo'] . '|' . $p['enunciado'] . '|' . implode('|', $p['opciones']);
+        }
+        return substr(md5($base), 0, 10);
+    }
+}
+
+if (!function_exists('nb_desafio_preguntas_dibujar_bloque')) {
+    // Dibuja (o solo mide, si $soloMedir) las 3 preguntas numeradas con sus opciones
+    // neutras. Misma función para medir y dibujar (patrón "soloMedir" ya usado en
+    // nb_cat_rating_render de imagen_compartir.php) — evita mantener dos copias del
+    // layout que podrían desincronizarse. Devuelve el alto total consumido.
+    function nb_desafio_preguntas_dibujar_bloque($img, array $preguntas, string $fBold, string $fSemi, string $fReg, int $W, int $M, array $pf, int $yStart, int $cTxt, int $cTxt2, int $cAcento, int $cBlanco, bool $soloMedir): int {
+        $xTexto = $M + $pf['diamCircle'] + $pf['gapCircleTexto'];
+        $maxTxt = ($W - $M) - $xTexto;
+        $total = count($preguntas);
+
+        $y = $yStart;
+        foreach ($preguntas as $i => $p) {
+            $circleTop = $y;
+            $circleCenterY = $circleTop + (int)($pf['diamCircle'] / 2);
+
+            $lineasEnun = nb_wrap_texto($fSemi, $pf['sizeEnun'], (string)$p['enunciado'], $maxTxt, 3);
+            $altoEnun = count($lineasEnun) * $pf['lhEnun'];
+
+            if (!$soloMedir) {
+                $numero = (string)($i + 1);
+                imagefilledellipse($img, $M + (int)($pf['diamCircle'] / 2), $circleCenterY, $pf['diamCircle'], $pf['diamCircle'], $cAcento);
+                $bb = imagettfbbox($pf['sizeNum'], 0, $fBold, $numero);
+                $tw = abs($bb[2] - $bb[0]); $th = abs($bb[7] - $bb[1]);
+                imagettftext($img, $pf['sizeNum'], 0, $M + (int)($pf['diamCircle'] / 2) - (int)($tw / 2), $circleCenterY + (int)($th / 2), $cBlanco, $fBold, $numero);
+
+                $yTextoBase = $circleCenterY + (int)($pf['sizeEnun'] * 0.35);
+                foreach ($lineasEnun as $li => $linea) {
+                    nb_texto_izquierda($img, $fSemi, $pf['sizeEnun'], $cTxt, $linea, $xTexto, $yTextoBase + $li * $pf['lhEnun']);
+                }
+            }
+
+            $y = $circleTop + max($pf['diamCircle'], $altoEnun) + $pf['gapEnunOp'];
+
+            $letras = array_keys($p['opciones']);
+            foreach ($letras as $oi => $letra) {
+                $texto = mb_strtoupper($letra, 'UTF-8') . '.  ' . $p['opciones'][$letra];
+                $lineasOp = nb_wrap_texto($fReg, $pf['sizeOp'], $texto, $maxTxt, 2);
+                if (!$soloMedir) {
+                    foreach ($lineasOp as $li => $linea) {
+                        nb_texto_izquierda($img, $fReg, $pf['sizeOp'], $cTxt2, $linea, $xTexto, $y + (int)($pf['sizeOp'] * 0.8) + $li * $pf['lhOp']);
+                    }
+                }
+                $y += count($lineasOp) * $pf['lhOp'];
+                if ($oi < count($letras) - 1) $y += $pf['gapOpciones'];
+            }
+
+            if ($i < $total - 1) $y += $pf['gapPreguntas'];
+        }
+
+        return $y - $yStart;
+    }
+}
+
+if (!function_exists('nb_generar_imagen_desafio_preguntas_history')) {
+    function nb_generar_imagen_desafio_preguntas_history(array $materia, array $preguntas, string $output_path): bool {
+        if (count($preguntas) !== 3) return false;
+
+        $W = 1080; $H = 1920;
+        $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
+        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
+        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
+        foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
+
+        $img = imagecreatetruecolor($W, $H);
+        imageantialias($img, true);
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2']; $cBlanco = $pal['blanco'];
+        imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
+
+        $M = 100;
+
+        /* ===== Badge de materia + subtítulo, arriba ===== */
+        $nombreMateria = mb_strtoupper((string)($materia['nombre'] ?? ''), 'UTF-8');
+        $y = 90;
+        $bwCat = nb_ancho_texto($fSemi, 24, $nombreMateria) + 16 * 2 + 6 * 2 + 14;
+        $xCat = (int)(($W - $bwCat) / 2);
+        nb_dibujar_badge_categoria($img, $fSemi, $nombreMateria, $xCat, $y, $cAcento, $cBlanco, $cAcento);
+        $bhCat = (int)(24 * 1.15) + 9 * 2;
+        $y += $bhCat + 44;
+        nb_texto_centrado($img, $fReg, 26, $cTxt2, '¿Cuánto sabes tú de verdad?', $W, $y);
+        $y += 50;
+
+        $contentTop = $y;
+        $bottomReservado = 260; // botón + marca + aire
+        $alturaDisponible = ($H - $bottomReservado) - $contentTop;
+
+        // Perfiles de tamaño: NORMAL primero; si no entra, un único reintento
+        // COMPACT (sin ajuste infinito — diseño aprobado). El texto más largo
+        // (alternativas extensas) es el caso que fuerza el fallback; V/F corto
+        // casi siempre entra holgado en NORMAL.
+        $perfilNormal = [
+            'diamCircle' => 64, 'sizeNum' => 28, 'gapCircleTexto' => 28,
+            'sizeEnun' => 32, 'lhEnun' => 40,
+            'sizeOp' => 26, 'lhOp' => 34,
+            'gapEnunOp' => 22, 'gapOpciones' => 12, 'gapPreguntas' => 54,
+        ];
+        $perfilCompacto = [
+            'diamCircle' => 52, 'sizeNum' => 22, 'gapCircleTexto' => 24,
+            'sizeEnun' => 26, 'lhEnun' => 32,
+            'sizeOp' => 22, 'lhOp' => 28,
+            'gapEnunOp' => 16, 'gapOpciones' => 8, 'gapPreguntas' => 38,
+        ];
+
+        $altoNormal = nb_desafio_preguntas_dibujar_bloque($img, $preguntas, $fBold, $fSemi, $fReg, $W, $M, $perfilNormal, $contentTop, $cTxt, $cTxt2, $cAcento, $cBlanco, true);
+
+        $perfil = $perfilNormal;
+        $altoBloque = $altoNormal;
+        if ($altoNormal > $alturaDisponible) {
+            $perfil = $perfilCompacto;
+            $altoBloque = nb_desafio_preguntas_dibujar_bloque($img, $preguntas, $fBold, $fSemi, $fReg, $W, $M, $perfilCompacto, $contentTop, $cTxt, $cTxt2, $cAcento, $cBlanco, true);
+        }
+
+        // Si cabe con margen, se centra dentro del área disponible; si ni comprimido
+        // entra, se dibuja desde arriba tal cual (sin un segundo reintento).
+        $yInicio = $altoBloque < $alturaDisponible ? $contentTop + (int)(($alturaDisponible - $altoBloque) / 2) : $contentTop;
+
+        nb_desafio_preguntas_dibujar_bloque($img, $preguntas, $fBold, $fSemi, $fReg, $W, $M, $perfil, $yInicio, $cTxt, $cTxt2, $cAcento, $cBlanco, false);
+
+        /* ===== CTA + marca, fijos abajo ===== */
+        $yBoton = $H - $bottomReservado + 40;
+        $bhBoton = nb_dibujar_boton_generico_desafio($img, $fBold, 'Juega tú mismo', $W, $yBoton, $cAcento, $cBlanco);
+        $yMarca = $yBoton + $bhBoton + 45;
+        nb_texto_centrado($img, $fBold, 28, $cAcento, 'nubira.cl/desafio', $W, $yMarca);
+
+        $ok = imagejpeg($img, $output_path, 90);
+        imagedestroy($img);
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('nb_obtener_imagen_desafio_preguntas')) {
+    // Devuelve la RUTA FÍSICA del JPG (cache hit o recién generado), o '' si falla o
+    // los IDs no validan (ver nb_datos_preguntas_desafio). El nombre de archivo incluye
+    // los 3 IDs en el orden pedido (no ordenados) — el mismo trío en otro orden genera
+    // un archivo de cache distinto, porque la numeración 1/2/3 en la imagen cambiaría.
+    function nb_obtener_imagen_desafio_preguntas(array $ids): string {
+        $ids = array_map('intval', $ids);
+        $datos = nb_datos_preguntas_desafio($ids);
+        if (!$datos) return '';
+
+        $fp = nb_fingerprint_desafio_preguntas($ids, $datos);
+        $dir = nb_compartir_dir();
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $file = $dir . 'desafio_preguntas_' . implode('-', $ids) . '_history_' . $fp . '.jpg';
+
+        if (is_file($file)) return $file; // cache hit
+
+        $ok = nb_generar_imagen_desafio_preguntas_history($datos['materia'], $datos['preguntas'], $file);
+        return $ok && is_file($file) ? $file : '';
+    }
+}
