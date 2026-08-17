@@ -63,7 +63,7 @@ if (count(array_unique($pregunta_ids)) !== 3) {
 // Trae la respuesta correcta real desde la BD (nunca se confía en el cliente)
 // y exige que las 3 preguntas pertenezcan de verdad a la materia declarada.
 $stmt = $conn->prepare(
-    "SELECT id, respuesta_correcta FROM desafio_preguntas
+    "SELECT id, tipo, respuesta_correcta FROM desafio_preguntas
      WHERE id IN (?,?,?) AND materia_slug = ? AND activa = 1 AND revisado_por_admin = 1"
 );
 $stmt->bind_param('iiis', $pregunta_ids[0], $pregunta_ids[1], $pregunta_ids[2], $materia);
@@ -71,8 +71,10 @@ $stmt->execute();
 $res = $stmt->get_result();
 
 $correctas = [];
+$tipos_preguntas = [];
 while ($row = $res->fetch_assoc()) {
     $correctas[(int)$row['id']] = $row['respuesta_correcta'];
+    $tipos_preguntas[(int)$row['id']] = $row['tipo'];
 }
 $stmt->close();
 
@@ -83,9 +85,19 @@ if (count($correctas) !== 3) {
     exit;
 }
 
+// Tipos de opinión (sin respuesta única — diseño aprobado "Opción C: auto-acierto
+// neutro"): cuentan siempre como acierto, sin comparar contra respuesta_correcta.
+// Nunca perjudican al usuario; a cambio, no miden conocimiento real en esa pregunta
+// puntual. respuesta_correcta sigue existiendo en la fila pero se ignora acá.
+$tipos_opinion = ['cual_elegirias', 'que_harias_primero'];
+
 $aciertos = 0;
 foreach ($elegidas as $pid => $op) {
-    if ($correctas[$pid] === $op) $aciertos++;
+    if (in_array($tipos_preguntas[$pid] ?? '', $tipos_opinion, true)) {
+        $aciertos++;
+    } elseif ($correctas[$pid] === $op) {
+        $aciertos++;
+    }
 }
 
 $ins = $conn->prepare("INSERT INTO desafio_intentos (usuario_id, materia_slug, aciertos) VALUES (?, ?, ?)");

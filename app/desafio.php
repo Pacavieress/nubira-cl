@@ -128,6 +128,8 @@ require_once $app_dir . '/componentes/sidebar.php';
   }
 
   function resetFlujo() {
+    temporizadoresActivos.forEach((id) => clearInterval(id));
+    temporizadoresActivos.length = 0;
     materiaActual = null;
     preguntasContenido.innerHTML = '';
     btnEnviar.disabled = true;
@@ -162,10 +164,22 @@ require_once $app_dir . '/componentes/sidebar.php';
     }
   }
 
+  const TIPOS_OPINION = ['cual_elegirias', 'que_harias_primero'];
+  const temporizadoresActivos = [];
+
   function renderPreguntas(preguntas) {
+    temporizadoresActivos.forEach((id) => clearInterval(id));
+    temporizadoresActivos.length = 0;
+
     preguntasContenido.innerHTML = preguntas.map((p, i) => `
       <div class="desafio-pregunta" data-pregunta-id="${p.id}">
-        <p class="text-sm font-medium text-[#222222] mb-2">${i + 1}. ${escapeHtml(p.enunciado)}</p>
+        ${p.nivel_paes ? '<span class="inline-block text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded mb-1.5 uppercase tracking-wide">Nivel PAES</span>' : ''}
+        <p class="text-sm font-medium text-[#222222] mb-2 flex items-center gap-2">
+          <span>${i + 1}. ${escapeHtml(p.enunciado)}</span>
+          ${p.tiempo_limite_segundos ? `<span class="desafio-timer shrink-0 text-xs font-bold text-[#54A6D8] bg-[#eef6fb] border border-sky-100 rounded-full px-2 py-0.5">${p.tiempo_limite_segundos}s</span>` : ''}
+        </p>
+        ${p.desarrollo ? `<pre class="text-xs bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2 whitespace-pre-wrap font-mono text-gray-700 leading-relaxed">${escapeHtml(p.desarrollo)}</pre>` : ''}
+        ${TIPOS_OPINION.includes(p.tipo) ? '<p class="text-[11px] text-gray-400 italic mb-2">Sin respuesta única — cuenta tu opinión.</p>' : ''}
         <div class="space-y-1.5">
           ${Object.keys(p.opciones).map((op) => `
             <label class="desafio-opcion flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-200 cursor-pointer hover:border-gray-300 transition-colors">
@@ -185,6 +199,54 @@ require_once $app_dir . '/componentes/sidebar.php';
         actualizarBotonEnviar();
       });
     });
+
+    preguntas.forEach((p) => {
+      if (p.tiempo_limite_segundos) iniciarTemporizador(p.id, p.tiempo_limite_segundos);
+    });
+  }
+
+  // "Reto rápido": cronómetro por pregunta (modificador, no un tipo — se puede
+  // combinar con cualquiera). Al llegar a 0, si no hay respuesta marcada se
+  // autoselecciona la primera opción (mismo criterio que "no respondió" = falló
+  // la mayoría de las veces por azar) y se bloquea esa pregunta — así el botón
+  // "Ver resultado" (que exige las 3 marcadas) nunca queda permanentemente
+  // deshabilitado por una pregunta con tiempo agotado.
+  function iniciarTemporizador(preguntaId, segundosIniciales) {
+    const badge = preguntasContenido.querySelector(`.desafio-pregunta[data-pregunta-id="${preguntaId}"] .desafio-timer`);
+    if (!badge) return;
+    let restante = segundosIniciales;
+
+    const id = setInterval(() => {
+      restante--;
+      if (restante <= 0) {
+        clearInterval(id);
+        badge.textContent = '¡Tiempo!';
+        badge.classList.remove('text-[#54A6D8]', 'bg-[#eef6fb]', 'border-sky-100');
+        badge.classList.add('text-red-500', 'bg-red-50', 'border-red-100');
+        bloquearPreguntaPorTiempo(preguntaId);
+        return;
+      }
+      badge.textContent = restante + 's';
+      if (restante <= 5) {
+        badge.classList.remove('text-[#54A6D8]', 'bg-[#eef6fb]', 'border-sky-100');
+        badge.classList.add('text-red-500', 'bg-red-50', 'border-red-100');
+      }
+    }, 1000);
+    temporizadoresActivos.push(id);
+  }
+
+  function bloquearPreguntaPorTiempo(preguntaId) {
+    const grupo = preguntasContenido.querySelector(`.desafio-pregunta[data-pregunta-id="${preguntaId}"]`);
+    if (!grupo) return;
+    const marcado = grupo.querySelector('input[type=radio]:checked');
+    if (!marcado) {
+      const primero = grupo.querySelector('input[type=radio]');
+      if (primero) {
+        primero.checked = true;
+        primero.dispatchEvent(new Event('change'));
+      }
+    }
+    grupo.querySelectorAll('input[type=radio]').forEach((r) => { r.disabled = true; });
   }
 
   function actualizarBotonEnviar() {

@@ -58,7 +58,8 @@ $usuario_id = (int)$_SESSION['usuario_id'];
 //   4. si ni con eso hay 3 (banco agotado para este usuario en esta materia):
 //      reset silencioso de vistas para esa materia, reintentar toda la cascada
 function nb_desafio_preguntas_candidatas(mysqli $conn, string $materia, int $usuario_id, ?array $dificultades = null): array {
-    $sql = "SELECT id, tipo, enunciado, opcion_a, opcion_b, opcion_c, opcion_d
+    $sql = "SELECT id, tipo, enunciado, desarrollo, opcion_a, opcion_b, opcion_c, opcion_d,
+                   tiempo_limite_segundos, nivel_paes
             FROM desafio_preguntas
             WHERE materia_slug = ? AND activa = 1 AND revisado_por_admin = 1
               AND id NOT IN (SELECT pregunta_id FROM desafio_preguntas_vistas WHERE usuario_id = ?)";
@@ -131,7 +132,10 @@ foreach ($rows as $row) {
         'id' => (int)$row['id'],
         'tipo' => $row['tipo'],
         'enunciado' => $row['enunciado'],
+        'desarrollo' => $row['desarrollo'], // solo 'encuentra_error'; null en el resto
         'opciones' => $opciones,
+        'tiempo_limite_segundos' => $row['tiempo_limite_segundos'] !== null ? (int)$row['tiempo_limite_segundos'] : null,
+        'nivel_paes' => (bool)$row['nivel_paes'],
     ];
 }
 
