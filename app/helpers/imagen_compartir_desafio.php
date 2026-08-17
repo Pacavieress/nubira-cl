@@ -5,7 +5,7 @@
 // sin avatar): es una invitación a jugar, no una card de venta.
 require_once __DIR__ . '/imagen_compartir.php';
 
-if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v6'); // v6: agrega título "Desafío Nubira de hoy" a la card de 3 preguntas
+if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v7'); // v7: título incluye materia ("· {materia}"), quita el badge redundante
 
 if (!function_exists('nb_dibujar_boton_generico_desafio')) {
     // Copia local de nb_dibujar_boton_generico (imagen_compartir_apunte.php) — no la
@@ -291,17 +291,23 @@ if (!function_exists('nb_generar_imagen_desafio_preguntas_history')) {
 
         $M = 100;
 
-        /* ===== Título fijo + badge de materia + subtítulo, arriba ===== */
+        /* ===== Título con materia incluida ("· ") + subtítulo, arriba =====
+           El badge de materia (pill "CÁLCULO") se retiró: quedaba repitiendo
+           el mismo dato que ahora ya está en el título — sin badge, sube
+           1 dato menos en la jerarquía visual y libera espacio para las
+           3 preguntas. Título a 1 sola línea con nombres cortos (11 de 12
+           materias) y 2 líneas con nombres largos ("Psicología y
+           Estadística", "Contabilidad y Finanzas", etc.) — nb_wrap_texto
+           evita truncar cualquiera de los 12 nombres reales (verificado). */
         $y = 90;
-        nb_texto_centrado($img, $fBold, 44, $cTxt, 'Desafío Nubira de hoy', $W, $y + 34);
-        $y += 64 + 30; // alto de línea del título + aire antes del badge
+        $tituloTxt = 'Desafío Nubira de hoy · ' . (string)($materia['nombre'] ?? '');
+        $tituloLineas = nb_wrap_texto($fBold, 38, $tituloTxt, $W - $M * 2, 2);
+        $lhTit = 46;
+        foreach ($tituloLineas as $i => $linea) {
+            nb_texto_centrado($img, $fBold, 38, $cTxt, $linea, $W, $y + 30 + $i * $lhTit);
+        }
+        $y += count($tituloLineas) * $lhTit + 34;
 
-        $nombreMateria = mb_strtoupper((string)($materia['nombre'] ?? ''), 'UTF-8');
-        $bwCat = nb_ancho_texto($fSemi, 24, $nombreMateria) + 16 * 2 + 6 * 2 + 14;
-        $xCat = (int)(($W - $bwCat) / 2);
-        nb_dibujar_badge_categoria($img, $fSemi, $nombreMateria, $xCat, $y, $cAcento, $cBlanco, $cAcento);
-        $bhCat = (int)(24 * 1.15) + 9 * 2;
-        $y += $bhCat + 44;
         nb_texto_centrado($img, $fReg, 26, $cTxt2, '¿Cuánto sabes tú de verdad?', $W, $y);
         $y += 50;
 
