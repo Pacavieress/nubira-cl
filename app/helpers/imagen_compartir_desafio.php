@@ -5,7 +5,7 @@
 // sin avatar): es una invitación a jugar, no una card de venta.
 require_once __DIR__ . '/imagen_compartir.php';
 
-if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v1');
+if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v3'); // v3: reajuste fino de gapEnunOp (v2 quedó muy justo con "¿")
 
 if (!function_exists('nb_dibujar_boton_generico_desafio')) {
     // Copia local de nb_dibujar_boton_generico (imagen_compartir_apunte.php) — no la
@@ -244,7 +244,14 @@ if (!function_exists('nb_desafio_preguntas_dibujar_bloque')) {
                 }
             }
 
-            $y = $circleTop + max($pf['diamCircle'], $altoEnun) + $pf['gapEnunOp'];
+            // Solo el alto real del enunciado, SIN max() contra diamCircle: ese max()
+            // inflaba el gap real hasta ~2x en enunciados de 1 línea (frecuente en 'vf'),
+            // porque el círculo (más alto que una sola línea de texto) empujaba el inicio
+            // de las opciones hacia abajo aunque las opciones nunca se cruzan con el
+            // círculo (están indentadas a la derecha, en xTexto). Bug real, no cosmético:
+            // hacía que el gap enunciado→opción se sintiera "parejo" con gapPreguntas en
+            // vez de claramente menor — justo el desbalance reportado en captura real.
+            $y = $circleTop + $altoEnun + $pf['gapEnunOp'];
 
             $letras = array_keys($p['opciones']);
             foreach ($letras as $oi => $letra) {
@@ -303,17 +310,19 @@ if (!function_exists('nb_generar_imagen_desafio_preguntas_history')) {
         // COMPACT (sin ajuste infinito — diseño aprobado). El texto más largo
         // (alternativas extensas) es el caso que fuerza el fallback; V/F corto
         // casi siempre entra holgado en NORMAL.
+        // Jerarquía de espaciado (siempre menor DENTRO del bloque de una pregunta,
+        // mayor ENTRE preguntas): gapOpciones < gapEnunOp < gapPreguntas.
         $perfilNormal = [
             'diamCircle' => 64, 'sizeNum' => 28, 'gapCircleTexto' => 28,
             'sizeEnun' => 32, 'lhEnun' => 40,
             'sizeOp' => 26, 'lhOp' => 34,
-            'gapEnunOp' => 22, 'gapOpciones' => 12, 'gapPreguntas' => 54,
+            'gapEnunOp' => 20, 'gapOpciones' => 10, 'gapPreguntas' => 76,
         ];
         $perfilCompacto = [
             'diamCircle' => 52, 'sizeNum' => 22, 'gapCircleTexto' => 24,
             'sizeEnun' => 26, 'lhEnun' => 32,
             'sizeOp' => 22, 'lhOp' => 28,
-            'gapEnunOp' => 16, 'gapOpciones' => 8, 'gapPreguntas' => 38,
+            'gapEnunOp' => 14, 'gapOpciones' => 7, 'gapPreguntas' => 58,
         ];
 
         $altoNormal = nb_desafio_preguntas_dibujar_bloque($img, $preguntas, $fBold, $fSemi, $fReg, $W, $M, $perfilNormal, $contentTop, $cTxt, $cTxt2, $cAcento, $cBlanco, true);
