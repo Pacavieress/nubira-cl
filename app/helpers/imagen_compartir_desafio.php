@@ -5,7 +5,7 @@
 // sin avatar): es una invitación a jugar, no una card de venta.
 require_once __DIR__ . '/imagen_compartir.php';
 
-if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v3'); // v3: reajuste fino de gapEnunOp (v2 quedó muy justo con "¿")
+if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v4'); // v4: gapEnunOp calibrado con bbox real (v3 seguía casi tocando, 3px reales)
 
 if (!function_exists('nb_dibujar_boton_generico_desafio')) {
     // Copia local de nb_dibujar_boton_generico (imagen_compartir_apunte.php) — no la
@@ -312,17 +312,25 @@ if (!function_exists('nb_generar_imagen_desafio_preguntas_history')) {
         // casi siempre entra holgado en NORMAL.
         // Jerarquía de espaciado (siempre menor DENTRO del bloque de una pregunta,
         // mayor ENTRE preguntas): gapOpciones < gapEnunOp < gapPreguntas.
+        // gapEnunOp calibrado con imagettfbbox() real (no el offset aproximado
+        // sizeOp*0.8 usado en el cálculo de posición) para que el gap de TINTA
+        // REAL enunciado->opción quede igual al gap real opción->opción — ambos
+        // "dentro del bloque". Medido con la pregunta "La derivada de una función
+        // constante siempre es igual a 0." (V/F, 2 líneas): a 20/14 el gap real
+        // daba 3px/0px (prácticamente tocando — el bug reportado); a 36/28 da
+        // 19px/14px, igualando el gap real opción->opción (19px/14px) en vez de
+        // quedar muy por debajo. gapPreguntas se mantiene ~5x ese gap real.
         $perfilNormal = [
             'diamCircle' => 64, 'sizeNum' => 28, 'gapCircleTexto' => 28,
             'sizeEnun' => 32, 'lhEnun' => 40,
             'sizeOp' => 26, 'lhOp' => 34,
-            'gapEnunOp' => 20, 'gapOpciones' => 10, 'gapPreguntas' => 76,
+            'gapEnunOp' => 36, 'gapOpciones' => 10, 'gapPreguntas' => 76,
         ];
         $perfilCompacto = [
             'diamCircle' => 52, 'sizeNum' => 22, 'gapCircleTexto' => 24,
             'sizeEnun' => 26, 'lhEnun' => 32,
             'sizeOp' => 22, 'lhOp' => 28,
-            'gapEnunOp' => 14, 'gapOpciones' => 7, 'gapPreguntas' => 58,
+            'gapEnunOp' => 28, 'gapOpciones' => 7, 'gapPreguntas' => 58,
         ];
 
         $altoNormal = nb_desafio_preguntas_dibujar_bloque($img, $preguntas, $fBold, $fSemi, $fReg, $W, $M, $perfilNormal, $contentTop, $cTxt, $cTxt2, $cAcento, $cBlanco, true);
