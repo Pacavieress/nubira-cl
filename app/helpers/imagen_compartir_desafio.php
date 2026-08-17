@@ -5,7 +5,7 @@
 // sin avatar): es una invitación a jugar, no una card de venta.
 require_once __DIR__ . '/imagen_compartir.php';
 
-if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v4'); // v4: gapEnunOp calibrado con bbox real (v3 seguía casi tocando, 3px reales)
+if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v5'); // v5: texto de invitación cambia a "Desafío Nubira de hoy: {materia}"
 
 if (!function_exists('nb_dibujar_boton_generico_desafio')) {
     // Copia local de nb_dibujar_boton_generico (imagen_compartir_apunte.php) — no la
@@ -74,7 +74,7 @@ if (!function_exists('nb_generar_imagen_desafio_post')) {
 
         $M = 110;
         $nombreMateria = mb_strtoupper((string)($m['nombre'] ?? ''), 'UTF-8');
-        $tituloTxt = "¿Te atreves con el Desafío de " . ($m['nombre'] ?? '') . "?";
+        $tituloTxt = "Desafío Nubira de hoy: " . ($m['nombre'] ?? '');
 
         // Sin portada/precio, el contenido es corto y su altura varía según el largo
         // del nombre de la materia (1 a 3 líneas de título) — en vez de posiciones fijas

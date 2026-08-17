@@ -29,7 +29,7 @@ if ($dh_res) {
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Desafío de hoy | Nubira</title>
+  <title>Desafío Nubira de hoy | Nubira</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=0" />
   <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -65,7 +65,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             <i class="fa-solid fa-arrow-left text-gray-700 text-[17px]"></i>
         </button>
         <div>
-            <h1 class="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Desafío de hoy</h1>
+            <h1 class="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Desafío Nubira de hoy</h1>
             <p class="text-gray-400 text-xs font-medium">3 preguntas rápidas de tu ramo.</p>
         </div>
     </div>
