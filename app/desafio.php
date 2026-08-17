@@ -74,7 +74,12 @@ require_once $app_dir . '/componentes/sidebar.php';
 
       <!-- PANTALLA 1: elegir materia -->
       <div id="desafio-pantalla-materia">
-        <p class="text-sm text-gray-500 mb-4">Elige un ramo para empezar.</p>
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sm text-gray-500">Elige un ramo para empezar.</p>
+          <button type="button" id="btn-compartir-desafio" class="flex items-center gap-1 text-xs font-medium text-[#54A6D8] hover:underline shrink-0">
+            <?= icon('share-outline', 'w-3.5 h-3.5') ?> Compartir
+          </button>
+        </div>
         <div class="grid grid-cols-2 gap-2.5">
           <?php foreach ($dh_materias as $m): ?>
             <button type="button" data-materia="<?= htmlspecialchars($m['slug']) ?>"
@@ -298,6 +303,7 @@ require_once $app_dir . '/componentes/sidebar.php';
 require_once $app_dir . '/componentes/nav_bottom.php';
 require_once $app_dir . '/componentes/modal_publicar.php';
 require_once $app_dir . '/componentes/modal_explora.php';
+require_once $app_dir . '/componentes/modal_compartir_desafio.php';
 ?>
 
 <script>
