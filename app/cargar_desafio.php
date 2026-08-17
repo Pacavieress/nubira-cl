@@ -43,30 +43,61 @@ if (!$materiaValida) {
     exit;
 }
 
-$stmt = $conn->prepare(
-    "SELECT id, enunciado, opcion_a, opcion_b, opcion_c, opcion_d
-     FROM desafio_preguntas
-     WHERE materia_slug = ? AND activa = 1 AND revisado_por_admin = 1
-     ORDER BY RAND() LIMIT 3"
-);
-$stmt->bind_param('s', $materia);
-$stmt->execute();
-$res = $stmt->get_result();
+$usuario_id = (int)$_SESSION['usuario_id'];
 
+// No repetir pregunta al mismo usuario hasta agotar el banco de esa materia
+// (desafio_preguntas_vistas se llena en responder_desafio.php, al terminar una
+// sesión). Si no hay 3 sin ver, reset silencioso: se limpia lo visto de esa
+// materia para este usuario y se reintenta desde el pool completo — nunca se
+// deja al usuario sin poder jugar por haber agotado el banco.
+function nb_desafio_preguntas_no_vistas(mysqli $conn, string $materia, int $usuario_id): array {
+    $stmt = $conn->prepare(
+        "SELECT id, tipo, enunciado, opcion_a, opcion_b, opcion_c, opcion_d
+         FROM desafio_preguntas
+         WHERE materia_slug = ? AND activa = 1 AND revisado_por_admin = 1
+           AND id NOT IN (SELECT pregunta_id FROM desafio_preguntas_vistas WHERE usuario_id = ?)
+         ORDER BY RAND() LIMIT 3"
+    );
+    $stmt->bind_param('si', $materia, $usuario_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($row = $res->fetch_assoc()) $rows[] = $row;
+    $stmt->close();
+    return $rows;
+}
+
+$rows = nb_desafio_preguntas_no_vistas($conn, $materia, $usuario_id);
+
+if (count($rows) < 3) {
+    $del = $conn->prepare(
+        "DELETE dpv FROM desafio_preguntas_vistas dpv
+         INNER JOIN desafio_preguntas dp ON dp.id = dpv.pregunta_id
+         WHERE dpv.usuario_id = ? AND dp.materia_slug = ?"
+    );
+    $del->bind_param('is', $usuario_id, $materia);
+    $del->execute();
+    $del->close();
+
+    $rows = nb_desafio_preguntas_no_vistas($conn, $materia, $usuario_id);
+}
+
+// Las opciones nulas (preguntas tipo 'vf', con solo opcion_a/opcion_b) se omiten
+// del JSON en vez de mandarse como null — el front-end renderiza las que reciba,
+// sin necesitar saber de antemano si son 2 o 4.
 $preguntas = [];
-while ($row = $res->fetch_assoc()) {
+foreach ($rows as $row) {
+    $opciones = [];
+    foreach (['a' => 'opcion_a', 'b' => 'opcion_b', 'c' => 'opcion_c', 'd' => 'opcion_d'] as $letra => $col) {
+        if ($row[$col] !== null && $row[$col] !== '') $opciones[$letra] = $row[$col];
+    }
     $preguntas[] = [
         'id' => (int)$row['id'],
+        'tipo' => $row['tipo'],
         'enunciado' => $row['enunciado'],
-        'opciones' => [
-            'a' => $row['opcion_a'],
-            'b' => $row['opcion_b'],
-            'c' => $row['opcion_c'],
-            'd' => $row['opcion_d'],
-        ],
+        'opciones' => $opciones,
     ];
 }
-$stmt->close();
 
 if (count($preguntas) < 3) {
     // Banco insuficiente para esta materia (revisado_por_admin=1 filtra preguntas

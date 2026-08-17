@@ -167,7 +167,7 @@ require_once $app_dir . '/componentes/sidebar.php';
       <div class="desafio-pregunta" data-pregunta-id="${p.id}">
         <p class="text-sm font-medium text-[#222222] mb-2">${i + 1}. ${escapeHtml(p.enunciado)}</p>
         <div class="space-y-1.5">
-          ${['a','b','c','d'].map((op) => `
+          ${Object.keys(p.opciones).map((op) => `
             <label class="desafio-opcion flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-200 cursor-pointer hover:border-gray-300 transition-colors">
               <input type="radio" name="desafio-p${p.id}" value="${op}" class="accent-[#54A6D8]">
               <span class="text-sm text-gray-700">${escapeHtml(p.opciones[op])}</span>

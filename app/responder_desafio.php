@@ -93,6 +93,22 @@ $ins->bind_param('isi', $usuario_id, $materia, $aciertos);
 $ins->execute();
 $ins->close();
 
+// Marca las 3 preguntas como vistas (no repetir hasta agotar el banco — ver
+// cargar_desafio.php). ON DUPLICATE es defensivo: si un reset de banco ya
+// las había limpiado y se re-sirvieron, no debe romper por la UNIQUE KEY.
+$visto = $conn->prepare(
+    "INSERT INTO desafio_preguntas_vistas (usuario_id, pregunta_id) VALUES (?,?),(?,?),(?,?)
+     ON DUPLICATE KEY UPDATE fecha_visto = NOW()"
+);
+$visto->bind_param(
+    'iiiiii',
+    $usuario_id, $pregunta_ids[0],
+    $usuario_id, $pregunta_ids[1],
+    $usuario_id, $pregunta_ids[2]
+);
+$visto->execute();
+$visto->close();
+
 $resultado = ($aciertos >= 2) ? 'bien' : 'mal';
 
 $categoria_servicio = null;
