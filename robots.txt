@@ -5,4 +5,6 @@ Disallow: /bandeja-entrada
 Disallow: /mini-aula
 Disallow: /reportar-servicio
 Disallow: /app/*.php
+Disallow: /login
+Disallow: /registro
 Sitemap: https://nubira.cl/sitemap.xml
