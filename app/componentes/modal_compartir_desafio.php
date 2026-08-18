@@ -77,6 +77,16 @@ foreach ($dh_materias as $m) {
 <script>
 (function(){
   const DATOS = <?= json_encode($cdDatos, JSON_UNESCAPED_UNICODE) ?>;
+  // Cache-busting para la card de "3 preguntas": a diferencia de la invitación por
+  // materia (que sí tenía ?v=<fingerprint>), esta URL no llevaba ningún parámetro de
+  // versión — el navegador podía quedarse sirviendo una respuesta cacheada de ANTES
+  // de un deploy (Cache-Control: immutable, 24h) sin volver a pedirle nada al
+  // servidor, invisible a cualquier fix del lado servidor (bug real, encontrado tras
+  // un reporte donde el título nuevo no aparecía solo en el navegador del usuario).
+  // Usamos la MISMA versión del generador (NB_IMG_VERSION_DESAFIO) que ya se usa para
+  // el fingerprint de la invitación — sube en cada cambio de plantilla, forzando una
+  // URL nueva y por lo tanto una petición de red nueva.
+  const NB_IMG_V_DESAFIO = <?= json_encode(NB_IMG_VERSION_DESAFIO) ?>;
 
   const modal = document.getElementById('modal-compartir-desafio');
   const card  = document.getElementById('compartir-desafio-card');
@@ -135,7 +145,7 @@ foreach ($dh_materias as $m) {
   function mostrarPasoPreguntas(ids, materiaSlug, materiaNombre) {
     materiaSlugPreguntas = materiaSlug;
 
-    const url = '/api/img/desafio-preguntas/' + ids.join('-') + '/history.jpg';
+    const url = '/api/img/desafio-preguntas/' + ids.join('-') + '/history.jpg?v=' + encodeURIComponent(NB_IMG_V_DESAFIO);
     imgPreviewPreguntas.src = url;
     btnDescargarPreguntas.href = url;
     btnDescargarPreguntas.setAttribute('download', 'nubira-desafio-preguntas.jpg');
