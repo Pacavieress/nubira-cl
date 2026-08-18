@@ -191,15 +191,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
             // Servicios nuevos: imagen legacy vacía; el resolver prioriza imagen_banco_id.
             $imagen_legacy = '';
             $es_paes = isset($_POST['es_paes']) ? 1 : 0;
-            $sql = "INSERT INTO servicios (alumno_id, institucion, titulo, descripcion, nombre_oferente, categoria, modalidad, ubicacion, precio, correo, imagen, imagen_banco_id, estado, fecha_publicacion, es_paes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', NOW(), ?)";
+
+            // [NUBIRA 2.0] 1ra publicación de la cuenta (historial de por vida,
+            // nunca decrece): gratis, va a 'pendiente' como siempre. Desde la 2da
+            // en adelante: se crea igual (guarda todos los datos del formulario)
+            // pero como 'pendiente_pago' — no visible, no entra a la cola de
+            // revisión del admin hasta que se confirme el pago.
+            require_once $app_dir . '/helpers/publicaciones_pago.php';
+            $cupo_pub = verificarCupoPublicacion($conn, $usuario_id);
+            $estado_inicial = $cupo_pub['puede_publicar_gratis'] ? 'pendiente' : 'pendiente_pago';
+
+            $sql = "INSERT INTO servicios (alumno_id, institucion, titulo, descripcion, nombre_oferente, categoria, modalidad, ubicacion, precio, correo, imagen, imagen_banco_id, estado, fecha_publicacion, es_paes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
             $stmt = $conn->prepare($sql);
 
             if ($stmt) {
-                $stmt->bind_param("isssssssdssii", $usuario_id, $institucion, $titulo, $descripcion, $nombre_oferente, $categoria, $modalidad, $ubicacion, $precio, $correo, $imagen_legacy, $imagen_banco_id, $es_paes);
+                $stmt->bind_param("isssssssdssisi", $usuario_id, $institucion, $titulo, $descripcion, $nombre_oferente, $categoria, $modalidad, $ubicacion, $precio, $correo, $imagen_legacy, $imagen_banco_id, $estado_inicial, $es_paes);
 
                 if ($stmt->execute()) {
                     $nuevo_servicio_id = $stmt->insert_id;
                     actualizar_score_servicio($conn, $nuevo_servicio_id);
+
+                    // Cuenta contra el historial de por vida sin importar si terminó
+                    // 'pendiente' o 'pendiente_pago' — publicar es lo que consume el
+                    // cupo, no que se apruebe o se pague.
+                    incrementarContadorPublicaciones($conn, $usuario_id);
 
                     // Generar slug SEO para la URL amigable del servicio
                     require_once $app_dir . '/helpers/seo.php';
@@ -209,6 +224,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$ya_publico_hoy) {
                         $stmt_sl->bind_param("si", $slug_nuevo, $nuevo_servicio_id);
                         $stmt_sl->execute();
                         $stmt_sl->close();
+                    }
+
+                    if ($estado_inicial === 'pendiente_pago') {
+                        header("Location: /app/iniciar_pago_publicacion_servicio.php?servicio_id=$nuevo_servicio_id");
+                        exit;
                     }
 
                     require_once __DIR__ . '/enviar_push_nubira.php';
