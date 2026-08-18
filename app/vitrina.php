@@ -802,6 +802,20 @@ try {
 <body class="bg-white text-gray-900 antialiased overflow-x-hidden fouc-lock">
 
     <?php require_once __DIR__ . '/componentes/loader_nativo.php'; ?>
+    <script>
+    // [NUBIRA 2.0] Mínimo de 2s visible para el loader inicial (no fijo: si Tailwind
+    // + DOM ya estaban listos antes, esperamos lo que falte hasta 2s; si tardan más,
+    // no se suma un segundo mínimo encima — el failsafe de 8s de loader_nativo.php
+    // sigue mandando igual). performance.now() ya es "tiempo desde que arrancó la
+    // navegación", así que resta directo lo que ya transcurrió hasta este punto.
+    window.nubiraLoaderExtraWait = function (revelar) {
+        var MIN_MS = 2000;
+        var transcurrido = performance.now();
+        var falta = MIN_MS - transcurrido;
+        if (falta <= 0) { revelar(); return; }
+        setTimeout(revelar, falta);
+    };
+    </script>
 
 <?php
 $page_title = "Vitrina Principal";
@@ -1942,38 +1956,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
 
   const NubiraUI = {
-        init() {
-            const dismissLoader = () => {
-                const l = document.getElementById('loader-nativo');
-                const b = document.body;
-                sessionStorage.setItem('nubira_loader_visto', '1');
-
-                // 1. Quitamos el candado visual
-                if (b) b.classList.remove('fouc-lock');
-                
-                // 2. Desvanecemos el loader
-                if(l && l.style.display !== 'none') { 
-                    l.style.opacity = '0'; 
-                    setTimeout(() => l.style.display = 'none', 300); 
-                } 
-            };
-            
-            // [NUBIRA 2.0] Loader inteligente:
-            // - Ocultamos en cuanto el DOM esté listo (contenido visible).
-            // - 'load' sigue siendo un seguro extra si el DOM ya está listo.
-            // - Failsafe de 1500ms (antes 2500ms) por si algún recurso cuelga.
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', dismissLoader, { once: true });
-            } else {
-                // DOM ya está listo: ocultar en el próximo frame
-                requestAnimationFrame(dismissLoader);
-            }
-            window.addEventListener('load', dismissLoader, { once: true });
-            setTimeout(dismissLoader, 1500); 
-        },
-        scrollCarrusel(id, dir) { 
-            const c = document.getElementById(id); 
-            if(c) c.scrollBy({ left: dir * 300, behavior: 'smooth' }); 
+        // [NUBIRA 2.0] El dismiss del loader inicial vivía duplicado acá (init(),
+        // con su propio failsafe de 1500ms sin esperar a Tailwind) corriendo en
+        // paralelo al mecanismo centralizado de componentes/loader_nativo.php —
+        // ganaba el que disparara primero, casi siempre este, ignorando la sonda
+        // de Tailwind. Se quitó: ahora todo pasa por loader_nativo.php +
+        // window.nubiraLoaderExtraWait (definido arriba), igual que perfil.php.
+        scrollCarrusel(id, dir) {
+            const c = document.getElementById(id);
+            if(c) c.scrollBy({ left: dir * 300, behavior: 'smooth' });
         }
     };
     window.scrollCarrusel = NubiraUI.scrollCarrusel;
@@ -2193,9 +2184,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 };
 
-    
-    // ── INICIALIZADOR EN CASCADA ──
-    NubiraUI.init();
 
     document.addEventListener('DOMContentLoaded', () => {
 
