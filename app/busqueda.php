@@ -473,6 +473,7 @@ $url_base = '?' . http_build_query($params_url) . '&orden=';
 <head>
     <meta charset="UTF-8">
     <title><?= $titulo_pag ?> | Nubira</title>
+    <?php require_once __DIR__ . '/helpers/seo.php'; echo nubira_canonical_tag('/busqueda'); ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
