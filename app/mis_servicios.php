@@ -26,12 +26,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $id_del = (int)$_POST['id'];
             $sqlDelS = "UPDATE servicios SET visible = 0 WHERE id = ? AND alumno_id = ?";
             $stmtDel = $conn->prepare($sqlDelS);
-            if ($stmtDel) {
-                $stmtDel->bind_param("ii", $id_del, $usuario_id);
-                $stmtDel->execute();
-                $stmtDel->close();
-            }
-        } catch (Exception $e) { /* Silenciamos el error para no dar 500 */ }
+            $stmtDel->bind_param("ii", $id_del, $usuario_id);
+            $stmtDel->execute();
+            $stmtDel->close();
+        } catch (Exception $e) {
+            // Antes se silenciaba por completo (evitar un 500), pero eso dejaba al
+            // usuario creyendo que la eliminación funcionó cuando en realidad no pasó
+            // nada en la BD. Con mysqli en modo excepción (default desde PHP 8.1) este
+            // catch sí captura errores reales — ahora se avisan vía flash/toast, que ya
+            // sobrevive al redirect PRG de más abajo (header.php lo incluye en esta página).
+            $_SESSION['flash_error'] = 'No pudimos eliminar la publicación. Intenta de nuevo.';
+        }
     }
     // Reactivar Servicio Pausado
     if ($_POST['accion'] === 'reactivar_servicio' && !empty($_POST['id'])) {
@@ -40,37 +45,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             // Lo devolvemos al estado 'aprobado'
             $sqlReac = "UPDATE servicios SET estado = 'aprobado' WHERE id = ? AND alumno_id = ?";
             $stmtReac = $conn->prepare($sqlReac);
-            if ($stmtReac) {
-                $stmtReac->bind_param("ii", $id_react, $usuario_id);
-                $stmtReac->execute();
-                $stmtReac->close();
-            }
-        } catch (Exception $e) { /* Silenciamos */ }
+            $stmtReac->bind_param("ii", $id_react, $usuario_id);
+            $stmtReac->execute();
+            $stmtReac->close();
+        } catch (Exception $e) {
+            $_SESSION['flash_error'] = 'No pudimos reactivar la publicación. Intenta de nuevo.';
+        }
     }
 
-    // Eliminar Apunte (Probando ambas columnas de ID posibles)
+    // Eliminar Apunte (Probando ambas columnas de ID posibles — incertidumbre de
+    // schema histórica, no se toca acá, fuera de alcance de este fix)
     if ($_POST['accion'] === 'eliminar_apunte' && !empty($_POST['id'])) {
         $id_del = (int)$_POST['id'];
         try {
             // Intento 1: Asumiendo que se llama id_alumno
             $sqlDelA = "UPDATE apuntes SET visible = 0 WHERE id = ? AND id_alumno = ?";
             $stmtDel = $conn->prepare($sqlDelA);
-            if ($stmtDel) {
-                $stmtDel->bind_param("ii", $id_del, $usuario_id);
-                $stmtDel->execute();
-                $stmtDel->close();
-            }
+            $stmtDel->bind_param("ii", $id_del, $usuario_id);
+            $stmtDel->execute();
+            $stmtDel->close();
         } catch (Exception $e) {
             try {
                 // Intento 2: Asumiendo que se llama alumno_id
                 $sqlDelA2 = "UPDATE apuntes SET visible = 0 WHERE id = ? AND alumno_id = ?";
                 $stmtDel2 = $conn->prepare($sqlDelA2);
-                if ($stmtDel2) {
-                    $stmtDel2->bind_param("ii", $id_del, $usuario_id);
-                    $stmtDel2->execute();
-                    $stmtDel2->close();
-                }
-            } catch (Exception $e2) { /* Silenciar */ }
+                $stmtDel2->bind_param("ii", $id_del, $usuario_id);
+                $stmtDel2->execute();
+                $stmtDel2->close();
+            } catch (Exception $e2) {
+                // Solo si AMBOS intentos de columna fallan es un error real —
+                // el primer catch de arriba es esperado/normal si la columna
+                // se llama distinto, no amerita avisar nada todavía.
+                $_SESSION['flash_error'] = 'No pudimos eliminar el apunte. Intenta de nuevo.';
+            }
         }
     }
 
