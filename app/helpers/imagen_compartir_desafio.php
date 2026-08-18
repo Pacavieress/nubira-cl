@@ -5,7 +5,7 @@
 // sin avatar): es una invitación a jugar, no una card de venta.
 require_once __DIR__ . '/imagen_compartir.php';
 
-if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v7'); // v7: título incluye materia ("· {materia}"), quita el badge redundante
+if (!defined('NB_IMG_VERSION_DESAFIO')) define('NB_IMG_VERSION_DESAFIO', 'v8'); // v8: título/subtítulo/preguntas reposicionados dentro de zona segura 4:5 (recorte feed de Instagram)
 
 if (!function_exists('nb_dibujar_boton_generico_desafio')) {
     // Copia local de nb_dibujar_boton_generico (imagen_compartir_apunte.php) — no la
@@ -291,7 +291,19 @@ if (!function_exists('nb_generar_imagen_desafio_preguntas_history')) {
 
         $M = 100;
 
-        /* ===== Título con materia incluida ("· ") + subtítulo, arriba =====
+        // "Zona segura" 4:5 centrada dentro del canvas 9:16 (1080x1920): Instagram
+        // recorta arriba/abajo a 1080x1350 cuando esta imagen se publica como
+        // Publicación de feed en vez de Historia (confirmado con caso real — el
+        // título quedaba fuera del recorte). Título/subtítulo/3 preguntas DEBEN
+        // caber dentro de [safeTop, safeBottom]; el botón + marca puede quedar
+        // fuera (abajo) — se sacrifica a propósito en feed, se ve completo en
+        // Historia igual. (1920-1350)/2 = 285.
+        $safeTop = (int)(($H - 1350) / 2);    // 285
+        $safeBottom = $safeTop + 1350;        // 1635
+
+        /* ===== Título con materia incluida ("· ") + subtítulo, arriba de la zona
+           segura, pegado a su borde superior (prioridad absoluta: es lo primero
+           que se pierde si el recorte de feed es más agresivo de lo esperado).
            El badge de materia (pill "CÁLCULO") se retiró: quedaba repitiendo
            el mismo dato que ahora ya está en el título — sin badge, sube
            1 dato menos en la jerarquía visual y libera espacio para las
@@ -299,7 +311,7 @@ if (!function_exists('nb_generar_imagen_desafio_preguntas_history')) {
            materias) y 2 líneas con nombres largos ("Psicología y
            Estadística", "Contabilidad y Finanzas", etc.) — nb_wrap_texto
            evita truncar cualquiera de los 12 nombres reales (verificado). */
-        $y = 90;
+        $y = $safeTop + 20;
         $tituloTxt = 'Desafío Nubira de hoy · ' . (string)($materia['nombre'] ?? '');
         $tituloLineas = nb_wrap_texto($fBold, 38, $tituloTxt, $W - $M * 2, 2);
         $lhTit = 46;
@@ -312,8 +324,8 @@ if (!function_exists('nb_generar_imagen_desafio_preguntas_history')) {
         $y += 50;
 
         $contentTop = $y;
-        $bottomReservado = 260; // botón + marca + aire
-        $alturaDisponible = ($H - $bottomReservado) - $contentTop;
+        $bottomReservado = 260; // botón + marca + aire — fuera de la zona segura, a propósito
+        $alturaDisponible = $safeBottom - $contentTop;
 
         // Perfiles de tamaño: NORMAL primero; si no entra, un único reintento
         // COMPACT (sin ajuste infinito — diseño aprobado). El texto más largo
