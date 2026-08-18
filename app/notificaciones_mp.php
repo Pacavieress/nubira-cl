@@ -37,6 +37,88 @@ try {
 
     $contrato_id = (int)$external_ref;
 
+    // ── Detectar si el pago corresponde a una compra de créditos IA ────────────
+    // Prefijo único, chequeado ANTES de la detección de apunte/contrato — cero
+    // riesgo de colisión con IDs numéricos reales.
+    if (strpos((string)$external_ref, 'CREDITOS_IA_') === 0) {
+        require_once __DIR__ . '/helpers/creditos_ia.php';
+
+        if ($status !== 'approved') {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " CREDITOS_IA NO-APROBADO: payment_id=$payment_id status=$status ref=$external_ref\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+
+        $PLANES_CREDITOS_IA = planesCreditosIA();
+        $meta_usuario_id    = (int)($payment->metadata->usuario_id ?? 0);
+        $meta_plan          = $payment->metadata->plan ?? '';
+
+        if ($meta_usuario_id <= 0 || !array_key_exists($meta_plan, $PLANES_CREDITOS_IA)) {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " CREDITOS_IA METADATA INVÁLIDA: payment_id=$payment_id usuario=$meta_usuario_id plan=$meta_plan\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+
+        $creditos_totales = $PLANES_CREDITOS_IA[$meta_plan]['creditos'];
+        $monto_real       = $PLANES_CREDITOS_IA[$meta_plan]['monto']; // NUNCA $amount de MP — precio server-side siempre
+
+        // Capa 1: fast-path anti-duplicado
+        $chk = $conn->prepare("SELECT id FROM compras_creditos_ia WHERE payment_id = ? LIMIT 1");
+        $chk->bind_param("s", $payment_id);
+        $chk->execute();
+        $chk->store_result();
+        $ya_existe = ($chk->num_rows > 0);
+        $chk->close();
+
+        if ($ya_existe) {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " CREDITOS_IA YA EXISTÍA: payment_id=$payment_id usuario=$meta_usuario_id (insertado por el otro camino)\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+
+        $stmt = $conn->prepare("
+            INSERT INTO compras_creditos_ia (alumno_id, plan, creditos_totales, monto, payment_id, estado_pago, fecha_vencimiento, fecha_pago)
+            VALUES (?, ?, ?, ?, ?, 'pagado', DATE_ADD(NOW(), INTERVAL 1 MONTH), NOW())
+        ");
+        $stmt->bind_param("isiis", $meta_usuario_id, $meta_plan, $creditos_totales, $monto_real, $payment_id);
+        $insert_ok    = $stmt->execute();
+        $insert_errno = $stmt->errno;
+        $stmt->close();
+
+        // Capa 2: si el fast-path no detectó la carrera, el UNIQUE(payment_id) sí la frena acá —
+        // execute() devuelve false SIN lanzar excepción (mysqli_report no está activo global).
+        if ($insert_ok) {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " CREDITOS_IA OK: payment_id=$payment_id usuario=$meta_usuario_id plan=$meta_plan\n",
+                FILE_APPEND
+            );
+        } elseif ($insert_errno === 1062) {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " CREDITOS_IA CARRERA DETECTADA (UNIQUE): payment_id=$payment_id usuario=$meta_usuario_id — insertado por el otro camino entre el SELECT y el INSERT\n",
+                FILE_APPEND
+            );
+        } else {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " CREDITOS_IA ERROR REAL DE BD: payment_id=$payment_id usuario=$meta_usuario_id errno=$insert_errno error=" . $conn->error . "\n",
+                FILE_APPEND
+            );
+        }
+        exit;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // ── Detectar si el pago corresponde a un apunte ───────────────────────────
     if ($status === 'approved' && $contrato_id > 0) {
         $stmtEs = $conn->prepare("SELECT id FROM apuntes WHERE id = ? LIMIT 1");
