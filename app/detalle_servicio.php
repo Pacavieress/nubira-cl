@@ -346,7 +346,7 @@ session_write_close();
     <meta name="description" content="<?= $og_desc ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <?php require_once __DIR__ . '/componentes/head_common.php'; ?>
-    <link rel="canonical" href="<?= $url_canonical ?>" />
+    <?= nubira_canonical_tag(url_servicio($id, $servicio['slug'] ?? null)) ?>
     
     <meta property="fb:app_id" content="966242223397117" />
     <meta property="og:type" content="website" />
