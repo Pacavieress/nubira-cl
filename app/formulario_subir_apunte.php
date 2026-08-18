@@ -41,6 +41,7 @@ ini_set('memory_limit', '512M');
 $app_dir = file_exists(__DIR__ . '/init_sesion.php') ? __DIR__ : __DIR__ . '/app';
 require_once $app_dir . '/iconos.php';
 require_once $app_dir . '/conexion.php';
+require_once $app_dir . '/config.php';
 
 // =========================================================================
 // 🛡️ [NUBIRA SHIELD] MIDDLEWARE ANTI-BOT (Nivel Arquitectura)
@@ -60,6 +61,36 @@ if (isset($conn)) {
 $usuario_id = (int)$_SESSION['usuario_id'];
 $anio_default = date('Y');
 $semestre_default = (date('n') <= 7) ? 1 : 2;
+
+// [NUBIRA 2.0] Generador de descripción con IA — cupo combinado (gratis + plan pagado)
+// para pintar el botón/modal en el render inicial (sin esto habría que consultarlo por AJAX aparte).
+require_once $app_dir . '/helpers/creditos_ia.php';
+$cupo_ia = verificarCupoIA($conn, $usuario_id);
+
+// Cupo gratis restante, para el mensaje "X de 4" cuando origen='gratis'
+$generaciones_usadas_ia = 0;
+$stmt_ia_cupo = $conn->prepare("SELECT generaciones_ia_usadas FROM alumnos WHERE id = ?");
+$stmt_ia_cupo->bind_param("i", $usuario_id);
+$stmt_ia_cupo->execute();
+$stmt_ia_cupo->bind_result($generaciones_usadas_ia);
+$stmt_ia_cupo->fetch();
+$stmt_ia_cupo->close();
+$generaciones_restantes_gratis = max(0, LIMITE_GENERACIONES_IA_GRATIS - $generaciones_usadas_ia);
+
+// Totales del plan activo, para el mensaje "X de Y" cuando origen='plan_pagado'
+$plan_creditos_restantes = null;
+$plan_creditos_totales = null;
+if ($cupo_ia['origen'] === 'plan_pagado' && $cupo_ia['compra_id']) {
+    $stmt_plan = $conn->prepare("SELECT creditos_totales, creditos_usados FROM compras_creditos_ia WHERE id = ?");
+    $stmt_plan->bind_param("i", $cupo_ia['compra_id']);
+    $stmt_plan->execute();
+    $plan_row = $stmt_plan->get_result()->fetch_assoc();
+    $stmt_plan->close();
+    if ($plan_row) {
+        $plan_creditos_totales = (int)$plan_row['creditos_totales'];
+        $plan_creditos_restantes = $plan_creditos_totales - (int)$plan_row['creditos_usados'];
+    }
+}
 
 // =============================================
 // MODO AJAX: Procesar y responder JSON
@@ -371,6 +402,97 @@ $stmt->bind_param("siissisisiisssss", $titulo, $semestre, $anio, $descripcion, $
 .feature-host {
     position: relative;
 }
+/* [NUBIRA 2.0] Spinner de gradiente azul de marca — botones "Generar con IA" */
+.spinner-ia {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    background: conic-gradient(from 0deg, #54A6D8, #8BC6EC, #C7E3F5, #54A6D8);
+    animation: spin-ia 0.8s linear infinite;
+    vertical-align: middle;
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+}
+@keyframes spin-ia {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+/* [NUBIRA 2.0] Borde con gradiente animado en los botones de modo IA — llama la
+   atención como función de IA incluso en reposo, no solo mientras generan. */
+.btn-ia-modo {
+    position: relative;
+    z-index: 0;
+    border: none !important; /* el borde real lo da el pseudo-elemento */
+    background: white; /* fondo del botón, para que el borde se vea como anillo */
+}
+.btn-ia-modo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    padding: 1.5px; /* grosor del "borde" */
+    border-radius: 9999px; /* mismo radio que rounded-full del botón */
+    background: conic-gradient(from var(--borde-angulo, 0deg), #8B5CF6, #3B82F6, #EC4899, #F59E0B, #8B5CF6);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: fluir-borde-ia 3s linear infinite;
+}
+.btn-ia-modo:disabled::before {
+    animation: none;
+    opacity: 0.3; /* borde estático y apagado cuando el botón está deshabilitado (cupo agotado) */
+}
+@keyframes fluir-borde-ia {
+    from { --borde-angulo: 0deg; }
+    to { --borde-angulo: 360deg; }
+}
+@property --borde-angulo {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+/* [NUBIRA 2.0] Overlay de "escaneo" sobre la miniatura de portada mientras Gemini genera */
+.escaneando::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #54A6D8, #8BC6EC, #54A6D8, transparent);
+    box-shadow: 0 0 8px 2px rgba(84, 166, 216, 0.6);
+    animation: escaner-linea 1.5s ease-in-out infinite;
+}
+@keyframes escaner-linea {
+    0% { top: 0; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: calc(100% - 3px); opacity: 0; }
+}
+/* [NUBIRA 2.0] Texto de progreso durante la generación de IA — visible solo con .escaneando */
+#texto-escaneo {
+    display: none;
+    position: absolute;
+    bottom: 1rem;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #54A6D8;
+    padding: 0 0.75rem;
+}
+.escaneando #texto-escaneo {
+    display: block;
+}
+.escaneando #original-upload-content {
+    opacity: 0.2;
+    transition: opacity 0.3s ease;
+}
     </style>
 </head>
 
@@ -432,12 +554,14 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
 
                <label for="archivo" id="drop-zone" class="relative overflow-hidden transform-gpu border-2 border-dashed border-gray-200 rounded-2xl h-48 md:h-64 flex flex-col justify-center items-center text-center cursor-pointer transition-all duration-300 hidden md:flex bg-gray-50/50 hover:bg-white z-0">
     <div class="scan-layer absolute inset-0 z-10 bg-white/80 backdrop-blur-[2px]">
-        <div class="scan-laser-beam absolute left-0 right-0 top-0"></div> 
+        <div class="scan-laser-beam absolute left-0 right-0 top-0"></div>
         <div class="absolute bottom-6 w-full text-center">
             <span id="scan-text" class="text-xs font-bold text-[#54A6D8] tracking-widest animate-pulse">PROCESANDO...</span>
         </div>
     </div>
-    
+
+    <p id="texto-escaneo"></p>
+
     <div id="original-upload-content" class="relative z-0 flex flex-col items-center justify-center pointer-events-none p-4">
         <div id="brain-icon" class="w-24 h-24 md:w-32 md:h-32 -mb-2 brain-idle transition-all duration-500">
             <img src="/img/apunteicono.webp" alt="IA Nubira" class="w-full h-full object-contain select-none pointer-events-none" draggable="false">
@@ -567,13 +691,43 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide mb-0">Descripción <span class="text-red-400">*</span></label>
-                       <span id="badge-categoria" class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-md uppercase hidden">General</span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" data-modo-ia="marketing" <?= !$cupo_ia['puede_generar'] ? 'disabled' : '' ?>
+                                    class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                Marketing
+                            </button>
+                            <button type="button" data-modo-ia="profesional" <?= !$cupo_ia['puede_generar'] ? 'disabled' : '' ?>
+                                    class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                Profesional
+                            </button>
+                            <button type="button" data-modo-ia="seo" <?= !$cupo_ia['puede_generar'] ? 'disabled' : '' ?>
+                                    class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                SEO
+                            </button>
+                            <span id="badge-categoria" class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-md uppercase hidden">General</span>
+                        </div>
                     </div>
-                    
+
                     <textarea name="descripcion" id="descripcion"
-                              class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-[#54A6D8] block p-4 resize-none transition-all outline-none h-32 leading-relaxed" 
+                              class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-[#54A6D8] block p-4 resize-none transition-all outline-none h-32 leading-relaxed"
                               maxlength="1500" placeholder="Escribe una descripción de tu apunte..." required></textarea>
                     <p id="descripcion-error" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
+                    <p id="ia-contador-restante" class="text-[10px] text-gray-400 mt-1">
+                        <?php if (!$cupo_ia['puede_generar']): ?>
+                            <?php if ($generaciones_usadas_ia > 0 && $plan_creditos_totales === null): ?>
+                                Ya usaste tu generación gratis —
+                            <?php endif; ?>
+                            <button type="button" onclick="abrirModalComprarCreditos()" class="inline-flex items-center gap-1 text-[#54A6D8] font-bold underline hover:no-underline">✨ Comprar créditos para seguir generando</button>
+                        <?php elseif ($cupo_ia['origen'] === 'gratis'): ?>
+                            <?php if (LIMITE_GENERACIONES_IA_GRATIS === 1): ?>
+                                Tu generación gratis está disponible
+                            <?php else: ?>
+                                <?= $generaciones_restantes_gratis ?> de <?= LIMITE_GENERACIONES_IA_GRATIS ?> generaciones gratis disponibles
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <?= $plan_creditos_restantes ?> de <?= $plan_creditos_totales ?> generaciones disponibles (plan activo)
+                        <?php endif; ?>
+                    </p>
                 </div>
 
                 <div class="pt-2">
@@ -612,6 +766,45 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
             </button>
         </div>
     </div>
+
+    <!-- Modal Comprar Créditos IA -->
+    <div id="modal-comprar-creditos" class="fixed inset-0 z-[100] hidden items-end md:items-center justify-center">
+        <div id="modal-comprar-creditos-bg" class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 cursor-pointer"></div>
+        <div id="modal-comprar-creditos-card" class="bg-white w-full md:w-[420px] rounded-t-3xl md:rounded-3xl p-6 relative z-10 transform translate-y-full md:translate-y-10 opacity-0 transition-all duration-300 shadow-2xl flex flex-col">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 md:hidden"></div>
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-[#54A6D8] border border-sky-100 shrink-0"><?= icon('sparkles', 'w-6 h-6') ?></div>
+                <div>
+                    <h3 class="text-xl md:text-2xl font-bold tracking-tight text-gray-900">Créditos de IA</h3>
+                    <p class="text-xs text-gray-500">Elige un plan para seguir generando descripciones.</p>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <?php foreach (planesCreditosIA() as $plan_key => $plan_info): ?>
+                    <?php if (empty($plan_info['disponible'])) continue; // los no-disponibles se resumen en 1 card abajo, no uno por plan ?>
+                <a href="/app/iniciar_pago_creditos_ia.php?plan=<?= $plan_key ?>" class="flex items-center justify-between p-4 bg-gray-50 hover:bg-sky-50 border border-gray-200 hover:border-[#54A6D8] rounded-2xl transition-all">
+                    <div>
+                        <p class="text-sm font-bold text-gray-900"><?= $plan_info['creditos'] ?> generacion<?= $plan_info['creditos'] > 1 ? 'es' : '' ?></p>
+                        <p class="text-[10px] text-gray-400">Vigencia 1 mes</p>
+                    </div>
+                    <span class="text-[#54A6D8] font-bold text-sm">$<?= number_format($plan_info['monto'], 0, ',', '.') ?></span>
+                </a>
+                <?php endforeach; ?>
+
+                <!-- Pack de varias generaciones — visual únicamente, sin <a href> ni link real
+                     todavía (plan_5/plan_10 siguen marcados disponible=false en el backend). -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 border border-dashed border-gray-200 rounded-2xl opacity-70 cursor-not-allowed">
+                    <div>
+                        <p class="text-sm font-bold text-gray-500">Pack de varias generaciones</p>
+                        <p class="text-[10px] text-gray-400">Ahorra comprando varias juntas</p>
+                    </div>
+                    <span class="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full uppercase tracking-wide">Próximamente</span>
+                </div>
+            </div>
+            <p class="text-[10px] text-gray-400 text-center mt-4">No se renuevan automáticamente. Serás redirigido a MercadoPago.</p>
+        </div>
+    </div>
+
 </main>
 
 <?php 
@@ -627,6 +820,16 @@ foreach ($rutas_footer as $ruta) { if (file_exists($ruta)) { require_once $ruta;
 let currentFile = null;       // Archivo original seleccionado
 let processedFile = null;     // Archivo después de compresión (o el mismo si no aplica)
 let isUploading = false;
+
+// [NUBIRA 2.0] Estado real del cupo de IA, seteado una vez al cargar la página —
+// el decremento optimista tras cada generación exitosa usa esto en vez de parsear
+// el texto mostrado con regex (frágil: no distingue gratis de plan pagado, y no
+// conoce el total real de un plan pagado para mostrar "X de Y" correcto).
+const NUBIRA_CUPO_IA = {
+    origen: '<?= $cupo_ia['origen'] ?>',
+    restantes: <?= $cupo_ia['origen'] === 'gratis' ? $generaciones_restantes_gratis : ($plan_creditos_restantes ?? 0) ?>,
+    totales: <?= $cupo_ia['origen'] === 'gratis' ? LIMITE_GENERACIONES_IA_GRATIS : ($plan_creditos_totales ?? 0) ?>
+};
 
 // --- MODALES NUBIRA ---
 function setupModal(triggerId, modalId, cardId, closeId) {
@@ -797,12 +1000,13 @@ function fileToBase64(file) {
 }
 
 async function extractPdfText(file) {
-    if (typeof pdfjsLib === 'undefined') { console.warn('PDF.js aún no cargó'); return ""; }
+    if (typeof pdfjsLib === 'undefined') { console.warn('PDF.js aún no cargó'); return { text: '', imagenPrimeraPagina: null }; }
     try {
         const ab = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument(ab).promise;
         let text = "";
-        const maxPages = Math.min(pdf.numPages, 3); 
+        let imagenPrimeraPagina = null;
+        const maxPages = Math.min(pdf.numPages, 3);
         const thumbContainer = document.getElementById('thumbnails-container');
         const selectorContainer = document.getElementById('selector-portada-container');
         thumbContainer.innerHTML = '';
@@ -812,14 +1016,38 @@ async function extractPdfText(file) {
             const p = await pdf.getPage(i);
             const c = await p.getTextContent();
             text += c.items.map(s=>s.str).join(' ') + " ";
-            
-            const viewport = p.getViewport({scale: 0.3});
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = viewport.width; canvas.height = viewport.height;
-            await p.render({canvasContext: ctx, viewport: viewport}).promise;
-            
-            const imgUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+            let imgUrl;
+            if (i === 1) {
+                // [NUBIRA 2.0] Render en alta resolución UNA sola vez — sirve tanto de
+                // thumbnail (reescalado hacia abajo) como de imagen para Gemini si el
+                // texto extraído resulta insuficiente (PDF de páginas escaneadas sin
+                // capa de texto). Evita renderizar la página 1 dos veces.
+                // [FIX 13/08] scale 1.5→1.2: reduce el área ~36% ((1.5²-1.2²)/1.5²) para
+                // bajar el peso del JPEG enviado a Gemini — atacaba timeouts reales (35s)
+                // en documentos densos, no solo enmascararlos subiendo el timeout de nuevo.
+                const viewportHD = p.getViewport({scale: 1.2});
+                const canvasHD = document.createElement('canvas');
+                const ctxHD = canvasHD.getContext('2d');
+                canvasHD.width = viewportHD.width; canvasHD.height = viewportHD.height;
+                await p.render({canvasContext: ctxHD, viewport: viewportHD}).promise;
+                imagenPrimeraPagina = canvasHD.toDataURL('image/jpeg', 0.85);
+
+                const thumbCanvas = document.createElement('canvas');
+                const thumbScale = 0.3 / 1.2; // mismo tamaño final de thumbnail, ajustado a la nueva resolución de origen
+                thumbCanvas.width = canvasHD.width * thumbScale;
+                thumbCanvas.height = canvasHD.height * thumbScale;
+                thumbCanvas.getContext('2d').drawImage(canvasHD, 0, 0, thumbCanvas.width, thumbCanvas.height);
+                imgUrl = thumbCanvas.toDataURL('image/jpeg', 0.8);
+            } else {
+                const viewport = p.getViewport({scale: 0.3});
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width; canvas.height = viewport.height;
+                await p.render({canvasContext: ctx, viewport: viewport}).promise;
+                imgUrl = canvas.toDataURL('image/jpeg', 0.8);
+            }
+
             const div = document.createElement('div');
             div.className = `shrink-0 w-20 h-28 rounded-xl overflow-hidden border-2 cursor-pointer transition-all relative ${i === 1 ? 'border-[#54A6D8] shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100'}`;
             div.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover"><div class="absolute bottom-1 right-1 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 rounded font-bold">${i}</div>`;
@@ -832,8 +1060,8 @@ async function extractPdfText(file) {
             };
             thumbContainer.appendChild(div);
         }
-        return text;
-    } catch(e) { console.error("Error PDF:", e); return ""; }
+        return { text, imagenPrimeraPagina };
+    } catch(e) { console.error("Error PDF:", e); return { text: '', imagenPrimeraPagina: null }; }
 }
 
 function typeWriter(txt, el, i=0) {
@@ -1024,6 +1252,172 @@ function cerrarModalEscaner() {
 }
 function lanzarCamaraNubira() { cerrarModalEscaner(); setTimeout(() => document.getElementById('cameraInput').click(), 300); }
 document.getElementById('modal-escaner-bg').addEventListener('click', cerrarModalEscaner);
+
+// --- MODAL COMPRAR CRÉDITOS IA ---
+function abrirModalComprarCreditos() {
+    const modal = document.getElementById('modal-comprar-creditos'), bg = document.getElementById('modal-comprar-creditos-bg'), card = document.getElementById('modal-comprar-creditos-card');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    setTimeout(() => { bg.classList.remove('opacity-0'); bg.classList.add('opacity-100'); card.classList.remove('translate-y-full', 'md:translate-y-10', 'opacity-0'); card.classList.add('translate-y-0', 'opacity-100'); }, 10);
+}
+function cerrarModalComprarCreditos() {
+    const modal = document.getElementById('modal-comprar-creditos'), bg = document.getElementById('modal-comprar-creditos-bg'), card = document.getElementById('modal-comprar-creditos-card');
+    bg.classList.remove('opacity-100'); bg.classList.add('opacity-0');
+    card.classList.remove('translate-y-0', 'opacity-100'); card.classList.add('translate-y-full', 'md:translate-y-10', 'opacity-0');
+    setTimeout(() => { modal.classList.remove('flex'); modal.classList.add('hidden'); }, 300);
+}
+document.getElementById('modal-comprar-creditos-bg').addEventListener('click', cerrarModalComprarCreditos);
+
+// --- GENERAR CON IA — 3 botones inline (Nubira 2.0 — Paso 4, rediseño sin modal) ---
+document.querySelectorAll('.btn-ia-modo').forEach(boton => {
+    boton.addEventListener('click', async () => {
+        if (!currentFile) {
+            showToast('Sube el archivo primero', false);
+            return;
+        }
+        if (boton.disabled) return;
+
+        const modo = boton.dataset.modoIa;
+        const textoOriginal = boton.innerHTML;
+
+        // Deshabilita los 3 botones mientras genera (evita doble-click en otro modo a la vez)
+        document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = true);
+        boton.innerHTML = '<span class="spinner-ia"></span> Generando...';
+
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 80000);
+
+        let elementoEscaneando = null;
+        let intervaloTextoEscaneo = null;
+
+        try {
+            const ext = currentFile.name.split('.').pop().toLowerCase();
+            const payload = { filename: currentFile.name, tono: modo };
+            if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+                payload.image = await fileToBase64(currentFile);
+            } else if (ext === 'pdf') {
+                const { text, imagenPrimeraPagina } = await extractPdfText(currentFile);
+                if (text.trim().length < 50 && imagenPrimeraPagina) {
+                    // PDF de páginas escaneadas sin capa de texto — mandamos la imagen
+                    // de la primera página en su lugar (Gemini la lee vía visión).
+                    payload.image = imagenPrimeraPagina.replace(/^data:(.*,)?/, '');
+                    payload.filename = currentFile.name.replace(/\.pdf$/i, '.jpg'); // MIME explícito, no accidental
+                } else {
+                    payload.text = text;
+                }
+            }
+
+            // [NUBIRA 2.0] Animación de escaneo sobre el dropzone principal (no la miniatura).
+            elementoEscaneando = document.getElementById('drop-zone');
+            if (elementoEscaneando) elementoEscaneando.classList.add('escaneando');
+
+            // [NUBIRA 2.0] Texto de progreso — mensajes secuenciales cada 2.8s mientras dura la generación
+            const mensajesEscaneo = ['Leyendo documento...', 'Analizando contenido...', 'Identificando conceptos clave...', 'Redactando descripción...', 'Esto está tomando un poco más de lo normal...', 'Nubira IA está terminando de procesar tu documento...', 'Ya casi termina, dale un segundo más...', 'Casi listo...'];
+            const textoEscaneoEl = document.getElementById('texto-escaneo');
+            let indiceMensajeEscaneo = 0;
+            if (textoEscaneoEl) {
+                textoEscaneoEl.textContent = mensajesEscaneo[0];
+                intervaloTextoEscaneo = setInterval(() => {
+                    indiceMensajeEscaneo = Math.min(indiceMensajeEscaneo + 1, mensajesEscaneo.length - 1);
+                    textoEscaneoEl.textContent = mensajesEscaneo[indiceMensajeEscaneo];
+                }, 2800);
+            }
+
+            // [DEBUG TEMPORAL — quitar después de diagnosticar el timeout]
+            console.log('[IA DEBUG] tamaño imagen (chars):', payload.image ? payload.image.length : 'sin imagen', '| tamaño texto (chars):', payload.text ? payload.text.length : 'sin texto');
+
+            const res = await fetch('/app/datos/ia_nubira.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: abortController.signal
+            });
+            clearTimeout(timeoutId);
+            const data = await res.json();
+
+            const esFallbackGenerico = data.titulo && (data.titulo.includes('Documento_Nubira') || (data.descripcion || '').includes('Material de estudio procesado'));
+
+            if (data.exito === false && data.error === 'limite_alcanzado') {
+                document.querySelectorAll('.btn-ia-modo').forEach(b => { b.disabled = true; b.innerHTML = b === boton ? textoOriginal : b.innerHTML; });
+                boton.innerHTML = textoOriginal;
+                document.getElementById('ia-contador-restante').innerHTML = '<button type="button" onclick="abrirModalComprarCreditos()" class="inline-flex items-center gap-1 text-[#54A6D8] font-bold underline hover:no-underline">✨ Comprar créditos para seguir generando</button>';
+                abrirModalComprarCreditos();
+                return;
+            }
+
+            if (data.exito === false && data.error === 'rate_limit') {
+                showToast(`Espera ${data.segundos_restantes || 5}s antes de generar otra vez`, false);
+                document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = false);
+                boton.innerHTML = textoOriginal;
+                return;
+            }
+
+            if (data.exito === false || esFallbackGenerico) {
+                showToast(esFallbackGenerico ? 'Nubira IA está ocupada ahora, intenta en unos segundos' : 'No pudimos generar ahora, intenta de nuevo', false);
+                document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = false);
+                boton.innerHTML = textoOriginal;
+                return;
+            }
+
+            // Éxito real
+            const inputTitulo = document.getElementById('titulo');
+            inputTitulo.value = data.titulo || '';
+            inputTitulo.dispatchEvent(new Event('input', { bubbles: true }));
+
+            typeWriter(data.descripcion || '', document.getElementById('descripcion'));
+            document.getElementById('ia_used').value = '1';
+            document.getElementById('ia_accepted').value = '1';
+            document.getElementById('ia_keywords').value = data.keywords || '';
+
+            if (data.materia) {
+                document.getElementById('select-materia').value = data.materia;
+                document.getElementById('materia').value = data.materia;
+                document.getElementById('badge-ia-materia').classList.remove('hidden');
+            }
+            if (data.nivel_academico) {
+                document.getElementById('select-nivel').value = data.nivel_academico;
+                document.getElementById('nivel_academico').value = data.nivel_academico;
+                document.getElementById('badge-ia-nivel').classList.remove('hidden');
+            }
+            if (data.subtema) {
+                document.getElementById('input-subtema').value = data.subtema;
+                document.getElementById('badge-ia-subtema').classList.remove('hidden');
+            }
+            if (data.categoria) {
+                const badgeCat = document.getElementById('badge-categoria');
+                badgeCat.textContent = data.categoria;
+                badgeCat.classList.remove('hidden');
+            }
+
+            // Actualiza contador — usa el estado real (NUBIRA_CUPO_IA), no regex sobre el texto mostrado
+            const contadorEl = document.getElementById('ia-contador-restante');
+            if (NUBIRA_CUPO_IA.origen !== 'sin_cupo') {
+                NUBIRA_CUPO_IA.restantes = Math.max(0, NUBIRA_CUPO_IA.restantes - 1);
+                if (NUBIRA_CUPO_IA.restantes === 0) {
+                    contadorEl.innerHTML = '<button type="button" onclick="abrirModalComprarCreditos()" class="inline-flex items-center gap-1 text-[#54A6D8] font-bold underline hover:no-underline">✨ Comprar créditos para seguir generando</button>';
+                    document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = true);
+                } else {
+                    const etiqueta = NUBIRA_CUPO_IA.origen === 'gratis' ? 'generaciones gratis disponibles' : 'generaciones disponibles (plan activo)';
+                    contadorEl.textContent = `${NUBIRA_CUPO_IA.restantes} de ${NUBIRA_CUPO_IA.totales} ${etiqueta}`;
+                    document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = false);
+                }
+            }
+
+            boton.innerHTML = textoOriginal;
+            setTimeout(() => validateAll(), 500);
+
+        } catch (e) {
+            clearTimeout(timeoutId);
+            document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = false);
+            boton.innerHTML = textoOriginal;
+            if (e.name === 'AbortError') { showToast('La generación tardó demasiado, intenta de nuevo', false); return; }
+            showToast('No pudimos generar ahora, intenta de nuevo', false);
+        } finally {
+            // Se ejecuta en TODOS los caminos de salida (éxito, límite, rate-limit, error, abort)
+            if (elementoEscaneando) elementoEscaneando.classList.remove('escaneando');
+            if (intervaloTextoEscaneo) clearInterval(intervaloTextoEscaneo);
+        }
+    });
+});
 
 // [NUBIRA 2.0] Sincronizar selects con hidden inputs
 document.getElementById('select-materia').addEventListener('change', function() {

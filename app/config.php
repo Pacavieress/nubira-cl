@@ -60,6 +60,10 @@ define('SMTP_PASS_CONTACTO', $_ENV['SMTP_PASS_CONTACTO'] ?? '');
 define('GEMINI_API_KEY', $_ENV['GEMINI_API_KEY'] ?? '');
 if (GEMINI_API_KEY === '') { error_log('[Nubira] GEMINI_API_KEY no configurada en .env'); }
 
+// Límite total (no mensual) de generaciones de descripción con IA en el MVP
+// gratuito — app/datos/ia_nubira.php lo valida contra alumnos.generaciones_ia_usadas.
+define('LIMITE_GENERACIONES_IA_GRATIS', 1);
+
 // =========================
 // DAILY.CO (VIDEO LLAMADAS)
 // =========================
