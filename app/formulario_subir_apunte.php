@@ -692,15 +692,15 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide mb-0">Descripción <span class="text-red-400">*</span></label>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" data-modo-ia="marketing" <?= !$cupo_ia['puede_generar'] ? 'disabled' : '' ?>
+                            <button type="button" data-modo-ia="marketing"
                                     class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                                 Marketing
                             </button>
-                            <button type="button" data-modo-ia="profesional" <?= !$cupo_ia['puede_generar'] ? 'disabled' : '' ?>
+                            <button type="button" data-modo-ia="profesional"
                                     class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                                 Profesional
                             </button>
-                            <button type="button" data-modo-ia="seo" <?= !$cupo_ia['puede_generar'] ? 'disabled' : '' ?>
+                            <button type="button" data-modo-ia="seo"
                                     class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                                 SEO
                             </button>
@@ -714,10 +714,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                     <p id="descripcion-error" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
                     <p id="ia-contador-restante" class="text-[10px] text-gray-400 mt-1">
                         <?php if (!$cupo_ia['puede_generar']): ?>
-                            <?php if ($generaciones_usadas_ia > 0 && $plan_creditos_totales === null): ?>
-                                Ya usaste tu generación gratis —
-                            <?php endif; ?>
-                            <button type="button" onclick="abrirModalComprarCreditos()" class="inline-flex items-center gap-1 text-[#54A6D8] font-bold underline hover:no-underline">✨ Comprar créditos para seguir generando</button>
+                            <?php // Sin cupo: sin aviso acá — el clic en "Generar con IA" ya abre el modal de compra directo. ?>
                         <?php elseif ($cupo_ia['origen'] === 'gratis'): ?>
                             <?php if (LIMITE_GENERACIONES_IA_GRATIS === 1): ?>
                                 Tu generación gratis está disponible
@@ -1275,6 +1272,14 @@ document.querySelectorAll('.btn-ia-modo').forEach(boton => {
             return;
         }
         if (boton.disabled) return;
+
+        // [NUBIRA 2.0] Sin cupo (ni gratis ni plan pagado): abre el modal de compra
+        // directo, sin tocar ia_nubira.php — antes esto se descubría recién adentro
+        // del fetch (respuesta 429 'limite_alcanzado'), ahora se corta acá mismo.
+        if (NUBIRA_CUPO_IA.origen === 'sin_cupo') {
+            abrirModalComprarCreditos();
+            return;
+        }
 
         const modo = boton.dataset.modoIa;
         const textoOriginal = boton.innerHTML;
