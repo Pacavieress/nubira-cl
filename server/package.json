@@ -1,0 +1,31 @@
+{
+  "name": "nubira-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API Node.js/TypeScript de Nubira (Fase 1: esqueleto). Proyecto aislado — no confundir con las devDependencies de Tailwind del package.json de la raíz del repo, que son para el build de CSS, no para este servidor.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "node --import tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.23.3"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}
