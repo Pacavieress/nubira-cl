@@ -36,12 +36,14 @@ interface ServiciosResponse {
 export interface ServiciosFiltros {
   categoria?: string;
   modalidad?: string;
+  q?: string;
 }
 
 export async function getServicios(filtros: ServiciosFiltros = {}): Promise<ServiciosResponse> {
   const params = new URLSearchParams();
   if (filtros.categoria) params.set("categoria", filtros.categoria);
   if (filtros.modalidad) params.set("modalidad", filtros.modalidad);
+  if (filtros.q) params.set("q", filtros.q);
 
   const qs = params.toString();
   const res = await fetch(`${API_URL}/api/servicios${qs ? `?${qs}` : ""}`, { cache: "no-store" });

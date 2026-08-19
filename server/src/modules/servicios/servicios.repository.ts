@@ -1,5 +1,6 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
+import { construirCondicionTexto, esBusquedaPaes } from "../../lib/busquedaTexto.js";
 import type {
   SearchServiciosFilters,
   SearchServiciosResult,
@@ -14,6 +15,11 @@ interface ValoracionRowPacket extends ValoracionRow, RowDataPacket {}
 interface MinutosRespuestaRowPacket extends RowDataPacket {
   minutos_respuesta: number;
 }
+
+// Puerto exacto de busqueda.php:289 — mismo set de 6 columnas que busca la página de
+// búsqueda real (cargar_servicios.php, la página de listado, solo busca 3: titulo/
+// descripcion/categoria — ver nota de unificación en busquedaTexto.ts).
+const CAMPOS_TEXTO_SERVICIO = ["s.titulo", "s.descripcion", "s.categoria", "s.materia", "s.asignatura", "s.area"];
 
 // Mismo JOIN y mismo patrón de rating ya corregidos en PHP en la Fase 0.5
 // (vitrina.php, detalle_servicio.php, cargar_vistos.php, render_card.php,
@@ -61,9 +67,20 @@ export async function searchServiciosAprobados(
     params.push(filters.institucion);
   }
   if (filters.q) {
-    conditions.push("(s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ?)");
-    const like = `%${filters.q}%`;
-    params.push(like, like, like);
+    let condicionQ = construirCondicionTexto(filters.q, CAMPOS_TEXTO_SERVICIO, params);
+    // Puerto exacto de busqueda.php:304-311 — refuerzo de PAES: además de las raíces
+    // tokenizadas de arriba, matchea es_paes=1 o "paes" literal en 3 campos.
+    if (esBusquedaPaes(filters.q)) {
+      const likePaes = "%paes%";
+      // OJO: el paréntesis envuelve TODO (incluidos los OR de PAES), no solo condicionQ —
+      // conditions[] se junta con AND entre elementos hermanos (categoria, modalidad...),
+      // así que este término necesita ser un bloque booleano atómico. Envolver solo la
+      // mitad tokenizada dejaría los OR de PAES "sueltos" y rompería la precedencia real
+      // del WHERE (AND se evalúa antes que OR en SQL).
+      condicionQ = `(${condicionQ} OR s.es_paes = 1 OR s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ?)`;
+      params.push(likePaes, likePaes, likePaes);
+    }
+    conditions.push(condicionQ);
   }
   if (filters.alumnoId !== undefined) {
     conditions.push("s.alumno_id = ?");

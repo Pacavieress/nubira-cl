@@ -4,8 +4,9 @@
 // modal de onboarding, punto de alerta, tracking de dispositivo — todo depende de una
 // sesión de usuario que web/ no tiene.
 //
-// El buscador envía a /busqueda del sitio PHP real (mismo action="/busqueda" method="GET"
-// name="q" de header.php:174-188) — esa página no existe todavía en web/.
+// El buscador envía a /busqueda DENTRO de web/ (mismo action="/busqueda" method="GET"
+// name="q" de header.php:174-188, pero ahora resuelto por app/busqueda/page.tsx en vez de
+// reenviar al sitio PHP) — desde que existe esa página acá, ya no hace falta cruzar de sitio.
 
 export function Header({ titulo }: { titulo: string }) {
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
@@ -28,7 +29,7 @@ export function Header({ titulo }: { titulo: string }) {
 
         <div className="flex-1 max-w-xl mx-1 md:mx-4">
           <form
-            action={`${phpSiteUrl}/busqueda`}
+            action="/busqueda"
             method="GET"
             role="search"
             className="w-full flex items-center bg-gray-50 border border-gray-100 rounded-full focus-within:border-[#54A6D8] focus-within:bg-white transition-colors duration-200 overflow-hidden relative z-10 outline-none"
