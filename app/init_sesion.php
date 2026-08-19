@@ -27,6 +27,17 @@ if (!isset($_SESSION['usuario_id']) && !empty($_COOKIE['remember_token'])) {
             $u = $res->fetch_assoc();
             $_SESSION['usuario_id']     = $u['id'];
             session_regenerate_id(true);
+            // [Fase 5] Mismo espejo hacia sesiones_api — este es el 3er punto donde PHP
+            // establece identidad de sesión (corre en CADA carga de página que incluya
+            // init_sesion.php, no solo en /login). Va después de session_regenerate_id().
+            $sid = session_id();
+            $stmt_sesion_api = $conn->prepare(
+                "INSERT INTO sesiones_api (session_id, usuario_id, expira_en) VALUES (?, ?, NOW() + INTERVAL 24 HOUR)
+                 ON DUPLICATE KEY UPDATE usuario_id = VALUES(usuario_id), expira_en = VALUES(expira_en)"
+            );
+            $stmt_sesion_api->bind_param("si", $sid, $u['id']);
+            $stmt_sesion_api->execute();
+            $stmt_sesion_api->close();
             $_SESSION['usuario_nombre'] = $u['nombre'];
             $_SESSION['rol']            = $u['rol'] ?? 'alumno';
             $_SESSION['email']          = $u['correo'];

@@ -2,6 +2,14 @@
 session_start();
 require_once __DIR__ . '/../app/conexion.php';
 
+// [Fase 5] Captura session_id() ANTES de session_destroy() — sigue siendo legible después,
+// pero se captura antes por claridad. Se borra sin importar si había usuario_id (defensivo).
+$sid = session_id();
+$stmt_del_sesion_api = $conn->prepare("DELETE FROM sesiones_api WHERE session_id = ?");
+$stmt_del_sesion_api->bind_param("s", $sid);
+$stmt_del_sesion_api->execute();
+$stmt_del_sesion_api->close();
+
 // Si hay usuario logueado, borrar el token de la base de datos
 if (!empty($_SESSION['usuario_id'])) {
     $id = (int) $_SESSION['usuario_id'];

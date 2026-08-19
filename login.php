@@ -53,6 +53,18 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
         }
 
         session_regenerate_id(true);
+        // [Fase 5] Espeja session_id() -> usuario_id en sesiones_api para que Node pueda
+        // reconocer esta sesión. Va DESPUÉS de session_regenerate_id() a propósito: usa el
+        // session_id ya regenerado (el que el navegador va a usar de acá en más), nunca
+        // el id viejo pre-regeneración.
+        $sid = session_id();
+        $stmt_sesion_api = $conn->prepare(
+            "INSERT INTO sesiones_api (session_id, usuario_id, expira_en) VALUES (?, ?, NOW() + INTERVAL 24 HOUR)
+             ON DUPLICATE KEY UPDATE usuario_id = VALUES(usuario_id), expira_en = VALUES(expira_en)"
+        );
+        $stmt_sesion_api->bind_param("si", $sid, $usuario_auto['id']);
+        $stmt_sesion_api->execute();
+        $stmt_sesion_api->close();
         $_SESSION['usuario_id']          = $usuario_auto['id'];
         $_SESSION['usuario_nombre']      = $usuario_auto['nombre'];
         $_SESSION['rol']                 = $usuario_auto['rol'] ?? 'alumno';
@@ -188,6 +200,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // --- LOGIN EXITOSO ---
                         session_regenerate_id(true);
+                        // [Fase 5] Mismo espejo que el bloque de auto-login más arriba —
+                        // mismo orden respecto a session_regenerate_id(), mismo motivo.
+                        $sid = session_id();
+                        $stmt_sesion_api = $conn->prepare(
+                            "INSERT INTO sesiones_api (session_id, usuario_id, expira_en) VALUES (?, ?, NOW() + INTERVAL 24 HOUR)
+                             ON DUPLICATE KEY UPDATE usuario_id = VALUES(usuario_id), expira_en = VALUES(expira_en)"
+                        );
+                        $stmt_sesion_api->bind_param("si", $sid, $usuario['id']);
+                        $stmt_sesion_api->execute();
+                        $stmt_sesion_api->close();
                         $_SESSION['usuario_id'] = $usuario['id'];
                         $_SESSION['usuario_nombre'] = $usuario['nombre'];
                         $_SESSION['rol'] = $usuario['rol'] ?? 'alumno';
