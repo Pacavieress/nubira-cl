@@ -38,7 +38,7 @@ export default async function BusquedaPage({ searchParams }: BusquedaPageProps) 
     return (
       <>
         <Header titulo="Buscar" />
-        <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-8">
+        <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-8 lg:ml-64">
           <div className="flex flex-col items-center justify-center py-12 md:py-24 px-4 text-center">
             <div className="w-20 h-20 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center mb-6">
               <svg className="w-8 h-8 text-[#54A6D8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@ export default async function BusquedaPage({ searchParams }: BusquedaPageProps) 
   return (
     <>
       <Header titulo={`Resultados para "${q}"`} />
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-8">
+      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-8 lg:ml-64">
         <p className="text-sm text-gray-500 mb-6">
           Resultados para &quot;<span className="font-medium text-gray-800">{q}</span>&quot;
         </p>

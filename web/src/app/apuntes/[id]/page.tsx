@@ -27,7 +27,7 @@ export default async function DetalleApunte({ params }: DetalleProps) {
   return (
     <>
       <Header titulo={apunte.titulo} />
-      <main className="w-full max-w-[1100px] mx-auto px-4 md:px-8 pt-20 pb-16">
+      <main className="w-full max-w-[1100px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-16 lg:ml-64">
         <div className="bg-white border border-[#f0f0f0] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           {/* Asignatura — calcado de ver_apunte.php:516-518/704-706 */}
           <span className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-[#f0f0f0] uppercase tracking-wide">

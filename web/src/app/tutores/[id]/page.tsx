@@ -56,7 +56,7 @@ export default async function PerfilTutor({ params }: PerfilProps) {
   return (
     <>
       <Header titulo={tutor.nombre ?? "Tutor"} />
-      <main className="w-full max-w-[1100px] mx-auto px-4 md:px-8 pt-20 pb-16 space-y-6">
+      <main className="w-full max-w-[1100px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-16 lg:ml-64 space-y-6">
         {/* Bloque principal — calcado de perfil.php:528-682 (sección de foto/nombre/bio) */}
         <section className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-10">
           <div className="flex flex-col gap-6 md:gap-8">

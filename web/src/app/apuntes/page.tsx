@@ -30,7 +30,7 @@ export default async function ApuntesPage({ searchParams }: ApuntesPageProps) {
   return (
     <>
       <Header titulo="Apuntes" />
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-8">
+      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-8 lg:ml-64">
         <div className="mb-6">
           <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">{h1Titulo}</h1>
           {h1Subtitulo && <p className="text-sm text-gray-500 mt-1">{h1Subtitulo}</p>}

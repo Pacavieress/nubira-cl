@@ -32,7 +32,7 @@ export function FiltrosBar({ categorias }: { categorias: string[] }) {
     } else {
       params.delete(clave);
     }
-    router.push(`/?${params.toString()}`);
+    router.push(`/servicios?${params.toString()}`);
   }
 
   return (
