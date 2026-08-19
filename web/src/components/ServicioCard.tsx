@@ -1,4 +1,6 @@
 import type { ServicioListado } from "@/lib/api";
+import { formatoCLP } from "@/lib/formato";
+import { abreviarNombre } from "@/lib/texto";
 import { RatingPill } from "./RatingPill";
 import { TierBadge } from "./TierBadge";
 
@@ -9,35 +11,15 @@ function overlayCategoria(categoria: string): { prefijo: string; nombre: string 
   return { prefijo, nombre };
 }
 
-// Puerto de app/componentes/card_servicio_grid.php:87-95 — nombre abreviado ("Sofía V.").
-function abreviarNombreTutor(nombreCompleto: string | null): string {
-  const partes = (nombreCompleto ?? "").trim().split(/\s+/).filter(Boolean);
-  if (partes.length === 0) return "Profesor";
-  const primero = partes[0]!.charAt(0).toUpperCase() + partes[0]!.slice(1).toLowerCase();
-  if (partes.length >= 2) {
-    const ultimo = partes[partes.length - 1]!;
-    return `${primero} ${ultimo.charAt(0).toUpperCase()}.`;
-  }
-  return primero;
-}
-
-function formatoCLP(valor: number): string {
-  return `$${valor.toLocaleString("es-CL")}`;
-}
-
-// El detalle de servicio no existe todavía como página propia en web/ (fuera de alcance
-// de esta fase) — enlaza al sitio PHP real, mismo patrón que url_servicio() (.htaccess:
-// /servicios/{slug}-{id}, o /servicios/{id} si no hay slug).
-function urlDetallePhp(servicio: ServicioListado): string {
-  const base = process.env.PHP_SITE_URL ?? "http://nubira.local";
-  return servicio.slug
-    ? `${base}/servicios/${servicio.slug}-${servicio.id}`
-    : `${base}/servicios/${servicio.id}`;
+// La página de detalle ya existe en web/ (app/servicios/[id]) — enlaza ahí en vez de al
+// sitio PHP real.
+function urlDetalle(servicio: ServicioListado): string {
+  return `/servicios/${servicio.id}`;
 }
 
 export function ServicioCard({ servicio }: { servicio: ServicioListado }) {
   const { prefijo, nombre: nombreCategoriaOverlay } = overlayCategoria(servicio.categoria);
-  const tutorNombreAbrev = abreviarNombreTutor(servicio.tutor.nombre);
+  const tutorNombreAbrev = abreviarNombre(servicio.tutor.nombre);
 
   const pctDescuento =
     servicio.ofertaVigente && servicio.precio && servicio.precio > 0 && servicio.precioOferta !== null
@@ -46,7 +28,7 @@ export function ServicioCard({ servicio }: { servicio: ServicioListado }) {
 
   return (
     <a
-      href={urlDetallePhp(servicio)}
+      href={urlDetalle(servicio)}
       className="block rounded-xl flex flex-col transition-transform duration-300 hover:-translate-y-1 cursor-pointer w-full sm:max-w-[380px] mx-auto md:max-w-none bg-transparent group h-full"
     >
       <div className="relative overflow-hidden w-full aspect-[3/2] rounded-xl bg-gray-100 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
