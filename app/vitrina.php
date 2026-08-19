@@ -260,8 +260,8 @@ try {
     $placeholders_nuevos = implode(',', array_fill(0, count($ids_servicios_usados), '?'));
     $sql_nuevos = "SELECT s.*, s.oferta_termino,
                           COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                          (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-                          (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                          (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+                          (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                           a.foto_perfil,
                           a.nombre as nombre_tutor,
                           bi.archivo as banco_archivo,
@@ -311,8 +311,8 @@ try {
         $placeholders_rapidos = implode(',', array_fill(0, count($ids_servicios_usados), '?'));
         $sql_rapidos = "SELECT s.*, s.oferta_termino,
                                COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                               (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-                               (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                               (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+                               (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                                a.foto_perfil,
                                a.nombre as nombre_tutor,
                                (SELECT AVG(rt.minutos_respuesta)
@@ -355,8 +355,8 @@ try {
     $termino_paes = '%PAES%';
     $sql_clases_paes = "SELECT s.*, s.oferta_termino,
                                COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                               (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-                               (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                               (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+                               (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                                a.foto_perfil,
                                a.nombre as nombre_tutor,
                                bi.archivo as banco_archivo,
@@ -476,8 +476,8 @@ $ids_usados = $ids_servicios_usados; // [DEDUP] arranca con lo ya mostrado en re
 try {
     $sql_ofertas = "SELECT s.*, s.oferta_termino,
                            COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                           (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-                           (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                           (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+                           (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                            a.foto_perfil, a.nombre as nombre_tutor,
                            bi.archivo as banco_archivo,
                            {$sql_tiene_foto_real} AS tiene_foto_real,
@@ -505,8 +505,8 @@ try {
         $types_relleno = str_repeat('i', count($ids_usados)) . 'i';
         
       $sql_relleno = "SELECT s.*, COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                               (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-                               (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
+                               (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+                               (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
                                a.foto_perfil, a.nombre as nombre_tutor,
                                bi.archivo as banco_archivo,
                                {$sql_tiene_foto_real} AS tiene_foto_real,

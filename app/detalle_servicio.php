@@ -250,8 +250,8 @@ $sql_recs = "SELECT s.id, s.slug, s.titulo, s.precio, s.imagen, s.imagen_banco_i
                     s.score_nubira, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino,
                     a.nombre as nombre_tutor, a.foto_perfil,
                     COALESCE(dp.institucion, a.institucion) as institucion_maestra,
-                    (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio,
-                    (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
+                    (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio,
+                    (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
                     bi.archivo as banco_archivo
              FROM servicios s
              LEFT JOIN alumnos a ON s.alumno_id = a.id

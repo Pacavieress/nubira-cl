@@ -40,8 +40,8 @@ $sql = "SELECT s.*,
         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
         LEFT JOIN (
-            SELECT servicio_id, AVG(calificacion_comprador) as rating_promedio, COUNT(*) as total_votos
-            FROM contratos WHERE calificacion_comprador > 0 GROUP BY servicio_id
+            SELECT servicio_id, AVG(calificacion) as rating_promedio, COUNT(*) as total_votos
+            FROM valoraciones WHERE calificacion > 0 AND rol_evaluado = 'vendedor' GROUP BY servicio_id
         ) stats ON stats.servicio_id = s.id
         WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1
         ORDER BY s.precio DESC, s.score_nubira DESC, rating_promedio DESC 

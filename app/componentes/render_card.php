@@ -30,8 +30,8 @@ if ($tipo === 'servicio') {
     $sql = "SELECT s.titulo, s.slug, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, s.imagen, s.imagen_banco_id, s.categoria, s.score_nubira,
             a.foto_perfil AS tutor_foto, a.nombre AS tutor_nombre,
             bi.archivo as banco_archivo,
-            (SELECT COUNT(*) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as total_votos,
-            (SELECT AVG(c.calificacion_comprador) FROM contratos c WHERE c.servicio_id = s.id AND c.calificacion_comprador > 0) as rating_promedio
+            (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as total_votos,
+            (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') as rating_promedio
             FROM servicios s
             LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
             LEFT JOIN alumnos a ON s.alumno_id = a.id
