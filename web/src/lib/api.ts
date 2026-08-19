@@ -95,3 +95,72 @@ export async function getServicioDetalle(id: number): Promise<ServicioDetalle | 
   }
   return res.json();
 }
+
+// Refleja ApuntePublico (server/src/modules/apuntes/apuntes.types.ts). Mismo criterio que
+// ServicioListado: no es un import compartido a propósito.
+export interface ApunteListado {
+  id: number;
+  titulo: string;
+  precio: number;
+  descripcionCorta: string | null;
+  portadaUrl: string;
+  institucion: string | null;
+  ventasTotales: number;
+  esNuevo: boolean;
+  promo: { activa: boolean; restantes: number } | null;
+  url: string;
+}
+
+interface ApuntesResponse {
+  data: ApunteListado[];
+  meta: { page: number; limit: number; hayMas: boolean };
+}
+
+export interface ApuntesFiltros {
+  nivel?: string;
+  precio?: "gratis" | "pagado";
+  orden?: string;
+  q?: string;
+}
+
+export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesResponse> {
+  const params = new URLSearchParams();
+  if (filtros.nivel) params.set("nivel", filtros.nivel);
+  if (filtros.precio) params.set("precio", filtros.precio);
+  if (filtros.orden) params.set("orden", filtros.orden);
+  if (filtros.q) params.set("q", filtros.q);
+
+  const qs = params.toString();
+  const res = await fetch(`${API_URL}/api/apuntes${qs ? `?${qs}` : ""}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`La API de apuntes respondió ${res.status}`);
+  }
+  return res.json();
+}
+
+// Refleja ApunteDetallePublico (server/src/modules/apuntes/apuntes.types.ts). Mismo
+// criterio que ServicioDetalle: no es un import compartido a propósito.
+export interface ApunteDetalle extends Omit<ApunteListado, "descripcionCorta"> {
+  descripcion: string | null;
+  asignatura: string | null;
+  materia: string | null;
+  nivelAcademico: string | null;
+  categoria: string | null;
+  iaTags: string[];
+  publicador: {
+    nombre: string | null;
+    fotoUrl: string;
+    institucion: string | null;
+    verificado: boolean;
+  };
+  viewer: { isAuthenticated: boolean; isOwner: boolean };
+}
+
+export async function getApunteDetalle(id: number): Promise<ApunteDetalle | null> {
+  const res = await fetch(`${API_URL}/api/apuntes/${id}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`La API de apuntes respondió ${res.status}`);
+  }
+  return res.json();
+}

@@ -3,6 +3,7 @@ import cors from "cors";
 import express, { type Express } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
+import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
 import { favoritosRouter } from "./modules/favoritos/favoritos.routes.js";
@@ -26,6 +27,7 @@ export function createApp(): Express {
   app.use(cookieParser());
   app.use("/health", healthRouter);
   app.use("/api/categorias", categoriasRouter);
+  app.use("/api/apuntes", apuntesRouter);
   app.use("/api/servicios", serviciosRouter);
   app.use("/api/tutores", tutoresRouter);
   app.use("/api/me/favoritos", favoritosRouter);

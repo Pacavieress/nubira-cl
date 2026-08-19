@@ -44,6 +44,34 @@ export interface PortadaVariantes {
 // del entorno local (mismo repo/máquina), no por diseño; esa asunción se rompería si
 // Node y PHP terminan en servidores distintos (decisión de hosting todavía pendiente).
 // Riesgo aceptado: alguna imagen legacy previa al pipeline podría devolver una URL rota.
+const NB_PORTADAS_WEB = "/upload/portadas/";
+const NB_APUNTES_WEB = "/upload/apuntes/";
+const NB_PLACEHOLDER_APUNTE = "/img/logo2.webp";
+const EXTS_IMAGEN = new Set(["jpg", "jpeg", "png", "webp", "gif", "bmp"]);
+
+// Puerto simplificado de obtenerMiniaturaApunte() (app/helpers/portada_helper.php:93-128):
+// misma prioridad portada > archivo-si-es-imagen > placeholder. El parámetro $previewBD de
+// la función real nunca se usa en su cuerpo (columna `preview` vestigial, confirmado leyendo
+// el helper completo) — no se replica acá tampoco, no es una omisión. Se omite además el tier
+// legacy que busca /upload/preview/{id}.ext por convención de nombre (requiere file_exists,
+// que Node no puede validar sin asumir filesystem compartido — mismo criterio que
+// resolverPortada() arriba). Confirmado contra datos reales: los 52 apuntes visibles hoy
+// tienen columna `portada` poblada y ninguno depende de ese tier legacy (0 coincidencias
+// en /upload/preview/{id}.*), así que esta simplificación no cambia el resultado visible
+// para ningún apunte actual.
+export function resolverPortadaApunte(
+  portada: string | null,
+  archivo: string | null,
+  assetsBaseUrl: string,
+): string {
+  if (portada) return conBase(assetsBaseUrl, `${NB_PORTADAS_WEB}${portada}`);
+  if (archivo) {
+    const ext = archivo.slice(archivo.lastIndexOf(".") + 1).toLowerCase();
+    if (EXTS_IMAGEN.has(ext)) return conBase(assetsBaseUrl, `${NB_APUNTES_WEB}${archivo}`);
+  }
+  return conBase(assetsBaseUrl, NB_PLACEHOLDER_APUNTE);
+}
+
 export function resolverPortada(
   bancoArchivo: string | null,
   imagenLegacy: string | null,
