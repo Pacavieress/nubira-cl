@@ -17,6 +17,7 @@ export interface ServicioRow {
   precio_oferta: string | null;
   cupos_oferta: number;
   oferta_termino: Date | null;
+  is_subvencionado: number;
   imagen: string | null;
   score_nubira: number;
   video_estado: string;
@@ -47,9 +48,16 @@ export interface SearchServiciosResult {
   hayMas: boolean;
 }
 
+// Tier calculado server-side (Fase "diseño idéntico") — única fuente de verdad de la
+// fórmula de umbrales, para no crear una tercera copia en Next.js (PHP ya la tiene
+// duplicada 2 veces). Ver computeTier() en servicios.mapper.ts.
+export type Tier = "leyenda" | "elite" | "pro" | "top" | null;
+
 // ---- Forma pública del JSON (Fase 4, decisiones 2a-2d ya aprobadas) ----
 // camelCase, precio/rating como number (parseados desde el string DECIMAL de ServicioRow
-// en servicios.mapper.ts), sin tiers, portada resuelta sin verificar filesystem.
+// en servicios.mapper.ts), portada resuelta sin verificar filesystem. Tier y ofertaVigente
+// se agregaron cuando el primer consumidor real (web/) los necesitó — antes quedaban
+// fuera a propósito (Fase 4, decisión 2b) para no exponer algo que nadie consumía.
 
 export interface ServicioPublico {
   id: number;
@@ -70,6 +78,8 @@ export interface ServicioPublico {
   rating: { promedio: number | null; votos: number };
   esPaes: boolean;
   videoEstado: string;
+  tier: Tier;
+  ofertaVigente: boolean;
 }
 
 // ---- Detalle completo (Fase 6) — extiende lo anterior, no lo reemplaza ----

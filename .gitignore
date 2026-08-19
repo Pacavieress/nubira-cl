@@ -33,6 +33,8 @@ app/cache_nav/
 # Dependencias (se reinstalan con composer / npm)
 /vendor/
 /node_modules/
+server/node_modules/
+server/dist/
 
 # Backups locales
 backup_*/

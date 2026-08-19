@@ -6,11 +6,22 @@ const NB_SERVICIOS_WEB = "/upload/servicios/";
 const NB_PLACEHOLDER = "placeholder";
 const NB_PERFIL_FOTOS_WEB = "/app/perfil/fotos/";
 
+// Prefija assetsBaseUrl SOLO a rutas internas (relativas) — una URL ya absoluta
+// (ej. ui-avatars.com) se deja intacta. Sin esto, un consumidor externo (web/) recibiría
+// <img src="/upload/..."> resuelto contra SU PROPIO origen, no el del sitio real.
+function conBase(assetsBaseUrl: string, ruta: string): string {
+  return ruta.startsWith("http") ? ruta : `${assetsBaseUrl}${ruta}`;
+}
+
 // Mismo criterio que app/componentes/render_card.php:85-87: si el tutor no tiene
 // foto_perfil, cae a un avatar generado externamente con su nombre (no un placeholder
 // local) — se replica tal cual, no una decisión nueva de esta fase.
-export function resolverFotoTutor(fotoPerfil: string | null, nombreTutor: string | null): string {
-  if (fotoPerfil) return `${NB_PERFIL_FOTOS_WEB}${fotoPerfil}`;
+export function resolverFotoTutor(
+  fotoPerfil: string | null,
+  nombreTutor: string | null,
+  assetsBaseUrl: string,
+): string {
+  if (fotoPerfil) return conBase(assetsBaseUrl, `${NB_PERFIL_FOTOS_WEB}${fotoPerfil}`);
   const nombre = encodeURIComponent(nombreTutor ?? "");
   return `https://ui-avatars.com/api/?name=${nombre}&background=54A6D8&color=fff&size=128&bold=true`;
 }
@@ -33,7 +44,11 @@ export interface PortadaVariantes {
 // del entorno local (mismo repo/máquina), no por diseño; esa asunción se rompería si
 // Node y PHP terminan en servidores distintos (decisión de hosting todavía pendiente).
 // Riesgo aceptado: alguna imagen legacy previa al pipeline podría devolver una URL rota.
-export function resolverPortada(bancoArchivo: string | null, imagenLegacy: string | null): PortadaVariantes {
+export function resolverPortada(
+  bancoArchivo: string | null,
+  imagenLegacy: string | null,
+  assetsBaseUrl: string,
+): PortadaVariantes {
   let webDir = NB_BANCO_WEB;
   let archivo = bancoArchivo;
 
@@ -48,8 +63,8 @@ export function resolverPortada(bancoArchivo: string | null, imagenLegacy: strin
 
   const base = baseName(archivo);
   return {
-    thumb: `${webDir}${base}_thumb.webp`,
-    card: `${webDir}${base}_card.webp`,
-    main: `${webDir}${base}.webp`,
+    thumb: conBase(assetsBaseUrl, `${webDir}${base}_thumb.webp`),
+    card: conBase(assetsBaseUrl, `${webDir}${base}_card.webp`),
+    main: conBase(assetsBaseUrl, `${webDir}${base}.webp`),
   };
 }

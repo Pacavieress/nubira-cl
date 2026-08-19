@@ -17,7 +17,7 @@ interface ServicioDetalleRowPacket extends ServicioDetalleRow, RowDataPacket {}
 const SELECT_SERVICIO = `
   SELECT
     s.id, s.slug, s.titulo, s.categoria, s.modalidad, s.precio, s.precio_oferta,
-    s.cupos_oferta, s.oferta_termino, s.imagen, s.score_nubira, s.video_estado, s.es_paes,
+    s.cupos_oferta, s.oferta_termino, s.is_subvencionado, s.imagen, s.score_nubira, s.video_estado, s.es_paes,
     COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
     a.id AS alumno_id, a.nombre AS nombre_tutor, a.foto_perfil,
     bi.archivo AS banco_archivo,
@@ -93,7 +93,7 @@ export async function getServicioById(id: number): Promise<ServicioRow | null> {
 const SELECT_SERVICIO_DETALLE = `
   SELECT
     s.id, s.slug, s.titulo, s.categoria, s.modalidad, s.precio, s.precio_oferta,
-    s.cupos_oferta, s.oferta_termino, s.imagen, s.score_nubira, s.video_estado, s.es_paes,
+    s.cupos_oferta, s.oferta_termino, s.is_subvencionado, s.imagen, s.score_nubira, s.video_estado, s.es_paes,
     s.descripcion, s.ubicacion, s.duracion_minutos, s.horarios_json, s.nivel,
     s.materia, s.area, s.asignatura,
     COALESCE(dp.institucion, a.institucion) AS institucion_maestra,

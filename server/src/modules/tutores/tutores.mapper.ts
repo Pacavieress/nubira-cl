@@ -1,3 +1,4 @@
+import { env } from "../../config/env.js";
 import { resolverFotoTutor } from "../../lib/media.js";
 import { mapServicioRow } from "../servicios/servicios.mapper.js";
 import type { ServicioRow } from "../servicios/servicios.types.js";
@@ -12,7 +13,7 @@ export function mapTutorRow(row: TutorRow, servicios: ServicioRow[]): TutorPubli
     id: row.id,
     nombre: row.nombre,
     bio: row.bio,
-    fotoUrl: resolverFotoTutor(row.foto_perfil, row.nombre),
+    fotoUrl: resolverFotoTutor(row.foto_perfil, row.nombre, env.assetsBaseUrl),
     institucion: row.institucion_maestra,
     verificado: row.verificacion_estado === "aprobado",
     rating: { promedio: toNumberOrNull(row.rating_promedio), votos: row.total_votos },

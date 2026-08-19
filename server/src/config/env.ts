@@ -14,6 +14,11 @@ export const env = {
   // Lista de orígenes permitidos separados por coma. Vacío por defecto = deniega todo
   // origin cross-site (ver src/app.ts) — nunca "*" como default implícito.
   corsOrigin: process.env.CORS_ORIGIN ?? "",
+  // Base para resolver rutas de imagen relativas (/upload/..., /app/perfil/fotos/...) que
+  // devuelve la API — esas rutas asumen el contexto del sitio PHP, que sirve de un origen
+  // distinto al de esta API. Sin esto, un consumidor externo (web/) recibiría <img src>
+  // rotos apuntando a su propio origen en vez de al sitio real.
+  assetsBaseUrl: required("ASSETS_BASE_URL"),
   db: {
     host: required("DB_HOST"),
     port: Number(process.env.DB_PORT ?? 3306),
