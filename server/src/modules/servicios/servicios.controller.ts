@@ -1,6 +1,11 @@
 import type { Request, Response } from "express";
 import { mapServicioDetalleRow, mapServicioRow } from "./servicios.mapper.js";
-import { getServicioDetalleById, searchServiciosAprobados } from "./servicios.repository.js";
+import {
+  getMinutosRespuestaTutor,
+  getServicioDetalleById,
+  getValoracionesByServicioId,
+  searchServiciosAprobados,
+} from "./servicios.repository.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
@@ -52,12 +57,22 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
     return;
   }
 
+  const [valoraciones, minutosRespuesta] = await Promise.all([
+    getValoracionesByServicioId(id),
+    getMinutosRespuestaTutor(row.alumno_id),
+  ]);
+
   // req.usuarioId lo pone optionalAuth (servicios.routes.ts) SOLO si había una sesión
   // válida — undefined para un visitante, nunca un valor asumido por defecto.
   res.status(200).json(
-    mapServicioDetalleRow(row, {
-      isAuthenticated: req.usuarioId !== undefined,
-      isOwner: req.usuarioId === row.alumno_id,
-    }),
+    mapServicioDetalleRow(
+      row,
+      {
+        isAuthenticated: req.usuarioId !== undefined,
+        isOwner: req.usuarioId === row.alumno_id,
+      },
+      valoraciones,
+      minutosRespuesta,
+    ),
   );
 }

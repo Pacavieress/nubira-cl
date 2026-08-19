@@ -6,6 +6,9 @@ import type {
   ServicioPublico,
   ServicioRow,
   Tier,
+  TiempoRespuesta,
+  ValoracionPublica,
+  ValoracionRow,
   ViewerContext,
 } from "./servicios.types.js";
 
@@ -68,6 +71,30 @@ export function mapServicioRow(row: ServicioRow): ServicioPublico {
   };
 }
 
+// Puerto exacto de formatearTiempoRespuestaNubira() en app/helpers/tiempo_respuesta.php:7-17
+// — mismos 5 rangos, mismos textos, mismo orden de comparación (< estricto en cada corte).
+export function formatearTiempoRespuesta(minutos: number | null): TiempoRespuesta {
+  if (minutos === null) return { texto: "Tutor nuevo", tono: "gris" };
+  if (minutos < 15) return { texto: "En minutos", tono: "verde" };
+  if (minutos < 60) return { texto: "En menos de 1 hora", tono: "verde" };
+  if (minutos < 180) return { texto: "En pocas horas", tono: "azul" };
+  if (minutos < 720) return { texto: "En el día", tono: "azul" };
+  return { texto: "En 1 día", tono: "naranjo" };
+}
+
+function mapValoracionRow(row: ValoracionRow): ValoracionPublica {
+  return {
+    id: row.id,
+    calificacion: row.calificacion,
+    comentario: row.comentario,
+    fecha: row.fecha,
+    evaluador: {
+      nombre: row.evaluador_nombre,
+      fotoUrl: resolverFotoTutor(row.evaluador_foto, row.evaluador_nombre, env.assetsBaseUrl),
+    },
+  };
+}
+
 function parseHorarios(horariosJson: string | null): unknown {
   if (!horariosJson) return null;
   try {
@@ -79,9 +106,19 @@ function parseHorarios(horariosJson: string | null): unknown {
   }
 }
 
-export function mapServicioDetalleRow(row: ServicioDetalleRow, viewer: ViewerContext): ServicioDetallePublico {
+export function mapServicioDetalleRow(
+  row: ServicioDetalleRow,
+  viewer: ViewerContext,
+  valoraciones: ValoracionRow[],
+  minutosRespuesta: number | null,
+): ServicioDetallePublico {
+  const base = mapServicioRow(row);
   return {
-    ...mapServicioRow(row),
+    ...base,
+    tutor: {
+      ...base.tutor,
+      verificado: row.verificacion_estado === "aprobado",
+    },
     descripcion: row.descripcion,
     ubicacion: row.ubicacion,
     duracionMinutos: row.duracion_minutos,
@@ -91,5 +128,7 @@ export function mapServicioDetalleRow(row: ServicioDetalleRow, viewer: ViewerCon
     area: row.area,
     asignatura: row.asignatura,
     viewer,
+    valoraciones: valoraciones.map(mapValoracionRow),
+    tiempoRespuesta: formatearTiempoRespuesta(minutosRespuesta),
   };
 }

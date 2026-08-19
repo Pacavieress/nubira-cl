@@ -5,10 +5,15 @@ import type {
   SearchServiciosResult,
   ServicioDetalleRow,
   ServicioRow,
+  ValoracionRow,
 } from "./servicios.types.js";
 
 interface ServicioRowPacket extends ServicioRow, RowDataPacket {}
 interface ServicioDetalleRowPacket extends ServicioDetalleRow, RowDataPacket {}
+interface ValoracionRowPacket extends ValoracionRow, RowDataPacket {}
+interface MinutosRespuestaRowPacket extends RowDataPacket {
+  minutos_respuesta: number;
+}
 
 // Mismo JOIN y mismo patrón de rating ya corregidos en PHP en la Fase 0.5
 // (vitrina.php, detalle_servicio.php, cargar_vistos.php, render_card.php,
@@ -97,7 +102,7 @@ const SELECT_SERVICIO_DETALLE = `
     s.descripcion, s.ubicacion, s.duracion_minutos, s.horarios_json, s.nivel,
     s.materia, s.area, s.asignatura,
     COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
-    a.id AS alumno_id, a.nombre AS nombre_tutor, a.foto_perfil,
+    a.id AS alumno_id, a.nombre AS nombre_tutor, a.foto_perfil, a.verificacion_estado,
     bi.archivo AS banco_archivo,
     (SELECT COUNT(*) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') AS total_votos,
     (SELECT AVG(v.calificacion) FROM valoraciones v WHERE v.servicio_id = s.id AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor') AS rating_promedio
@@ -113,4 +118,41 @@ export async function getServicioDetalleById(id: number): Promise<ServicioDetall
     [id],
   );
   return rows[0] ?? null;
+}
+
+// Puerto exacto de detalle_servicio.php:201 — mismo filtro (calificacion>0,
+// rol_evaluado='vendedor'), mismo orden (más reciente primero), sin LIMIT (PHP tampoco
+// pagina las reseñas).
+export async function getValoracionesByServicioId(servicioId: number): Promise<ValoracionRow[]> {
+  const [rows] = await pool.query<ValoracionRowPacket[]>(
+    `SELECT v.id, v.calificacion, v.comentario, v.fecha,
+            a.nombre AS evaluador_nombre, a.foto_perfil AS evaluador_foto
+     FROM valoraciones v
+     JOIN alumnos a ON v.id_evaluador = a.id
+     WHERE v.servicio_id = ? AND v.calificacion > 0 AND v.rol_evaluado = 'vendedor'
+     ORDER BY v.id DESC`,
+    [servicioId],
+  );
+  return rows;
+}
+
+// Puerto exacto de calcular_tiempo_respuesta_tutor() en app/helpers/tiempo_respuesta.php:24-53
+// — mediana de minutos_respuesta en los últimos 30 días, outliers >24h (1440 min) descartados.
+export async function getMinutosRespuestaTutor(tutorId: number): Promise<number | null> {
+  const [rows] = await pool.query<MinutosRespuestaRowPacket[]>(
+    `SELECT minutos_respuesta
+     FROM respuestas_tutor
+     WHERE tutor_id = ? AND creado_en > (NOW() - INTERVAL 30 DAY) AND minutos_respuesta <= 1440
+     ORDER BY minutos_respuesta ASC`,
+    [tutorId],
+  );
+
+  const valores = rows.map((row) => row.minutos_respuesta);
+  if (valores.length === 0) return null;
+
+  const mid = Math.floor(valores.length / 2);
+  if (valores.length % 2 === 0) {
+    return Math.round((valores[mid - 1]! + valores[mid]!) / 2);
+  }
+  return valores[mid]!;
 }

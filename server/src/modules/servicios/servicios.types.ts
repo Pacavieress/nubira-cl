@@ -100,9 +100,38 @@ export interface ServicioDetalleRow extends ServicioRow {
   materia: string | null;
   area: string | null;
   asignatura: string | null;
+  verificacion_estado: string | null;
 }
 
-export interface ServicioDetallePublico extends ServicioPublico {
+// ---- Reseñas individuales y tiempo de respuesta (extensión para el detalle) ----
+// Puerto exacto de detalle_servicio.php:201 y app/helpers/tiempo_respuesta.php.
+
+export interface ValoracionRow {
+  id: number;
+  calificacion: number;
+  comentario: string | null;
+  fecha: Date;
+  evaluador_nombre: string | null;
+  evaluador_foto: string | null;
+}
+
+export interface ValoracionPublica {
+  id: number;
+  calificacion: number;
+  comentario: string | null;
+  fecha: Date;
+  evaluador: { nombre: string | null; fotoUrl: string };
+}
+
+export type TonoRespuesta = "verde" | "azul" | "naranjo" | "gris";
+
+export interface TiempoRespuesta {
+  texto: string;
+  tono: TonoRespuesta;
+}
+
+export interface ServicioDetallePublico extends Omit<ServicioPublico, "tutor"> {
+  tutor: ServicioPublico["tutor"] & { verificado: boolean };
   descripcion: string;
   ubicacion: string | null;
   duracionMinutos: number;
@@ -112,4 +141,6 @@ export interface ServicioDetallePublico extends ServicioPublico {
   area: string | null;
   asignatura: string | null;
   viewer: ViewerContext;
+  valoraciones: ValoracionPublica[];
+  tiempoRespuesta: TiempoRespuesta;
 }
