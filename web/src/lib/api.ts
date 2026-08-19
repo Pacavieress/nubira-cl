@@ -164,3 +164,31 @@ export async function getApunteDetalle(id: number): Promise<ApunteDetalle | null
   }
   return res.json();
 }
+
+// Refleja TutorPublico (server/src/modules/tutores/tutores.types.ts). Mismo criterio que
+// los otros tipos de detalle: no es un import compartido a propósito.
+export interface TutorPerfil {
+  id: number;
+  nombre: string | null;
+  bio: string | null;
+  fotoUrl: string;
+  institucion: string | null;
+  verificado: boolean;
+  subtitulo: string;
+  statsAcademicas: { universidad: string | null; anioEgreso: number | null; aniosExperiencia: number | null };
+  tiempoRespuesta: { texto: string; tono: TonoRespuesta } | null;
+  rating: { promedio: number | null; votos: number };
+  resenasComoTutor: ValoracionPublica[];
+  resenasComoAlumno: ValoracionPublica[];
+  servicios: ServicioListado[];
+  apuntes: ApunteListado[];
+}
+
+export async function getTutorPerfil(id: number): Promise<TutorPerfil | null> {
+  const res = await fetch(`${API_URL}/api/tutores/${id}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`La API de tutores respondió ${res.status}`);
+  }
+  return res.json();
+}

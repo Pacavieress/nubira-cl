@@ -82,7 +82,9 @@ export function formatearTiempoRespuesta(minutos: number | null): TiempoRespuest
   return { texto: "En 1 día", tono: "naranjo" };
 }
 
-function mapValoracionRow(row: ValoracionRow): ValoracionPublica {
+// Exportada (Fase perfil de tutor) — tutores.mapper.ts la reutiliza para las 2 listas de
+// reseñas del perfil (como tutor / como alumno), mismo shape que acá.
+export function mapValoracionRow(row: ValoracionRow): ValoracionPublica {
   return {
     id: row.id,
     calificacion: row.calificacion,
