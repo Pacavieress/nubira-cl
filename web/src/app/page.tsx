@@ -30,7 +30,6 @@ import { ServicioCardCarrusel } from "@/components/ServicioCardCarrusel";
 //     ofertas=items-end sin link. Confirmado con grep línea por línea de las 5 secciones.
 export default async function Home() {
   const data = await getHome();
-  const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
 
   return (
     <>
@@ -73,10 +72,9 @@ export default async function Home() {
         )}
 
         {data.clasesPaes.length > 0 && (
-          // Ver todo -> /clases/paes existe en el sitio PHP real pero no en web/ todavía
-          // — mismo criterio que "Recursos" en Sidebar.tsx: enlaza afuera en vez de a una
-          // ruta interna rota.
-          <Seccion titulo="PAES" verTodoHref={`${phpSiteUrl}/clases/paes`} verTodoExterno align="center" gap>
+          // Ver todo -> /clases/paes — ya no enlaza afuera: la landing se construyó en
+          // esta misma sesión (ver web/src/app/clases/[cat]/page.tsx).
+          <Seccion titulo="PAES" verTodoHref="/clases/paes" align="center" gap>
             <Carrusel>
               {data.clasesPaes.map((s) => (
                 <ServicioCardCarrusel key={s.id} servicio={s} />

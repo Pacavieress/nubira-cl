@@ -214,3 +214,22 @@ export async function getHome(): Promise<HomeData> {
   }
   return res.json();
 }
+
+// Refleja LandingClases (server/src/modules/landings/landings.types.ts). Mismo criterio
+// que los demás tipos de esta página: no es un import compartido a propósito.
+export interface LandingClases {
+  categoria: string;
+  seo: { titulo: string; descripcion: string; h1: string; intro: string | null; noindex: boolean };
+  total: number;
+  servicios: ServicioListado[];
+  faqs: { pregunta: string; respuesta: string }[];
+}
+
+export async function getLandingClases(slug: string): Promise<LandingClases | null> {
+  const res = await fetch(`${API_URL}/api/landings/clases/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`La API de landings respondió ${res.status}`);
+  }
+  return res.json();
+}
