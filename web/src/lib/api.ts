@@ -378,3 +378,29 @@ export async function getMisPublicaciones(): Promise<MisPublicaciones | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja ContratoAgenda/MisContratosPublico (server/src/modules/misContratos/misContratos.types.ts).
+export interface ContratoAgenda {
+  id: number;
+  estado: string;
+  monto: number;
+  fechaCreacion: string;
+  fechaEstimada: string | null;
+  fechaClase: string | null;
+  duracionMinutos: number | null;
+  servicioTitulo: string;
+  imagenUrl: string;
+  categoria: string;
+  otraPersonaNombre: string;
+}
+
+export interface MisContratos {
+  comoComprador: ContratoAgenda[];
+  comoVendedor: ContratoAgenda[];
+}
+
+export async function getMisContratos(): Promise<MisContratos | null> {
+  const res = await fetchConSesion("/api/me/mis-contratos");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
