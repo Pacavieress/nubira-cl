@@ -89,6 +89,9 @@ export interface ServicioPublico {
 export interface ViewerContext {
   isAuthenticated: boolean;
   isOwner: boolean;
+  // Agregado para favoritos (Fase 7 de la migración, server/src/modules/favoritos) — false
+  // sin sesión, sin necesidad de tocar la BD (un visitante anónimo nunca tiene favoritos).
+  esFavorito: boolean;
 }
 
 export interface ServicioDetalleRow extends ServicioRow {

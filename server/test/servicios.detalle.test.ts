@@ -63,9 +63,9 @@ test("GET /api/servicios/:id sin cookie devuelve 200 con viewer anónimo", async
   const { url, close } = listen();
   try {
     const res = await fetch(`${url}/api/servicios/${servicioId}`);
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false });
   } finally {
     await close();
   }
@@ -77,9 +77,9 @@ test("GET /api/servicios/:id con cookie del dueño real devuelve isOwner=true", 
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: `PHPSESSID=${SESSION_OWNER}` },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: true });
+    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: true, esFavorito: false });
   } finally {
     await close();
   }
@@ -91,9 +91,9 @@ test("GET /api/servicios/:id con cookie de OTRO usuario devuelve isAuthenticated
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: `PHPSESSID=${SESSION_OTRO}` },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: false, esFavorito: false });
   } finally {
     await close();
   }
@@ -105,9 +105,9 @@ test("optionalAuth NUNCA bloquea: cookie vencida devuelve 200 (no 401), viewer a
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: `PHPSESSID=${SESSION_VENCIDA}` },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false });
   } finally {
     await close();
   }
@@ -119,10 +119,33 @@ test("optionalAuth NUNCA bloquea: cookie que no existe en sesiones_api devuelve 
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: "PHPSESSID=esto-no-existe-en-sesiones-api" },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false });
   } finally {
+    await close();
+  }
+});
+
+test("GET /api/servicios/:id: esFavorito refleja favoritos_servicios real, no un valor fijo", async () => {
+  const { url, close } = listen();
+  try {
+    await pool.query(
+      "INSERT INTO favoritos_servicios (usuario_id, servicio_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE usuario_id = usuario_id",
+      [USUARIO_OTRO, servicioId],
+    );
+
+    const res = await fetch(`${url}/api/servicios/${servicioId}`, {
+      headers: { Cookie: `PHPSESSID=${SESSION_OTRO}` },
+    });
+    const body = (await res.json()) as { viewer: { esFavorito: boolean } };
+    assert.equal(res.status, 200);
+    assert.equal(body.viewer.esFavorito, true);
+  } finally {
+    await pool.query("DELETE FROM favoritos_servicios WHERE usuario_id = ? AND servicio_id = ?", [
+      USUARIO_OTRO,
+      servicioId,
+    ]);
     await close();
   }
 });

@@ -86,13 +86,22 @@ export interface ServicioDetalle extends Omit<ServicioListado, "tutor"> {
   materia: string | null;
   area: string | null;
   asignatura: string | null;
-  viewer: { isAuthenticated: boolean; isOwner: boolean };
+  // esFavorito agregado para el toggle de favoritos (Fase 7 de la migración) — ver
+  // FavoritoToggle.tsx.
+  viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean };
   valoraciones: ValoracionPublica[];
   tiempoRespuesta: { texto: string; tono: TonoRespuesta };
 }
 
+// BUG real pre-existente corregido acá (Fase 7, al construir favoritos): esta función
+// nunca reenviaba la cookie de sesión, así que `viewer.isAuthenticated/isOwner` llegaban
+// SIEMPRE en false sin importar si el visitante real tenía sesión — invisible hasta ahora
+// porque nada en la página consumía `viewer` todavía (confirmado con grep). Mismo patrón
+// que getGuiaArticulo: fetchConSesion primero (null sin cookie, sin pagar el roundtrip
+// extra para el caso común de visitante anónimo), fallback a fetch público sin sesión.
 export async function getServicioDetalle(id: number): Promise<ServicioDetalle | null> {
-  const res = await fetch(`${API_URL}/api/servicios/${id}`, { cache: "no-store" });
+  const resConSesion = await fetchConSesion(`/api/servicios/${id}`);
+  const res = resConSesion ?? (await fetch(`${API_URL}/api/servicios/${id}`, { cache: "no-store" }));
   if (res.status === 404) return null;
   if (!res.ok) {
     throw new Error(`La API de servicios respondió ${res.status}`);
@@ -644,6 +653,15 @@ export interface DesafioResultado {
   aciertos: number;
   resultado: "bien" | "mal";
   categoriaServicio: string | null;
+}
+
+// ---- Favoritos de servicio (Fase 7 de la migración, feature nueva sin equivalente PHP —
+// ver sql/pendientes/migracion_arquitectura_fase7_favoritos_servicios.sql) ----
+export async function getMisFavoritos(): Promise<ServicioListado[] | null> {
+  const res = await fetchConSesion("/api/me/favoritos");
+  if (!res || !res.ok) return null;
+  const body = (await res.json()) as { data: ServicioListado[] };
+  return body.data;
 }
 
 export async function getDesafioMaterias(): Promise<DesafioMateria[]> {

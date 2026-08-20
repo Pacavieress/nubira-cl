@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { existeFavorito } from "../favoritos/favoritos.repository.js";
 import { mapServicioDetalleRow, mapServicioRow } from "./servicios.mapper.js";
 import {
   getMinutosRespuestaTutor,
@@ -57,9 +58,10 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const [valoraciones, minutosRespuesta] = await Promise.all([
+  const [valoraciones, minutosRespuesta, esFavorito] = await Promise.all([
     getValoracionesByServicioId(id),
     getMinutosRespuestaTutor(row.alumno_id),
+    req.usuarioId !== undefined ? existeFavorito(req.usuarioId, id) : Promise.resolve(false),
   ]);
 
   // req.usuarioId lo pone optionalAuth (servicios.routes.ts) SOLO si había una sesión
@@ -70,6 +72,7 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
       {
         isAuthenticated: req.usuarioId !== undefined,
         isOwner: req.usuarioId === row.alumno_id,
+        esFavorito,
       },
       valoraciones,
       minutosRespuesta,

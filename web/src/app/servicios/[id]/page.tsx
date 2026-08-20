@@ -3,6 +3,7 @@ import { getServicioDetalle } from "@/lib/api";
 import { formatoCLP } from "@/lib/formato";
 import { parsearHorariosServicio } from "@/lib/horarios";
 import { abreviarNombre, inicial } from "@/lib/texto";
+import { FavoritoToggle } from "@/components/FavoritoToggle";
 import { Header } from "@/components/Header";
 import { TiempoRespuestaPill } from "@/components/TiempoRespuestaPill";
 
@@ -33,10 +34,17 @@ export default async function DetalleServicio({ params }: DetalleProps) {
       <Header titulo={servicio.titulo} />
       <main className="w-full max-w-[1100px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-16 lg:ml-64">
         <div className="bg-white border border-[#f0f0f0] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          {/* Categoría — calcado de detalle_servicio.php:484-487 */}
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-[#f0f0f0] uppercase tracking-wide">
-            {servicio.categoria}
-          </span>
+          {/* Categoría — calcado de detalle_servicio.php:484-487. El toggle de favoritos
+              a la derecha es feature nueva (Fase 7, sin equivalente PHP) — solo se muestra
+              a un viewer con sesión, ver FavoritoToggle.tsx. */}
+          <div className="flex items-start justify-between gap-3">
+            <span className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-[#f0f0f0] uppercase tracking-wide">
+              {servicio.categoria}
+            </span>
+            {servicio.viewer.isAuthenticated && (
+              <FavoritoToggle servicioId={servicio.id} favoritoInicial={servicio.viewer.esFavorito} />
+            )}
+          </div>
 
           <h1 className="text-3xl md:text-4xl font-medium text-[#222222] leading-tight mb-6 mt-3 tracking-[-0.01em]">
             {servicio.titulo}

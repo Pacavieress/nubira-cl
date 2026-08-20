@@ -29,6 +29,17 @@ export async function desmarcarFavorito(usuarioId: number, servicioId: number): 
   ]);
 }
 
+// Agregada para el detalle de servicio (web/src/app/servicios/[id]) — chequeo puntual de
+// un solo (usuario, servicio) en vez de traer la lista completa vía
+// listarServicioIdsFavoritos() solo para ver si un id está adentro.
+export async function existeFavorito(usuarioId: number, servicioId: number): Promise<boolean> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    "SELECT 1 FROM favoritos_servicios WHERE usuario_id = ? AND servicio_id = ? LIMIT 1",
+    [usuarioId, servicioId],
+  );
+  return rows.length > 0;
+}
+
 export async function listarServicioIdsFavoritos(usuarioId: number): Promise<number[]> {
   const [rows] = await pool.query<ServicioIdRow[]>(
     "SELECT servicio_id FROM favoritos_servicios WHERE usuario_id = ? ORDER BY creado_en DESC",
