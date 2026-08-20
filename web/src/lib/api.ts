@@ -523,3 +523,62 @@ export async function getGuiasHubCategoria(slug: string): Promise<GuiasHubCatego
   const body = (await res.json()) as Omit<Extract<GuiasHubCategoria, { encontrada: true }>, "encontrada">;
   return { ...body, encontrada: true };
 }
+
+// Refleja GuiaArticuloDetalle (server/src/modules/guias/guias.types.ts).
+export interface TutorRelacionado {
+  id: number;
+  url: string;
+  titulo: string;
+  nombreTutor: string;
+  fotoUrl: string | null;
+  institucion: string;
+}
+
+export interface ApunteRelacionado {
+  id: number;
+  titulo: string;
+}
+
+export interface ArticuloRelacionado {
+  slug: string;
+  titulo: string;
+  portadaThumbUrl: string | null;
+}
+
+export type GuiaArticuloDetalle =
+  | {
+      encontrada: true;
+      categoria: { nombre: string; slug: string; soloTutores: boolean };
+      articulo: {
+        titulo: string;
+        resumen: string | null;
+        cuerpoHtml: string;
+        autorNombre: string;
+        fechaPublicacion: string | null;
+        portadaMainUrl: string | null;
+        metaDescription: string | null;
+      };
+      faqs: { pregunta: string; respuesta: string }[];
+      tutoresRelacionados: TutorRelacionado[];
+      apuntesRelacionados: ApunteRelacionado[];
+      linkVerClases: string | null;
+      linkVerApuntes: string | null;
+      articulosRelacionados: ArticuloRelacionado[];
+      mostrarBreadcrumb: boolean;
+    }
+  | { encontrada: false; razon: "not_found" | "sin_sesion" | "no_tutor" };
+
+// Mismo criterio que getGuiasHubCategoria: fetchConSesion primero (el gate de "Para
+// Tutores" depende de la sesión), fallback a fetch() plano solo si no hay cookie.
+export async function getGuiaArticulo(cat: string, slug: string): Promise<GuiaArticuloDetalle> {
+  const resConSesion = await fetchConSesion(`/api/guias/${cat}/${slug}`);
+  const res = resConSesion ?? (await fetch(`${API_URL}/api/guias/${cat}/${slug}`, { cache: "no-store" }));
+
+  if (res.status === 404) return { encontrada: false, razon: "not_found" };
+  if (res.status === 401) return { encontrada: false, razon: "sin_sesion" };
+  if (res.status === 403) return { encontrada: false, razon: "no_tutor" };
+  if (!res.ok) throw new Error(`La API de guías respondió ${res.status}`);
+
+  const body = (await res.json()) as Omit<Extract<GuiaArticuloDetalle, { encontrada: true }>, "encontrada">;
+  return { ...body, encontrada: true };
+}
