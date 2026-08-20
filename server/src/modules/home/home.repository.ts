@@ -4,14 +4,11 @@ import { SELECT_APUNTE, WHERE_VISIBLE as WHERE_VISIBLE_APUNTE } from "../apuntes
 import type { ApunteRow } from "../apuntes/apuntes.types.js";
 import { SELECT_SERVICIO, WHERE_VISIBLE as WHERE_VISIBLE_SERVICIO } from "../servicios/servicios.repository.js";
 import type { ServicioRow } from "../servicios/servicios.types.js";
-import type { BannerRow } from "./home.types.js";
 
 interface ServicioRowPacket extends ServicioRow, RowDataPacket {}
 interface ApunteRowPacket extends ApunteRow, RowDataPacket {}
-interface BannerRowPacket extends BannerRow, RowDataPacket {}
 
 export interface HomeDataRaw {
-  banner: BannerRow | null;
   serviciosRecomendados: ServicioRow[];
   serviciosNuevos: ServicioRow[];
   apuntesRecomendados: ApunteRow[];
@@ -60,20 +57,6 @@ async function fetchApuntesRecomendados(): Promise<ApunteRow[]> {
      LIMIT 10`,
   );
   return rows;
-}
-
-// Puerto de vitrina.php:677-701 — banner inline. Para un visitante sin institución
-// (único caso posible en web/ hoy) el filtro de institución de PHP nunca se activa
-// (`if (!$es_admin && $institucion !== '')`), así que esta query ya es el equivalente
-// exacto: el primer banner activo por orden, sin importar institución.
-async function fetchBanner(): Promise<BannerRow | null> {
-  const [rows] = await pool.query<BannerRowPacket[]>(
-    `SELECT id, titulo, imagen, enlace FROM banners
-     WHERE activo = 1 AND posicion = 'vitrina_inline'
-     ORDER BY orden ASC
-     LIMIT 1`,
-  );
-  return rows[0] ?? null;
 }
 
 export async function getHomeDataRaw(): Promise<HomeDataRaw> {
@@ -134,7 +117,7 @@ export async function getHomeDataRaw(): Promise<HomeDataRaw> {
     }
   }
 
-  const [apuntesRecomendados, banner] = await Promise.all([fetchApuntesRecomendados(), fetchBanner()]);
+  const apuntesRecomendados = await fetchApuntesRecomendados();
 
-  return { banner, serviciosRecomendados, serviciosNuevos, apuntesRecomendados, clasesPaes, ofertas };
+  return { serviciosRecomendados, serviciosNuevos, apuntesRecomendados, clasesPaes, ofertas };
 }

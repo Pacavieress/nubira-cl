@@ -5,7 +5,6 @@ const NB_BANCO_WEB = "/upload/banco/";
 const NB_SERVICIOS_WEB = "/upload/servicios/";
 const NB_PLACEHOLDER = "placeholder";
 const NB_PERFIL_FOTOS_WEB = "/app/perfil/fotos/";
-const NB_BANNERS_WEB = "/upload/banners/";
 
 // Prefija assetsBaseUrl SOLO a rutas internas (relativas) — una URL ya absoluta
 // (ej. ui-avatars.com) se deja intacta. Sin esto, un consumidor externo (web/) recibiría
@@ -25,13 +24,6 @@ export function resolverFotoTutor(
   if (fotoPerfil) return conBase(assetsBaseUrl, `${NB_PERFIL_FOTOS_WEB}${fotoPerfil}`);
   const nombre = encodeURIComponent(nombreTutor ?? "");
   return `https://ui-avatars.com/api/?name=${nombre}&background=54A6D8&color=fff&size=128&bold=true`;
-}
-
-// Puerto de la ruta usada por vitrina_apuntes.php:198 y vitrina.php para el banner
-// inline (`/upload/banners/{imagen}`) — sin filemtime cache-busting, mismo criterio que
-// el resto de este archivo (Node no valida filesystem).
-export function resolverBanner(imagen: string, assetsBaseUrl: string): string {
-  return conBase(assetsBaseUrl, `${NB_BANNERS_WEB}${imagen}`);
 }
 
 function baseName(archivo: string): string {

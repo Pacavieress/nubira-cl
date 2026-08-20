@@ -196,16 +196,10 @@ export async function getTutorPerfil(id: number): Promise<TutorPerfil | null> {
 }
 
 // Refleja HomeData (server/src/modules/home/home.types.ts). Mismo criterio que los
-// demás tipos de esta página: no es un import compartido a propósito.
-export interface BannerPublico {
-  id: number;
-  titulo: string;
-  imagenUrl: string;
-  enlace: string | null;
-}
-
+// demás tipos de esta página: no es un import compartido a propósito. Sin banner:
+// vitrina.php lo consulta (líneas 678-701) pero nunca lo renderiza en ningún lugar del
+// archivo — confirmado con grep, es código muerto, no una sección condicional.
 export interface HomeData {
-  banner: BannerPublico | null;
   serviciosRecomendados: ServicioListado[];
   serviciosNuevos: ServicioListado[];
   apuntesRecomendados: ApunteListado[];

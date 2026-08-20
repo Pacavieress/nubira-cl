@@ -18,23 +18,12 @@ import type { ServicioPublico } from "../servicios/servicios.types.js";
 // igual a su propio fallback (orden por perfil completo + determinístico en vez de
 // RAND($seed), mismo criterio ya usado en servicios/apuntes/búsqueda). No hay pérdida de
 // fidelidad: es literalmente la misma rama de código que ve cualquier visitante nuevo.
-
-export interface BannerRow {
-  id: number;
-  titulo: string;
-  imagen: string;
-  enlace: string | null;
-}
-
-export interface BannerPublico {
-  id: number;
-  titulo: string;
-  imagenUrl: string;
-  enlace: string | null;
-}
+//
+// Sin banner: vitrina.php:678-701 consulta $banner_inline pero JAMÁS lo renderiza en
+// ningún lugar del archivo (confirmado con grep de "banner" en todo vitrina.php) — es
+// código muerto, no una sección condicional como las otras 4. No se porta ni la query.
 
 export interface HomeData {
-  banner: BannerPublico | null;
   serviciosRecomendados: ServicioPublico[];
   serviciosNuevos: ServicioPublico[];
   apuntesRecomendados: ApuntePublico[];

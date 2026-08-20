@@ -1,6 +1,7 @@
 import type { ServicioListado } from "@/lib/api";
 import { formatoCLP } from "@/lib/formato";
 import { abreviarNombre } from "@/lib/texto";
+import { OverlayServicio } from "./OverlayServicio";
 import { RatingPill } from "./RatingPill";
 import { TierBadge } from "./TierBadge";
 
@@ -39,44 +40,12 @@ export function ServicioCard({ servicio }: { servicio: ServicioListado }) {
           loading="lazy"
         />
 
-        {/* Overlay: gradiente + categoría + tutor — calcado de overlay_card_servicio.php */}
-        <div
-          className="absolute inset-0 z-[5] pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.08) 32%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.10) 70%, rgba(0,0,0,0.48) 100%)",
-          }}
+        <OverlayServicio
+          prefijo={prefijo}
+          categoria={nombreCategoriaOverlay}
+          fotoUrl={servicio.tutor.fotoUrl}
+          nombre={tutorNombreAbrev}
         />
-        <div className="absolute top-3 left-3 z-10 pr-2 leading-tight" style={{ maxWidth: "70%" }}>
-          {prefijo && (
-            <div
-              className="text-white text-xs md:text-sm font-medium opacity-90"
-              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
-            >
-              {prefijo}
-            </div>
-          )}
-          <div
-            className="text-white text-base md:text-lg font-bold"
-            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
-          >
-            {nombreCategoriaOverlay}
-          </div>
-        </div>
-        <div
-          className="absolute bottom-3 left-3 z-10 pr-2 flex items-center gap-2 text-white text-base md:text-lg font-bold"
-          style={{ maxWidth: "80%", textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
-        >
-          {servicio.tutor.fotoUrl && (
-            <img
-              src={servicio.tutor.fotoUrl}
-              alt={tutorNombreAbrev}
-              className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-1 ring-white/40 shadow-[0_1px_3px_rgba(0,0,0,0.15)]"
-              loading="lazy"
-            />
-          )}
-          <span className="truncate min-w-0">{tutorNombreAbrev}</span>
-        </div>
 
         {/* Badge derecha: tier (oculto en ofertas) o cupos (si hay oferta vigente) */}
         {!servicio.ofertaVigente && servicio.tier && (

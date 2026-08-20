@@ -21,7 +21,6 @@ function listen(): { url: string; close: () => Promise<void> } {
 }
 
 interface HomeBody {
-  banner: { id: number; titulo: string; imagenUrl: string; enlace: string | null } | null;
   serviciosRecomendados: { id: number }[];
   serviciosNuevos: { id: number }[];
   apuntesRecomendados: { id: number }[];
@@ -29,18 +28,18 @@ interface HomeBody {
   ofertas: { id: number; ofertaVigente: boolean }[];
 }
 
-test("GET /api/home devuelve 200 con las 6 claves esperadas", async () => {
+test("GET /api/home devuelve 200 con las 5 claves esperadas (sin banner: vitrina.php lo consulta pero nunca lo renderiza)", async () => {
   const { url, close } = listen();
   try {
     const res = await fetch(`${url}/api/home`);
-    const body = (await res.json()) as HomeBody;
+    const body = (await res.json()) as HomeBody & { banner?: unknown };
     assert.equal(res.status, 200);
     assert.ok(Array.isArray(body.serviciosRecomendados));
     assert.ok(Array.isArray(body.serviciosNuevos));
     assert.ok(Array.isArray(body.apuntesRecomendados));
     assert.ok(Array.isArray(body.clasesPaes));
     assert.ok(Array.isArray(body.ofertas));
-    assert.ok(body.banner === null || typeof body.banner.titulo === "string");
+    assert.equal("banner" in body, false);
   } finally {
     await close();
   }

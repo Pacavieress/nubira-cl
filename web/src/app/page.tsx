@@ -1,8 +1,8 @@
 import { getHome } from "@/lib/api";
-import { ApunteCard } from "@/components/ApunteCard";
+import { ApunteCardCarrusel } from "@/components/ApunteCardCarrusel";
 import { Carrusel } from "@/components/Carrusel";
 import { Header } from "@/components/Header";
-import { ServicioCard } from "@/components/ServicioCard";
+import { ServicioCardCarrusel } from "@/components/ServicioCardCarrusel";
 
 // Puerto de app/vitrina.php — SOLO las secciones realmente activas en producción. Ver
 // server/src/modules/home/home.types.ts para el detalle completo de qué se excluyó y
@@ -10,6 +10,24 @@ import { ServicioCard } from "@/components/ServicioCard";
 // "Sigue donde lo dejaste" por depender de sesión, y el motor de afinidad/personalización
 // porque para cualquier visitante sin sesión — el único caso en web/ — cae igual a su
 // propio fallback, que es lo que este endpoint ya devuelve).
+//
+// Auditoría de fidelidad visual (espaciados/márgenes/paddings/anchos/alineaciones) hecha
+// línea por línea contra vitrina.php real. Hallazgos aplicados acá:
+//   - <main>: vitrina.php:827 usa "pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full
+//     mx-auto block" — es la ÚNICA página real del sitio con ese pt/pb (las otras 6 usan
+//     "pt-4/pt-20 pb-28/32 md:pb-10/16/20"), no es un error de lectura, vitrina.php
+//     genuinamente diverge del resto del sitio.
+//   - El bloque del banner inline (antes en esta página) se eliminó: `$banner_inline` se
+//     consulta en vitrina.php:678-701 pero NUNCA se renderiza en ningún lugar del archivo
+//     — confirmado con grep de "banner" en todo el archivo. Es código muerto, no una
+//     sección oculta condicionalmente como las otras 4.
+//   - Las cards de servicios/apuntes del carrusel de home son un diseño DISTINTO al de
+//     las cards de grilla (/servicios, /apuntes) — ver ServicioCardCarrusel.tsx y
+//     ApunteCardCarrusel.tsx para el detalle línea por línea contra vitrina.php.
+//   - Cada sección tiene su propio align-items/gap-3 real (no todas son idénticas):
+//     recomendadas=items-end+gap-3, nuevas=items-end sin link, apuntes=items-center SIN
+//     gap-3 (aunque tiene link — así es en el PHP real), PAES=items-center+gap-3,
+//     ofertas=items-end sin link. Confirmado con grep línea por línea de las 5 secciones.
 export default async function Home() {
   const data = await getHome();
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
@@ -17,52 +35,38 @@ export default async function Home() {
   return (
     <>
       <Header titulo="Inicio" />
-      <main className="w-full pt-20 pb-24 lg:pb-10 lg:ml-64 max-w-full">
-        <div className="px-4 md:px-10 md:pl-12 mb-2">
+      <main className="pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full mx-auto block">
+        <div className="px-4 md:px-10 md:pl-12 pt-0 pb-0 md:pt-1 md:pb-2">
           <h1 className="sr-only md:not-sr-only text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">
             Tutores, apuntes y clases particulares universitarias en Chile
           </h1>
         </div>
 
-        {data.banner && (
-          <div className="mb-3 md:mb-5 px-4 md:px-10">
-            <a href={data.banner.enlace ?? "#"} className="block rounded-2xl overflow-hidden border border-gray-200">
-              <img src={data.banner.imagenUrl} alt={data.banner.titulo} className="h-32 md:h-64 w-full object-cover" />
-            </a>
-          </div>
-        )}
-
         {data.serviciosRecomendados.length > 0 && (
-          <Seccion titulo="Tutorías recomendadas" verTodoHref="/servicios">
+          <Seccion titulo="Tutorías recomendadas" verTodoHref="/servicios" align="end" gap>
             <Carrusel>
               {data.serviciosRecomendados.map((s) => (
-                <TarjetaCarrusel key={s.id}>
-                  <ServicioCard servicio={s} />
-                </TarjetaCarrusel>
+                <ServicioCardCarrusel key={s.id} servicio={s} />
               ))}
             </Carrusel>
           </Seccion>
         )}
 
         {data.serviciosNuevos.length > 0 && (
-          <Seccion titulo="Tutorías nuevas">
+          <Seccion titulo="Tutorías nuevas" align="end">
             <Carrusel>
               {data.serviciosNuevos.map((s) => (
-                <TarjetaCarrusel key={s.id}>
-                  <ServicioCard servicio={s} />
-                </TarjetaCarrusel>
+                <ServicioCardCarrusel key={s.id} servicio={s} />
               ))}
             </Carrusel>
           </Seccion>
         )}
 
         {data.apuntesRecomendados.length > 0 && (
-          <Seccion titulo="Apuntes de los que aprobaron" verTodoHref="/apuntes">
+          <Seccion titulo="Apuntes de los que aprobaron" verTodoHref="/apuntes" align="center">
             <Carrusel>
               {data.apuntesRecomendados.map((a) => (
-                <TarjetaCarrusel key={a.id}>
-                  <ApunteCard apunte={a} />
-                </TarjetaCarrusel>
+                <ApunteCardCarrusel key={a.id} apunte={a} />
               ))}
             </Carrusel>
           </Seccion>
@@ -72,24 +76,20 @@ export default async function Home() {
           // Ver todo -> /clases/paes existe en el sitio PHP real pero no en web/ todavía
           // — mismo criterio que "Recursos" en Sidebar.tsx: enlaza afuera en vez de a una
           // ruta interna rota.
-          <Seccion titulo="PAES" verTodoHref={`${phpSiteUrl}/clases/paes`} verTodoExterno>
+          <Seccion titulo="PAES" verTodoHref={`${phpSiteUrl}/clases/paes`} verTodoExterno align="center" gap>
             <Carrusel>
               {data.clasesPaes.map((s) => (
-                <TarjetaCarrusel key={s.id}>
-                  <ServicioCard servicio={s} />
-                </TarjetaCarrusel>
+                <ServicioCardCarrusel key={s.id} servicio={s} />
               ))}
             </Carrusel>
           </Seccion>
         )}
 
         {data.ofertas.length > 0 && (
-          <Seccion titulo="Precios de última hora">
+          <Seccion titulo="Precios de última hora" align="end">
             <Carrusel>
               {data.ofertas.map((s) => (
-                <TarjetaCarrusel key={s.id}>
-                  <ServicioCard servicio={s} />
-                </TarjetaCarrusel>
+                <ServicioCardCarrusel key={s.id} servicio={s} ancho="sm" />
               ))}
             </Carrusel>
           </Seccion>
@@ -103,16 +103,27 @@ function Seccion({
   titulo,
   verTodoHref,
   verTodoExterno,
+  align,
+  gap,
   children,
 }: {
   titulo: string;
   verTodoHref?: string;
   verTodoExterno?: boolean;
+  align: "end" | "center";
+  gap?: boolean;
   children: React.ReactNode;
 }) {
+  // Ternario con clases literales completas a propósito (no `items-${align}`) — Tailwind
+  // extrae candidatos por texto literal en el archivo, no evalúa interpolaciones en
+  // runtime, así que una clase armada dinámicamente no queda garantizada en el CSS
+  // compilado de esta página aunque "funcione por casualidad" si otro archivo ya usa el
+  // mismo literal.
+  const claseAlign = align === "center" ? "items-center" : "items-end";
+
   return (
     <section className="mb-3 md:mb-5">
-      <div className="flex items-end justify-between mb-3 px-4 md:px-10 md:pl-11 gap-3">
+      <div className={`flex ${claseAlign} justify-between mb-3 px-4 md:px-10 md:pl-11${gap ? " gap-3" : ""}`}>
         {/* md:-ml-2 (-8px) — puerto exacto de vitrina.php:778-785 ("Ajuste óptico fino de
             títulos en escritorio"): compensa el desfase real entre el padding del header
             (md:pl-11, 44px) y el del carrusel de abajo (md:pl-10, 40px). Se aplica acá, NO
@@ -137,11 +148,4 @@ function Seccion({
       {children}
     </section>
   );
-}
-
-// Envoltorio de ancho fijo para meter una ServicioCard/ApunteCard (pensadas para grilla,
-// w-full dentro de su celda) dentro de un carrusel horizontal — mismo ancho que las cards
-// de carrusel reales de vitrina.php (w-[220px] md:w-[240px]).
-function TarjetaCarrusel({ children }: { children: React.ReactNode }) {
-  return <div className="flex-shrink-0 w-[220px] md:w-[240px] snap-start">{children}</div>;
 }
