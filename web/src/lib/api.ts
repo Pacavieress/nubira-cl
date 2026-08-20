@@ -404,3 +404,30 @@ export async function getMisContratos(): Promise<MisContratos | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja MiBilleteraPublico (server/src/modules/miBilletera/miBilletera.types.ts). El
+// número de cuenta completo nunca llega hasta acá — server/ ya lo enmascara antes de
+// responder (ver ese archivo).
+export interface SolicitudRetiro {
+  monto: number;
+  fechaSolicitud: string;
+  estado: string;
+}
+
+export interface MiBilletera {
+  saldoDisponible: number;
+  saldoParaMostrar: number;
+  minimoRetiro: number;
+  comisionActual: number;
+  gananciasApuntes: number;
+  gananciasServicios: number;
+  totalRetirado: number;
+  datosBancarios: { banco: string; numeroCuentaEnmascarado: string } | null;
+  historialRetiros: SolicitudRetiro[];
+}
+
+export async function getMiBilletera(): Promise<MiBilletera | null> {
+  const res = await fetchConSesion("/api/me/mi-billetera");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
