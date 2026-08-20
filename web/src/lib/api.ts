@@ -274,3 +274,28 @@ export async function getMisCompras(): Promise<MisCompras | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja EvaluacionRecibida/MisEvaluacionesPublico
+// (server/src/modules/evaluaciones/evaluaciones.types.ts) — ver ese archivo para el
+// hallazgo real detrás de por qué nombreEvaluador nunca trae apellido y no hay foto de
+// evaluador (bug de columna inexistente en el PHP real, replicado fielmente, no una
+// limitación de este puerto).
+export interface EvaluacionRecibida {
+  id: number;
+  nombreEvaluador: string;
+  calificacion: number;
+  comentario: string | null;
+  fecha: string;
+  servicioTitulo: string | null;
+}
+
+export interface MisEvaluaciones {
+  resenasComoTutor: EvaluacionRecibida[];
+  resenasComoAlumno: EvaluacionRecibida[];
+}
+
+export async function getMisEvaluaciones(): Promise<MisEvaluaciones | null> {
+  const res = await fetchConSesion("/api/me/evaluaciones");
+  if (!res || !res.ok) return null;
+  return res.json();
+}

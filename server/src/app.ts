@@ -7,6 +7,7 @@ import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
 import { comprasRouter } from "./modules/compras/compras.routes.js";
+import { evaluacionesRouter } from "./modules/evaluaciones/evaluaciones.routes.js";
 import { favoritosRouter } from "./modules/favoritos/favoritos.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { homeRouter } from "./modules/home/home.routes.js";
@@ -37,6 +38,7 @@ export function createApp(): Express {
   app.use("/api/tutores", tutoresRouter);
   app.use("/api/me/favoritos", favoritosRouter);
   app.use("/api/me/compras", comprasRouter);
+  app.use("/api/me/evaluaciones", evaluacionesRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);
