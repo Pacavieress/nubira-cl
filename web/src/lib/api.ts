@@ -125,6 +125,9 @@ export interface ApuntesFiltros {
   precio?: "gratis" | "pagado";
   orden?: string;
   q?: string;
+  // Agregado para las recomendaciones de /desafio — ver SearchApuntesFilters.materia en
+  // server/src/modules/apuntes/apuntes.types.ts.
+  materia?: string;
 }
 
 export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesResponse> {
@@ -133,6 +136,7 @@ export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesR
   if (filtros.precio) params.set("precio", filtros.precio);
   if (filtros.orden) params.set("orden", filtros.orden);
   if (filtros.q) params.set("q", filtros.q);
+  if (filtros.materia) params.set("materia", filtros.materia);
 
   const qs = params.toString();
   const res = await fetch(`${API_URL}/api/apuntes${qs ? `?${qs}` : ""}`, { cache: "no-store" });
@@ -612,4 +616,39 @@ export async function getGuiaArticulo(cat: string, slug: string): Promise<GuiaAr
 
   const body = (await res.json()) as Omit<Extract<GuiaArticuloDetalle, { encontrada: true }>, "encontrada">;
   return { ...body, encontrada: true };
+}
+
+// ---- Desafío de hoy (puerto de app/desafio.php) ----
+// Refleja PreguntaPublica/ResultadoDesafio (server/src/modules/desafio/desafio.types.ts).
+// Mismo criterio que ServicioListado/ApunteListado: no es un import compartido a propósito.
+export type TipoPreguntaDesafio = "alternativas" | "vf" | "completar" | "encuentra_error" | "cual_elegirias" | "que_harias_primero";
+
+export interface DesafioMateria {
+  slug: string;
+  nombre: string;
+}
+
+export interface DesafioPregunta {
+  id: number;
+  tipo: TipoPreguntaDesafio;
+  enunciado: string;
+  desarrollo: string | null;
+  opciones: Partial<Record<"a" | "b" | "c" | "d", string>>;
+  tiempoLimiteSegundos: number | null;
+  nivelPaes: boolean;
+}
+
+export interface DesafioResultado {
+  ok: true;
+  materia: string;
+  aciertos: number;
+  resultado: "bien" | "mal";
+  categoriaServicio: string | null;
+}
+
+export async function getDesafioMaterias(): Promise<DesafioMateria[]> {
+  const res = await fetchConSesion("/api/desafio/materias");
+  if (!res || !res.ok) return [];
+  const body = (await res.json()) as { data: DesafioMateria[] };
+  return body.data;
 }

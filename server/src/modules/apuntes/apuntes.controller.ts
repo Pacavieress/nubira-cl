@@ -33,6 +33,7 @@ export async function getApuntesList(req: Request, res: Response): Promise<void>
     precio: parsePrecioFilter(req.query.precio),
     orden: parseStringFilter(req.query.orden),
     q: parseStringFilter(req.query.q),
+    materia: parseStringFilter(req.query.materia),
     page,
     limit,
   });

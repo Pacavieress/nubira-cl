@@ -22,6 +22,10 @@ export interface SearchApuntesFilters {
   // Agregado para el perfil de tutor (Fase 6+) — mismo patrón que
   // SearchServiciosFilters.alumnoId en servicios.types.ts.
   alumnoId?: number;
+  // Agregado para las recomendaciones de /desafio (Fase Desafío) — puerto exacto del
+  // filtro `materia` de cargar_apuntes.php:93/149 (WHERE ap.materia = ?, coincidencia
+  // exacta contra la columna real, no una búsqueda parcial como `q`).
+  materia?: string;
   page: number;
   limit: number;
 }

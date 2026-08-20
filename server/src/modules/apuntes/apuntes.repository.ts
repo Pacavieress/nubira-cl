@@ -91,6 +91,10 @@ export async function searchApuntesPublicos(filters: SearchApuntesFilters): Prom
     conditions.push("ap.id_alumno = ?");
     params.push(filters.alumnoId);
   }
+  if (filters.materia) {
+    conditions.push("ap.materia = ?");
+    params.push(filters.materia);
+  }
 
   const whereExtra = conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
   const offset = (filters.page - 1) * filters.limit;
