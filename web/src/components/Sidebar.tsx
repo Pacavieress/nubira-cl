@@ -2,20 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { nubiraEncriptarId } from "@/lib/perfilUrl";
 
-// Puerto de app/componentes/sidebar.php — SOLO los links públicos, sin sesión. Excluidos
-// a propósito, mismo criterio que Header.tsx: "Mensajes" (badge + bandeja de entrada) y
-// "Mi Perfil"/"Cerrar Sesión" dependen de una sesión que web/ no tiene.
+// Puerto de app/componentes/sidebar.php. "Inicio"/"Clases"/"Apuntes" son iguales para
+// visitante y logueado en el PHP real, sin cambios acá. "Mensajes"/"Mi Perfil" y el nuevo
+// bloque "Cerrar Sesión" SÍ dependen de sesión (sidebar.php:9 `$is_guest`,
+// líneas 101/145/160-171) — antes excluidos porque web/ no sabía quién visitaba; ahora que
+// layout.tsx pasa `usuarioId` (vía getSesion(), ver web/src/lib/sesion.ts) sí se portan.
+//
+// Sin badges (no leídos en Mensajes, punto de alerta de perfil incompleto en Mi Perfil) —
+// deferred a propósito, mismo criterio que los badges del panel admin: requieren
+// endpoints de conteo en vivo que no son parte de este paso, no un olvido.
 //
 // "Inicio" apunta a "/" (hoy un redirect a /servicios, ver web/src/app/page.tsx) en vez de
 // a /explorar como el sitio real — mismo alcance que la decisión de mover la grilla de
 // servicios a /servicios y dejar "/" reservado para un futuro port de vitrina.php.
 //
-// "Recursos" (guías) no está construido en web/ — enlaza al sitio PHP real en vez de a
-// una ruta interna rota, mismo patrón que el logo/breadcrumb de Header.tsx. PHP_SITE_URL
-// es server-only a propósito (ver web/.env) — Sidebar es Client Component (necesita
-// usePathname() para el estado activo), así que lo recibe por prop desde layout.tsx en
-// vez de leer process.env acá, que solo vería variables NEXT_PUBLIC_*.
+// "Recursos"/"Mensajes"/"Mi Perfil" (ninguno construido en web/ todavía) enlazan al sitio
+// PHP real en pestaña nueva (target="_blank") — mismo patrón que el logo/breadcrumb de
+// Header.tsx. "Cerrar Sesión" es la ÚNICA excepción deliberada: NO usa target="_blank"
+// porque muta la sesión (logout.php destruye sesiones_api) — abrirlo en pestaña nueva
+// dejaría la pestaña de web/ mostrando un sidebar "logueado" obsoleto hasta la próxima
+// navegación; en la misma pestaña, el usuario ve el resultado real (aterriza en el / de
+// PHP ya deslogueado) y si vuelve a web/ el layout se re-renderiza reflejando el logout.
+//
+// PHP_SITE_URL es server-only a propósito (ver web/.env) — Sidebar es Client Component
+// (necesita usePathname() para el estado activo), así que lo recibe por prop desde
+// layout.tsx en vez de leer process.env acá, que solo vería variables NEXT_PUBLIC_*.
 
 interface NavItem {
   href: string;
@@ -25,7 +38,9 @@ interface NavItem {
   externo?: boolean;
 }
 
-function construirNavItems(phpSiteUrl: string): NavItem[] {
+function construirNavItems(phpSiteUrl: string, usuarioId: number | null): NavItem[] {
+  const esGuest = usuarioId === null;
+
   return [
   {
     href: "/",
@@ -36,6 +51,21 @@ function construirNavItems(phpSiteUrl: string): NavItem[] {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+      />
+    ),
+  },
+  {
+    href: esGuest
+      ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/bandeja-entrada")}`
+      : `${phpSiteUrl}/bandeja-entrada`,
+    label: "Mensajes",
+    activo: () => false,
+    externo: true,
+    icono: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.495 1.141.143 1.65-.6.866-1.42 1.586-2.38 2.115 1.576.166 3.09.043 4.41-.33.61-.171 1.256-.123 1.833.125A9.01 9.01 0 0 0 12 20.25Z"
       />
     ),
   },
@@ -76,47 +106,91 @@ function construirNavItems(phpSiteUrl: string): NavItem[] {
       />
     ),
   },
+  {
+    href: esGuest
+      ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/perfil")}`
+      : `${phpSiteUrl}/perfil/${nubiraEncriptarId(usuarioId)}`,
+    label: "Mi Perfil",
+    activo: () => false,
+    externo: true,
+    icono: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+      />
+    ),
+  },
   ];
 }
 
-export function Sidebar({ phpSiteUrl }: { phpSiteUrl: string }) {
+export function Sidebar({ phpSiteUrl, usuarioId }: { phpSiteUrl: string; usuarioId: number | null }) {
   const pathname = usePathname();
-  const navItems = construirNavItems(phpSiteUrl);
+  const navItems = construirNavItems(phpSiteUrl, usuarioId);
 
   return (
     <aside className="hidden lg:flex lg:flex-col fixed top-14 left-0 h-[calc(100%-3.5rem)] w-56 bg-white/95 backdrop-blur-sm border-r border-[#f0f0f0]/80 z-40 overflow-y-auto">
-      <nav className="px-4 py-5 flex flex-col space-y-0.5">
-        {navItems.map((item) => {
-          const activo = item.activo(pathname);
-          const claseLink = `group flex items-center gap-3 px-3 py-2.5 text-[13px] rounded-xl transition-all duration-200 font-medium ${
-            activo ? "text-[#54A6D8]" : "text-[#222222] hover:bg-gray-50/80"
-          }`;
-          const contenido = (
-            <>
-              <div
-                className={`w-8 h-8 flex items-center justify-center rounded-[10px] shrink-0 transition-all ${
-                  activo ? "bg-[#54A6D8]/10" : "group-hover:bg-black/[0.03]"
-                }`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px]">
-                  {item.icono}
+      <div className="px-4 py-5 flex flex-col h-full">
+        <nav className="flex flex-col space-y-0.5 flex-1">
+          {navItems.map((item) => {
+            const activo = item.activo(pathname);
+            const claseLink = `group flex items-center gap-3 px-3 py-2.5 text-[13px] rounded-xl transition-all duration-200 font-medium ${
+              activo ? "text-[#54A6D8]" : "text-[#222222] hover:bg-gray-50/80"
+            }`;
+            const contenido = (
+              <>
+                <div
+                  className={`w-8 h-8 flex items-center justify-center rounded-[10px] shrink-0 transition-all ${
+                    activo ? "bg-[#54A6D8]/10" : "group-hover:bg-black/[0.03]"
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-[18px] h-[18px]">
+                    {item.icono}
+                  </svg>
+                </div>
+                <span className="tracking-[-0.01em]">{item.label}</span>
+              </>
+            );
+
+            return item.externo ? (
+              <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className={claseLink}>
+                {contenido}
+              </a>
+            ) : (
+              <Link key={item.href} href={item.href} className={claseLink}>
+                {contenido}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {usuarioId !== null && (
+          <div className="mt-auto border-t border-[#f0f0f0]/70 pt-3.5">
+            <a
+              href={`${phpSiteUrl}/logout`}
+              className="flex items-center gap-3 px-3.5 py-2.5 text-[13px] text-gray-400 hover:text-red-500 hover:bg-red-50/60 rounded-xl transition-all duration-200 group"
+            >
+              <div className="w-8 h-8 flex items-center justify-center rounded-[10px] shrink-0 group-hover:!bg-red-50">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-[18px] h-[18px] group-hover:translate-x-0.5 transition-transform duration-200"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
+                  />
                 </svg>
               </div>
-              <span className="tracking-[-0.01em]">{item.label}</span>
-            </>
-          );
-
-          return item.externo ? (
-            <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className={claseLink}>
-              {contenido}
+              <span className="font-medium tracking-[-0.01em]">Cerrar Sesión</span>
             </a>
-          ) : (
-            <Link key={item.href} href={item.href} className={claseLink}>
-              {contenido}
-            </Link>
-          );
-        })}
-      </nav>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

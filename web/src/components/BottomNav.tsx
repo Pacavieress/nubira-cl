@@ -2,22 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { nubiraEncriptarId } from "@/lib/perfilUrl";
 
 // Puerto de app/componentes/nav_bottom.php — mismas 5 posiciones visuales que el real
-// (Inicio, Descubrir, Publicar central elevado, Mensajes, Perfil), pero SOLO el
-// comportamiento real de un VISITANTE sin sesión (nunca hay otro caso posible en web/
-// hoy): Publicar/Mensajes/Perfil llevan siempre a /login en el sitio PHP real —
-// exactamente lo que nav_bottom.php:38 hace también para un visitante
-// (`onclick_publicar` redirige a /login?redir=... si $es_visita_nb). No se arma el
-// parámetro `redir` de vuelta a una URL de web/ — son 2 apps distintas, un redir a una
-// ruta de acá no tendría a dónde volver del lado del login PHP real.
+// (Inicio, Descubrir, Publicar central elevado, Mensajes, Perfil).
+//
+// Mensajes/Perfil SÍ son session-aware (nav_bottom.php:34-35, mismo criterio ya aplicado
+// en Sidebar.tsx): visitante -> /login?redir=..., logueado -> ruta real (/bandeja-entrada,
+// /perfil/{hash}). Sin badge de no-leídos ni punto de alerta de perfil incompleto —
+// deferred a propósito, mismo criterio que Sidebar.tsx. Tampoco se pinta la foto de
+// perfil real en el ícono de Perfil (nav_bottom.php:227-230 la muestra si existe) — hoy
+// getSesion() no expone foto_perfil, fuera de alcance de este paso.
+//
+// Publicar SIGUE siendo siempre /login, sin importar sesión — decisión explícita, no
+// descuido: el botón real logueado no es un link (es un <button> sin href que dispara un
+// modal de elección servicio/apunte no construido en web/); portar eso es trabajo aparte.
+//
+// Logout NO se agrega acá — confirmado con el usuario que nav_bottom.php real no tiene
+// ningún ítem de logout (solo 5 slots fijos), a diferencia de sidebar.php que sí lo tiene
+// en desktop. Agregar uno acá sería inventar UI que el sitio real no tiene.
+//
+// No se arma el parámetro `redir` de vuelta a una URL de web/ en ningún caso — son 2 apps
+// distintas, un redir a una ruta de acá no tendría a dónde volver del lado del login PHP real.
 //
 // "Descubrir" reemplaza al modal_explora.php real (no construido en web/) por un link
 // directo a /busqueda — mismo ícono, propósito equivalente ("buscar/descubrir"),
 // simplificado de modal a navegación de página completa.
-export function BottomNav({ phpSiteUrl }: { phpSiteUrl: string }) {
+export function BottomNav({ phpSiteUrl, usuarioId }: { phpSiteUrl: string; usuarioId: number | null }) {
   const pathname = usePathname();
   const loginUrl = `${phpSiteUrl}/login`;
+  const esGuest = usuarioId === null;
+  const mensajesUrl = esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/bandeja-entrada")}` : `${phpSiteUrl}/bandeja-entrada`;
+  const perfilUrl = esGuest
+    ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/perfil")}`
+    : `${phpSiteUrl}/perfil/${nubiraEncriptarId(usuarioId)}`;
 
   const esInicio = pathname === "/";
   const clsBase = "flex flex-col items-center justify-center gap-1 w-full outline-none select-none";
@@ -63,7 +81,7 @@ export function BottomNav({ phpSiteUrl }: { phpSiteUrl: string }) {
         </li>
 
         <li>
-          <a href={loginUrl} aria-label="Mensajes" className={`${clsBase} ${clsInactivo}`}>
+          <a href={mensajesUrl} aria-label="Mensajes" className={`${clsBase} ${clsInactivo}`}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
               <path
                 strokeLinecap="round"
@@ -76,7 +94,7 @@ export function BottomNav({ phpSiteUrl }: { phpSiteUrl: string }) {
         </li>
 
         <li>
-          <a href={loginUrl} aria-label="Perfil" className={`${clsBase} ${clsInactivo}`}>
+          <a href={perfilUrl} aria-label="Perfil" className={`${clsBase} ${clsInactivo}`}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
               <path
                 strokeLinecap="round"
