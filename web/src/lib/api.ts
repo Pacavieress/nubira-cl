@@ -299,3 +299,49 @@ export async function getMisEvaluaciones(): Promise<MisEvaluaciones | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja VentaClase (server/src/modules/ventasClases/ventasClases.types.ts). Sin acción
+// de "Ocultar" (delete real de contratos, ver ese archivo) — decisión explícita de portar
+// solo lectura por ahora.
+export interface VentaClase {
+  idContrato: number;
+  titulo: string;
+  imagenUrl: string;
+  compradorNombre: string;
+  compradorEmail: string;
+  bruto: number;
+  subsidio: number;
+  comision: number;
+  neto: number;
+  fechaCreacion: string;
+  fechaPago: string | null;
+  estado: string;
+  yaCalificado: boolean;
+}
+
+export async function getMisVentasClases(): Promise<VentaClase[] | null> {
+  const res = await fetchConSesion("/api/me/ventas-clases");
+  if (!res || !res.ok) return null;
+  const body = (await res.json()) as { data: VentaClase[] };
+  return body.data;
+}
+
+// Refleja VentaApunte (server/src/modules/ventasApuntes/ventasApuntes.types.ts). Mismo
+// criterio que VentaClase: sin acción de "Ocultar".
+export interface VentaApunte {
+  id: number;
+  apunteId: number;
+  titulo: string;
+  archivo: string | null;
+  compradorNombre: string;
+  precio: number;
+  fecha: string;
+  pagadoAlVendedor: boolean;
+}
+
+export async function getMisVentasApuntes(): Promise<VentaApunte[] | null> {
+  const res = await fetchConSesion("/api/me/ventas-apuntes");
+  if (!res || !res.ok) return null;
+  const body = (await res.json()) as { data: VentaApunte[] };
+  return body.data;
+}

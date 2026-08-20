@@ -9,6 +9,8 @@ import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
 import { comprasRouter } from "./modules/compras/compras.routes.js";
 import { evaluacionesRouter } from "./modules/evaluaciones/evaluaciones.routes.js";
 import { favoritosRouter } from "./modules/favoritos/favoritos.routes.js";
+import { ventasApuntesRouter } from "./modules/ventasApuntes/ventasApuntes.routes.js";
+import { ventasClasesRouter } from "./modules/ventasClases/ventasClases.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { homeRouter } from "./modules/home/home.routes.js";
 import { landingsRouter } from "./modules/landings/landings.routes.js";
@@ -39,6 +41,8 @@ export function createApp(): Express {
   app.use("/api/me/favoritos", favoritosRouter);
   app.use("/api/me/compras", comprasRouter);
   app.use("/api/me/evaluaciones", evaluacionesRouter);
+  app.use("/api/me/ventas-clases", ventasClasesRouter);
+  app.use("/api/me/ventas-apuntes", ventasApuntesRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);
