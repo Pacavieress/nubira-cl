@@ -451,3 +451,23 @@ export async function getMiPerfilCuenta(): Promise<PerfilCuenta | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja PublicacionMetrica (server/src/modules/metricas/metricas.types.ts). Sin la
+// página de detalle por publicación (/metricas/:tipo/:id) — ver ese archivo.
+export interface PublicacionMetrica {
+  id: number;
+  tipo: "servicio" | "apunte";
+  titulo: string;
+  precio: number | null;
+  imagenUrl: string;
+  fechaOrden: string;
+  visitas30d: number;
+  tendencia: "up" | "down" | null;
+}
+
+export async function getMisMetricas(): Promise<PublicacionMetrica[] | null> {
+  const res = await fetchConSesion("/api/me/metricas");
+  if (!res || !res.ok) return null;
+  const body = (await res.json()) as { data: PublicacionMetrica[] };
+  return body.data;
+}
