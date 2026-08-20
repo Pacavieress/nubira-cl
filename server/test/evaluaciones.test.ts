@@ -1,5 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
+import type { RowDataPacket } from "mysql2";
 import { createApp } from "../src/app.js";
 import { pool } from "../src/db/pool.js";
 import { searchServiciosAprobados } from "../src/modules/servicios/servicios.repository.js";
@@ -11,6 +12,11 @@ const EVALUADOR_ID = 1; // "Soporte Nubira" — único admin real, id estable, s
 let servicioId: number;
 let evaluacionVendedorId: number;
 let evaluacionCompradorId: number;
+// El `nombre` de id=1 es un campo real mutable (otros test files, ej. configurarCuenta.test.ts,
+// lo cambian temporalmente durante su propia corrida) — node --test corre los archivos en
+// paralelo contra la misma BD real, así que un valor hardcodeado tipo "Soporte Nubira" puede
+// leerse en medio de esa mutación ajena. Se captura acá el valor real vigente en vez de asumirlo.
+let nombreEvaluadorEsperado: string;
 
 before(async () => {
   const { rows } = await searchServiciosAprobados({ page: 1, limit: 1 });
@@ -73,6 +79,12 @@ test("GET /api/me/evaluaciones separa reseñas por rol (vendedor -> resenasComoT
     const res = await fetch(`${url}/api/me/evaluaciones`, {
       headers: { Cookie: `PHPSESSID=${SESSION_VALID}` },
     });
+
+    // Capturado lo más cerca posible de la llamada real (no en before()) para achicar la
+    // ventana de carrera contra otros archivos de test que mutan alumnos.id=1 en paralelo.
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT nombre FROM alumnos WHERE id = ?", [EVALUADOR_ID]);
+    nombreEvaluadorEsperado = (rows[0] as { nombre: string }).nombre;
+
     assert.equal(res.status, 200);
 
     const body = (await res.json()) as {
@@ -84,7 +96,7 @@ test("GET /api/me/evaluaciones separa reseñas por rol (vendedor -> resenasComoT
     assert.ok(comoTutor, "la reseña 'vendedor' del fixture debe aparecer en resenasComoTutor");
     assert.equal(comoTutor!.calificacion, 5);
     assert.equal(comoTutor!.comentario, "Excelente tutor");
-    assert.equal(comoTutor!.nombreEvaluador, "Soporte Nubira");
+    assert.equal(comoTutor!.nombreEvaluador, nombreEvaluadorEsperado);
 
     const comoAlumno = body.resenasComoAlumno.find((r) => r.id === evaluacionCompradorId);
     assert.ok(comoAlumno, "la reseña 'comprador' del fixture debe aparecer en resenasComoAlumno");
