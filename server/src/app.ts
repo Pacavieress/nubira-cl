@@ -15,6 +15,7 @@ import { miBilleteraRouter } from "./modules/miBilletera/miBilletera.routes.js";
 import { metricasRouter } from "./modules/metricas/metricas.routes.js";
 import { misContratosRouter } from "./modules/misContratos/misContratos.routes.js";
 import { misPublicacionesRouter } from "./modules/misPublicaciones/misPublicaciones.routes.js";
+import { soporteRouter } from "./modules/soporte/soporte.routes.js";
 import { ventasApuntesRouter } from "./modules/ventasApuntes/ventasApuntes.routes.js";
 import { ventasClasesRouter } from "./modules/ventasClases/ventasClases.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
@@ -55,6 +56,7 @@ export function createApp(): Express {
   app.use("/api/me/mi-billetera", miBilleteraRouter);
   app.use("/api/me/configurar-cuenta", configurarCuentaRouter);
   app.use("/api/me/metricas", metricasRouter);
+  app.use("/api/me/soporte", soporteRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);

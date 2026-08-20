@@ -570,6 +570,37 @@ export type GuiaArticuloDetalle =
 
 // Mismo criterio que getGuiasHubCategoria: fetchConSesion primero (el gate de "Para
 // Tutores" depende de la sesión), fallback a fetch() plano solo si no hay cookie.
+// Refleja Ticket/MisTicketsPublico (server/src/modules/soporte/soporte.types.ts).
+export type CategoriaTicket = "tecnico" | "chat" | "pago" | "apunte" | "cuenta" | "sugerencia" | "otro";
+
+export interface MensajeHilo {
+  remitente: "usuario" | "admin";
+  mensaje: string;
+  fecha: string;
+}
+
+export interface Ticket {
+  id: number;
+  fechaCreacion: string;
+  categoria: CategoriaTicket;
+  estado: string;
+  revisadoUsuario: boolean;
+  asunto: string;
+  hilo: MensajeHilo[];
+  tieneRespuestaNueva: boolean;
+}
+
+export interface MisTickets {
+  tickets: Ticket[];
+  contadores: { total: number; activos: number; resueltos: number; noLeidos: number };
+}
+
+export async function getMisTickets(): Promise<MisTickets | null> {
+  const res = await fetchConSesion("/api/me/soporte");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
 export async function getGuiaArticulo(cat: string, slug: string): Promise<GuiaArticuloDetalle> {
   const resConSesion = await fetchConSesion(`/api/guias/${cat}/${slug}`);
   const res = resConSesion ?? (await fetch(`${API_URL}/api/guias/${cat}/${slug}`, { cache: "no-store" }));
