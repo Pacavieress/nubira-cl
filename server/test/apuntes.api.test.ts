@@ -68,14 +68,14 @@ test("GET /api/apuntes?precio=gratis solo devuelve apuntes con precio 0", async 
   }
 });
 
-test("GET /api/apuntes: cada fila trae portadaUrl absoluta y url interna /apuntes/:id", async () => {
+test("GET /api/apuntes: cada fila trae portadaUrl absoluta y url interna /apunte/:id (singular, fiel a ver_apunte.php)", async () => {
   const { url, close } = listen();
   try {
     const res = await fetch(`${url}/api/apuntes?limit=5`);
     const body = (await res.json()) as { data: { id: number; portadaUrl: string; url: string }[] };
     for (const apunte of body.data) {
       assert.ok(apunte.portadaUrl.startsWith("http"));
-      assert.equal(apunte.url, `/apuntes/${apunte.id}`);
+      assert.equal(apunte.url, `/apunte/${apunte.id}`);
     }
   } finally {
     await close();

@@ -47,7 +47,11 @@ export function mapApunteRow(row: ApunteRow): ApuntePublico {
     ventasTotales: row.ventas_totales,
     esNuevo: esNuevo(row.fecha_subida),
     promo: mapPromo(row),
-    url: `/apuntes/${row.id}`,
+    // Singular a propósito — puerto fiel de ver_apunte.php (real: /apunte/{hash}). /apuntes
+    // (plural) es una ruta DISTINTA en el sitio real (landing SEO por categoría,
+    // landing_categoria.php con tipo=apuntes) — mantener el detalle en plural habría
+    // colisionado con esa landing al portarla en web/.
+    url: `/apunte/${row.id}`,
   };
 }
 
@@ -71,7 +75,7 @@ export function mapApunteDetalleRow(row: ApunteDetalleRow, viewer: ViewerContext
     ventasTotales: row.ventas_totales,
     esNuevo: esNuevo(row.fecha_subida),
     promo: mapPromo(row),
-    url: `/apuntes/${row.id}`,
+    url: `/apunte/${row.id}`,
     descripcion: row.descripcion,
     asignatura: row.asignatura,
     materia: row.materia,

@@ -12,6 +12,11 @@ interface DetalleProps {
 // alcance a propósito (ver apuntes.types.ts en server/): visor de archivo (PDF/imagen),
 // flujo de compra/descarga ("acceso_completo", fileUrl firmado), y el carrusel de
 // recomendados de ver_apunte.php.
+//
+// Ruta singular /apunte/[id] (no /apuntes/[id]) — corregido para ser fiel a la ruta real
+// (ver_apunte.php vive en /apunte/{hash}). Antes vivía en /apuntes/[id], que colisionaría
+// con /apuntes/[cat] (landing SEO por categoría, landing_categoria.php con tipo=apuntes,
+// misma ruta plural que el listado) al portar esa landing a web/.
 export default async function DetalleApunte({ params }: DetalleProps) {
   const { id } = await params;
   const apunteId = Number(id);
