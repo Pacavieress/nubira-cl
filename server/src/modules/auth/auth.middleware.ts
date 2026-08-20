@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { findUsuarioIdBySessionId } from "./auth.repository.js";
+import { findUsuarioIdBySessionId, getUsuarioConRol } from "./auth.repository.js";
 
 declare global {
   namespace Express {
@@ -24,6 +24,36 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   if (usuarioId === null) {
     res.status(401).json({ error: "no_autenticado" });
+    return;
+  }
+
+  req.usuarioId = usuarioId;
+  next();
+}
+
+// Puerto de admin_panel.php:3 ($_SESSION['rol'] !== 'admin' -> redirect a /login.php),
+// pero consultando alumnos.rol FRESCO en vez de un valor cacheado en sesión — ver
+// getUsuarioConRol() en auth.repository.ts para el porqué. Falla cerrado en 3 capas:
+// sin cookie o cookie inválida -> 401 (mismo criterio que requireAuth); cookie válida
+// pero rol!=='admin' o cuenta invisible/bloqueada -> 403. req.usuarioId solo se asigna
+// cuando las 3 condiciones pasan.
+export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const sessionId = req.cookies?.PHPSESSID;
+
+  if (typeof sessionId !== "string" || sessionId === "") {
+    res.status(401).json({ error: "no_autenticado" });
+    return;
+  }
+
+  const usuarioId = await findUsuarioIdBySessionId(sessionId);
+  if (usuarioId === null) {
+    res.status(401).json({ error: "no_autenticado" });
+    return;
+  }
+
+  const usuario = await getUsuarioConRol(usuarioId);
+  if (!usuario || usuario.rol !== "admin" || usuario.visible !== 1 || usuario.bloqueado !== 0) {
+    res.status(403).json({ error: "no_autorizado" });
     return;
   }
 
