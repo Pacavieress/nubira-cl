@@ -25,7 +25,9 @@ const CAMPOS_TEXTO_SERVICIO = ["s.titulo", "s.descripcion", "s.categoria", "s.ma
 // (vitrina.php, detalle_servicio.php, cargar_vistos.php, render_card.php,
 // cargar_fila_inteligente.php): fuente de verdad = valoraciones, NO
 // contratos.calificacion_comprador. No reintroducir el patrón viejo acá.
-const SELECT_SERVICIO = `
+// Exportadas (Fase home) — home.repository.ts las reutiliza tal cual para las
+// secciones de servicios de vitrina.php en vez de duplicar el SELECT/JOIN.
+export const SELECT_SERVICIO = `
   SELECT
     s.id, s.slug, s.titulo, s.categoria, s.modalidad, s.precio, s.precio_oferta,
     s.cupos_oferta, s.oferta_termino, s.is_subvencionado, s.imagen, s.score_nubira, s.video_estado, s.es_paes,
@@ -40,7 +42,7 @@ const SELECT_SERVICIO = `
   LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
 `;
 
-const WHERE_VISIBLE = `WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0`;
+export const WHERE_VISIBLE = `WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0`;
 
 // Orden DETERMINÍSTICO (Fase 4, decisión 1 ya aprobada) — sin RAND()/SHA2() como usa PHP.
 // s.id DESC como desempate final garantiza que la misma página siempre devuelva el mismo

@@ -8,6 +8,7 @@ import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
 import { favoritosRouter } from "./modules/favoritos/favoritos.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
+import { homeRouter } from "./modules/home/home.routes.js";
 import { serviciosRouter } from "./modules/servicios/servicios.routes.js";
 import { tutoresRouter } from "./modules/tutores/tutores.routes.js";
 
@@ -27,6 +28,7 @@ export function createApp(): Express {
   app.use(cookieParser());
   app.use("/health", healthRouter);
   app.use("/api/categorias", categoriasRouter);
+  app.use("/api/home", homeRouter);
   app.use("/api/apuntes", apuntesRouter);
   app.use("/api/servicios", serviciosRouter);
   app.use("/api/tutores", tutoresRouter);

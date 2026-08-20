@@ -27,3 +27,14 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Puerto exacto de la regla que vitrina.php/busqueda.php/FiltrosBar.tsx ya asumen —
+   estaba referenciada (FiltrosBar.tsx) pero nunca definida en web/, gap preexistente
+   que se cierra acá porque Carrusel.tsx la necesita para verse nativa. */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

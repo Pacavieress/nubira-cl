@@ -5,6 +5,7 @@ const NB_BANCO_WEB = "/upload/banco/";
 const NB_SERVICIOS_WEB = "/upload/servicios/";
 const NB_PLACEHOLDER = "placeholder";
 const NB_PERFIL_FOTOS_WEB = "/app/perfil/fotos/";
+const NB_BANNERS_WEB = "/upload/banners/";
 
 // Prefija assetsBaseUrl SOLO a rutas internas (relativas) — una URL ya absoluta
 // (ej. ui-avatars.com) se deja intacta. Sin esto, un consumidor externo (web/) recibiría
@@ -26,6 +27,13 @@ export function resolverFotoTutor(
   return `https://ui-avatars.com/api/?name=${nombre}&background=54A6D8&color=fff&size=128&bold=true`;
 }
 
+// Puerto de la ruta usada por vitrina_apuntes.php:198 y vitrina.php para el banner
+// inline (`/upload/banners/{imagen}`) — sin filemtime cache-busting, mismo criterio que
+// el resto de este archivo (Node no valida filesystem).
+export function resolverBanner(imagen: string, assetsBaseUrl: string): string {
+  return conBase(assetsBaseUrl, `${NB_BANNERS_WEB}${imagen}`);
+}
+
 function baseName(archivo: string): string {
   const idx = archivo.lastIndexOf(".");
   return idx === -1 ? archivo : archivo.slice(0, idx);
@@ -45,26 +53,37 @@ export interface PortadaVariantes {
 // Node y PHP terminan en servidores distintos (decisión de hosting todavía pendiente).
 // Riesgo aceptado: alguna imagen legacy previa al pipeline podría devolver una URL rota.
 const NB_PORTADAS_WEB = "/upload/portadas/";
+const NB_PREVIEW_WEB = "/upload/preview/";
 const NB_APUNTES_WEB = "/upload/apuntes/";
 const NB_PLACEHOLDER_APUNTE = "/img/logo2.webp";
 const EXTS_IMAGEN = new Set(["jpg", "jpeg", "png", "webp", "gif", "bmp"]);
 
-// Puerto simplificado de obtenerMiniaturaApunte() (app/helpers/portada_helper.php:93-128):
-// misma prioridad portada > archivo-si-es-imagen > placeholder. El parámetro $previewBD de
-// la función real nunca se usa en su cuerpo (columna `preview` vestigial, confirmado leyendo
-// el helper completo) — no se replica acá tampoco, no es una omisión. Se omite además el tier
-// legacy que busca /upload/preview/{id}.ext por convención de nombre (requiere file_exists,
-// que Node no puede validar sin asumir filesystem compartido — mismo criterio que
-// resolverPortada() arriba). Confirmado contra datos reales: los 52 apuntes visibles hoy
-// tienen columna `portada` poblada y ninguno depende de ese tier legacy (0 coincidencias
-// en /upload/preview/{id}.*), así que esta simplificación no cambia el resultado visible
-// para ningún apunte actual.
+// BUG REAL CORREGIDO (encontrado en vivo: cards de apuntes en la home sin imagen,
+// devolvían 404). La versión anterior asumía que la columna `portada` siempre apunta a
+// un archivo dentro de /upload/portadas/ — verificado contra el filesystem real
+// (C:/nubira/upload/, mismo docroot que sirve nubira.local) que eso es falso: esa carpeta
+// tiene UN solo archivo en today. De 62 apuntes con `portada` poblada, 61 tienen
+// portada = "{id}.webp" — el nombre que arma el pipeline de miniaturas automático, cuyo
+// archivo real vive en /upload/preview/, NO en /upload/portadas/ (confirmado: 71 archivos
+// ahí, incluidos 320.webp/321.webp). Solo 1 apunte (id 291) tiene un nombre realmente
+// custom ("apt_...webp") y ESE sí vive en /upload/portadas/ — es el único archivo que hay
+// ahí. Puerto de obtenerMiniaturaApunte() (app/helpers/portada_helper.php:93-128) con esa
+// distinción: portada="{id}.webp" (patrón automático) → /upload/preview/; portada con
+// cualquier otro nombre (subida manual) → /upload/portadas/. Sigue sin validar
+// file_exists() (Node no comparte filesystem por diseño, solo por coincidencia local) —
+// la distinción es 100% determinística a partir de los valores ya en la fila, no requiere
+// tocar disco. El parámetro $previewBD de la función real nunca se usa en su cuerpo
+// (columna `preview` vestigial, confirmado leyendo el helper completo) — no se replica acá.
 export function resolverPortadaApunte(
+  id: number,
   portada: string | null,
   archivo: string | null,
   assetsBaseUrl: string,
 ): string {
-  if (portada) return conBase(assetsBaseUrl, `${NB_PORTADAS_WEB}${portada}`);
+  if (portada) {
+    const carpeta = portada === `${id}.webp` ? NB_PREVIEW_WEB : NB_PORTADAS_WEB;
+    return conBase(assetsBaseUrl, `${carpeta}${portada}`);
+  }
   if (archivo) {
     const ext = archivo.slice(archivo.lastIndexOf(".") + 1).toLowerCase();
     if (EXTS_IMAGEN.has(ext)) return conBase(assetsBaseUrl, `${NB_APUNTES_WEB}${archivo}`);

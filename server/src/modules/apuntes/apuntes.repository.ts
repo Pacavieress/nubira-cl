@@ -18,13 +18,18 @@ interface ApunteDetalleRowPacket extends ApunteDetalleRow, RowDataPacket {}
 // búsqueda del sitio, no el de un listado con caja de texto simple).
 const CAMPOS_TEXTO_APUNTE = ["ap.titulo", "ap.descripcion", "ap.asignatura", "ap.materia"];
 
-// Mismo criterio de visibilidad que cargar_apuntes.php:133-138.
-const WHERE_VISIBLE = `WHERE ap.publico = 1 AND ap.visible = 1 AND al.visible = 1 AND al.bloqueado = 0`;
+// Mismo criterio de visibilidad que cargar_apuntes.php:133-138. Exportada (Fase home):
+// home.repository.ts la reutiliza para el carrusel de apuntes de vitrina.php en vez de
+// replicar el WHERE distinto (más laxo — ni siquiera chequea visible/bloqueado) que esa
+// página usa — mismo criterio de reutilizar la visibilidad ya establecida que
+// tutores.controller.ts aplica con searchServiciosAprobados.
+export const WHERE_VISIBLE = `WHERE ap.publico = 1 AND ap.visible = 1 AND al.visible = 1 AND al.bloqueado = 0`;
 
 // Puerto de $cols en cargar_apuntes.php:178 — ap.descargas AS ventas_totales, mismo
 // criterio de "ventas" que usa el listado real (no la fórmula distinta de vitrina.php,
 // ver nota de tech-debt en CLAUDE.md sobre las 2 fórmulas de ventas_totales existentes).
-const SELECT_APUNTE = `
+// Exportada (Fase home) — mismo motivo que WHERE_VISIBLE arriba.
+export const SELECT_APUNTE = `
   SELECT
     ap.id, ap.titulo, ap.precio, ap.descripcion, ap.fecha_subida,
     ap.portada, ap.preview, ap.archivo,

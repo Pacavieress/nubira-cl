@@ -226,3 +226,54 @@ test("GET /api/apuntes/:id: iaTags solo aparece poblado cuando ia_used=1 y hay i
     await close();
   }
 });
+
+// Regresión de bug real (encontrado en vivo: cards de apuntes en la home sin imagen,
+// 404 en /upload/portadas/{id}.webp). portadaUrl debe apuntar a /upload/preview/ cuando
+// portada sigue el patrón automático "{id}.webp" (el caso común: 61 de 62 apuntes con
+// portada poblada hoy), y a /upload/portadas/ solo cuando el nombre es realmente custom
+// (el único caso real hoy: apunte 291, "apt_...webp" — el único archivo que existe en esa
+// carpeta). "Empieza con http" no alcanza para atrapar este bug: la URL rota también
+// empezaba con http, solo apuntaba a la carpeta equivocada.
+test("GET /api/apuntes/:id: portadaUrl usa /upload/preview/ para portada='{id}.webp' (patrón automático)", async (t) => {
+  const [rows] = await pool.query(
+    "SELECT id FROM apuntes WHERE portada = CONCAT(id, '.webp') AND estado = 'aprobado' LIMIT 1",
+  );
+  const fixture = (rows as unknown as Array<{ id: number }>)[0];
+  if (!fixture) {
+    t.skip("no hay ningún apunte con portada='{id}.webp' aprobado en la BD local ahora mismo");
+    return;
+  }
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/apuntes/${fixture.id}`);
+    const body = (await res.json()) as { portadaUrl: string };
+    assert.equal(res.status, 200);
+    assert.ok(
+      body.portadaUrl.includes(`/upload/preview/${fixture.id}.webp`),
+      `esperaba /upload/preview/${fixture.id}.webp, llegó ${body.portadaUrl}`,
+    );
+    assert.ok(!body.portadaUrl.includes("/upload/portadas/"));
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/apuntes/:id: portadaUrl usa /upload/portadas/ para una portada con nombre custom", async (t) => {
+  const [rows] = await pool.query(
+    "SELECT id, portada FROM apuntes WHERE portada IS NOT NULL AND portada != '' AND portada != CONCAT(id, '.webp') AND estado = 'aprobado' LIMIT 1",
+  );
+  const fixture = (rows as unknown as Array<{ id: number; portada: string }>)[0];
+  if (!fixture) {
+    t.skip("no hay ningún apunte con portada de nombre custom aprobado en la BD local ahora mismo");
+    return;
+  }
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/apuntes/${fixture.id}`);
+    const body = (await res.json()) as { portadaUrl: string };
+    assert.equal(res.status, 200);
+    assert.ok(body.portadaUrl.includes(`/upload/portadas/${fixture.portada}`));
+  } finally {
+    await close();
+  }
+});

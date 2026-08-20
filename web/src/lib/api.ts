@@ -194,3 +194,29 @@ export async function getTutorPerfil(id: number): Promise<TutorPerfil | null> {
   }
   return res.json();
 }
+
+// Refleja HomeData (server/src/modules/home/home.types.ts). Mismo criterio que los
+// demás tipos de esta página: no es un import compartido a propósito.
+export interface BannerPublico {
+  id: number;
+  titulo: string;
+  imagenUrl: string;
+  enlace: string | null;
+}
+
+export interface HomeData {
+  banner: BannerPublico | null;
+  serviciosRecomendados: ServicioListado[];
+  serviciosNuevos: ServicioListado[];
+  apuntesRecomendados: ApunteListado[];
+  clasesPaes: ServicioListado[];
+  ofertas: ServicioListado[];
+}
+
+export async function getHome(): Promise<HomeData> {
+  const res = await fetch(`${API_URL}/api/home`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`La API de home respondió ${res.status}`);
+  }
+  return res.json();
+}
