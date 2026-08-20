@@ -107,3 +107,24 @@ export function resolverPortada(
     main: conBase(assetsBaseUrl, `${webDir}${base}.webp`),
   };
 }
+
+const NB_GUIAS_WEB = "/upload/guias/";
+
+// Puerto de nb_resolver_portada_guia() (app/helpers/imagen_guia.php) — MISMA decisión de
+// negocio real: sin portada -> null, el caller omite el <img>/og:image por completo (no
+// hay placeholder compartido para guías, a diferencia de servicios/apuntes). Diferencia de
+// riesgo real, no solo cosmética, respecto al resto de este archivo: el PHP real también
+// verifica is_file() antes de devolver la URL (si la fila de BD dice que hay portada pero
+// el archivo .webp no existe en disco, devuelve null igual, ocultando el <img> con
+// limpieza). Node no valida filesystem (mismo tradeoff aceptado que el resto de este
+// archivo) — acá el efecto de esa divergencia es peor que en los otros resolvers: en vez
+// de caer a un placeholder compartido, se rendería un <img> con src roto. Verificado que
+// no aplica hoy (el único artículo publicado real tiene imagen_portada NULL, cae al null
+// temprano) — si en el futuro una portada apunta a un archivo borrado, esta función no lo
+// detecta y el PHP real sí.
+export function resolverPortadaGuia(archivo: string | null, tamano: "main" | "card" | "thumb", assetsBaseUrl: string): string | null {
+  if (!archivo) return null;
+  const base = baseName(archivo);
+  const sufijo = tamano === "main" ? "" : `_${tamano}`;
+  return conBase(assetsBaseUrl, `${NB_GUIAS_WEB}${base}${sufijo}.webp`);
+}

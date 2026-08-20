@@ -471,3 +471,55 @@ export async function getMisMetricas(): Promise<PublicacionMetrica[] | null> {
   const body = (await res.json()) as { data: PublicacionMetrica[] };
   return body.data;
 }
+
+// Refleja CategoriaHub/GuiasHubGeneral (server/src/modules/guias/guias.types.ts).
+export interface CategoriaHub {
+  id: number;
+  nombre: string;
+  slug: string;
+  descripcionCorta: string | null;
+  totalArticulos: number;
+}
+
+export async function getGuiasHubGeneral(): Promise<CategoriaHub[]> {
+  const res = await fetch(`${API_URL}/api/guias`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`La API de guías respondió ${res.status}`);
+  const body = (await res.json()) as { categorias: CategoriaHub[] };
+  return body.categorias;
+}
+
+// Refleja ArticuloListado/GuiasHubCategoria (server/src/modules/guias/guias.types.ts).
+export interface ArticuloListado {
+  id: number;
+  titulo: string;
+  slug: string;
+  resumen: string | null;
+  portadaCardUrl: string | null;
+  fechaPublicacion: string | null;
+}
+
+export type GuiasHubCategoria =
+  | {
+      encontrada: true;
+      categoria: { nombre: string; slug: string; descripcionCorta: string | null; soloTutores: boolean };
+      articulos: ArticuloListado[];
+      noindex: boolean;
+    }
+  | { encontrada: false; razon: "not_found" | "sin_sesion" | "no_tutor" };
+
+// A diferencia del resto de fetchers públicos de este archivo, éste SÍ necesita
+// fetchConSesion (no un fetch() plano): el gate de "Para Tutores" depende de si hay
+// sesión y si esa sesión es de un tutor activo — server/ solo puede evaluar eso si recibe
+// la cookie PHPSESSID reenviada (ver guias.controller.ts::getHubCategoria, optionalAuth).
+export async function getGuiasHubCategoria(slug: string): Promise<GuiasHubCategoria> {
+  const resConSesion = await fetchConSesion(`/api/guias/${slug}`);
+  const res = resConSesion ?? (await fetch(`${API_URL}/api/guias/${slug}`, { cache: "no-store" }));
+
+  if (res.status === 404) return { encontrada: false, razon: "not_found" };
+  if (res.status === 401) return { encontrada: false, razon: "sin_sesion" };
+  if (res.status === 403) return { encontrada: false, razon: "no_tutor" };
+  if (!res.ok) throw new Error(`La API de guías respondió ${res.status}`);
+
+  const body = (await res.json()) as Omit<Extract<GuiasHubCategoria, { encontrada: true }>, "encontrada">;
+  return { ...body, encontrada: true };
+}

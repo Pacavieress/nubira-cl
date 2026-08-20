@@ -10,6 +10,7 @@ import { configurarCuentaRouter } from "./modules/configurarCuenta/configurarCue
 import { comprasRouter } from "./modules/compras/compras.routes.js";
 import { evaluacionesRouter } from "./modules/evaluaciones/evaluaciones.routes.js";
 import { favoritosRouter } from "./modules/favoritos/favoritos.routes.js";
+import { guiasRouter } from "./modules/guias/guias.routes.js";
 import { miBilleteraRouter } from "./modules/miBilletera/miBilletera.routes.js";
 import { metricasRouter } from "./modules/metricas/metricas.routes.js";
 import { misContratosRouter } from "./modules/misContratos/misContratos.routes.js";
@@ -40,6 +41,7 @@ export function createApp(): Express {
   app.use("/api/categorias", categoriasRouter);
   app.use("/api/home", homeRouter);
   app.use("/api/landings", landingsRouter);
+  app.use("/api/guias", guiasRouter);
   app.use("/api/apuntes", apuntesRouter);
   app.use("/api/servicios", serviciosRouter);
   app.use("/api/tutores", tutoresRouter);
