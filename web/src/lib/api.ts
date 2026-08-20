@@ -345,3 +345,36 @@ export async function getMisVentasApuntes(): Promise<VentaApunte[] | null> {
   const body = (await res.json()) as { data: VentaApunte[] };
   return body.data;
 }
+
+// Refleja ServicioPublicado/ApuntePublicado/MisPublicacionesPublico
+// (server/src/modules/misPublicaciones/misPublicaciones.types.ts). Ver ese archivo para
+// el hallazgo real sobre por qué la institución de un apunte nunca se expone acá (bug de
+// columna inexistente en el PHP real, replicado a propósito).
+export interface ServicioPublicado {
+  id: number;
+  titulo: string;
+  imagenUrl: string;
+  estado: string;
+  modalidad: string;
+  precio: number | null;
+  url: string;
+}
+
+export interface ApuntePublicado {
+  id: number;
+  titulo: string;
+  archivo: string | null;
+  precio: number | null;
+  esPublico: boolean;
+}
+
+export interface MisPublicaciones {
+  servicios: ServicioPublicado[];
+  apuntes: ApuntePublicado[];
+}
+
+export async function getMisPublicaciones(): Promise<MisPublicaciones | null> {
+  const res = await fetchConSesion("/api/me/mis-publicaciones");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
