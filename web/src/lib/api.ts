@@ -431,3 +431,23 @@ export async function getMiBilletera(): Promise<MiBilletera | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja PerfilCuenta (server/src/modules/configurarCuenta/configurarCuenta.types.ts).
+// Cambiar contraseña y eliminar cuenta NO están acá — ver ese archivo para el porqué
+// (siguen enlazando a la página PHP real).
+export interface PerfilCuenta {
+  nombre: string;
+  correo: string;
+  carrera: string | null;
+  tipo: string | null;
+  bio: string | null;
+  universidad: string | null;
+  anioEgreso: number | null;
+  aniosExperiencia: number | null;
+}
+
+export async function getMiPerfilCuenta(): Promise<PerfilCuenta | null> {
+  const res = await fetchConSesion("/api/me/configurar-cuenta");
+  if (!res || !res.ok) return null;
+  return res.json();
+}

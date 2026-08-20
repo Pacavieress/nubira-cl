@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
+import { configurarCuentaRouter } from "./modules/configurarCuenta/configurarCuenta.routes.js";
 import { comprasRouter } from "./modules/compras/compras.routes.js";
 import { evaluacionesRouter } from "./modules/evaluaciones/evaluaciones.routes.js";
 import { favoritosRouter } from "./modules/favoritos/favoritos.routes.js";
@@ -49,6 +50,7 @@ export function createApp(): Express {
   app.use("/api/me/mis-publicaciones", misPublicacionesRouter);
   app.use("/api/me/mis-contratos", misContratosRouter);
   app.use("/api/me/mi-billetera", miBilleteraRouter);
+  app.use("/api/me/configurar-cuenta", configurarCuentaRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);
