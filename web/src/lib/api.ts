@@ -1,3 +1,5 @@
+import { fetchConSesion } from "./sesion";
+
 const API_URL = process.env.API_URL ?? "http://localhost:4000";
 
 export type Tier = "leyenda" | "elite" | "pro" | "top" | null;
@@ -231,5 +233,44 @@ export async function getLandingClases(slug: string): Promise<LandingClases | nu
   if (!res.ok) {
     throw new Error(`La API de landings respondió ${res.status}`);
   }
+  return res.json();
+}
+
+// Refleja ApunteComprado/ServicioContratado/MisComprasPublico
+// (server/src/modules/compras/compras.types.ts). Mismo criterio que los demás tipos de
+// esta página: no es un import compartido a propósito.
+export interface ApunteComprado {
+  id: number;
+  titulo: string;
+  asignatura: string | null;
+  institucion: string | null;
+  archivo: string | null;
+  monto: number;
+  fecha: string;
+  estadoPago: string;
+}
+
+export interface ServicioContratado {
+  id: number;
+  titulo: string;
+  vendedorNombre: string;
+  monto: number;
+  fechaPago: string | null;
+  estado: string;
+}
+
+export interface MisCompras {
+  apuntes: ApunteComprado[];
+  servicios: ServicioContratado[];
+}
+
+// A diferencia de todo lo demás en este archivo, es un endpoint autenticado
+// (GET /api/me/compras, requireAuth en server/) — usa fetchConSesion (web/src/lib/sesion.ts)
+// para reenviar la cookie PHPSESSID en vez de un fetch() público. null cubre 2 casos que
+// el caller no necesita distinguir acá: sin sesión, o server/ respondió 401 — ambos
+// significan "no hay compras que mostrar para este visitante", igual que getSesion().
+export async function getMisCompras(): Promise<MisCompras | null> {
+  const res = await fetchConSesion("/api/me/compras");
+  if (!res || !res.ok) return null;
   return res.json();
 }

@@ -23,16 +23,26 @@ export interface Sesion {
 // aunque sea en otro puerto — las cookies se scopean por (dominio, path), no por
 // puerto/esquema, así que nubira.local:80 y nubira.local:3000 comparten cookie, pero
 // localhost:3000 nunca la va a recibir aunque sea "el mismo mismo server" en la práctica.
-export async function getSesion(): Promise<Sesion | null> {
+//
+// Única fuente de verdad para el reenvío de cookie — cualquier endpoint autenticado de
+// server/ (getSesion, getMisCompras en api.ts, y los que vengan después) pasa por acá en
+// vez de repetir la lectura de cookies()/armado del header Cookie en cada archivo. Sin
+// sesión, devuelve null ANTES de tocar la red (mismo corte temprano que ya tenía
+// getSesion) — el caso común (visitante anónimo) no paga el roundtrip a server/.
+export async function fetchConSesion(path: string, init?: RequestInit): Promise<Response | null> {
   const cookieStore = await cookies();
   const phpSessId = cookieStore.get("PHPSESSID")?.value;
   if (!phpSessId) return null;
 
-  const res = await fetch(`${API_URL}/api/me`, {
+  return fetch(`${API_URL}${path}`, {
+    ...init,
     cache: "no-store",
-    headers: { Cookie: `PHPSESSID=${phpSessId}` },
+    headers: { ...(init?.headers ?? {}), Cookie: `PHPSESSID=${phpSessId}` },
   });
-  if (!res.ok) return null;
+}
 
+export async function getSesion(): Promise<Sesion | null> {
+  const res = await fetchConSesion("/api/me");
+  if (!res || !res.ok) return null;
   return res.json();
 }
