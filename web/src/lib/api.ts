@@ -173,8 +173,16 @@ export interface ApunteDetalle extends Omit<ApunteListado, "descripcionCorta"> {
   viewer: { isAuthenticated: boolean; isOwner: boolean };
 }
 
+// Mismo bug real que tenía getServicioDetalle (corregido en la Fase 7, favoritos): esta
+// función nunca reenviaba la cookie de sesión, así que `viewer.isAuthenticated/isOwner`
+// llegaban SIEMPRE en false sin importar si el visitante real tenía sesión — encontrado por
+// analogía al auditar los otros 2 endpoints con optionalAuth (apuntes/:id, guias/*) tras
+// detectar el mismo patrón en servicios/:id. Sigue invisible hoy (nada en
+// apunte/[id]/page.tsx consume `viewer` todavía, confirmado con grep), pero es la misma
+// trampa latente — se corrige ahora en vez de esperar a que otra feature la exponga.
 export async function getApunteDetalle(id: number): Promise<ApunteDetalle | null> {
-  const res = await fetch(`${API_URL}/api/apuntes/${id}`, { cache: "no-store" });
+  const resConSesion = await fetchConSesion(`/api/apuntes/${id}`);
+  const res = resConSesion ?? (await fetch(`${API_URL}/api/apuntes/${id}`, { cache: "no-store" }));
   if (res.status === 404) return null;
   if (!res.ok) {
     throw new Error(`La API de apuntes respondió ${res.status}`);
