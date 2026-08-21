@@ -96,8 +96,38 @@ export function textoCentrado(texto: string, peso: PesoFuente, size: number, col
   return `<text x="${xCentro}" y="${yBaseline}" font-family="Inter" font-weight="${PESO_A_CSS[peso]}" font-size="${size}" fill="${color}" text-anchor="middle">${escaparXml(texto)}</text>`;
 }
 
-export function textoIzquierda(texto: string, peso: PesoFuente, size: number, color: string, x: number, yBaseline: number): string {
-  return `<text x="${x}" y="${yBaseline}" font-family="Inter" font-weight="${PESO_A_CSS[peso]}" font-size="${size}" fill="${color}">${escaparXml(texto)}</text>`;
+// preservarEspacios: por defecto SVG aplica xml:space="default" (whitespace-collapse),
+// que TRUNCA espacios al inicio/fin del contenido de <text> — a diferencia de GD
+// (imagettftext dibuja bytes literales, sin ningún procesamiento de whitespace tipo XML).
+// Hallazgo real (verificado visualmente, no una sospecha): un título partido en 2 <text>
+// adyacentes ("Clases particulares de " + "Lenguaje" coloreado) perdía el espacio entre
+// ambos — "particulares deLenguaje". Necesario cuando un segmento de texto termina o
+// empieza con un espacio significativo que debe sobrevivir al render.
+export function textoIzquierda(texto: string, peso: PesoFuente, size: number, color: string, x: number, yBaseline: number, preservarEspacios = false): string {
+  const attrEspacio = preservarEspacios ? ' xml:space="preserve"' : "";
+  return `<text x="${x}" y="${yBaseline}" font-family="Inter" font-weight="${PESO_A_CSS[peso]}" font-size="${size}" fill="${color}"${attrEspacio}>${escaparXml(texto)}</text>`;
+}
+
+// Puerto de nb_texto_derecha() — texto alineado a la derecha de xDerecha (text-anchor
+// nativo, sin necesitar medir ancho primero como sí lo requería la versión GD real).
+export function textoDerecha(texto: string, peso: PesoFuente, size: number, color: string, xDerecha: number, yBaseline: number): string {
+  return `<text x="${xDerecha}" y="${yBaseline}" font-family="Inter" font-weight="${PESO_A_CSS[peso]}" font-size="${size}" fill="${color}" text-anchor="end">${escaparXml(texto)}</text>`;
+}
+
+// Texto centrado como UN bloque, con un prefijo y un sufijo de color distinto (ej. "Clases
+// particulares de " + "Lenguaje" en acento) — DOS <tspan> dentro de un mismo <text>, no dos
+// elementos <text> posicionados por separado. Necesario porque medir el ancho del prefijo
+// vía medirAnchoTexto() (bbox de TINTA, no de avance de glifo) ignora por completo un
+// espacio final — un espacio no tiene tinta — así que dos <text> separados posicionados con
+// x = xIzq + anchoMedido(prefijo) pierden ese espacio en el layout (bug real, encontrado en
+// la card de servicios: "particulares deLenguaje", sin espacio, incluso con
+// xml:space="preserve" en el prefijo — preserve mantiene el CARÁCTER pero no corrige la
+// medición usada para posicionar el siguiente elemento). Un <text> con tspans resuelve esto
+// de raíz: el flujo de glifos nativo de SVG sí respeta el avance real de cada carácter,
+// espacios incluidos, y text-anchor="middle" en el <text> exterior centra el CONTENIDO
+// COMPLETO (todos los tspans concatenados) como una sola unidad.
+export function textoCentradoDosColores(prefijo: string, sufijo: string, peso: PesoFuente, size: number, colorPrefijo: string, colorSufijo: string, xCentro: number, yBaseline: number): string {
+  return `<text x="${xCentro}" y="${yBaseline}" font-family="Inter" font-weight="${PESO_A_CSS[peso]}" font-size="${size}" text-anchor="middle" xml:space="preserve"><tspan fill="${colorPrefijo}">${escaparXml(prefijo)}</tspan><tspan fill="${colorSufijo}">${escaparXml(sufijo)}</tspan></text>`;
 }
 
 // Badge tipo "pill" con punto + texto, centrado horizontalmente en xCentro — puerto visual
@@ -125,6 +155,76 @@ export function badgePill(texto: string, xCentro: number, yTop: number, colorBor
   return { svg, alto };
 }
 
+// Badge tipo "pill" con punto + texto, ANCLADO A LA IZQUIERDA en x — mismo diseño visual
+// que badgePill (arriba) pero con el ancla real de nb_dibujar_badge_categoria()
+// (imagen_compartir.php:367-386), que posiciona desde el borde izquierdo, no desde un
+// centro — necesario cuando el elemento siguiente en la misma fila depende de dónde
+// termina este (o cuando simplemente no hay nada que centrar, como en servicios).
+export function badgePillIzquierda(texto: string, x: number, yTop: number, colorBorde: string, colorTexto: string): { svg: string; alto: number; ancho: number } {
+  const size = 24;
+  const padX = 16;
+  const padY = 9;
+  const dotR = 6;
+  const gapDot = 14;
+  const anchoTexto = medirAnchoTexto(texto, "semibold", size);
+  const alto = Math.round(size * 1.15) + padY * 2;
+  const ancho = dotR * 2 + gapDot + anchoTexto + padX * 2;
+  const r = Math.round(alto / 2);
+  const cyDot = yTop + Math.round(alto / 2);
+  const yTextoBaseline = yTop + Math.round(alto / 2) + Math.round(size * 0.35);
+
+  const svg = `
+    <rect x="${x}" y="${yTop}" width="${ancho}" height="${alto}" rx="${r}" fill="${colorBorde}" />
+    <rect x="${x + 2}" y="${yTop + 2}" width="${ancho - 4}" height="${alto - 4}" rx="${r - 2}" fill="#FFFFFF" />
+    <circle cx="${x + padX + dotR}" cy="${cyDot}" r="${dotR}" fill="${colorTexto}" />
+    ${textoIzquierda(texto, "semibold", size, colorTexto, x + padX + dotR * 2 + gapDot, yTextoBaseline)}
+  `;
+  return { svg, alto, ancho };
+}
+
+// Pill de fondo SÓLIDO (sin punto, sin borde) — puerto de nb_dibujar_badge_pill()
+// (imagen_compartir.php:354-365), el badge genérico usado para "Disponible".
+export function pillSolidoIzquierda(texto: string, x: number, yTop: number, colorFondo: string, colorTexto: string, size = 20, padX = 16, padY = 10): { svg: string; alto: number; ancho: number } {
+  const anchoTexto = medirAnchoTexto(texto, "semibold", size);
+  const alto = Math.round(size * 1.15) + padY * 2;
+  const ancho = anchoTexto + padX * 2;
+  const r = Math.round(alto / 2);
+  const yBaseline = yTop + alto - padY - Math.round(size * 0.22);
+
+  const svg = `
+    <rect x="${x}" y="${yTop}" width="${ancho}" height="${alto}" rx="${r}" fill="${colorFondo}" />
+    ${textoIzquierda(texto, "semibold", size, colorTexto, x + padX, yBaseline)}
+  `;
+  return { svg, alto, ancho };
+}
+
+// Estrella de 5 puntas rellena, centrada en (cx,cy) — puerto exacto de nb_estrella()
+// (imagen_compartir.php:220-234), misma razón de pentagrama (0.382) para el radio interior.
+export function estrella(cx: number, cy: number, radio: number, color: string): string {
+  const rIn = radio * 0.382;
+  const puntos: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const ang = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 === 0 ? radio : rIn;
+    puntos.push(`${(cx + rad * Math.cos(ang)).toFixed(2)},${(cy + rad * Math.sin(ang)).toFixed(2)}`);
+  }
+  return `<polygon points="${puntos.join(" ")}" fill="${color}" />`;
+}
+
+// Línea "★ 4,7 (12)" / "★ Nuevo", ANCLADA A LA IZQUIERDA en x — puerto de
+// nb_cat_rating_render() (imagen_compartir.php:236-272) restringido al caso $cat='' (único
+// que usa el formato POST de servicios; el prefijo de categoría en esa misma función solo
+// lo usa el formato HISTORY, fuera de alcance de esta pieza).
+export function estrellaConRating(promedio: number, votos: number, x: number, yBaseline: number, size: number, color: string): string {
+  const hayResenas = promedio > 0;
+  const peso: PesoFuente = hayResenas ? "bold" : "semibold";
+  const texto = hayResenas ? `${promedio.toFixed(1).replace(".", ",")} (${votos})` : "Nuevo";
+  const starR = Math.round(size * 0.54);
+  const gStar = Math.round(size * 0.46);
+  const cyStar = yBaseline - Math.round(size * 0.35);
+  return `${estrella(x + starR, cyStar, starR, color)}${textoIzquierda(texto, peso, size, color, x + starR * 2 + gStar, yBaseline)}`;
+}
+
 // Botón sólido centrado con texto blanco — puerto visual de
 // nb_dibujar_boton_generico_desafio() (imagen_compartir_desafio.php:14-25).
 export function botonGenerico(texto: string, xCentro: number, yTop: number, colorFondo: string): { svg: string; alto: number } {
@@ -143,6 +243,24 @@ export function botonGenerico(texto: string, xCentro: number, yTop: number, colo
     ${textoCentrado(texto, "bold", size, "#FFFFFF", xCentro, yTextoBaseline)}
   `;
   return { svg, alto };
+}
+
+// Botón sólido ANCLADO A LA IZQUIERDA en x — puerto de nb_dibujar_boton_agendar()
+// (imagen_compartir.php:413-425). A diferencia de botonGenerico (centrado, tamaños fijos
+// calibrados para "Jugar ahora" del Desafío), acá size/padX/padY son parámetros porque el
+// botón real de servicios usa una métrica distinta (26/40/18 vs. 30/48/22).
+export function botonIzquierdo(texto: string, x: number, yTop: number, colorFondo: string, size = 26, padX = 40, padY = 18): { svg: string; alto: number; ancho: number } {
+  const anchoTexto = medirAnchoTexto(texto, "bold", size);
+  const alto = Math.round(size * 1.15) + padY * 2;
+  const ancho = anchoTexto + padX * 2;
+  const r = Math.round(alto / 2);
+  const yBaseline = yTop + alto - padY - Math.round(size * 0.22);
+
+  const svg = `
+    <rect x="${x}" y="${yTop}" width="${ancho}" height="${alto}" rx="${r}" fill="${colorFondo}" />
+    ${textoIzquierda(texto, "bold", size, "#FFFFFF", x + padX, yBaseline)}
+  `;
+  return { svg, alto, ancho };
 }
 
 // Círculo numerado (1/2/3) — puerto visual de la parte "número" de

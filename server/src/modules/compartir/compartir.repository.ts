@@ -1,6 +1,6 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
-import type { ApunteCompartir, DatosPreguntasCompartir, FormatoShare, MateriaCompartir, OpcionLetra, PreguntaCompartir } from "./compartir.types.js";
+import type { ApunteCompartir, DatosPreguntasCompartir, FormatoShare, MateriaCompartir, OpcionLetra, PreguntaCompartir, ServicioCompartir } from "./compartir.types.js";
 
 export async function getMateriaActiva(slug: string): Promise<MateriaCompartir | null> {
   const [rows] = await pool.query<RowDataPacket[]>("SELECT slug, nombre FROM materias WHERE slug = ? AND activa = 1 LIMIT 1", [slug]);
@@ -19,6 +19,13 @@ export async function registrarShareDesafio(materiaSlug: string, formato: Format
 // (apunte_id numérico en vez de materia_slug).
 export async function registrarShareApunte(apunteId: number, formato: FormatoShare, ip: string | null, userAgent: string | null): Promise<void> {
   await pool.query("INSERT INTO shares_apunte (apunte_id, formato, ip, user_agent) VALUES (?, ?, ?, ?)", [apunteId, formato, ip, userAgent]);
+}
+
+// Puerto de app/track_share.php (tipo='servicio', el default) — tabla real ya existía (ver
+// track_share.php:44, confirmado con DESCRIBE antes de tocar nada), mismo shape que las
+// otras 2 tablas de shares salvo la columna clave (servicio_id).
+export async function registrarShareServicio(servicioId: number, formato: FormatoShare, ip: string | null, userAgent: string | null): Promise<void> {
+  await pool.query("INSERT INTO shares_servicio (servicio_id, formato, ip, user_agent) VALUES (?, ?, ?, ?)", [servicioId, formato, ip, userAgent]);
 }
 
 interface PreguntaCompartirDbRow extends RowDataPacket {
@@ -120,5 +127,60 @@ export async function getApunteParaCompartir(id: number): Promise<ApunteComparti
     nombreAlumno: row.nombre_alumno,
     fotoPerfil: row.foto_perfil,
     institucionMaestra: row.institucion_maestra,
+  };
+}
+
+interface ServicioCompartirDbRow extends RowDataPacket {
+  id: number;
+  titulo: string;
+  categoria: string | null;
+  precio: string | number;
+  precio_oferta: string | number | null;
+  is_subvencionado: number;
+  oferta_termino: Date | null;
+  nombre_alumno: string | null;
+  foto_perfil: string | null;
+  institucion_maestra: string | null;
+  rating_prom: string | number;
+  rating_votos: number;
+}
+
+// Puerto exacto de la SELECT de nb_obtener_imagen_compartir() (imagen_compartir.php:
+// 932-944) — mismo gate que img_servicio.php:117-122: estado='aprobado' Y
+// COALESCE(visible,1)=1 (fusionado en el propio WHERE, igual que se hizo con apuntes).
+export async function getServicioParaCompartir(id: number): Promise<ServicioCompartir | null> {
+  const [rows] = await pool.query<ServicioCompartirDbRow[]>(
+    `SELECT s.id, s.titulo, s.categoria, s.precio, s.precio_oferta, s.is_subvencionado, s.oferta_termino,
+            a.nombre AS nombre_alumno, a.foto_perfil,
+            COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
+            COALESCE((SELECT ROUND(AVG(v.calificacion),1) FROM valoraciones v
+                      WHERE v.servicio_id = s.id AND v.calificacion > 0
+                        AND v.rol_evaluado = 'vendedor'), 0) AS rating_prom,
+            (SELECT COUNT(*) FROM valoraciones v
+             WHERE v.servicio_id = s.id AND v.calificacion > 0
+               AND v.rol_evaluado = 'vendedor') AS rating_votos
+     FROM servicios s
+     LEFT JOIN alumnos a ON s.alumno_id = a.id
+     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+     WHERE s.id = ? AND s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1
+     LIMIT 1`,
+    [id],
+  );
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    titulo: row.titulo,
+    categoria: row.categoria,
+    precio: Number(row.precio),
+    precioOferta: row.precio_oferta !== null ? Number(row.precio_oferta) : null,
+    isSubvencionado: row.is_subvencionado === 1,
+    ofertaTermino: row.oferta_termino,
+    nombreAlumno: row.nombre_alumno,
+    fotoPerfil: row.foto_perfil,
+    institucionMaestra: row.institucion_maestra,
+    ratingProm: Number(row.rating_prom),
+    ratingVotos: row.rating_votos,
   };
 }

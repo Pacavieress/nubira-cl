@@ -3,6 +3,7 @@ import { getServicioDetalle } from "@/lib/api";
 import { formatoCLP } from "@/lib/formato";
 import { parsearHorariosServicio } from "@/lib/horarios";
 import { abreviarNombre, inicial } from "@/lib/texto";
+import { CompartirServicioBoton } from "@/components/CompartirServicioBoton";
 import { FavoritoToggle } from "@/components/FavoritoToggle";
 import { Header } from "@/components/Header";
 import { TiempoRespuestaPill } from "@/components/TiempoRespuestaPill";
@@ -41,9 +42,12 @@ export default async function DetalleServicio({ params }: DetalleProps) {
             <span className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-[#f0f0f0] uppercase tracking-wide">
               {servicio.categoria}
             </span>
-            {servicio.viewer.isAuthenticated && (
-              <FavoritoToggle servicioId={servicio.id} favoritoInicial={servicio.viewer.esFavorito} />
-            )}
+            <div className="flex items-center gap-2 ml-auto">
+              <CompartirServicioBoton servicioId={servicio.id} titulo={servicio.titulo} />
+              {servicio.viewer.isAuthenticated && (
+                <FavoritoToggle servicioId={servicio.id} favoritoInicial={servicio.viewer.esFavorito} />
+              )}
+            </div>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-medium text-[#222222] leading-tight mb-6 mt-3 tracking-[-0.01em]">

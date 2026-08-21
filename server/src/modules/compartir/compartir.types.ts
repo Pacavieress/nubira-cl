@@ -25,6 +25,26 @@ export interface ApunteCompartir {
   institucionMaestra: string | null;
 }
 
+// Puerto de la fila que arma nb_obtener_imagen_compartir() (imagen_compartir.php:925-975) —
+// incluye rating_prom/rating_votos ya calculados server-side (mismas subqueries sobre
+// valoraciones), igual que el SQL real.
+export interface ServicioCompartir {
+  id: number;
+  titulo: string;
+  categoria: string | null;
+  precio: number;
+  precioOferta: number | null;
+  isSubvencionado: boolean;
+  // mysql2 devuelve las columnas DATE como Date (sin dateStrings configurado) — mismo
+  // criterio que ServicioRow.oferta_termino en servicios.types.ts, no un string 'Y-m-d'.
+  ofertaTermino: Date | null;
+  nombreAlumno: string | null;
+  fotoPerfil: string | null;
+  institucionMaestra: string | null;
+  ratingProm: number;
+  ratingVotos: number;
+}
+
 export type OpcionLetra = "a" | "b" | "c" | "d";
 
 export interface PreguntaCompartir {
