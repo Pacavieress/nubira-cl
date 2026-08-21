@@ -89,6 +89,7 @@ export const ACCESOS_ADMIN: AdminAcceso[] = [
   {
     titulo: "Cuentas Bancarias",
     href: "/admin/cuentas-bancarias",
+    interno: true,
     iconoSvg:
       '<path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />',
   },
@@ -108,6 +109,7 @@ export const ACCESOS_ADMIN: AdminAcceso[] = [
   {
     titulo: "Recordatorios",
     href: "/admin/recordatorios",
+    interno: true,
     iconoSvg:
       '<path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-3.75v.008h-.008v-.008h.008zm0-3v.008h-.008V12.75h.008zm0-3v.008h-.008V9.75h.008z" />',
   },

@@ -759,3 +759,57 @@ export async function getAdminConfigPrecios(): Promise<ConfigPrecios | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja RecordatoriosResumen (server/src/modules/adminRecordatorios/adminRecordatorios.types.ts)
+// — panel admin "Recordatorios" (admin_recordatorios.php), monitor 100% lectura de
+// acciones_pendientes (correos automáticos de reenganche).
+export interface RecordatorioItem {
+  id: number;
+  alumno: string | null;
+  correo: string | null;
+  tipo: string;
+  etapa: number;
+  programadoPara: string;
+  enviadoEn: string | null;
+  estado: string;
+  motivoOmision: string | null;
+}
+
+export interface RecordatoriosResumen {
+  enviadosHoy: number;
+  pendientesHoy: number;
+  registros: RecordatorioItem[];
+}
+
+export async function getAdminRecordatorios(filtros: { fecha?: string; tipo?: string; estado?: string }): Promise<RecordatoriosResumen | null> {
+  const params = new URLSearchParams();
+  if (filtros.fecha) params.set("fecha", filtros.fecha);
+  if (filtros.tipo) params.set("tipo", filtros.tipo);
+  if (filtros.estado) params.set("estado", filtros.estado);
+  const qs = params.toString();
+  const res = await fetchConSesion(`/api/admin/recordatorios${qs ? `?${qs}` : ""}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+// Refleja CuentaBancariaAdmin (server/src/modules/adminCuentas/adminCuentas.types.ts) —
+// panel admin "Cuentas Bancarias" (admin_cuentas.php), 100% lectura.
+export interface CuentaBancariaAdmin {
+  idUsuario: number;
+  nombre: string;
+  correo: string;
+  bloqueado: boolean;
+  visible: boolean;
+  banco: string;
+  tipoCuenta: string;
+  numeroCuenta: string;
+  titularNombre: string;
+  rut: string;
+  fechaConfiguracion: string;
+}
+
+export async function getAdminCuentas(mostrarTodos: boolean): Promise<CuentaBancariaAdmin[]> {
+  const res = await fetchConSesion(`/api/admin/cuentas${mostrarTodos ? "?mostrarTodos=1" : ""}`);
+  if (!res || !res.ok) return [];
+  return res.json();
+}
