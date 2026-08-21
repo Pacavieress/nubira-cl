@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HorarioGrid, horarioVacio, validarHorarioClient, type HorarioValor } from "./HorarioGrid";
+import { VideoServicioSection, type VideoSeleccionado } from "./VideoServicioSection";
 
-// Puerto de app/publicar_servicio.php — SOLO el camino de creación real (título,
-// descripción, categoría, PAES, precio, horario obligatorio). Deliberadamente SIN:
-// generación por IA (no aplica a servicios en el PHP real de todos modos), video de
-// presentación (opcional en el form real, pieza aparte), y sin el flujo de pago de
-// republicación ($3.000 desde la 2da publicación) — ver publicar.controller.ts en
-// server/ para el detalle completo de alcance ya confirmado.
+// Puerto de app/publicar_servicio.php — creación real (título, descripción, categoría,
+// PAES, precio, horario obligatorio, video de presentación opcional). Deliberadamente SIN:
+// generación por IA (no aplica a servicios en el PHP real de todos modos) y sin el flujo
+// de pago de republicación ($3.000 desde la 2da publicación) — ver publicar.controller.ts
+// en server/ para el detalle completo de alcance ya confirmado.
 
 const CATEGORIAS = ["Matemáticas", "Química", "Física", "Biología", "Programación", "Idiomas", "Historia", "Lenguaje", "Economía", "Diseño", "Derecho", "Asesoría", "Otros"];
 
@@ -36,14 +36,47 @@ export function PublicarServicioForm() {
   const [descripcion, setDescripcion] = useState("");
   const [precio, setPrecio] = useState(0);
   const [horario, setHorario] = useState<HorarioValor>(horarioVacio());
+  const [video, setVideo] = useState<VideoSeleccionado | null>(null);
+  const [consentimientoVideo, setConsentimientoVideo] = useState(false);
 
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pasoActual, setPasoActual] = useState<string | null>(null);
+  const [progresoVideo, setProgresoVideo] = useState(0);
 
   function onPrecioChange(texto: string) {
     const digitos = texto.replace(/\D/g, "").slice(0, 9);
     setPrecio(digitos === "" ? 0 : parseInt(digitos, 10));
+  }
+
+  function subirVideoConProgreso(servicioId: number): Promise<void> {
+    return new Promise((resolve) => {
+      if (!video) {
+        resolve();
+        return;
+      }
+      const fd = new FormData();
+      fd.append("video", video.archivo, video.archivo.name);
+      fd.append("consentimientoRrss", "1");
+      if (video.thumbBlob) fd.append("thumb", video.thumbBlob, "thumb.jpg");
+
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener("progress", (ev) => {
+        if (!ev.lengthComputable) return;
+        setProgresoVideo(Math.round((ev.loaded / ev.total) * 100));
+      });
+      // El video es opcional y el servicio+horario YA quedaron guardados en este punto —
+      // una falla acá no debe bloquear la publicación ya exitosa (mismo criterio que
+      // continuarTrasHorario() en publicar_servicio.php: el video se puede reintentar
+      // después). No hay página "editar-servicio" en web/ todavía para ese reintento —
+      // simplificación real de esta pieza, no un olvido.
+      xhr.addEventListener("load", () => resolve());
+      xhr.addEventListener("error", () => resolve());
+      xhr.addEventListener("timeout", () => resolve());
+      xhr.open("POST", `/api/publicar/servicios/${servicioId}/video`);
+      xhr.timeout = 120000;
+      xhr.send(fd);
+    });
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -51,6 +84,10 @@ export function PublicarServicioForm() {
     if (enviando) return;
     setError(null);
 
+    if (video && !consentimientoVideo) {
+      setError("Debes aceptar el consentimiento de redes sociales para subir tu video, o quitarlo para publicar sin video.");
+      return;
+    }
     if (precio < 10000) {
       setError("El precio mínimo es $10.000.");
       return;
@@ -94,6 +131,11 @@ export function PublicarServicioForm() {
         setEnviando(false);
         setPasoActual(null);
         return;
+      }
+
+      if (video) {
+        setPasoActual("Subiendo video...");
+        await subirVideoConProgreso(servicioId);
       }
 
       setPasoActual("¡Listo!");
@@ -198,6 +240,22 @@ export function PublicarServicioForm() {
         </div>
         <p className="text-xs text-gray-400 leading-relaxed max-w-lg mb-5">Define al menos un bloque en el que estés disponible. Es obligatorio para poder aprobar tu servicio.</p>
         <HorarioGrid value={horario} onChange={setHorario} />
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 md:p-8">
+        <div className="flex items-center gap-2 mb-1">
+          <h2 className="text-base font-bold text-gray-900">Video de presentación</h2>
+          <span className="text-[10px] font-bold bg-blue-50 text-[#54A6D8] px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">Opcional</span>
+        </div>
+        <p className="text-xs text-gray-400 leading-relaxed max-w-lg mb-5">Los alumnos eligen primero a los tutores que pueden ver antes de escribirles.</p>
+        <VideoServicioSection video={video} onVideoChange={setVideo} consentimiento={consentimientoVideo} onConsentimientoChange={setConsentimientoVideo} />
+        {enviando && video && pasoActual === "Subiendo video..." && (
+          <div className="mt-4">
+            <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-[#54A6D8] transition-all" style={{ width: `${progresoVideo}%` }} />
+            </div>
+          </div>
+        )}
       </div>
 
       <button

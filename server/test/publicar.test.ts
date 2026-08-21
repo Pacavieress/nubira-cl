@@ -2,7 +2,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { RowDataPacket } from "mysql2";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { createApp } from "../src/app.js";
 import { pool } from "../src/db/pool.js";
 import { env } from "../src/config/env.js";
@@ -16,6 +16,8 @@ let servicioIdsCreados: number[] = [];
 let apunteIdsCreados: number[] = [];
 let archivosApuntesCreados: string[] = [];
 let archivosPreviewCreados: string[] = [];
+let archivosVideosCreados: string[] = [];
+let archivosThumbsCreados: string[] = [];
 let cupoOriginal: number;
 
 before(async () => {
@@ -47,6 +49,12 @@ after(async () => {
   }
   for (const nombre of [...archivosPreviewCreados]) {
     await fs.rm(path.join(env.uploadDir, "preview", nombre), { force: true });
+  }
+  for (const nombre of [...archivosVideosCreados]) {
+    await fs.rm(path.join(env.uploadDir, "videos_servicios", nombre), { force: true });
+  }
+  for (const nombre of [...archivosThumbsCreados]) {
+    await fs.rm(path.join(env.uploadDir, "servicios", nombre), { force: true });
   }
 
   await pool.end();
@@ -468,6 +476,186 @@ test("POST /api/me/publicar/apuntes con un PDF Y un blob de preview (render clie
 
     const statPreview = await fs.stat(path.join(env.uploadDir, "preview", `${body.id}.webp`));
     assert.ok(statPreview.isFile(), "el preview del PDF (a partir del blob subido) debe existir en disco, normalizado a webp por sharp");
+  } finally {
+    await close();
+  }
+});
+
+// ---- Servicios: video de presentación ----
+
+let servicioIdVideo: number;
+
+const MP4_MINIMO = Buffer.concat([
+  Buffer.from([0x00, 0x00, 0x00, 0x18]),
+  Buffer.from("ftyp", "ascii"),
+  Buffer.from("isom", "ascii"),
+  Buffer.from([0x00, 0x00, 0x02, 0x00]),
+  Buffer.from("isomiso2mp41", "ascii"),
+]);
+const WEBM_MINIMO = Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]);
+const JPEG_MINIMO = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+
+test("(setup video) crea un servicio real de prueba, directo por SQL", async () => {
+  const [result] = await pool.query<ResultSetHeader>(
+    `INSERT INTO servicios (alumno_id, institucion, titulo, descripcion, nombre_oferente, categoria, modalidad, precio, correo, imagen, estado, fecha_publicacion)
+     VALUES (?, 'Test', 'Servicio para prueba de video', 'Descripción de prueba', 'Test', 'Asesoría', 'Online', 15000, 'test@test.cl', '', 'pendiente', NOW())`,
+    [USUARIO_ID],
+  );
+  servicioIdVideo = result.insertId;
+  servicioIdsCreados.push(servicioIdVideo);
+});
+
+test("POST /api/me/publicar/servicios/:id/video sin sesión devuelve 401", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/servicios/${servicioIdVideo}/video`, { method: "POST", body: new FormData() });
+    assert.equal(res.status, 401);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/me/publicar/servicios/:id/video sin consentimiento devuelve 400", async () => {
+  const fd = new FormData();
+  fd.append("video", new Blob([MP4_MINIMO], { type: "video/mp4" }), "video.mp4");
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/servicios/${servicioIdVideo}/video`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VALID}` },
+      body: fd,
+    });
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.match(body.error, /consentimiento/);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/me/publicar/servicios/:id/video con extensión no permitida devuelve 400", async () => {
+  const fd = new FormData();
+  fd.append("consentimientoRrss", "1");
+  fd.append("video", new Blob([MP4_MINIMO], { type: "video/mp4" }), "video.avi");
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/servicios/${servicioIdVideo}/video`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VALID}` },
+      body: fd,
+    });
+    assert.equal(res.status, 400);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/me/publicar/servicios/:id/video con contenido que NO es un video real devuelve 400 (sniffing real)", async () => {
+  const fd = new FormData();
+  fd.append("consentimientoRrss", "1");
+  fd.append("video", new Blob([Buffer.from("esto no es un video")], { type: "video/mp4" }), "video.mp4");
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/servicios/${servicioIdVideo}/video`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VALID}` },
+      body: fd,
+    });
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.match(body.error, /no es un video válido/);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/me/publicar/servicios/:id/video de un servicio que NO es del usuario devuelve 403", async () => {
+  const fd = new FormData();
+  fd.append("consentimientoRrss", "1");
+  fd.append("video", new Blob([MP4_MINIMO], { type: "video/mp4" }), "video.mp4");
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/servicios/${servicioIdVideo}/video`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_OTRO}` },
+      body: fd,
+    });
+    assert.equal(res.status, 403);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/me/publicar/servicios/:id/video con MP4 + thumb JPEG reales: sube el video (200), guarda ambos archivos y actualiza el estado", async () => {
+  const fd = new FormData();
+  fd.append("consentimientoRrss", "1");
+  fd.append("video", new Blob([MP4_MINIMO], { type: "video/mp4" }), "presentacion.mp4");
+  fd.append("thumb", new Blob([JPEG_MINIMO], { type: "image/jpeg" }), "thumb.jpg");
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/servicios/${servicioIdVideo}/video`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VALID}` },
+      body: fd,
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { ok: boolean; videoPath: string };
+    assert.equal(body.ok, true);
+    assert.ok(body.videoPath.endsWith(".mp4"));
+    archivosVideosCreados.push(body.videoPath);
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT video_path, video_thumb_path, video_estado, video_consentimiento_rrss FROM servicios WHERE id = ?",
+      [servicioIdVideo],
+    );
+    const fila = rows[0] as { video_path: string; video_thumb_path: string; video_estado: string; video_consentimiento_rrss: number };
+    assert.equal(fila.video_path, body.videoPath);
+    assert.equal(fila.video_estado, "pendiente");
+    assert.equal(fila.video_consentimiento_rrss, 1);
+    assert.ok(fila.video_thumb_path?.endsWith("_thumb.jpg"));
+    archivosThumbsCreados.push(fila.video_thumb_path);
+
+    const statVideo = await fs.stat(path.join(env.uploadDir, "videos_servicios", body.videoPath));
+    assert.ok(statVideo.isFile());
+    const statThumb = await fs.stat(path.join(env.uploadDir, "servicios", fila.video_thumb_path));
+    assert.ok(statThumb.isFile());
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/me/publicar/servicios/:id/video reemplaza el video anterior: el archivo viejo se borra del disco", async () => {
+  const [antes] = await pool.query<RowDataPacket[]>("SELECT video_path FROM servicios WHERE id = ?", [servicioIdVideo]);
+  const videoAnterior = (antes[0] as { video_path: string }).video_path;
+  const rutaAnterior = path.join(env.uploadDir, "videos_servicios", videoAnterior);
+  assert.ok(
+    await fs
+      .stat(rutaAnterior)
+      .then(() => true)
+      .catch(() => false),
+    "precondición: el video anterior debe existir antes del reemplazo",
+  );
+
+  const fd = new FormData();
+  fd.append("consentimientoRrss", "1");
+  fd.append("video", new Blob([WEBM_MINIMO], { type: "video/webm" }), "nuevo.webm");
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/servicios/${servicioIdVideo}/video`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VALID}` },
+      body: fd,
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { videoPath: string };
+    archivosVideosCreados.push(body.videoPath);
+    assert.notEqual(body.videoPath, videoAnterior);
+
+    const existeAnterior = await fs
+      .stat(rutaAnterior)
+      .then(() => true)
+      .catch(() => false);
+    assert.equal(existeAnterior, false, "el video reemplazado debe haberse borrado del disco");
   } finally {
     await close();
   }

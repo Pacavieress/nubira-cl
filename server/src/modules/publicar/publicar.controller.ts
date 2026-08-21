@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
@@ -13,7 +14,9 @@ import {
   eliminarServicioIncompleto as repoEliminarServicioIncompleto,
   elegirImagenBancoPorCategoria,
   getAlumnoParaPublicar,
+  getVideoServicioActual,
   guardarHorarioServicio as repoGuardarHorarioServicio,
+  guardarVideoServicio,
   incrementarContadorPublicaciones,
   insertarApunte,
   insertarServicio,
@@ -28,7 +31,6 @@ import type { HorariosJson } from "../../lib/horarios.js";
 //     pendiente de una decisión de reactivación aparte.
 //   - Pago de republicación de servicio ($3.000, 2da publicación en adelante) y compra de
 //     créditos IA — ambos vía MercadoPago, dinero real.
-//   - Video de presentación de servicio (opcional en el form real).
 //   - actualizar_score_servicio() (gamificación de score_nubira) y enviar_push_nubira()
 //     (aviso push al admin) — quedan en 0/sin enviar; no bloquean la creación.
 //   - Preview/portada de PDF: el PHP real la genera server-side con Imagick (sin
@@ -37,6 +39,15 @@ import type { HorariosJson } from "../../lib/horarios.js";
 //     lo normaliza a webp server-side, igual que la ruta de imágenes. Simplificación real
 //     respecto al PHP: siempre página 1, SIN el selector de portada multi-página
 //     (selector-portada-container) del form real.
+//
+// Video de presentación de servicio (app/subir_video_servicio.php) SÍ está portado acá
+// (subirVideoServicio) — resultó simple: el PHP real no procesa el video server-side en
+// absoluto (ni siquiera con GD/Imagick, solo move_uploaded_file), y la miniatura ya la
+// captura el propio navegador vía <canvas> antes de subirla, mismo patrón que el preview
+// de PDF. Sin CSRF token explícito (el resto de esta migración nunca lo usa — la cookie de
+// sesión + SameSite ya cumple ese rol, mismo criterio que cada otro endpoint de escritura
+// construido en esta sesión) y sin el push al admin (mismo criterio que el resto del
+// módulo).
 
 const PRECIO_MINIMO_SERVICIO = 10000;
 
@@ -300,4 +311,106 @@ export async function crearApunte(req: Request, res: Response): Promise<void> {
   }
 
   res.status(201).json({ success: true, id: apunteId });
+}
+
+const EXTS_VIDEO_VALIDAS = new Set(["mp4", "webm", "mov"]);
+const MAX_BYTES_VIDEO = 30 * 1024 * 1024;
+const MAX_BYTES_THUMB = 2 * 1024 * 1024;
+
+// Sniffing de contenedor de video por magic bytes. Nota de fidelidad: el PHP real tampoco
+// cruza extensión declarada contra el tipo MIME real detectado (solo exige que CADA UNO,
+// por separado, esté en su propia whitelist) — un .mp4 con contenedor real mov/quicktime
+// pasaría el chequeo real igual. Se replica esa misma laxitud a propósito, no distingue
+// mp4 de mov/quicktime (ambos son ISO-BMFF con caja "ftyp", la diferencia está en el campo
+// de "major brand" interno, que ni el PHP real valida).
+function esContenedorVideoValido(buffer: Buffer): boolean {
+  if (buffer.length < 12) return false;
+  if (buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) return true; // WebM/Matroska (EBML)
+  if (buffer.toString("ascii", 4, 8) === "ftyp") return true; // ISO-BMFF (mp4/mov/quicktime)
+  return false;
+}
+
+function esJpegValido(buffer: Buffer): boolean {
+  return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+}
+
+// Puerto de app/subir_video_servicio.php. Reemplaza el servicio existente por completo
+// (no hay "agregar otro video") — mismo modelo 1 video por servicio que el PHP real.
+export async function subirVideoServicio(req: Request, res: Response): Promise<void> {
+  const usuarioId = req.usuarioId as number;
+  const servicioId = Number(req.params.id);
+  if (!Number.isInteger(servicioId) || servicioId <= 0) {
+    res.status(400).json({ ok: false, error: "id_invalido" });
+    return;
+  }
+
+  const body = req.body as { consentimientoRrss?: unknown };
+  if (body.consentimientoRrss !== "1") {
+    res.status(400).json({ ok: false, error: "Debes aceptar el consentimiento de redes sociales." });
+    return;
+  }
+
+  const archivos = req.files as Record<string, Express.Multer.File[]> | undefined;
+  const video = archivos?.video?.[0];
+  const thumb = archivos?.thumb?.[0];
+
+  if (!video) {
+    res.status(400).json({ ok: false, error: "No se recibió ningún archivo." });
+    return;
+  }
+  if (video.size > MAX_BYTES_VIDEO) {
+    res.status(400).json({ ok: false, error: "El video supera 30 MB." });
+    return;
+  }
+  const extVideo = path.extname(video.originalname).slice(1).toLowerCase();
+  if (!EXTS_VIDEO_VALIDAS.has(extVideo)) {
+    res.status(400).json({ ok: false, error: "Extensión no permitida. Usa .mp4, .webm o .mov." });
+    return;
+  }
+  if (!esContenedorVideoValido(video.buffer)) {
+    res.status(400).json({ ok: false, error: "El contenido del archivo no es un video válido." });
+    return;
+  }
+
+  const servicioActual = await getVideoServicioActual(servicioId, usuarioId);
+  if (!servicioActual) {
+    res.status(403).json({ ok: false, error: "No tienes permiso para editar este servicio." });
+    return;
+  }
+
+  const dirVideos = path.join(env.uploadDir, "videos_servicios");
+  const dirServicios = path.join(env.uploadDir, "servicios");
+  await fs.mkdir(dirVideos, { recursive: true });
+  await fs.mkdir(dirServicios, { recursive: true });
+
+  const nombreVideo = `${crypto.createHash("sha256").update(`${servicioId}${crypto.randomBytes(16).toString("hex")}${Date.now()}`).digest("hex")}.${extVideo}`;
+  await fs.writeFile(path.join(dirVideos, nombreVideo), video.buffer);
+
+  // Miniatura: best-effort, ya renderizada por el navegador — cualquier problema acá deja
+  // el video guardado igual, solo sin thumbnail (mismo criterio que el PHP real).
+  let nombreThumb: string | null = null;
+  if (thumb && thumb.size <= MAX_BYTES_THUMB && esJpegValido(thumb.buffer)) {
+    nombreThumb = `${path.parse(nombreVideo).name}_thumb.jpg`;
+    await fs.writeFile(path.join(dirServicios, nombreThumb), thumb.buffer);
+  }
+
+  const guardado = await guardarVideoServicio(servicioId, usuarioId, nombreVideo, nombreThumb);
+  if (!guardado) {
+    await fs.rm(path.join(dirVideos, nombreVideo), { force: true });
+    if (nombreThumb) await fs.rm(path.join(dirServicios, nombreThumb), { force: true });
+    res.status(500).json({ ok: false, error: "Error al registrar el video. Intenta de nuevo." });
+    return;
+  }
+
+  // Borra el video/thumb ANTERIOR solo tras guardar el nuevo con éxito — mismo orden que
+  // app/subir_video_servicio.php:164-172 (nunca deja al servicio sin ningún video en el
+  // medio si algo falla antes).
+  if (servicioActual.video_path) {
+    await fs.rm(path.join(dirVideos, servicioActual.video_path), { force: true });
+  }
+  if (servicioActual.video_thumb_path) {
+    await fs.rm(path.join(dirServicios, servicioActual.video_thumb_path), { force: true });
+  }
+
+  res.status(200).json({ ok: true, videoPath: nombreVideo });
 }

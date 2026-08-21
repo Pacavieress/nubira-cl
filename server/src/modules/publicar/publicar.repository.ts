@@ -124,3 +124,42 @@ export async function insertarApunte(alumnoId: number, input: CrearApunteInput, 
 export async function actualizarPreviewApunte(apunteId: number, previewNombre: string): Promise<void> {
   await pool.query("UPDATE apuntes SET preview = ?, portada = ? WHERE id = ?", [previewNombre, previewNombre, apunteId]);
 }
+
+interface VideoServicioRow extends RowDataPacket {
+  video_path: string | null;
+  video_thumb_path: string | null;
+}
+
+// Puerto de la SELECT previa de app/subir_video_servicio.php:62-69 — a diferencia de
+// horario/eliminar_incompleto (que resuelven ownership inline en el WHERE del UPDATE),
+// acá SÍ hace falta una lectura previa real: hay que conocer el video/thumb ANTERIOR para
+// poder borrarlo del filesystem después de que el nuevo se guarde con éxito.
+export async function getVideoServicioActual(servicioId: number, alumnoId: number): Promise<VideoServicioRow | null> {
+  const [rows] = await pool.query<VideoServicioRow[]>(
+    "SELECT video_path, video_thumb_path FROM servicios WHERE id = ? AND alumno_id = ? LIMIT 1",
+    [servicioId, alumnoId],
+  );
+  return rows[0] ?? null;
+}
+
+// Puerto exacto del UPDATE de app/subir_video_servicio.php:175-186.
+export async function guardarVideoServicio(
+  servicioId: number,
+  alumnoId: number,
+  videoPath: string,
+  thumbPath: string | null,
+): Promise<boolean> {
+  const [result] = await pool.query<ResultSetHeader>(
+    `UPDATE servicios
+        SET video_path = ?,
+            video_thumb_path = ?,
+            video_estado = 'pendiente',
+            video_subido_en = NOW(),
+            video_consentimiento_rrss = 1,
+            video_consentimiento_fecha = NOW(),
+            video_motivo_rechazo = NULL
+      WHERE id = ? AND alumno_id = ?`,
+    [videoPath, thumbPath, servicioId, alumnoId],
+  );
+  return result.affectedRows > 0;
+}
