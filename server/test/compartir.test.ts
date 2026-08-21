@@ -85,6 +85,68 @@ test("GET /api/compartir/desafio/:slug/post: segunda llamada es cache-hit (mismo
   }
 });
 
+test("GET /api/compartir/desafio-preguntas/:ids/history con IDs que NO comparten materia devuelve 404", async () => {
+  const { url, close } = listen();
+  try {
+    // 10,11 son de calculo; 26 es de otra materia (confirmado por fixture real antes de
+    // escribir este test) — la card no debe generarse con un badge de materia incoherente.
+    const res = await fetch(`${url}/api/compartir/desafio-preguntas/10-11-26/history`);
+    assert.equal(res.status, 404);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/desafio-preguntas/:ids/history con menos de 3 IDs devuelve 404", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/desafio-preguntas/10-11/history`);
+    assert.equal(res.status, 404);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/desafio-preguntas/:ids/history con 3 IDs reales de la misma materia: genera un JPEG real SIN respuesta_correcta expuesta en ningún header/nombre", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/desafio-preguntas/10-11-12/history`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "image/jpeg");
+    assert.match(res.headers.get("cache-control") ?? "", /max-age=86400/);
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    assert.ok(buffer.length > 1000, "debe ser un JPEG real");
+    assert.equal(buffer[0], 0xff);
+    assert.equal(buffer[1], 0xd8);
+    assert.equal(buffer[2], 0xff);
+
+    const dir = path.join(env.uploadDir, "compartir");
+    const archivos = await fs.readdir(dir);
+    const archivoCard = archivos.find((f) => f.startsWith("desafio_preguntas_10-11-12_history_"));
+    assert.ok(archivoCard, "debe cachear en disco con los 3 ids EN EL ORDEN PEDIDO en el nombre");
+    archivosGenerados.push(archivoCard!);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/desafio-preguntas/:ids/history: el MISMO trío en OTRO orden genera un archivo de cache DISTINTO", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/desafio-preguntas/12-11-10/history`);
+    assert.equal(res.status, 200);
+
+    const dir = path.join(env.uploadDir, "compartir");
+    const archivos = await fs.readdir(dir);
+    const archivoOrdenInverso = archivos.find((f) => f.startsWith("desafio_preguntas_12-11-10_history_"));
+    assert.ok(archivoOrdenInverso, "el orden 12-11-10 debe generar su propio archivo, distinto de 10-11-12 (la numeración 1/2/3 en la imagen cambia)");
+    archivosGenerados.push(archivoOrdenInverso!);
+  } finally {
+    await close();
+  }
+});
+
 test("POST /api/compartir/desafio/track sin materiaSlug devuelve 400", async () => {
   const { url, close } = listen();
   try {

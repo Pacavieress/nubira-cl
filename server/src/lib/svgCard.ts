@@ -144,6 +144,17 @@ export function botonGenerico(texto: string, xCentro: number, yTop: number, colo
   return { svg, alto };
 }
 
+// Círculo numerado (1/2/3) — puerto visual de la parte "número" de
+// nb_desafio_preguntas_dibujar_bloque() (imagen_compartir_desafio.php:236-239).
+export function circuloNumerado(numero: number, cx: number, cy: number, diametro: number, colorFondo: string, colorTexto: string): string {
+  const size = Math.round(diametro * 0.45);
+  const yBaseline = cy + Math.round(size * 0.35);
+  return `
+    <circle cx="${cx}" cy="${cy}" r="${diametro / 2}" fill="${colorFondo}" />
+    ${textoCentrado(String(numero), "bold", size, colorTexto, cx, yBaseline)}
+  `;
+}
+
 // Ensambla el documento SVG completo (fondo + fuentes embebidas), lo rasteriza con resvg
 // (PNG) y usa sharp SOLO para la conversión final PNG->JPEG (resvg no exporta JPEG
 // directo) — mismo criterio, dos librerías, cada una en lo suyo.

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ApunteListado, DesafioMateria, DesafioPregunta, DesafioResultado, ServicioListado } from "@/lib/api";
 import { ApunteCard } from "./ApunteCard";
-import { CompartirDesafioModal } from "./CompartirDesafioModal";
+import { CompartirDesafioModal, type PreguntasSesionCompartir } from "./CompartirDesafioModal";
 import { ServicioCard } from "./ServicioCard";
 
 // Puerto de app/desafio.php (pantallas 1-3) + app/cargar_desafio.php + app/responder_desafio.php,
@@ -30,6 +30,7 @@ function IconoChevronIzquierda() {
 export function DesafioJuego({ materias }: { materias: DesafioMateria[] }) {
   const [pantalla, setPantalla] = useState<Pantalla>("materia");
   const [modalCompartirAbierto, setModalCompartirAbierto] = useState(false);
+  const [preguntasSesionCompartir, setPreguntasSesionCompartir] = useState<PreguntasSesionCompartir | null>(null);
   const [materiaActual, setMateriaActual] = useState<string | null>(null);
   const [preguntas, setPreguntas] = useState<DesafioPregunta[]>([]);
   const [cargandoPreguntas, setCargandoPreguntas] = useState(false);
@@ -191,7 +192,14 @@ export function DesafioJuego({ materias }: { materias: DesafioMateria[] }) {
         <div className="max-w-[640px] mx-auto">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-500">Elige un ramo para empezar.</p>
-            <button type="button" onClick={() => setModalCompartirAbierto(true)} className="flex items-center gap-1 text-xs font-medium text-[#54A6D8] hover:underline shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setPreguntasSesionCompartir(null);
+                setModalCompartirAbierto(true);
+              }}
+              className="flex items-center gap-1 text-xs font-medium text-[#54A6D8] hover:underline shrink-0"
+            >
               Compartir
             </button>
           </div>
@@ -212,9 +220,23 @@ export function DesafioJuego({ materias }: { materias: DesafioMateria[] }) {
 
       {pantalla === "preguntas" && (
         <div className="max-w-[640px] mx-auto">
-          <button type="button" onClick={jugarDeNuevo} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#54A6D8] mb-4">
-            <IconoChevronIzquierda /> Cambiar ramo
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button type="button" onClick={jugarDeNuevo} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#54A6D8]">
+              <IconoChevronIzquierda /> Cambiar ramo
+            </button>
+            {!cargandoPreguntas && !errorPreguntas && preguntas.length === 3 && materiaActual && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPreguntasSesionCompartir({ ids: preguntas.map((p) => p.id), materiaSlug: materiaActual, materiaNombre: nombreMateria(materiaActual) });
+                  setModalCompartirAbierto(true);
+                }}
+                className="flex items-center gap-1 text-xs font-medium text-[#54A6D8] hover:underline shrink-0"
+              >
+                Compartir
+              </button>
+            )}
+          </div>
 
           {cargandoPreguntas && <div className="text-sm text-gray-400 py-6 text-center">Cargando preguntas...</div>}
           {errorPreguntas && <div className="text-sm text-gray-400 py-6 text-center">{errorPreguntas}</div>}
@@ -363,7 +385,15 @@ export function DesafioJuego({ materias }: { materias: DesafioMateria[] }) {
         </div>
       )}
 
-      <CompartirDesafioModal materias={materias} abierto={modalCompartirAbierto} onCerrar={() => setModalCompartirAbierto(false)} />
+      <CompartirDesafioModal
+        materias={materias}
+        abierto={modalCompartirAbierto}
+        onCerrar={() => {
+          setModalCompartirAbierto(false);
+          setPreguntasSesionCompartir(null);
+        }}
+        preguntasSesion={preguntasSesionCompartir}
+      />
     </div>
   );
 }

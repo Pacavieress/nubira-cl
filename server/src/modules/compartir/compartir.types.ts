@@ -1,12 +1,23 @@
-// Puerto de app/img_desafio.php + app/helpers/imagen_compartir_desafio.php — SOLO la card
-// "invitación por materia" (formato POST, 4:5). Deliberadamente SIN la card "3 preguntas de
-// esta sesión" (formato HISTORY, 9:16) — layout mucho más denso (numeración, opciones por
-// pregunta, 2 perfiles de tamaño con fallback, zona seguro anti-recorte de Instagram),
-// candidato a una pieza aparte. Ver server/src/lib/svgCard.ts para la decisión de motor de
-// render (resvg en vez de GD).
+// Puerto de app/img_desafio.php + app/helpers/imagen_compartir_desafio.php. Cubre ambas
+// cards: "invitación por materia" (POST 4:5) y "3 preguntas de esta sesión" (HISTORY 9:16).
+// Ver server/src/lib/svgCard.ts para la decisión de motor de render (resvg en vez de GD).
 export interface MateriaCompartir {
   slug: string;
   nombre: string;
 }
 
-export type FormatoShare = "post" | "caption" | "share";
+export type FormatoShare = "post" | "caption" | "share" | "preguntas";
+
+export type OpcionLetra = "a" | "b" | "c" | "d";
+
+export interface PreguntaCompartir {
+  id: number;
+  tipo: string;
+  enunciado: string;
+  opciones: Partial<Record<OpcionLetra, string>>;
+}
+
+export interface DatosPreguntasCompartir {
+  materia: MateriaCompartir;
+  preguntas: PreguntaCompartir[];
+}

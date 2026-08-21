@@ -3,14 +3,19 @@
 import { useState } from "react";
 import type { DesafioMateria } from "@/lib/api";
 
-// Puerto de app/componentes/modal_compartir_desafio.php — SOLO el "paso 1: elegir materia"
-// + "paso 2: preview y acciones" (invitación genérica por materia, formato POST 4:5).
-// Deliberadamente SIN el "paso 3: compartir las 3 preguntas de esta sesión" (formato
-// HISTORY 9:16) — layout de imagen bastante más denso (numeración + opciones por pregunta,
-// 2 perfiles de tamaño con fallback), candidato a pieza aparte. Ver
-// server/src/modules/compartir/ para el motor de generación (SVG + resvg, no GD).
+// Puerto de app/componentes/modal_compartir_desafio.php — los 3 pasos: "paso 1: elegir
+// materia" + "paso 2: preview y acciones" (invitación genérica, formato POST 4:5) y
+// "paso 3: compartir las 3 preguntas de esta sesión" (formato HISTORY 9:16, ver
+// preguntasSesion más abajo). Ver server/src/modules/compartir/ para el motor de
+// generación (SVG + resvg, no GD).
 
-type Formato = "post" | "caption" | "share";
+type Formato = "post" | "caption" | "share" | "preguntas";
+
+export interface PreguntasSesionCompartir {
+  ids: number[];
+  materiaSlug: string;
+  materiaNombre: string;
+}
 
 function IconoX() {
   return (
@@ -34,17 +39,43 @@ function IconoCompartir() {
   );
 }
 
-export function CompartirDesafioModal({ materias, abierto, onCerrar }: { materias: DesafioMateria[]; abierto: boolean; onCerrar: () => void }) {
+export function CompartirDesafioModal({
+  materias,
+  abierto,
+  onCerrar,
+  preguntasSesion,
+}: {
+  materias: DesafioMateria[];
+  abierto: boolean;
+  onCerrar: () => void;
+  // Cuando viene informado, el modal abre DIRECTO en el paso 3 (compartir las 3 preguntas
+  // ya jugadas en esta sesión) — sin pasar por "elegir materia", igual que el trigger
+  // `nb-compartir-desafio-preguntas` del PHP real (desafio.php), que dispara desde la
+  // pantalla de preguntas con las 3 ids ya conocidas.
+  preguntasSesion?: PreguntasSesionCompartir | null;
+}) {
   const [slugElegido, setSlugElegido] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
 
   if (!abierto) return null;
 
+  const modoPreguntas = !!preguntasSesion;
   const materiaActual = materias.find((m) => m.slug === slugElegido) ?? null;
-  const imgUrl = slugElegido ? `/api/desafio/compartir/${slugElegido}/post` : "";
-  const caption = materiaActual
-    ? `¿Te atreves con el Desafío de ${materiaActual.nombre}?\n\n3 preguntas rápidas para poner a prueba lo que sabes.\n\nJuega en https://nubira.cl/desafio\n\n#Nubira #DesafioDeHoy`
-    : "";
+
+  const imgUrl = modoPreguntas
+    ? `/api/desafio/compartir-preguntas/${preguntasSesion!.ids.join("-")}/history`
+    : slugElegido
+      ? `/api/desafio/compartir/${slugElegido}/post`
+      : "";
+
+  const caption = modoPreguntas
+    ? `¿Te animas con estas 3 preguntas de ${preguntasSesion!.materiaNombre}?\n\nSin spoilers — respóndelas tú también en https://nubira.cl/desafio\n\n#Nubira #DesafioDeHoy`
+    : materiaActual
+      ? `¿Te atreves con el Desafío de ${materiaActual.nombre}?\n\n3 preguntas rápidas para poner a prueba lo que sabes.\n\nJuega en https://nubira.cl/desafio\n\n#Nubira #DesafioDeHoy`
+      : "";
+
+  const nombreArchivo = modoPreguntas ? "nubira-desafio-preguntas.jpg" : `nubira-desafio-${slugElegido}.jpg`;
+  const materiaSlugParaTrack = modoPreguntas ? preguntasSesion!.materiaSlug : slugElegido;
 
   function cerrar() {
     setSlugElegido(null);
@@ -53,16 +84,16 @@ export function CompartirDesafioModal({ materias, abierto, onCerrar }: { materia
   }
 
   function track(formato: Formato) {
-    if (!slugElegido) return;
+    if (!materiaSlugParaTrack) return;
     fetch("/api/desafio/compartir/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ materiaSlug: slugElegido, formato }),
+      body: JSON.stringify({ materiaSlug: materiaSlugParaTrack, formato }),
     }).catch(() => {});
   }
 
   async function copiarTexto() {
-    track("caption");
+    track(modoPreguntas ? "preguntas" : "caption");
     try {
       await navigator.clipboard.writeText(caption);
       setCopiado(true);
@@ -73,11 +104,11 @@ export function CompartirDesafioModal({ materias, abierto, onCerrar }: { materia
   }
 
   async function compartirNativo() {
-    track("share");
+    track(modoPreguntas ? "preguntas" : "share");
     try {
       const resp = await fetch(imgUrl);
       const blob = await resp.blob();
-      const file = new File([blob], `nubira-desafio-${slugElegido}.jpg`, { type: "image/jpeg" });
+      const file = new File([blob], nombreArchivo, { type: "image/jpeg" });
       const nav = navigator as Navigator & { canShare?: (data: { files: File[] }) => boolean; share?: (data: { files: File[]; text: string }) => Promise<void> };
       if (nav.canShare?.({ files: [file] })) {
         await nav.share?.({ files: [file], text: caption });
@@ -88,9 +119,11 @@ export function CompartirDesafioModal({ materias, abierto, onCerrar }: { materia
     }
     const a = document.createElement("a");
     a.href = imgUrl;
-    a.download = `nubira-desafio-${slugElegido}.jpg`;
+    a.download = nombreArchivo;
     a.click();
   }
+
+  const mostrarPreview = modoPreguntas || !!materiaActual;
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" onClick={cerrar}>
@@ -105,7 +138,7 @@ export function CompartirDesafioModal({ materias, abierto, onCerrar }: { materia
           </button>
         </div>
 
-        {!materiaActual ? (
+        {!mostrarPreview ? (
           <div className="px-5 py-4">
             <p className="text-sm text-gray-500 mb-3">¿Qué materia quieres invitar a jugar?</p>
             <div className="grid grid-cols-2 gap-2">
@@ -123,20 +156,26 @@ export function CompartirDesafioModal({ materias, abierto, onCerrar }: { materia
           </div>
         ) : (
           <div className="px-5 pb-5">
-            <button type="button" onClick={() => setSlugElegido(null)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#54A6D8] mb-3 mt-1">
-              <IconoChevronIzquierda /> Cambiar materia
-            </button>
+            {!modoPreguntas && (
+              <button type="button" onClick={() => setSlugElegido(null)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#54A6D8] mb-3 mt-1">
+                <IconoChevronIzquierda /> Cambiar materia
+              </button>
+            )}
 
-            <div className="flex justify-center pb-4">
+            <div className={`flex justify-center pb-4 ${modoPreguntas ? "pt-1" : ""}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada dinámicamente server-side, no un asset estático */}
-              <img src={imgUrl} alt="Vista previa" className="w-[240px] aspect-[4/5] object-cover rounded-xl border border-gray-100 shadow-sm bg-gray-50" />
+              <img
+                src={imgUrl}
+                alt="Vista previa"
+                className={modoPreguntas ? "w-[220px] aspect-[9/16] object-cover rounded-xl border border-gray-100 shadow-sm bg-gray-50" : "w-[240px] aspect-[4/5] object-cover rounded-xl border border-gray-100 shadow-sm bg-gray-50"}
+              />
             </div>
 
             <div className="space-y-2.5">
               <a
                 href={imgUrl}
-                download={`nubira-desafio-${slugElegido}.jpg`}
-                onClick={() => track("post")}
+                download={nombreArchivo}
+                onClick={() => track(modoPreguntas ? "preguntas" : "post")}
                 className="block text-center bg-[#54A6D8] hover:bg-blue-600 text-white text-sm font-bold py-3 rounded-xl transition-all"
               >
                 Descargar imagen
@@ -151,7 +190,9 @@ export function CompartirDesafioModal({ materias, abierto, onCerrar }: { materia
               >
                 <IconoCompartir /> Compartir
               </button>
-              <p className="text-[11px] text-gray-400 text-center pt-1">Descarga la imagen y súbela a tu historia o feed de Instagram.</p>
+              <p className="text-[11px] text-gray-400 text-center pt-1">
+                {modoPreguntas ? "Sin spoilers: la imagen no muestra cuál opción es la correcta." : "Descarga la imagen y súbela a tu historia o feed de Instagram."}
+              </p>
             </div>
           </div>
         )}
