@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { nubiraEncriptarId } from "@/lib/perfilUrl";
 
 // Puerto de app/componentes/sidebar.php. "Inicio"/"Clases"/"Apuntes" son iguales para
 // visitante y logueado en el PHP real, sin cambios acá. "Mensajes"/"Mi Perfil" y el nuevo
@@ -107,12 +106,10 @@ function construirNavItems(phpSiteUrl: string, usuarioId: number | null): NavIte
     ),
   },
   {
-    href: esGuest
-      ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/perfil")}`
-      : `${phpSiteUrl}/perfil/${nubiraEncriptarId(usuarioId)}`,
+    href: esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/mi-perfil")}` : "/mi-perfil",
     label: "Mi Perfil",
-    activo: () => false,
-    externo: true,
+    activo: (p) => p === "/mi-perfil",
+    externo: esGuest,
     icono: (
       <path
         strokeLinecap="round"

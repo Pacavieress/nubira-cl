@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { nubiraEncriptarId } from "@/lib/perfilUrl";
 
 // Puerto de app/componentes/nav_bottom.php — mismas 5 posiciones visuales que el real
 // (Inicio, Descubrir, Publicar central elevado, Mensajes, Perfil).
@@ -33,11 +32,10 @@ export function BottomNav({ phpSiteUrl, usuarioId }: { phpSiteUrl: string; usuar
   const loginUrl = `${phpSiteUrl}/login`;
   const esGuest = usuarioId === null;
   const mensajesUrl = esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/bandeja-entrada")}` : `${phpSiteUrl}/bandeja-entrada`;
-  const perfilUrl = esGuest
-    ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/perfil")}`
-    : `${phpSiteUrl}/perfil/${nubiraEncriptarId(usuarioId)}`;
+  const perfilUrl = esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/mi-perfil")}` : "/mi-perfil";
 
   const esInicio = pathname === "/";
+  const esPerfil = pathname === "/mi-perfil";
   const clsBase = "flex flex-col items-center justify-center gap-1 w-full outline-none select-none";
   const clsActivo = "text-[#54A6D8] font-medium";
   const clsInactivo = "text-gray-400 font-medium";
@@ -94,16 +92,29 @@ export function BottomNav({ phpSiteUrl, usuarioId }: { phpSiteUrl: string; usuar
         </li>
 
         <li>
-          <a href={perfilUrl} aria-label="Perfil" className={`${clsBase} ${clsInactivo}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-              />
-            </svg>
-            <span className="tracking-[0.01em] leading-none mt-0.5">Perfil</span>
-          </a>
+          {esGuest ? (
+            <a href={perfilUrl} aria-label="Perfil" className={`${clsBase} ${clsInactivo}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                />
+              </svg>
+              <span className="tracking-[0.01em] leading-none mt-0.5">Perfil</span>
+            </a>
+          ) : (
+            <Link href={perfilUrl} aria-label="Perfil" className={`${clsBase} ${esPerfil ? clsActivo : clsInactivo}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                />
+              </svg>
+              <span className="tracking-[0.01em] leading-none mt-0.5">Perfil</span>
+            </Link>
+          )}
         </li>
       </ul>
     </nav>
