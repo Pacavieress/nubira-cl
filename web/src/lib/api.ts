@@ -813,3 +813,60 @@ export async function getAdminCuentas(mostrarTodos: boolean): Promise<CuentaBanc
   if (!res || !res.ok) return [];
   return res.json();
 }
+
+// Refleja ContratosResumen (server/src/modules/adminContratos/adminContratos.types.ts) —
+// panel admin "Contratos" (admin_contratos.php). SOLO lectura (stats + listado + detalle) —
+// ver nota de alcance en el tipo del server sobre las acciones de escritura excluidas.
+export interface ContratoAdmin {
+  id: number;
+  estado: string;
+  monto: number;
+  fechaCreacion: string;
+  fechaEstimada: string | null;
+  fechaCierre: string | null;
+  conversacionId: number | null;
+  servicioTitulo: string;
+  compradorNombre: string;
+  vendedorNombre: string;
+}
+
+export interface ContratosResumen {
+  stats: Record<string, number>;
+  total: number;
+  contratos: ContratoAdmin[];
+}
+
+export async function getAdminContratos(estado?: string): Promise<ContratosResumen | null> {
+  const res = await fetchConSesion(`/api/admin/contratos${estado ? `?estado=${estado}` : ""}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+// Refleja AutorServicio (server/src/modules/adminAutores/adminAutores.types.ts) — panel
+// admin "Autores de Servicios" (admin_autores_servicios.php). SOLO lectura — ver nota de
+// alcance en el tipo del server sobre la acción "Escribir correo" excluida.
+export interface AutorServicio {
+  idUsuario: number;
+  nombre: string;
+  correo: string;
+  institucion: string | null;
+  fotoPerfil: string | null;
+  bio: string | null;
+  tipo: string | null;
+  cantidadServicios: number;
+  serviciosConHorario: number;
+  ultimaPublicacion: string | null;
+  totalConversaciones: number;
+  portadaUrl: string;
+  ultimoCorreo: { asunto: string | null; mensaje: string | null; fecha: string; exito: boolean } | null;
+}
+
+export async function getAdminAutores(filtros: { q?: string; filtro?: "incompleto" }): Promise<AutorServicio[]> {
+  const params = new URLSearchParams();
+  if (filtros.q) params.set("q", filtros.q);
+  if (filtros.filtro) params.set("filtro", filtros.filtro);
+  const qs = params.toString();
+  const res = await fetchConSesion(`/api/admin/autores${qs ? `?${qs}` : ""}`);
+  if (!res || !res.ok) return [];
+  return res.json();
+}
