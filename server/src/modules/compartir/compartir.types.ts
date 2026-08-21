@@ -8,6 +8,23 @@ export interface MateriaCompartir {
 
 export type FormatoShare = "post" | "caption" | "share" | "preguntas";
 
+// Puerto de la fila que arma nb_obtener_imagen_apunte() (imagen_compartir_apunte.php:395-424).
+export interface ApunteCompartir {
+  id: number;
+  titulo: string;
+  precio: number;
+  portada: string | null;
+  archivo: string | null;
+  asignatura: string | null;
+  promoGratis: boolean;
+  promoLimite: number;
+  promoContador: number;
+  descargas: number;
+  nombreAlumno: string | null;
+  fotoPerfil: string | null;
+  institucionMaestra: string | null;
+}
+
 export type OpcionLetra = "a" | "b" | "c" | "d";
 
 export interface PreguntaCompartir {

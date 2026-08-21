@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
@@ -152,6 +153,99 @@ export function circuloNumerado(numero: number, cx: number, cy: number, diametro
   return `
     <circle cx="${cx}" cy="${cy}" r="${diametro / 2}" fill="${colorFondo}" />
     ${textoCentrado(String(numero), "bold", size, colorTexto, cx, yBaseline)}
+  `;
+}
+
+const EXTS_IMAGEN_SOPORTADAS = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
+
+// Lee un archivo local real y lo embebe como data URI PNG — SIEMPRE normalizado por sharp,
+// nunca el buffer crudo del archivo original. Hallazgo real (verificado con una imagen de
+// producción real, no una sospecha): resvg falla en SILENCIO al decodificar <image> con
+// webp embebido (el mismo formato que usa TODO el pipeline de portadas del sitio, ver
+// media.ts) — sin error, sin entrada en imagesToResolve(), el elemento simplemente no se
+// pinta. sharp SÍ decodifica webp de forma confiable (ya se usa para eso en todo
+// server/), así que la normalización pasa siempre por ahí antes de llegar a resvg, evitando
+// depender de qué formatos decodifica bien el renderer de turno. `null` si el archivo no
+// existe o no es un formato soportado — el caller decide el fallback visual (mismo patrón
+// defensivo que nb_dibujar_portada_rect/nb_dibujar_avatar, que nunca dejan un rect
+// roto/vacío).
+export async function cargarImagenComoDataUri(rutaAbsoluta: string): Promise<string | null> {
+  const ext = path.extname(rutaAbsoluta).slice(1).toLowerCase();
+  if (!EXTS_IMAGEN_SOPORTADAS.has(ext)) return null;
+  try {
+    const buffer = await fs.readFile(rutaAbsoluta);
+    const png = await sharp(buffer).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+let contadorIds = 0;
+function idUnico(prefijo: string): string {
+  contadorIds += 1;
+  return `${prefijo}${contadorIds}`;
+}
+
+// Puerto visual de nb_dibujar_portada_rect() (imagen_compartir_apunte.php:57-118) — rect
+// redondeado, recorte "cover" (sin deformar) y gradiente oscuro en el tercio inferior para
+// legibilidad. Reemplaza TODA la matemática manual de escala/offset/máscara-pixel-a-pixel
+// del PHP real por 2 capacidades nativas de SVG: `preserveAspectRatio="xMidYMid slice"`
+// (equivalente exacto a CSS object-fit:cover) y un <linearGradient> — no hay pixel a pixel
+// que replicar. Sin dataUri (imagen no encontrada en disco) dibuja un placeholder sólido de
+// marca, igual que el PHP real (nunca un rectángulo roto/vacío).
+export function imagenPortadaRecortada(dataUri: string | null, x: number, y: number, w: number, h: number, radio: number, conGradiente = true): string {
+  const clipId = idUnico("clipPortada");
+  const gradId = idUnico("gradPortada");
+
+  if (!dataUri) {
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${radio}" fill="#E0EEF7" />`;
+  }
+
+  const gradiente = conGradiente
+    ? `<defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="60%" stop-color="#000000" stop-opacity="0" />
+          <stop offset="100%" stop-color="#000000" stop-opacity="0.45" />
+        </linearGradient>
+      </defs>
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${gradId})" clip-path="url(#${clipId})" />`
+    : "";
+
+  return `
+    <defs>
+      <clipPath id="${clipId}">
+        <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${radio}" />
+      </clipPath>
+    </defs>
+    <image href="${dataUri}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})" />
+    ${gradiente}
+  `;
+}
+
+// Puerto visual de nb_dibujar_avatar() (imagen_compartir.php:291+) — anillo de acento +
+// foto circular recortada (cover, vía clipPath circular en vez de la máscara pixel a pixel
+// de nb_recorte_circular), o círculo relleno + iniciales si no hay foto real en disco
+// (mismo criterio que necesidad_avatar_inicial() en app/helpers/foto_tutor.php).
+export function avatarCircular(dataUri: string | null, cx: number, cyTop: number, diametro: number, colorAcento: string, colorBlanco: string, iniciales: string): string {
+  const r = diametro / 2;
+  const cy = cyTop + r;
+  const anillo = `<circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="${colorAcento}" />`;
+
+  if (!dataUri) {
+    const size = Math.round(diametro * 0.38);
+    return `${anillo}<circle cx="${cx}" cy="${cy}" r="${r}" fill="${colorAcento}" />${textoCentrado(iniciales, "bold", size, colorBlanco, cx, cy + Math.round(size * 0.35))}`;
+  }
+
+  const clipId = idUnico("clipAvatar");
+  return `
+    ${anillo}
+    <defs>
+      <clipPath id="${clipId}">
+        <circle cx="${cx}" cy="${cy}" r="${r}" />
+      </clipPath>
+    </defs>
+    <image href="${dataUri}" x="${cx - r}" y="${cy - r}" width="${diametro}" height="${diametro}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})" />
   `;
 }
 

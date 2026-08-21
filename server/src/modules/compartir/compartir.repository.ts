@@ -1,6 +1,6 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
-import type { DatosPreguntasCompartir, FormatoShare, MateriaCompartir, OpcionLetra, PreguntaCompartir } from "./compartir.types.js";
+import type { ApunteCompartir, DatosPreguntasCompartir, FormatoShare, MateriaCompartir, OpcionLetra, PreguntaCompartir } from "./compartir.types.js";
 
 export async function getMateriaActiva(slug: string): Promise<MateriaCompartir | null> {
   const [rows] = await pool.query<RowDataPacket[]>("SELECT slug, nombre FROM materias WHERE slug = ? AND activa = 1 LIMIT 1", [slug]);
@@ -12,6 +12,13 @@ export async function getMateriaActiva(slug: string): Promise<MateriaCompartir |
 // sql/pendientes/shares_desafio_fase1.sql.
 export async function registrarShareDesafio(materiaSlug: string, formato: FormatoShare, ip: string | null, userAgent: string | null): Promise<void> {
   await pool.query("INSERT INTO shares_desafio (materia_slug, formato, ip, user_agent) VALUES (?, ?, ?, ?)", [materiaSlug, formato, ip, userAgent]);
+}
+
+// Puerto de app/track_share.php (tipo='apunte') — tabla real ya existía (ver
+// sql/pendientes/shares_apunte.sql), mismo shape que shares_desafio salvo la columna clave
+// (apunte_id numérico en vez de materia_slug).
+export async function registrarShareApunte(apunteId: number, formato: FormatoShare, ip: string | null, userAgent: string | null): Promise<void> {
+  await pool.query("INSERT INTO shares_apunte (apunte_id, formato, ip, user_agent) VALUES (?, ?, ?, ?)", [apunteId, formato, ip, userAgent]);
 }
 
 interface PreguntaCompartirDbRow extends RowDataPacket {
@@ -62,4 +69,56 @@ export async function getPreguntasParaCompartir(ids: number[]): Promise<DatosPre
   });
 
   return { materia, preguntas };
+}
+
+interface ApunteCompartirDbRow extends RowDataPacket {
+  id: number;
+  titulo: string;
+  precio: string | number;
+  portada: string | null;
+  archivo: string | null;
+  asignatura: string | null;
+  promo_gratis: number;
+  promo_limite: number;
+  promo_contador: number;
+  descargas: number;
+  nombre_alumno: string | null;
+  foto_perfil: string | null;
+  institucion_maestra: string | null;
+}
+
+// Puerto exacto de la SELECT de nb_obtener_imagen_apunte() (imagen_compartir_apunte.php:
+// 395-407) — mismo gate: solo apuntes con estado='aprobado' (app/img_apunte.php:100-102
+// hace este chequeo aparte del SELECT; acá se fusiona en el propio WHERE).
+export async function getApunteParaCompartir(id: number): Promise<ApunteCompartir | null> {
+  const [rows] = await pool.query<ApunteCompartirDbRow[]>(
+    `SELECT ap.id, ap.titulo, ap.precio, ap.portada, ap.archivo, ap.asignatura,
+            ap.promo_gratis, ap.promo_limite, ap.promo_contador, ap.descargas,
+            a.nombre AS nombre_alumno, a.foto_perfil,
+            COALESCE(dp.institucion, NULLIF(ap.institucion, ''), a.institucion) AS institucion_maestra
+     FROM apuntes ap
+     JOIN alumnos a ON a.id = ap.id_alumno
+     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
+     WHERE ap.id = ? AND ap.estado = 'aprobado'
+     LIMIT 1`,
+    [id],
+  );
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    titulo: row.titulo,
+    precio: Number(row.precio),
+    portada: row.portada,
+    archivo: row.archivo,
+    asignatura: row.asignatura,
+    promoGratis: row.promo_gratis === 1,
+    promoLimite: row.promo_limite,
+    promoContador: row.promo_contador,
+    descargas: row.descargas,
+    nombreAlumno: row.nombre_alumno,
+    fotoPerfil: row.foto_perfil,
+    institucionMaestra: row.institucion_maestra,
+  };
 }

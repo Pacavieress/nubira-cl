@@ -8,6 +8,11 @@ import { pool } from "../src/db/pool.js";
 import { env } from "../src/config/env.js";
 
 const MATERIA_SLUG = "calculo";
+// Apuntes reales, aprobados, confirmados vía SELECT directo antes de escribir estos tests
+// (no inventados): 148 tiene portada webp real; 323 no tiene portada y su archivo es .docx
+// (no imagen) — cubre el fallback de placeholder.
+const APUNTE_CON_PORTADA_ID = 148;
+const APUNTE_SIN_PORTADA_ID = 323;
 let archivosGenerados: string[] = [];
 
 after(async () => {
@@ -15,6 +20,7 @@ after(async () => {
     await fs.rm(path.join(env.uploadDir, "compartir", nombre), { force: true });
   }
   await pool.query("DELETE FROM shares_desafio WHERE materia_slug = ? AND ip = 'test-fixture'", [MATERIA_SLUG]);
+  await pool.query("DELETE FROM shares_apunte WHERE apunte_id = ? AND ip = 'test-fixture'", [APUNTE_CON_PORTADA_ID]);
   await pool.end();
 });
 
@@ -188,6 +194,145 @@ test("POST /api/compartir/desafio/track con datos válidos: registra la fila rea
     const [rows] = await pool.query<RowDataPacket[]>(
       "SELECT materia_slug, formato, ip FROM shares_desafio WHERE materia_slug = ? AND ip = 'test-fixture' ORDER BY id DESC LIMIT 1",
       [MATERIA_SLUG],
+    );
+    assert.equal(rows.length, 1);
+    assert.equal((rows[0] as { formato: string }).formato, "share");
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/apunte/:id/post con id inexistente devuelve 404", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/apunte/999999/post`);
+    assert.equal(res.status, 404);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/apunte/:id/post con id no numérico devuelve 404", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/apunte/abc/post`);
+    assert.equal(res.status, 404);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/apunte/:id/post: apunte real CON portada genera un JPEG real, con Cache-Control largo", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/apunte/${APUNTE_CON_PORTADA_ID}/post`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "image/jpeg");
+    assert.match(res.headers.get("cache-control") ?? "", /max-age=86400/);
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    assert.ok(buffer.length > 1000, "debe ser un JPEG real, no un placeholder vacío");
+    assert.equal(buffer[0], 0xff);
+    assert.equal(buffer[1], 0xd8);
+    assert.equal(buffer[2], 0xff);
+
+    const dir = path.join(env.uploadDir, "compartir");
+    const archivos = await fs.readdir(dir);
+    const archivoCard = archivos.find((f) => f.startsWith(`ap_${APUNTE_CON_PORTADA_ID}_post_`));
+    assert.ok(archivoCard, "debe cachear en disco");
+    archivosGenerados.push(archivoCard!);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/apunte/:id/post: segunda llamada es cache-hit (mismo archivo en disco, no se regenera)", async () => {
+  const { url, close } = listen();
+  try {
+    const res1 = await fetch(`${url}/api/compartir/apunte/${APUNTE_CON_PORTADA_ID}/post`);
+    const buf1 = Buffer.from(await res1.arrayBuffer());
+
+    const dir = path.join(env.uploadDir, "compartir");
+    const archivos = await fs.readdir(dir);
+    const archivoCard = archivos.find((f) => f.startsWith(`ap_${APUNTE_CON_PORTADA_ID}_post_`));
+    assert.ok(archivoCard);
+    const statAntes = await fs.stat(path.join(dir, archivoCard!));
+
+    const res2 = await fetch(`${url}/api/compartir/apunte/${APUNTE_CON_PORTADA_ID}/post`);
+    const buf2 = Buffer.from(await res2.arrayBuffer());
+    const statDespues = await fs.stat(path.join(dir, archivoCard!));
+
+    assert.deepEqual(buf1, buf2, "el contenido debe ser idéntico (mismo archivo cacheado)");
+    assert.equal(statAntes.mtimeMs, statDespues.mtimeMs, "el archivo no debe haberse regenerado (mismo mtime)");
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/apunte/:id/post: apunte real SIN portada (archivo no-imagen) genera un JPEG real con placeholder", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/apunte/${APUNTE_SIN_PORTADA_ID}/post`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "image/jpeg");
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    assert.ok(buffer.length > 1000, "debe ser un JPEG real");
+    assert.equal(buffer[0], 0xff);
+    assert.equal(buffer[1], 0xd8);
+    assert.equal(buffer[2], 0xff);
+
+    const dir = path.join(env.uploadDir, "compartir");
+    const archivos = await fs.readdir(dir);
+    const archivoCard = archivos.find((f) => f.startsWith(`ap_${APUNTE_SIN_PORTADA_ID}_post_`));
+    assert.ok(archivoCard, "debe cachear en disco");
+    archivosGenerados.push(archivoCard!);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/compartir/apunte/track sin apunteId devuelve 400", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/apunte/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formato: "post" }),
+    });
+    assert.equal(res.status, 400);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/compartir/apunte/track con formato inválido devuelve 400", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/apunte/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apunteId: APUNTE_CON_PORTADA_ID, formato: "algo-invalido" }),
+    });
+    assert.equal(res.status, 400);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/compartir/apunte/track con datos válidos: registra la fila real en shares_apunte", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/apunte/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-For": "test-fixture" },
+      body: JSON.stringify({ apunteId: APUNTE_CON_PORTADA_ID, formato: "share" }),
+    });
+    assert.equal(res.status, 200);
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT apunte_id, formato, ip FROM shares_apunte WHERE apunte_id = ? AND ip = 'test-fixture' ORDER BY id DESC LIMIT 1",
+      [APUNTE_CON_PORTADA_ID],
     );
     assert.equal(rows.length, 1);
     assert.equal((rows[0] as { formato: string }).formato, "share");

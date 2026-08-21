@@ -8,7 +8,8 @@ import {
   generarImagenDesafioPost,
   generarImagenDesafioPreguntasHistory,
 } from "./compartirDesafio.generador.js";
-import { getMateriaActiva, getPreguntasParaCompartir, registrarShareDesafio } from "./compartir.repository.js";
+import { fingerprintApunte, generarImagenApuntePost } from "./compartirApunte.generador.js";
+import { getApunteParaCompartir, getMateriaActiva, getPreguntasParaCompartir, registrarShareApunte, registrarShareDesafio } from "./compartir.repository.js";
 import type { FormatoShare } from "./compartir.types.js";
 
 const FORMATOS_VALIDOS = new Set<FormatoShare>(["post", "caption", "share", "preguntas"]);
@@ -81,6 +82,12 @@ export async function getImagenDesafioPreguntas(req: Request, res: Response): Pr
   res.status(200).send(buffer);
 }
 
+function extraerIpUserAgent(req: Request): { ip: string | null; userAgent: string | null } {
+  const ip = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? null;
+  const userAgent = (req.headers["user-agent"] as string | undefined) ?? null;
+  return { ip, userAgent };
+}
+
 export async function postTrackShareDesafio(req: Request, res: Response): Promise<void> {
   const body = req.body as { materiaSlug?: unknown; formato?: unknown };
   const materiaSlug = typeof body.materiaSlug === "string" ? body.materiaSlug.trim() : "";
@@ -91,9 +98,52 @@ export async function postTrackShareDesafio(req: Request, res: Response): Promis
     return;
   }
 
-  const ip = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? null;
-  const userAgent = req.headers["user-agent"] ?? null;
+  const { ip, userAgent } = extraerIpUserAgent(req);
+  await registrarShareDesafio(materiaSlug, formato as FormatoShare, ip, userAgent);
+  res.status(200).json({ ok: true });
+}
 
-  await registrarShareDesafio(materiaSlug, formato as FormatoShare, ip, userAgent ?? null);
+// Puerto de app/img_apunte.php — SOLO formato POST (ver nota de alcance en
+// compartirApunte.generador.ts). Mismo gate que el PHP real: solo apuntes con
+// estado='aprobado' (fusionado en el propio WHERE de getApunteParaCompartir).
+export async function getImagenApuntePost(req: Request, res: Response): Promise<void> {
+  const id = Number(req.params.id);
+  const apunte = Number.isInteger(id) && id > 0 ? await getApunteParaCompartir(id) : null;
+
+  if (!apunte) {
+    res.status(404).json({ error: "apunte_invalido" });
+    return;
+  }
+
+  const fp = fingerprintApunte(apunte);
+  const dir = path.join(env.uploadDir, "compartir");
+  await fs.mkdir(dir, { recursive: true });
+  const archivo = path.join(dir, `ap_${apunte.id}_post_${fp}.jpg`);
+
+  let buffer: Buffer;
+  try {
+    buffer = await fs.readFile(archivo);
+  } catch {
+    buffer = await generarImagenApuntePost(apunte);
+    await fs.writeFile(archivo, buffer);
+  }
+
+  res.setHeader("Content-Type", "image/jpeg");
+  res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+  res.status(200).send(buffer);
+}
+
+export async function postTrackShareApunte(req: Request, res: Response): Promise<void> {
+  const body = req.body as { apunteId?: unknown; formato?: unknown };
+  const apunteId = Number(body.apunteId);
+  const formato = typeof body.formato === "string" ? body.formato : "";
+
+  if (!Number.isInteger(apunteId) || apunteId <= 0 || !FORMATOS_VALIDOS.has(formato as FormatoShare)) {
+    res.status(400).json({ ok: false });
+    return;
+  }
+
+  const { ip, userAgent } = extraerIpUserAgent(req);
+  await registrarShareApunte(apunteId, formato as FormatoShare, ip, userAgent);
   res.status(200).json({ ok: true });
 }
