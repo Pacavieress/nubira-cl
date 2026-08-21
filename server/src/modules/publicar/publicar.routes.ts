@@ -6,7 +6,9 @@ import { crearApunte, crearServicio, eliminarServicioIncompleto, guardarHorarioS
 // Memoria (no disco temporal) — el archivo se procesa entero en RAM antes de escribirse
 // al destino final. Mismo límite de 40MB que formulario_subir_apunte.php:155 (ahí
 // validado recién en el paso 2 tras el envío completo; multer corta ANTES de terminar
-// de recibir el body si se excede, evitando gastar ancho de banda de más).
+// de recibir el body si se excede, evitando gastar ancho de banda de más). El límite
+// aplica por archivo — "preview" (el blob de portada renderizado client-side para PDF,
+// ver web/src/lib/pdfPreview.ts) nunca se acerca a ese tamaño en la práctica.
 const uploadApunte = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
 
 export const publicarRouter = Router();
@@ -14,4 +16,12 @@ export const publicarRouter = Router();
 publicarRouter.post("/servicios", requireAuth, crearServicio);
 publicarRouter.post("/servicios/:id/horario", requireAuth, guardarHorarioServicio);
 publicarRouter.delete("/servicios/:id/incompleto", requireAuth, eliminarServicioIncompleto);
-publicarRouter.post("/apuntes", requireAuth, uploadApunte.single("archivo"), crearApunte);
+publicarRouter.post(
+  "/apuntes",
+  requireAuth,
+  uploadApunte.fields([
+    { name: "archivo", maxCount: 1 },
+    { name: "preview", maxCount: 1 },
+  ]),
+  crearApunte,
+);

@@ -31,12 +31,12 @@ import type { HorariosJson } from "../../lib/horarios.js";
 //   - Video de presentación de servicio (opcional en el form real).
 //   - actualizar_score_servicio() (gamificación de score_nubira) y enviar_push_nubira()
 //     (aviso push al admin) — quedan en 0/sin enviar; no bloquean la creación.
-//   - Preview/portada automática para PDFs subidos como apunte: el PHP real la genera
-//     server-side con Imagick (extensión sin equivalente directo en Node). Para imágenes
-//     (jpg/png/webp) SÍ se genera acá con sharp (equivalente real a la ruta GD del PHP).
-//     Un PDF recién subido queda sin portada hasta una pieza aparte que agregue el
-//     render client-side (pdf.js) + subida del blob, ya confirmado como enfoque pero no
-//     construido en esta pasada por ser, en sí mismo, una porción grande de UI nueva.
+//   - Preview/portada de PDF: el PHP real la genera server-side con Imagick (sin
+//     equivalente directo en Node). Acá se cierra distinto — pdf.js renderiza la página 1
+//     client-side (web/src/lib/pdfPreview.ts) y sube ese blob junto al archivo real; sharp
+//     lo normaliza a webp server-side, igual que la ruta de imágenes. Simplificación real
+//     respecto al PHP: siempre página 1, SIN el selector de portada multi-página
+//     (selector-portada-container) del form real.
 
 const PRECIO_MINIMO_SERVICIO = 10000;
 
@@ -200,7 +200,12 @@ function detectarTipoReal(buffer: Buffer): "jpg" | "png" | "webp" | "pdf" | null
 
 export async function crearApunte(req: Request, res: Response): Promise<void> {
   const usuarioId = req.usuarioId as number;
-  const archivo = req.file;
+  // multer.fields() entrega req.files como { [campo]: Multer.File[] } en vez del
+  // req.file único de .single() — dos campos posibles: "archivo" (obligatorio) y
+  // "preview" (opcional, solo para PDF, ver web/src/lib/pdfPreview.ts).
+  const archivos = req.files as Record<string, Express.Multer.File[]> | undefined;
+  const archivo = archivos?.archivo?.[0];
+  const previewSubido = archivos?.preview?.[0];
   const body = req.body as Record<string, unknown>;
 
   const titulo = typeof body.titulo === "string" ? body.titulo.trim() : "";
@@ -273,12 +278,17 @@ export async function crearApunte(req: Request, res: Response): Promise<void> {
     nombreArchivo,
   );
 
-  // Preview real solo para imágenes (sharp ~ equivalente directo de la ruta GD del PHP
-  // real). Para PDF no se genera nada acá — ver nota de alcance al inicio del archivo.
-  if (EXTS_IMAGEN.has(extDeclarada)) {
+  // Preview real: para imágenes, sharp sobre el propio archivo (~ equivalente directo de
+  // la ruta GD del PHP real). Para PDF, sharp sobre el blob que el navegador ya renderizó
+  // client-side con pdf.js (página 1, ver web/src/lib/pdfPreview.ts) — nunca se intenta
+  // procesar el PDF en sí server-side (sin equivalente a Imagick en Node). Pasar SIEMPRE
+  // por sharp acá (no solo copiar el blob tal cual) normaliza a webp real sin importar qué
+  // formato/calidad haya mandado el navegador.
+  const bufferParaPreview = EXTS_IMAGEN.has(extDeclarada) ? archivo.buffer : previewSubido?.buffer;
+  if (bufferParaPreview) {
     try {
       const nombrePreview = `${apunteId}.webp`;
-      await sharp(archivo.buffer)
+      await sharp(bufferParaPreview)
         .resize({ width: 1200, withoutEnlargement: true })
         .webp({ quality: 70 })
         .toFile(path.join(dirPreview, nombrePreview));

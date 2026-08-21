@@ -414,10 +414,10 @@ test("POST /api/me/publicar/apuntes con una imagen PNG real: crea el apunte (201
   }
 });
 
-test("POST /api/me/publicar/apuntes con un PDF real: crea el apunte (201) SIN generar preview (gap documentado de esta pieza)", async () => {
+test("POST /api/me/publicar/apuntes con un PDF SIN blob de preview adjunto: crea el apunte (201) sin portada (pdf.js pudo no haber renderizado nada)", async () => {
   const fd = new FormData();
-  fd.append("titulo", "Apunte de prueba con PDF");
-  fd.append("descripcion", "Descripción de prueba para el apunte en PDF.");
+  fd.append("titulo", "Apunte de prueba con PDF sin preview");
+  fd.append("descripcion", "Descripción de prueba para el apunte en PDF sin preview adjunto.");
   fd.append("archivo", new Blob([PDF_MINIMO], { type: "application/pdf" }), "documento.pdf");
   const { url, close } = listen();
   try {
@@ -436,6 +436,38 @@ test("POST /api/me/publicar/apuntes con un PDF real: crea el apunte (201) SIN ge
     archivosApuntesCreados.push(fila.archivo);
     assert.equal(fila.preview, null);
     assert.equal(fila.portada, null);
+  } finally {
+    await close();
+  }
+});
+
+test("POST /api/me/publicar/apuntes con un PDF Y un blob de preview (render client-side de pdf.js): genera portada real vía sharp", async () => {
+  const fd = new FormData();
+  fd.append("titulo", "Apunte de prueba con PDF y preview");
+  fd.append("descripcion", "Descripción de prueba para el apunte en PDF con preview real adjunto.");
+  fd.append("archivo", new Blob([PDF_MINIMO], { type: "application/pdf" }), "documento.pdf");
+  fd.append("preview", new Blob([PNG_1X1], { type: "image/jpeg" }), "preview.jpg");
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/publicar/apuntes`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VALID}` },
+      body: fd,
+    });
+    assert.equal(res.status, 201);
+    const body = (await res.json()) as { success: boolean; id: number };
+    apunteIdsCreados.push(body.id);
+
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT archivo, preview, portada FROM apuntes WHERE id = ?", [body.id]);
+    const fila = rows[0] as { archivo: string; preview: string | null; portada: string | null };
+    assert.ok(fila.archivo.endsWith(".pdf"));
+    archivosApuntesCreados.push(fila.archivo);
+    assert.equal(fila.preview, `${body.id}.webp`);
+    assert.equal(fila.portada, `${body.id}.webp`);
+    archivosPreviewCreados.push(`${body.id}.webp`);
+
+    const statPreview = await fs.stat(path.join(env.uploadDir, "preview", `${body.id}.webp`));
+    assert.ok(statPreview.isFile(), "el preview del PDF (a partir del blob subido) debe existir en disco, normalizado a webp por sharp");
   } finally {
     await close();
   }

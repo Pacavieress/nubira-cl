@@ -2,13 +2,15 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { renderizarPrimeraPaginaPdf } from "@/lib/pdfPreview";
 
 // Puerto de app/formulario_subir_apunte.php — SOLO el camino real de subida y creación
-// (archivo + metadatos). Deliberadamente SIN: generador de descripción/categorización por
-// IA (depende de app/datos/ia_nubira.php, desactivado en producción — CLAUDE.md ya lo
-// documenta como tarea aparte), sin compra de créditos IA (MercadoPago, dinero real), sin
-// el escáner de cámara ni el selector de página de portada para PDF (pdf.js) — un PDF
-// subido acá queda sin preview/portada hasta una pieza aparte, ver publicar.controller.ts.
+// (archivo + metadatos + preview). Deliberadamente SIN: generador de descripción/
+// categorización por IA (depende de app/datos/ia_nubira.php, desactivado en producción —
+// CLAUDE.md ya lo documenta como tarea aparte), sin compra de créditos IA (MercadoPago,
+// dinero real), sin el escáner de cámara. El preview de PDF SÍ está — página 1 renderizada
+// client-side con pdf.js y subida como blob junto al archivo (ver lib/pdfPreview.ts) —
+// pero SIN el selector de portada multi-página del PHP real (siempre es la página 1).
 
 const MATERIAS = [
   { value: "calculo", label: "Cálculo" },
@@ -55,6 +57,18 @@ export function PublicarApunteForm() {
   const [progreso, setProgreso] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [generandoPreview, setGenerandoPreview] = useState(false);
+
+  function limpiarPreview() {
+    setPreviewBlob(null);
+    setPreviewUrl((anterior) => {
+      if (anterior) URL.revokeObjectURL(anterior);
+      return null;
+    });
+  }
+
   function elegirArchivo(file: File) {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (!EXTENSIONES_VALIDAS.has(ext)) {
@@ -67,6 +81,18 @@ export function PublicarApunteForm() {
     }
     setError(null);
     setArchivo(file);
+    limpiarPreview();
+
+    if (ext === "pdf") {
+      setGenerandoPreview(true);
+      renderizarPrimeraPaginaPdf(file)
+        .then((blob) => {
+          if (!blob) return;
+          setPreviewBlob(blob);
+          setPreviewUrl(URL.createObjectURL(blob));
+        })
+        .finally(() => setGenerandoPreview(false));
+    }
   }
 
   function onSubmit(e: React.FormEvent) {
@@ -96,6 +122,7 @@ export function PublicarApunteForm() {
     fd.append("materia", materia);
     fd.append("nivelAcademico", nivelAcademico);
     fd.append("subtema", subtema);
+    if (previewBlob) fd.append("preview", previewBlob, "preview.jpg");
 
     const xhr = new XMLHttpRequest();
     xhr.upload.addEventListener("progress", (ev) => {
@@ -154,6 +181,11 @@ export function PublicarApunteForm() {
           >
             {archivo ? (
               <div className="flex flex-col items-center gap-2 px-4">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Portada del apunte" className="h-24 w-auto rounded-lg border border-gray-200 object-cover shadow-sm" />
+                ) : generandoPreview ? (
+                  <p className="text-[11px] text-gray-400 animate-pulse">Generando portada...</p>
+                ) : null}
                 <p className="text-sm font-bold text-gray-800 truncate max-w-full">{archivo.name}</p>
                 <p className="text-xs text-gray-400">{(archivo.size / 1024 / 1024).toFixed(1)} MB</p>
                 <button
@@ -161,6 +193,7 @@ export function PublicarApunteForm() {
                   onClick={(e) => {
                     e.stopPropagation();
                     setArchivo(null);
+                    limpiarPreview();
                     if (inputRef.current) inputRef.current.value = "";
                   }}
                   className="mt-1 text-xs font-bold text-red-400 hover:text-red-600"
