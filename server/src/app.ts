@@ -3,6 +3,8 @@ import cors from "cors";
 import express, { type Express } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
+import { adminConfigPreciosRouter } from "./modules/adminConfigPrecios/adminConfigPrecios.routes.js";
+import { adminDominiosRouter } from "./modules/adminDominios/adminDominios.routes.js";
 import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
@@ -65,6 +67,8 @@ export function createApp(): Express {
   app.use("/api/me/metricas", metricasRouter);
   app.use("/api/me/soporte", soporteRouter);
   app.use("/api/me/perfil", perfilRouter);
+  app.use("/api/admin/dominios", adminDominiosRouter);
+  app.use("/api/admin/config-precios", adminConfigPreciosRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);

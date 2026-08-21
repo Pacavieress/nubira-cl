@@ -8,13 +8,15 @@
 // no es un olvido acá.
 //
 // href es la ruta tal cual vive en el PHP real (algunas son limpias como '/admin/usuarios',
-// otras apuntan directo a un .php como '/app/enviar_cupon_alternativas.php') — ninguna de
-// estas herramientas existe todavía como ruta interna de web/, así que page.tsx las abre
-// como link externo hacia PHP_SITE_URL + href.
+// otras apuntan directo a un .php como '/app/enviar_cupon_alternativas.php'). La mayoría
+// todavía no existe como ruta interna de web/, así que page.tsx las abre como link externo
+// hacia PHP_SITE_URL + href — salvo las marcadas `interno: true` (Dominios, Precios), ya
+// portadas, que navegan dentro de web/ con next/link.
 export interface AdminAcceso {
   titulo: string;
   href: string;
   iconoSvg: string;
+  interno?: boolean;
 }
 
 export const ACCESOS_ADMIN: AdminAcceso[] = [
@@ -99,6 +101,7 @@ export const ACCESOS_ADMIN: AdminAcceso[] = [
   {
     titulo: "Dominios",
     href: "/admin/dominios",
+    interno: true,
     iconoSvg:
       '<path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.974 0-5.699-.533-8.15-1.467m16.3 0a8.996 8.996 0 01-.165 5.918" />',
   },
@@ -195,6 +198,7 @@ export const ACCESOS_ADMIN: AdminAcceso[] = [
   {
     titulo: "Precios",
     href: "/admin/precios",
+    interno: true,
     iconoSvg:
       '<path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />',
   },

@@ -728,3 +728,34 @@ export async function getDesafioMaterias(): Promise<DesafioMateria[]> {
   const body = (await res.json()) as { data: DesafioMateria[] };
   return body.data;
 }
+
+// Refleja DominioPermitido (server/src/modules/adminDominios/adminDominios.types.ts) —
+// panel admin "Dominios" (admin_dominios.php), gestor de instituciones/dominios de correo
+// permitidos. Lectura server-side (esta función); altas/edición/borrado van por Route
+// Handlers (web/src/app/api/admin/dominios/...) porque las dispara un Client Component.
+export interface DominioPermitido {
+  id: number;
+  dominio: string;
+  institucion: string;
+  totalUsuarios: number;
+}
+
+export async function getAdminDominios(): Promise<DominioPermitido[]> {
+  const res = await fetchConSesion("/api/admin/dominios");
+  if (!res || !res.ok) return [];
+  return res.json();
+}
+
+// Refleja ConfigPrecios (server/src/modules/adminConfigPrecios/adminConfigPrecios.types.ts)
+// — panel admin "Precios" (admin_config_precios.php).
+export interface ConfigPrecios {
+  precioDesbloqueoContacto: number;
+  ofertaGratisHasta: string | null;
+  ofertaVigente: boolean;
+}
+
+export async function getAdminConfigPrecios(): Promise<ConfigPrecios | null> {
+  const res = await fetchConSesion("/api/admin/config-precios");
+  if (!res || !res.ok) return null;
+  return res.json();
+}

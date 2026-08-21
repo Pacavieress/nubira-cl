@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSesion } from "@/lib/sesion";
 import { Header } from "@/components/Header";
@@ -37,30 +38,38 @@ export default async function AdminPage() {
         </header>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 w-full">
-          {ACCESOS_ADMIN.map((acceso) => (
-            <a
-              key={acceso.href}
-              href={`${phpSiteUrl}${acceso.href}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex flex-col items-center text-center gap-2.5 p-3.5 rounded-xl bg-white border border-gray-100 hover:bg-gray-50/50 hover:border-gray-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gray-50 text-gray-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                  dangerouslySetInnerHTML={{ __html: acceso.iconoSvg }}
-                />
-              </div>
-              <span className="text-[13px] font-semibold text-gray-700 group-hover:text-gray-900 tracking-tight leading-tight">
-                {acceso.titulo}
-              </span>
-            </a>
-          ))}
+          {ACCESOS_ADMIN.map((acceso) => {
+            const claseTile =
+              "group flex flex-col items-center text-center gap-2.5 p-3.5 rounded-xl bg-white border border-gray-100 hover:bg-gray-50/50 hover:border-gray-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out";
+            const contenido = (
+              <>
+                <div className="w-10 h-10 rounded-lg bg-gray-50 text-gray-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                    dangerouslySetInnerHTML={{ __html: acceso.iconoSvg }}
+                  />
+                </div>
+                <span className="text-[13px] font-semibold text-gray-700 group-hover:text-gray-900 tracking-tight leading-tight">
+                  {acceso.titulo}
+                </span>
+              </>
+            );
+
+            return acceso.interno ? (
+              <Link key={acceso.href} href={acceso.href} className={claseTile}>
+                {contenido}
+              </Link>
+            ) : (
+              <a key={acceso.href} href={`${phpSiteUrl}${acceso.href}`} target="_blank" rel="noopener noreferrer" className={claseTile}>
+                {contenido}
+              </a>
+            );
+          })}
         </div>
       </main>
     </>
