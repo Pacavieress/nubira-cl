@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
+import { compartirRouter } from "./modules/compartir/compartir.routes.js";
 import { configurarCuentaRouter } from "./modules/configurarCuenta/configurarCuenta.routes.js";
 import { desafioRouter } from "./modules/desafio/desafio.routes.js";
 import { comprasRouter } from "./modules/compras/compras.routes.js";
@@ -46,6 +47,7 @@ export function createApp(): Express {
   app.use("/api/landings", landingsRouter);
   app.use("/api/guias", guiasRouter);
   app.use("/api/desafio", desafioRouter);
+  app.use("/api/compartir", compartirRouter);
   app.use("/api/apuntes", apuntesRouter);
   app.use("/api/servicios", serviciosRouter);
   app.use("/api/tutores", tutoresRouter);

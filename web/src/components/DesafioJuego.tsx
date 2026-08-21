@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import type { ApunteListado, DesafioMateria, DesafioPregunta, DesafioResultado, ServicioListado } from "@/lib/api";
 import { ApunteCard } from "./ApunteCard";
+import { CompartirDesafioModal } from "./CompartirDesafioModal";
 import { ServicioCard } from "./ServicioCard";
 
 // Puerto de app/desafio.php (pantallas 1-3) + app/cargar_desafio.php + app/responder_desafio.php,
-// vía los proxies same-origin en web/src/app/api/desafio/. Simplificación deliberada,
-// documentada: SIN la función "Compartir" (genera una imagen tipo historia vía un pipeline
-// GD separado, app/img_desafio.php — mismo patrón que las marketing cards ya documentadas
-// como pendientes en CLAUDE.md, no es parte del juego en sí).
+// vía los proxies same-origin en web/src/app/api/desafio/. "Compartir" (invitación por
+// materia) SÍ está — ver CompartirDesafioModal.tsx y server/src/modules/compartir/ — pero
+// solo el paso de "elegir materia e invitar", sin la variante "compartir las 3 preguntas de
+// esta sesión" (formato historia, layout bastante más denso), que queda para otra pieza.
 
 type Pantalla = "materia" | "preguntas" | "resultado";
 type Opcion = "a" | "b" | "c" | "d";
@@ -28,6 +29,7 @@ function IconoChevronIzquierda() {
 
 export function DesafioJuego({ materias }: { materias: DesafioMateria[] }) {
   const [pantalla, setPantalla] = useState<Pantalla>("materia");
+  const [modalCompartirAbierto, setModalCompartirAbierto] = useState(false);
   const [materiaActual, setMateriaActual] = useState<string | null>(null);
   const [preguntas, setPreguntas] = useState<DesafioPregunta[]>([]);
   const [cargandoPreguntas, setCargandoPreguntas] = useState(false);
@@ -187,7 +189,12 @@ export function DesafioJuego({ materias }: { materias: DesafioMateria[] }) {
     <div>
       {pantalla === "materia" && (
         <div className="max-w-[640px] mx-auto">
-          <p className="text-sm text-gray-500 mb-4">Elige un ramo para empezar.</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-gray-500">Elige un ramo para empezar.</p>
+            <button type="button" onClick={() => setModalCompartirAbierto(true)} className="flex items-center gap-1 text-xs font-medium text-[#54A6D8] hover:underline shrink-0">
+              Compartir
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-2.5">
             {materias.map((m) => (
               <button
@@ -355,6 +362,8 @@ export function DesafioJuego({ materias }: { materias: DesafioMateria[] }) {
           )}
         </div>
       )}
+
+      <CompartirDesafioModal materias={materias} abierto={modalCompartirAbierto} onCerrar={() => setModalCompartirAbierto(false)} />
     </div>
   );
 }
