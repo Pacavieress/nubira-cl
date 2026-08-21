@@ -16,6 +16,7 @@ import { miBilleteraRouter } from "./modules/miBilletera/miBilletera.routes.js";
 import { metricasRouter } from "./modules/metricas/metricas.routes.js";
 import { misContratosRouter } from "./modules/misContratos/misContratos.routes.js";
 import { misPublicacionesRouter } from "./modules/misPublicaciones/misPublicaciones.routes.js";
+import { publicarRouter } from "./modules/publicar/publicar.routes.js";
 import { soporteRouter } from "./modules/soporte/soporte.routes.js";
 import { ventasApuntesRouter } from "./modules/ventasApuntes/ventasApuntes.routes.js";
 import { ventasClasesRouter } from "./modules/ventasClases/ventasClases.routes.js";
@@ -54,6 +55,7 @@ export function createApp(): Express {
   app.use("/api/me/ventas-clases", ventasClasesRouter);
   app.use("/api/me/ventas-apuntes", ventasApuntesRouter);
   app.use("/api/me/mis-publicaciones", misPublicacionesRouter);
+  app.use("/api/me/publicar", publicarRouter);
   app.use("/api/me/mis-contratos", misContratosRouter);
   app.use("/api/me/mi-billetera", miBilleteraRouter);
   app.use("/api/me/configurar-cuenta", configurarCuentaRouter);

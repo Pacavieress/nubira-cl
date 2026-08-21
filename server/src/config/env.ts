@@ -1,4 +1,8 @@
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function required(name: string): string {
   const value = process.env[name];
@@ -19,6 +23,12 @@ export const env = {
   // distinto al de esta API. Sin esto, un consumidor externo (web/) recibiría <img src>
   // rotos apuntando a su propio origen en vez de al sitio real.
   assetsBaseUrl: required("ASSETS_BASE_URL"),
+  // Directorio real donde escribir los archivos subidos (apuntes, previews) — el mismo
+  // /upload/ que sirve el sitio PHP. Asume filesystem compartido (cierto hoy en local por
+  // coincidencia de entorno, ver nota ya existente en src/lib/media.ts sobre esta misma
+  // asunción para LECTURA); la topología de hosting en producción sigue sin decidir.
+  // Default: resuelto relativo a este archivo (server/src/config/env.ts -> repo root/upload).
+  uploadDir: process.env.UPLOAD_DIR ?? path.resolve(__dirname, "../../../upload"),
   db: {
     host: required("DB_HOST"),
     port: Number(process.env.DB_PORT ?? 3306),
