@@ -986,3 +986,22 @@ export async function getAdminAvisos(): Promise<AvisosResumen | null> {
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja OfertaApunte (server/src/modules/adminOfertasApuntes/adminOfertasApuntes.types.ts)
+// — panel admin "Promo Apuntes" (admin_ofertas_apuntes.php). Las 3 mutaciones (precio,
+// aplicar/quitar promo) se portan completas: son UPDATE puros, sin efecto externo.
+export interface OfertaApunte {
+  id: number;
+  titulo: string;
+  tutorNombre: string;
+  precio: number;
+  promoGratis: boolean;
+  promoLimite: number;
+  promoContador: number;
+}
+
+export async function getAdminOfertasApuntes(tutor?: string): Promise<OfertaApunte[]> {
+  const res = await fetchConSesion(`/api/admin/ofertas-apuntes${tutor ? `?tutor=${encodeURIComponent(tutor)}` : ""}`);
+  if (!res || !res.ok) return [];
+  return res.json();
+}
