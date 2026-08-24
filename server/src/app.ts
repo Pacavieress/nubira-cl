@@ -10,6 +10,7 @@ import { adminComprasApuntesRouter } from "./modules/adminComprasApuntes/adminCo
 import { adminConfigPreciosRouter } from "./modules/adminConfigPrecios/adminConfigPrecios.routes.js";
 import { adminContratosRouter } from "./modules/adminContratos/adminContratos.routes.js";
 import { adminCuentasRouter } from "./modules/adminCuentas/adminCuentas.routes.js";
+import { adminCuponesRouter } from "./modules/adminCupones/adminCupones.routes.js";
 import { adminDominiosRouter } from "./modules/adminDominios/adminDominios.routes.js";
 import { adminLoginFallosRouter } from "./modules/adminLoginFallos/adminLoginFallos.routes.js";
 import { adminOfertasApuntesRouter } from "./modules/adminOfertasApuntes/adminOfertasApuntes.routes.js";
@@ -83,6 +84,7 @@ export function createApp(): Express {
   app.use("/api/admin/config-precios", adminConfigPreciosRouter);
   app.use("/api/admin/recordatorios", adminRecordatoriosRouter);
   app.use("/api/admin/cuentas", adminCuentasRouter);
+  app.use("/api/admin/cupones", adminCuponesRouter);
   app.use("/api/admin/contratos", adminContratosRouter);
   app.use("/api/admin/autores", adminAutoresRouter);
   app.use("/api/admin/servicios", adminServiciosRouter);

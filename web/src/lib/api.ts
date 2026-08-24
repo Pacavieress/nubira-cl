@@ -1144,3 +1144,35 @@ export async function getAdminSolicitudes(estado: EstadoSolicitud): Promise<Soli
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja CuponesResumen (server/src/modules/adminCupones/adminCupones.types.ts) — panel
+// admin "Becas / Cupones" (cupones.php, "Bóveda de Becas"). Lectura server-side (esta
+// función); crear/eliminar van por Route Handlers (web/src/app/api/admin/cupones/...) porque
+// las dispara un Client Component, mismo patrón que adminDominios.
+export interface CuponBeca {
+  id: number;
+  codigo: string;
+  porcentajeDescuento: number;
+  usosActuales: number;
+  usosMaximos: number;
+  servicioId: number | null;
+  servicioTitulo: string | null;
+  fechaExpiracion: string | null;
+}
+
+export interface ServicioParaCupon {
+  id: number;
+  titulo: string;
+  precio: number;
+}
+
+export interface CuponesResumen {
+  cupones: CuponBeca[];
+  servicios: ServicioParaCupon[];
+}
+
+export async function getAdminCupones(): Promise<CuponesResumen> {
+  const res = await fetchConSesion("/api/admin/cupones");
+  if (!res || !res.ok) return { cupones: [], servicios: [] };
+  return res.json();
+}
