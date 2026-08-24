@@ -4,6 +4,7 @@ import express, { type Express } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { adminAutoresRouter } from "./modules/adminAutores/adminAutores.routes.js";
+import { adminAvisosRouter } from "./modules/adminAvisos/adminAvisos.routes.js";
 import { adminComprasApuntesRouter } from "./modules/adminComprasApuntes/adminComprasApuntes.routes.js";
 import { adminConfigPreciosRouter } from "./modules/adminConfigPrecios/adminConfigPrecios.routes.js";
 import { adminContratosRouter } from "./modules/adminContratos/adminContratos.routes.js";
@@ -81,6 +82,7 @@ export function createApp(): Express {
   app.use("/api/admin/autores", adminAutoresRouter);
   app.use("/api/admin/servicios", adminServiciosRouter);
   app.use("/api/admin/compras-apuntes", adminComprasApuntesRouter);
+  app.use("/api/admin/avisos", adminAvisosRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);

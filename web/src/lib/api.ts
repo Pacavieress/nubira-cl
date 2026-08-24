@@ -947,3 +947,42 @@ export async function getAdminComprasApuntes(filtros: ComprasApuntesFiltros): Pr
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja AvisosResumen (server/src/modules/adminAvisos/adminAvisos.types.ts) — panel admin
+// "Avisos a usuarios" (admin_avisos.php). Solo lectura: métricas + historial de campañas +
+// detalle de lectores. Crear/enviar/eliminar/duplicar campaña quedan fuera de alcance — ver
+// nota de exclusión en adminAvisos.types.ts.
+export interface AvisoImagen {
+  archivo: string;
+  url: string;
+}
+
+export interface AvisoCampana {
+  id: number;
+  titulo: string;
+  mensaje: string;
+  tipo: string;
+  segmento: string;
+  totalDestinatarios: number;
+  leidos: number;
+  fechaCreacion: string;
+  imagenes: AvisoImagen[];
+}
+
+export interface AvisosResumen {
+  totalCampanas: number;
+  totalDestinatarios: number;
+  campanas: AvisoCampana[];
+}
+
+export interface AvisoLector {
+  nombre: string;
+  institucion: string | null;
+  fechaLeido: string;
+}
+
+export async function getAdminAvisos(): Promise<AvisosResumen | null> {
+  const res = await fetchConSesion("/api/admin/avisos");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
