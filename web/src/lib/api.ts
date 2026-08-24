@@ -1089,3 +1089,32 @@ export async function getAdminMonitoreo(tab: MonitoreoTab, page: number): Promis
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja ReportesResumen (server/src/modules/adminReportesServicios/adminReportesServicios.types.ts)
+// — panel admin "Reportes" (admin_reportes_servicios.php). Ver AdminReportesServiciosPanel.tsx
+// para la nota de alcance sobre 'marcar_revisado' (envía 2 correos reales), excluido.
+export type EstadoReporte = "pendientes" | "revisados" | "todos";
+
+export interface ReporteServicio {
+  id: number;
+  servicioId: number;
+  tituloServicio: string;
+  motivo: string;
+  mensaje: string | null;
+  fecha: string;
+  revisado: boolean;
+  usuarioReporta: { nombre: string; correo: string };
+  usuarioReportado: { id: number; nombre: string; correo: string; bloqueado: boolean };
+}
+
+export interface ReportesResumen {
+  estado: EstadoReporte;
+  countPendientes: number;
+  reportes: ReporteServicio[];
+}
+
+export async function getAdminReportesServicios(estado: EstadoReporte): Promise<ReportesResumen | null> {
+  const res = await fetchConSesion(`/api/admin/reportes-servicios?estado=${estado}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
