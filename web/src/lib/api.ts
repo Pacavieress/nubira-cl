@@ -1118,3 +1118,29 @@ export async function getAdminReportesServicios(estado: EstadoReporte): Promise<
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Refleja SolicitudesResumen (server/src/modules/adminSolicitudes/adminSolicitudes.types.ts)
+// — panel admin "Solicitudes" (admin_solicitudes.php, solicitudes de institución). 100%
+// lectura: ver la nota de alcance en adminSolicitudes.types.ts (aprobar/rechazar envían
+// correo real, eliminar_masivo es hard DELETE, marcar_revisada es de un solo sentido).
+export type EstadoSolicitud = "" | "pendiente" | "revisada";
+
+export interface SolicitudInstitucion {
+  id: number;
+  institucion: string;
+  email: string;
+  fecha: string | null;
+  estado: "pendiente" | "revisada";
+  correoEnviado: boolean;
+}
+
+export interface SolicitudesResumen {
+  estado: EstadoSolicitud;
+  solicitudes: SolicitudInstitucion[];
+}
+
+export async function getAdminSolicitudes(estado: EstadoSolicitud): Promise<SolicitudesResumen | null> {
+  const res = await fetchConSesion(`/api/admin/solicitudes?estado=${estado}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
