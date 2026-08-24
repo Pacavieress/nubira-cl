@@ -4,11 +4,13 @@ import express, { type Express } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { adminAutoresRouter } from "./modules/adminAutores/adminAutores.routes.js";
+import { adminComprasApuntesRouter } from "./modules/adminComprasApuntes/adminComprasApuntes.routes.js";
 import { adminConfigPreciosRouter } from "./modules/adminConfigPrecios/adminConfigPrecios.routes.js";
 import { adminContratosRouter } from "./modules/adminContratos/adminContratos.routes.js";
 import { adminCuentasRouter } from "./modules/adminCuentas/adminCuentas.routes.js";
 import { adminDominiosRouter } from "./modules/adminDominios/adminDominios.routes.js";
 import { adminRecordatoriosRouter } from "./modules/adminRecordatorios/adminRecordatorios.routes.js";
+import { adminServiciosRouter } from "./modules/adminServicios/adminServicios.routes.js";
 import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
@@ -77,6 +79,8 @@ export function createApp(): Express {
   app.use("/api/admin/cuentas", adminCuentasRouter);
   app.use("/api/admin/contratos", adminContratosRouter);
   app.use("/api/admin/autores", adminAutoresRouter);
+  app.use("/api/admin/servicios", adminServiciosRouter);
+  app.use("/api/admin/compras-apuntes", adminComprasApuntesRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);

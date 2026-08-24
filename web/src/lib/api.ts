@@ -870,3 +870,80 @@ export async function getAdminAutores(filtros: { q?: string; filtro?: "incomplet
   if (!res || !res.ok) return [];
   return res.json();
 }
+
+// Refleja ServicioAdmin (server/src/modules/adminServicios/adminServicios.types.ts) —
+// panel admin "Servicios" (admin_servicios.php). Lectura + toggle de visibilidad — ver nota
+// de alcance en el tipo del server sobre aprobar/rechazar/eliminar/censura de imagen
+// excluidos (correo/push real, DELETE permanente, editor de imagen irreversible).
+export interface ServicioAdmin {
+  id: number;
+  titulo: string;
+  nombreOferente: string | null;
+  nombreAlumno: string | null;
+  categoria: string | null;
+  estado: string;
+  motivoRechazo: string | null;
+  visible: boolean;
+  fechaPublicacion: string;
+  portadaUrl: string;
+}
+
+export async function getAdminServicios(q?: string): Promise<ServicioAdmin[]> {
+  const res = await fetchConSesion(`/api/admin/servicios${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  if (!res || !res.ok) return [];
+  return res.json();
+}
+
+// Refleja ComprasApuntesResumen (server/src/modules/adminComprasApuntes/adminComprasApuntes.types.ts)
+// — panel admin "Compras de Apuntes" (admin_compras_apuntes.php). 100% lectura.
+export interface VentaApunteDetalle {
+  id: number;
+  fecha: string;
+  apunteTitulo: string;
+  asignatura: string | null;
+  compradorNombre: string;
+  compradorCorreo: string;
+  precio: number;
+  pagadoAlVendedor: boolean;
+  paymentId: string | null;
+}
+
+export interface TutorVentas {
+  vendedorId: number;
+  vendedorNombre: string;
+  vendedorCorreo: string;
+  totalVentas: number;
+  totalMonto: number;
+  ultimaVenta: string;
+  pagadas: number;
+  pendientes: number;
+  detalle: VentaApunteDetalle[];
+}
+
+export interface ComprasApuntesResumen {
+  kpis: { totalCompras: number; totalMonto: number; totalTutores: number };
+  desync: number;
+  tutores: TutorVentas[];
+  detalleTruncado: boolean;
+}
+
+export interface ComprasApuntesFiltros {
+  q_apunte?: string;
+  q_comprador?: string;
+  q_vendedor?: string;
+  estado_pago?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  orden?: string;
+}
+
+export async function getAdminComprasApuntes(filtros: ComprasApuntesFiltros): Promise<ComprasApuntesResumen | null> {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(filtros)) {
+    if (v) params.set(k, v);
+  }
+  const qs = params.toString();
+  const res = await fetchConSesion(`/api/admin/compras-apuntes${qs ? `?${qs}` : ""}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
