@@ -1005,3 +1005,43 @@ export async function getAdminOfertasApuntes(tutor?: string): Promise<OfertaApun
   if (!res || !res.ok) return [];
   return res.json();
 }
+
+// Refleja AulaListado/AulaDetalle (server/src/modules/adminAulas/adminAulas.types.ts) —
+// panel admin "Monitor Aulas" (admin_chats_aula.php). 100% lectura, sin ninguna mutación.
+export interface AulaListado {
+  id: number;
+  estado: string;
+  fechaReferencia: string | null;
+  enVivo: boolean;
+  cerrado: boolean;
+  compradorNombre: string;
+  compradorFotoUrl: string;
+  vendedorNombre: string;
+  vendedorFotoUrl: string;
+  ultimoMensaje: string | null;
+}
+
+export interface AulaMensaje {
+  remitenteId: number;
+  mensaje: string;
+  enviadoEn: string;
+  origen: "previo" | "aula";
+}
+
+export interface AulaDetalle {
+  compradorId: number;
+  compradorNombre: string;
+  vendedorNombre: string;
+  estado: string;
+  mensajes: AulaMensaje[];
+}
+
+export async function getAdminAulas(q?: string, orden?: "asc" | "desc"): Promise<AulaListado[]> {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (orden) params.set("orden", orden);
+  const qs = params.toString();
+  const res = await fetchConSesion(`/api/admin/aulas${qs ? `?${qs}` : ""}`);
+  if (!res || !res.ok) return [];
+  return res.json();
+}
