@@ -1045,3 +1045,47 @@ export async function getAdminAulas(q?: string, orden?: "asc" | "desc"): Promise
   if (!res || !res.ok) return [];
   return res.json();
 }
+
+// Refleja MonitoreoResumen (server/src/modules/adminLoginFallos/adminLoginFallos.types.ts)
+// — panel admin "Log Fail" / "Centro de Monitoreo" (admin_login_fallos.php). 3 tabs:
+// Intentos, VIPs, Pendientes. Ver AdminLoginFallosPanel.tsx para la nota de alcance sobre
+// 'eliminar_pendiente' (hard delete), excluido.
+export type MonitoreoTab = "fallos" | "vips" | "pendientes";
+
+export interface LoginFalloItem {
+  correo: string;
+  ip: string;
+  fecha: string;
+  esAlumno: boolean;
+}
+
+export interface VipItem {
+  id: number;
+  correo: string;
+  fechaCreacion: string;
+}
+
+export interface PendienteItem {
+  id: number;
+  nombre: string;
+  correo: string;
+  carrera: string | null;
+  dominio: string | null;
+}
+
+export interface MonitoreoResumen {
+  tab: MonitoreoTab;
+  page: number;
+  limit: number;
+  total: number;
+  contadores: { fallos: number; vips: number; pendientes: number };
+  itemsFallos?: LoginFalloItem[];
+  itemsVips?: VipItem[];
+  itemsPendientes?: PendienteItem[];
+}
+
+export async function getAdminMonitoreo(tab: MonitoreoTab, page: number): Promise<MonitoreoResumen | null> {
+  const res = await fetchConSesion(`/api/admin/login-fallos?tab=${tab}&page=${page}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}

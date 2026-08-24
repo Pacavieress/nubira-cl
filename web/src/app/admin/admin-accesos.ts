@@ -169,6 +169,7 @@ export const ACCESOS_ADMIN: AdminAcceso[] = [
   {
     titulo: "Log Fail",
     href: "/admin/login-fallos",
+    interno: true,
     iconoSvg:
       '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M12 3c-1.2 0-2.4.3-3.5.8L4.2 6.5C3.5 6.8 3 7.5 3 8.3v3.4c0 3.6 2.4 6.9 5.8 8.1 1.1.4 2.2.6 3.2.6s2.1-.2 3.2-.6c3.4-1.2 5.8-4.5 5.8-8.1V8.3c0-.8-.5-1.5-1.2-1.8l-4.3-2.7C14.4 3.3 13.2 3 12 3z" />',
   },
