@@ -1235,3 +1235,48 @@ export async function getAdminVideos(filtro: EstadoVideo): Promise<VideosResumen
   if (!res || !res.ok) return { filtro, totalPendientes: 0, videos: [] };
   return res.json();
 }
+
+// Refleja los tipos de server/src/modules/adminReclamos/adminReclamos.types.ts — panel admin
+// "Sugerencias" (admin_reclamos.php, "Gestión de Reclamos"). Lectura server-side (esta
+// función); responder/resolver/papelera/restaurar/eliminar/lote van por Route Handlers
+// (web/src/app/api/admin/reclamos/...) porque las dispara AdminReclamosPanel (Client Component).
+export type EstadoFiltroReclamos = "activos" | "resuelto" | "todos" | "eliminado";
+
+export type AccionLoteReclamos = "papelera" | "restaurar" | "eliminar_hard";
+
+export interface MensajeHiloReclamo {
+  remitente: "usuario" | "admin";
+  mensaje: string;
+  fecha: string;
+}
+
+export interface TicketReclamo {
+  id: number;
+  fecha: string;
+  texto: string;
+  estado: string;
+  respuestaAdmin: string | null;
+  usuarioNombre: string;
+  fotoPerfil: string | null;
+  chatThread: MensajeHiloReclamo[];
+  urgente: boolean;
+}
+
+export interface ContadoresReclamos {
+  activos: number;
+  resuelto: number;
+  eliminado: number;
+  todos: number;
+}
+
+export interface ReclamosResumen {
+  estado: EstadoFiltroReclamos;
+  contadores: ContadoresReclamos;
+  tickets: TicketReclamo[];
+}
+
+export async function getAdminReclamos(estado: EstadoFiltroReclamos): Promise<ReclamosResumen> {
+  const res = await fetchConSesion(`/api/admin/reclamos?estado=${estado}`);
+  if (!res || !res.ok) return { estado, contadores: { activos: 0, resuelto: 0, eliminado: 0, todos: 0 }, tickets: [] };
+  return res.json();
+}

@@ -15,6 +15,7 @@ import { adminDominiosRouter } from "./modules/adminDominios/adminDominios.route
 import { adminLoginFallosRouter } from "./modules/adminLoginFallos/adminLoginFallos.routes.js";
 import { adminOfertasRouter } from "./modules/adminOfertas/adminOfertas.routes.js";
 import { adminOfertasApuntesRouter } from "./modules/adminOfertasApuntes/adminOfertasApuntes.routes.js";
+import { adminReclamosRouter } from "./modules/adminReclamos/adminReclamos.routes.js";
 import { adminRecordatoriosRouter } from "./modules/adminRecordatorios/adminRecordatorios.routes.js";
 import { adminReportesServiciosRouter } from "./modules/adminReportesServicios/adminReportesServicios.routes.js";
 import { adminServiciosRouter } from "./modules/adminServicios/adminServicios.routes.js";
@@ -99,6 +100,7 @@ export function createApp(): Express {
   app.use("/api/admin/reportes-servicios", adminReportesServiciosRouter);
   app.use("/api/admin/solicitudes", adminSolicitudesRouter);
   app.use("/api/admin/videos", adminVideosRouter);
+  app.use("/api/admin/reclamos", adminReclamosRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);
