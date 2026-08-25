@@ -11,6 +11,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/helpers/comprador_invitado.php';
+require_once __DIR__ . '/correo.php';
 
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Payment\PaymentClient;
@@ -44,11 +45,15 @@ try {
         $usuario_id = (int)$payment->metadata->usuario_id;
     }
 
-    // Checkout de invitado (sin sesión, cero campos) — diseño revisado 24/08/2026. Si no hay
-    // sesión NI metadata.usuario_id, es invitado por definición (iniciar_pago.php nunca manda
-    // usuario_id para invitados). La fila fantasma se resuelve más abajo, coordinada con
-    // notificaciones_mp.php a través de `compras.payment_id` — ver el bloque A.
+    // Checkout de invitado (sin sesión) — diseño revisado 25/08/2026 (email opcional de
+    // respaldo). Si no hay sesión NI metadata.usuario_id, es invitado por definición
+    // (iniciar_pago.php nunca manda usuario_id para invitados). La fila fantasma se resuelve
+    // más abajo, coordinada con notificaciones_mp.php a través de `compras.payment_id` — ver
+    // el bloque A. $emailInvitado se lee directo de la metadata del pago (no de cuál rama de
+    // A se ejecute) porque pago_exitoso.php y notificaciones_mp.php piden el mismo $payment
+    // por separado — ambos lo ven igual sin importar quién creó la fila primero.
     $es_invitado = ($usuario_id === null);
+    $emailInvitado = $es_invitado ? ($payment->metadata->email ?? null) : null;
 
     // 3. LÓGICA DE BASE DE DATOS
     try {
@@ -73,7 +78,22 @@ try {
             $stmtUpdate->close();
         } else {
             if ($usuario_id === null) {
-                $usuario_id = crearCompradorInvitado($conn);
+                if ($emailInvitado) {
+                    $resultado = obtenerOCrearCompradorInvitado($conn, $emailInvitado);
+                    if ($resultado['ok']) {
+                        $usuario_id = $resultado['id'];
+                    } else {
+                        // Conflicto (ese email ya es una cuenta real) recién detectado acá —
+                        // iniciar_pago.php ya lo prechequeó, pero la cuenta pudo crearse
+                        // DESPUÉS de iniciado el checkout. El pago ya se cobró: seguimos con
+                        // un fantasma genérico para no perder el registro de la venta, aunque
+                        // ya no podamos avisarle por correo a ese email.
+                        $usuario_id = crearCompradorInvitado($conn);
+                        $emailInvitado = null;
+                    }
+                } else {
+                    $usuario_id = crearCompradorInvitado($conn);
+                }
             }
 
             $monto_int = (int)$monto;
@@ -115,6 +135,7 @@ try {
         }
 
         // B) Registrar la venta para el autor
+        $venta_id = null; // id en ventas_apuntes — usado por el invitado-con-email para el guard de correo_enviado
         if ($estado_nubira === 'pagado' && $usuario_id && $apunte_id > 0) {
             $stmtCheck = $conn->prepare("SELECT id FROM ventas_apuntes WHERE apunte_id = ? AND comprador_id = ? LIMIT 1");
             $stmtCheck->bind_param("ii", $apunte_id, $usuario_id);
@@ -140,11 +161,21 @@ try {
                         $stmtVenta = $conn->prepare("INSERT INTO ventas_apuntes (apunte_id, comprador_id, vendedor_id, precio, pagado_al_vendedor) VALUES (?, ?, ?, ?, ?)");
                         $stmtVenta->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
                         $stmtVenta->execute();
+                        $venta_id = $stmtVenta->insert_id ?: null;
                         $stmtVenta->close();
                     } catch (mysqli_sql_exception $dupEx) {
                         // Carrera con notificaciones_mp.php: la otra ruta ya registró esta venta
                         // primero. El UNIQUE(apunte_id, comprador_id) frenó el duplicado — no es un error real.
                         if ($dupEx->getCode() !== 1062) throw $dupEx;
+                    }
+
+                    if (!$venta_id) {
+                        $stmtVid = $conn->prepare("SELECT id FROM ventas_apuntes WHERE apunte_id = ? AND comprador_id = ? LOCK IN SHARE MODE");
+                        $stmtVid->bind_param("ii", $apunte_id, $usuario_id);
+                        $stmtVid->execute();
+                        $rowVid = $stmtVid->get_result()->fetch_assoc();
+                        if ($rowVid) $venta_id = (int)$rowVid['id'];
+                        $stmtVid->close();
                     }
                 } else {
                     throw new RuntimeException(
@@ -152,25 +183,65 @@ try {
                     );
                 }
             } else {
-                $stmtCheck->close();
-                // Recuperar nombre del archivo para la redirección/link
-                $stmtRecovery = $conn->prepare("SELECT archivo FROM apuntes WHERE id = ? LIMIT 1");
-                $stmtRecovery->bind_param("i", $apunte_id);
+                // Recuperar id de la venta + nombre del archivo (para el guard de correo_enviado
+                // del invitado-con-email y para la redirección del logueado, respectivamente)
+                $stmtRecovery = $conn->prepare("SELECT id FROM ventas_apuntes WHERE apunte_id = ? AND comprador_id = ? LIMIT 1");
+                $stmtRecovery->bind_param("ii", $apunte_id, $usuario_id);
                 $stmtRecovery->execute();
                 $resRec = $stmtRecovery->get_result()->fetch_assoc();
-                if ($resRec) $archivo_apunte = $resRec['archivo'];
+                if ($resRec) $venta_id = (int)$resRec['id'];
                 $stmtRecovery->close();
+                $stmtCheck->close();
+
+                $stmtArchivo = $conn->prepare("SELECT archivo FROM apuntes WHERE id = ? LIMIT 1");
+                $stmtArchivo->bind_param("i", $apunte_id);
+                $stmtArchivo->execute();
+                $resArchivo = $stmtArchivo->get_result()->fetch_assoc();
+                if ($resArchivo) $archivo_apunte = $resArchivo['archivo'];
+                $stmtArchivo->close();
             }
         }
 
         $conn->commit();
 
         // ==========================================
+        // 3.5 INVITADO CON EMAIL: correo de respaldo
+        // ==========================================
+        // Se manda también acá (no solo desde el webhook) porque cualquiera de los dos
+        // caminos puede ser el único que el navegador del invitado llegue a ver — guard
+        // atómico sobre ventas_apuntes.correo_enviado para que solo UNO de los dos (esta
+        // página o notificaciones_mp.php) efectivamente lo envíe, sin importar cuál corre primero.
+        if ($es_invitado && $emailInvitado && $estado_nubira === 'pagado' && !empty($archivo_apunte) && $venta_id) {
+            $stmtGuard = $conn->prepare("UPDATE ventas_apuntes SET correo_enviado = 1 WHERE id = ? AND correo_enviado = 0");
+            $stmtGuard->bind_param("i", $venta_id);
+            $stmtGuard->execute();
+            $ganamos_el_envio = $stmtGuard->affected_rows > 0;
+            $stmtGuard->close();
+
+            if ($ganamos_el_envio) {
+                $stmtTit = $conn->prepare("SELECT titulo FROM apuntes WHERE id = ? LIMIT 1");
+                $stmtTit->bind_param("i", $apunte_id);
+                $stmtTit->execute();
+                $rowTit = $stmtTit->get_result()->fetch_assoc();
+                $stmtTit->close();
+
+                if ($rowTit) {
+                    $linkCorreo = BASE_URL . enlaceDescargaApunte($apunte_id, $archivo_apunte, $usuario_id);
+                    try {
+                        enviarCorreoAccesoApuntesInvitado($emailInvitado, [['titulo' => $rowTit['titulo'], 'link' => $linkCorreo]]);
+                    } catch (Throwable $mailEx) {
+                        error_log("Error enviando correo de acceso invitado (payment_id=$payment_id): " . $mailEx->getMessage());
+                    }
+                }
+            }
+        }
+
+        // ==========================================
         // 4. REDIRECCIÓN CON TRACKER (BRIDGE PAGE)
         // ==========================================
-        // Invitado: el link se muestra ACÁ y solo acá — diseño revisado 24/08/2026, sin
-        // mecanismo de reenvío. Si el usuario lo pierde, no hay forma de recuperarlo (aceptado
-        // explícitamente): sin email, no hay ningún otro canal para volver a entregarlo.
+        // Invitado: el link se muestra siempre acá al volver — con o sin email, es el canal
+        // principal (el correo es solo respaldo, diseño revisado 25/08/2026). Sin reenvío
+        // todavía: si no dejó email y pierde el link, no hay forma de recuperarlo.
         $link_invitado = ($es_invitado && $estado_nubira === 'pagado' && !empty($archivo_apunte))
             ? BASE_URL . enlaceDescargaApunte($apunte_id, $archivo_apunte, $usuario_id)
             : null;
@@ -223,7 +294,11 @@ try {
                     <p style="color:#374151; font-size:14px; margin:0;">Tu apunte está listo para descargar.</p>
                     <a href="<?= htmlspecialchars($link_invitado, ENT_QUOTES, 'UTF-8') ?>" class="btn-descarga" download>Descargar mi apunte</a>
                     <div class="aviso">
-                        <strong>Guarda este link ahora.</strong> No pediste registro ni correo, así que esta es tu única oportunidad de acceder al archivo — si cierras esta página sin guardarlo, no hay forma de recuperarlo.
+                        <?php if ($emailInvitado): ?>
+                            <strong>Guarda este link ahora.</strong> También te lo enviamos a <?= htmlspecialchars($emailInvitado, ENT_QUOTES, 'UTF-8') ?> por si lo necesitas después. Vence en 30 días.
+                        <?php else: ?>
+                            <strong>Guarda este link ahora.</strong> No dejaste un correo de respaldo, así que esta es tu única oportunidad de acceder al archivo — si cierras esta página sin guardarlo, no hay forma de recuperarlo.
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php else: ?>

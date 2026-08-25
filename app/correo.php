@@ -261,6 +261,46 @@ function enviarCorreoConfirmacionCompra($correoComprador, $nombreComprador, $nom
 }
 
 // ==========================================================
+// CHECKOUT DE INVITADO PARA APUNTES (email opcional de respaldo)
+// ==========================================================
+
+/**
+ * Envía el link de descarga a un comprador invitado que sí dejó su email (campo opcional,
+ * revisado 25/08/2026). Se llama desde pago_exitoso.php/notificaciones_mp.php al confirmarse
+ * el pago — nunca antes. $items admite más de uno por si en el futuro se junta más de una
+ * compra en un solo envío, aunque hoy siempre se llama con un único item.
+ *
+ * @param array<int, array{titulo: string, link: string}> $items
+ */
+function enviarCorreoAccesoApuntesInvitado($correo, array $items) {
+    $filas = '';
+    foreach ($items as $item) {
+        $filas .= "
+            <div style='background-color:#F0F9FF; border-left: 4px solid #54A6D8; padding: 15px; margin: 15px 0; border-radius: 8px;'>
+                <p style='margin:0 0 10px 0; font-weight:bold; font-size:16px;'>" . htmlspecialchars($item['titulo'], ENT_QUOTES, 'UTF-8') . "</p>
+                <a href='{$item['link']}' style='background-color:#54A6D8; color:#ffffff; padding:10px 20px; text-decoration:none; border-radius:8px; font-weight:bold; font-size:14px; display:inline-block;'>
+                    Descargar
+                </a>
+            </div>
+        ";
+    }
+
+    $plural = count($items) > 1;
+    $html = "
+        <p>¡Gracias por tu compra en Nubira!</p>
+        <p>Acá " . ($plural ? "están los links de descarga de tus apuntes" : "está el link de descarga de tu apunte") . ":</p>
+        $filas
+        <p style='font-size:12px; color:#6B7280; margin-top:20px;'>
+            Guarda este correo — el link vence en 30 días.
+        </p>
+    ";
+
+    $asunto = $plural ? "Tus apuntes en Nubira" : "Tu apunte en Nubira";
+    $cuerpo = plantillaMaestra($plural ? "Tus Descargas 📚" : "Tu Descarga 📚", $html);
+    return _enviarEmailBase($correo, $asunto, $cuerpo);
+}
+
+// ==========================================================
 // NUEVA FUNCIÓN: RECUPERACIÓN DE DEMANDA (MARKETING)
 // ==========================================================
 

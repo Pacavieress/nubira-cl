@@ -16,6 +16,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers/comprador_invitado.php';
+require_once __DIR__ . '/correo.php';
 
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Payment\PaymentClient;
@@ -134,13 +135,14 @@ try {
             $usuario_id = (int)($payment->metadata->usuario_id ?? 0);
             $usuario_id = $usuario_id > 0 ? $usuario_id : null;
 
-            // Checkout de invitado (sin sesión, cero campos) — diseño revisado 24/08/2026. Sin
-            // metadata.usuario_id es invitado por definición (iniciar_pago.php nunca la manda
-            // para invitados). El webhook es el único camino que puede confirmar la compra si
-            // el invitado nunca vuelve al navegador, así que la venta se registra igual — lo
-            // único que ya no puede pasar acá es entregar el link (no hay pantalla que mostrar
-            // desde un webhook), consecuencia aceptada del diseño sin email.
+            // Checkout de invitado (sin sesión) — diseño revisado 25/08/2026 (email opcional
+            // de respaldo). Sin metadata.usuario_id es invitado por definición
+            // (iniciar_pago.php nunca la manda para invitados). El webhook es el único camino
+            // que puede confirmar la compra si el invitado nunca vuelve al navegador — la
+            // venta se registra igual; si dejó email, este es el único lugar que puede
+            // avisarle en ese caso (no hay pantalla que mostrar desde un webhook).
             $es_invitado = ($usuario_id === null);
+            $emailInvitado = $es_invitado ? ($payment->metadata->email ?? null) : null;
 
             $monto_int = (int)$amount;
             $conn->begin_transaction();
@@ -159,7 +161,20 @@ try {
                     $usuario_id = (int)$filaCompra['usuario_id'];
                 } else {
                     if ($usuario_id === null) {
-                        $usuario_id = crearCompradorInvitado($conn);
+                        if ($emailInvitado) {
+                            $resultado = obtenerOCrearCompradorInvitado($conn, $emailInvitado);
+                            if ($resultado['ok']) {
+                                $usuario_id = $resultado['id'];
+                            } else {
+                                // Mismo criterio que pago_exitoso.php: ese email ya es una
+                                // cuenta real (conflicto recién detectado acá) — seguimos con
+                                // un fantasma genérico para no perder el registro de la venta.
+                                $usuario_id = crearCompradorInvitado($conn);
+                                $emailInvitado = null;
+                            }
+                        } else {
+                            $usuario_id = crearCompradorInvitado($conn);
+                        }
                     }
                     $servicio_cero = 0;
                     $estado        = 'pagado';
@@ -195,39 +210,94 @@ try {
                 }
 
                 // Anti-dup ventas_apuntes
+                $venta_id = null; // id en ventas_apuntes — usado por el invitado-con-email para el guard de correo_enviado
+                $archivo_apunte = null;
+                $titulo_apunte = null;
                 $chk2 = $conn->prepare("SELECT id FROM ventas_apuntes WHERE apunte_id = ? AND comprador_id = ? LIMIT 1");
                 $chk2->bind_param("ii", $apunte_id, $usuario_id);
                 $chk2->execute();
                 $chk2->store_result();
                 if ($chk2->num_rows === 0) {
                     $chk2->close();
-                    $stmtA = $conn->prepare("SELECT id_alumno, precio FROM apuntes WHERE id = ? LIMIT 1");
+                    $stmtA = $conn->prepare("SELECT id_alumno, precio, archivo, titulo FROM apuntes WHERE id = ? LIMIT 1");
                     $stmtA->bind_param("i", $apunte_id);
                     $stmtA->execute();
                     $apunte_row = $stmtA->get_result()->fetch_assoc();
                     $stmtA->close();
                     if ($apunte_row) {
-                        $vendedor_id = (int)$apunte_row['id_alumno'];
-                        $precio      = (int)$apunte_row['precio'];
-                        $pagado      = 1;
+                        $vendedor_id    = (int)$apunte_row['id_alumno'];
+                        $precio         = (int)$apunte_row['precio'];
+                        $archivo_apunte = $apunte_row['archivo'];
+                        $titulo_apunte  = $apunte_row['titulo'];
+                        $pagado         = 1;
                         try {
                             $stmtV = $conn->prepare(
                                 "INSERT INTO ventas_apuntes (apunte_id, comprador_id, vendedor_id, precio, pagado_al_vendedor) VALUES (?, ?, ?, ?, ?)"
                             );
                             $stmtV->bind_param("iiiii", $apunte_id, $usuario_id, $vendedor_id, $precio, $pagado);
                             $stmtV->execute();
+                            $venta_id = $stmtV->insert_id ?: null;
                             $stmtV->close();
                         } catch (mysqli_sql_exception $dupEx) {
                             // Carrera con pago_exitoso.php: la otra ruta ya registró esta venta
                             // primero. El UNIQUE(apunte_id, comprador_id) frenó el duplicado — no es un error real.
                             if ($dupEx->getCode() !== 1062) throw $dupEx;
                         }
+                        if (!$venta_id) {
+                            $stmtVid = $conn->prepare("SELECT id FROM ventas_apuntes WHERE apunte_id = ? AND comprador_id = ? LOCK IN SHARE MODE");
+                            $stmtVid->bind_param("ii", $apunte_id, $usuario_id);
+                            $stmtVid->execute();
+                            $rowVid = $stmtVid->get_result()->fetch_assoc();
+                            if ($rowVid) $venta_id = (int)$rowVid['id'];
+                            $stmtVid->close();
+                        }
                     }
                 } else {
+                    $stmtRec = $conn->prepare("SELECT id FROM ventas_apuntes WHERE apunte_id = ? AND comprador_id = ? LIMIT 1");
+                    $stmtRec->bind_param("ii", $apunte_id, $usuario_id);
+                    $stmtRec->execute();
+                    $resRec = $stmtRec->get_result()->fetch_assoc();
+                    if ($resRec) $venta_id = (int)$resRec['id'];
+                    $stmtRec->close();
                     $chk2->close();
+
+                    $stmtA = $conn->prepare("SELECT archivo, titulo FROM apuntes WHERE id = ? LIMIT 1");
+                    $stmtA->bind_param("i", $apunte_id);
+                    $stmtA->execute();
+                    $apunte_row = $stmtA->get_result()->fetch_assoc();
+                    $stmtA->close();
+                    if ($apunte_row) {
+                        $archivo_apunte = $apunte_row['archivo'];
+                        $titulo_apunte  = $apunte_row['titulo'];
+                    }
                 }
 
                 $conn->commit();
+
+                // Invitado con email: mismo guard atómico de correo_enviado que
+                // pago_exitoso.php — el webhook puede ser el único camino que confirme la
+                // compra si el invitado nunca vuelve al navegador, así que el correo tiene
+                // que poder salir de acá.
+                if ($es_invitado && $emailInvitado && !empty($archivo_apunte) && $venta_id) {
+                    $stmtGuard = $conn->prepare("UPDATE ventas_apuntes SET correo_enviado = 1 WHERE id = ? AND correo_enviado = 0");
+                    $stmtGuard->bind_param("i", $venta_id);
+                    $stmtGuard->execute();
+                    $ganamos_el_envio = $stmtGuard->affected_rows > 0;
+                    $stmtGuard->close();
+
+                    if ($ganamos_el_envio && $titulo_apunte) {
+                        $link = BASE_URL . enlaceDescargaApunte($apunte_id, $archivo_apunte, $usuario_id);
+                        try {
+                            enviarCorreoAccesoApuntesInvitado($emailInvitado, [['titulo' => $titulo_apunte, 'link' => $link]]);
+                        } catch (Throwable $mailEx) {
+                            file_put_contents(
+                                __DIR__ . '/mp_webhook.log',
+                                date('c') . " APUNTE CORREO ERR: payment_id=$payment_id apunte=$apunte_id error=" . $mailEx->getMessage() . "\n",
+                                FILE_APPEND
+                            );
+                        }
+                    }
+                }
 
                 file_put_contents(
                     __DIR__ . '/mp_webhook.log',

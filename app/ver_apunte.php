@@ -629,11 +629,20 @@ if (!empty($thumb_url)) {
                                         Desbloquear por <?= $precio_fmt ?>
                                     </a>
                                 <?php elseif ($precio > 0): ?>
-                                    <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>"
-                                       class="block w-full bg-[#54A6D8] hover:bg-[#4895c2] text-white font-bold py-3.5 rounded-2xl hover:scale-[1.02] transition-all flex justify-center items-center gap-2"
-                                       data-track="click_contact" data-type="apunte" data-id="<?= $id_apunte ?>">
-                                        <?= icon('lock', 'w-5 h-5') ?> Comprar por <?= $precio_fmt ?>
-                                    </a>
+                                    <!-- Esta tarjeta YA funciona como el modal de checkout invitado — no dispara
+                                         .js-comprar-invitado (eso abriría un segundo modal encima, bug reportado 25/08/2026) -->
+                                    <form method="GET" action="/iniciar-pago" class="space-y-3">
+                                        <input type="hidden" name="id_apunte" value="<?= (int)$id_apunte ?>">
+                                        <input type="hidden" name="archivo" value="<?= htmlspecialchars($archivo, ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="submit" class="block w-full bg-[#54A6D8] hover:bg-[#4895c2] text-white font-bold py-3.5 rounded-2xl hover:scale-[1.02] transition-all flex justify-center items-center gap-2">
+                                            <?= icon('lock', 'w-5 h-5') ?> Comprar ahora por <?= $precio_fmt ?>
+                                        </button>
+                                        <div class="text-left">
+                                            <label class="block text-[10px] font-medium text-gray-500 mb-1">Recibir el link por correo, opcional</label>
+                                            <input type="email" name="email" placeholder="tucorreo@ejemplo.cl"
+                                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#54A6D8]">
+                                        </div>
+                                    </form>
                                 <?php else: ?>
                                     <a href="<?= $login_redir ?>" class="block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-2xl hover:scale-[1.02] transition-all flex justify-center items-center gap-2">
                                         <?= icon('user', 'w-5 h-5') ?> Inicia sesión para ver gratis
@@ -755,9 +764,9 @@ if (!empty($thumb_url)) {
                                 <?= icon('publish-doc', 'w-5 h-5') ?> Inicia sesión para descargar
                             </a>
                         <?php elseif (!$logueado && $precio > 0): ?>
-                            <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>" class="block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl hover:bg-[#4895c2] transition flex items-center justify-center gap-2">
+                            <button type="button" class="js-comprar-invitado block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl hover:bg-[#4895c2] transition flex items-center justify-center gap-2">
                                 <?= icon('lock', 'w-5 h-5') ?> Comprar por <?= $precio_fmt ?>
-                            </a>
+                            </button>
                         <?php endif; ?>
                     <?php endif; ?>
                 </div>
@@ -980,10 +989,10 @@ require_once $base_path . '/componentes/modal_compartir_apunte.php';
                 <?= icon('user', 'w-4 h-4') ?> Inicia sesión
             </a>
         <?php elseif (!$logueado && $precio > 0): ?>
-            <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>"
-               class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2">
+            <button type="button"
+               class="js-comprar-invitado bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2">
                 <?= icon('lock', 'w-4 h-4') ?> Comprar
-            </a>
+            </button>
         <?php elseif ($logueado && !$acceso_completo && !$es_promo_activa): ?>
             <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>"
                class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2"
@@ -995,6 +1004,55 @@ require_once $base_path . '/componentes/modal_compartir_apunte.php';
     </div>
 </div>
 <?php endif; ?>
+
+<!-- MODAL CHECKOUT INVITADO — cero campos obligatorios, email opcional de respaldo (revisado 25/08/2026) -->
+<div id="modal-comprar-invitado" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-gray-900">Comprar apunte</h2>
+      <button type="button" id="btn-cerrar-modal-invitado" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    </div>
+    <form method="GET" action="/iniciar-pago" class="space-y-4">
+      <input type="hidden" name="id_apunte" value="<?= (int)$id_apunte ?>">
+      <input type="hidden" name="archivo" value="<?= htmlspecialchars($archivo, ENT_QUOTES, 'UTF-8') ?>">
+      <button type="submit" class="w-full bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl py-3.5 text-sm transition-all active:scale-95">
+        Comprar ahora por <?= $precio_fmt ?>
+      </button>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Recibir el link por correo, opcional</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.cl"
+               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#54A6D8]">
+      </div>
+      <p class="text-center text-xs text-gray-500">
+        ¿Ya tienes cuenta? <a href="<?= $login_redir ?>" class="text-[#54A6D8] underline">Inicia sesión</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const trigger = document.querySelectorAll('.js-comprar-invitado');
+  if (!trigger.length) return;
+
+  const modal = document.getElementById('modal-comprar-invitado');
+  const btnCerrar = document.getElementById('btn-cerrar-modal-invitado');
+  const msgLocked = document.getElementById('msgLocked');
+
+  // Si la tarjeta de fin de vista previa ya está visible (ella misma trae el formulario de
+  // compra inline, ver más arriba), no abrir un segundo modal encima — bug reportado 25/08/2026.
+  trigger.forEach(b => b.addEventListener('click', () => {
+    if (msgLocked && !msgLocked.classList.contains('hidden')) {
+      msgLocked.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    modal.classList.remove('hidden');
+  }));
+  btnCerrar.addEventListener('click', () => modal.classList.add('hidden'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+})();
+</script>
+
 <script>
 window.onload = () => { const l = document.getElementById('loader'); if(l){ l.classList.add('opacity-0'); setTimeout(()=>l.classList.add('hidden'),300); } };
 

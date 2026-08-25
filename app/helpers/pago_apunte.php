@@ -16,8 +16,9 @@ if (!function_exists('crearPreferenciaApunte')) {
      * @param array{id_alumno: int, titulo: string, precio: float} $apunte
      * @param array $identidad Una de las dos formas:
      *   ['tipo' => 'usuario', 'usuario_id' => int, 'institucion' => string]
-     *   ['tipo' => 'invitado']  — cero campos, no hay nada que identificar en el checkout; la
-     *   fila fantasma recién se crea al confirmarse el pago (pago_exitoso.php/notificaciones_mp.php)
+     *   ['tipo' => 'invitado', 'email' => ?string]  — 'email' es opcional (respaldo para
+     *   recibir el link por correo, revisado 25/08/2026); en ambos casos la fila fantasma
+     *   recién se crea al confirmarse el pago (pago_exitoso.php/notificaciones_mp.php), nunca acá.
      * @return object La preferencia creada (usar ->init_point para el redirect)
      */
     function crearPreferenciaApunte(int $idApunte, array $apunte, array $identidad): object {
@@ -30,11 +31,15 @@ if (!function_exists('crearPreferenciaApunte')) {
         $titulo = trim($apunte['titulo']);
         $precio = (float)$apunte['precio'];
 
-        // es_invitado:true es solo una marca legible en los logs del webhook — no identifica
-        // a nadie, no hay ningún dato personal en el checkout de invitado.
-        $metadata = $identidad['tipo'] === 'invitado'
-            ? ['es_invitado' => true]
-            : ['usuario_id' => $identidad['usuario_id'], 'institucion' => $identidad['institucion']];
+        // es_invitado:true es solo una marca legible en los logs del webhook. 'email' viaja
+        // acá únicamente cuando el comprador lo escribió voluntariamente en el campo opcional
+        // — si no, la metadata de invitado no lleva ningún dato personal.
+        if ($identidad['tipo'] === 'invitado') {
+            $metadata = ['es_invitado' => true];
+            if (!empty($identidad['email'])) $metadata['email'] = $identidad['email'];
+        } else {
+            $metadata = ['usuario_id' => $identidad['usuario_id'], 'institucion' => $identidad['institucion']];
+        }
 
         $client = new PreferenceClient();
         return $client->create([
