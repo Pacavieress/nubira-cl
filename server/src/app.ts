@@ -4,6 +4,7 @@ import express, { type Express } from "express";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { adminAulasRouter } from "./modules/adminAulas/adminAulas.routes.js";
+import { adminAccesosRouter } from "./modules/adminAccesos/adminAccesos.routes.js";
 import { adminApuntesRouter } from "./modules/adminApuntes/adminApuntes.routes.js";
 import { adminAutoresRouter } from "./modules/adminAutores/adminAutores.routes.js";
 import { adminAvisosRouter } from "./modules/adminAvisos/adminAvisos.routes.js";
@@ -105,6 +106,7 @@ export function createApp(): Express {
   app.use("/api/admin/reclamos", adminReclamosRouter);
   app.use("/api/admin/usuarios", adminUsuariosRouter);
   app.use("/api/admin/apuntes", adminApuntesRouter);
+  app.use("/api/admin/accesos", adminAccesosRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);

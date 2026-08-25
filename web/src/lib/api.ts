@@ -1358,3 +1358,98 @@ export async function getAdminApuntes(q: string): Promise<ApuntesAdminResumen> {
   if (!res || !res.ok) return { q, apuntes: [] };
   return res.json();
 }
+
+// Refleja los tipos de server/src/modules/adminAccesos/adminAccesos.types.ts — panel admin
+// "Accesos" (admin_accesos_vitrina.php, "Analíticas"). Portado completo, incluidas sus 2
+// mutaciones (eliminar selección, purgar bots — DELETE puros sobre historial_actividad, log
+// de analítica). Lectura server-side (esta función); mutaciones y navegación de tabs/detalle
+// van por Route Handlers porque las dispara AdminAccesosPanel (Client Component).
+export type TabAccesos = "trafico" | "bots" | "paginas" | "fallidas";
+
+export interface UsuarioTrafico {
+  usuarioId: number;
+  ipUsuario: string | null;
+  ultimaActividad: string;
+  totalAcciones: number;
+  ultimaUrl: string | null;
+  ultimaAccionTxt: string | null;
+  nombre: string | null;
+  fotoPerfil: string | null;
+  institucion: string | null;
+  correo: string | null;
+}
+export interface ContadoresTrafico {
+  alumnos: number;
+  invitados: number;
+  bots: number;
+}
+export interface BotFila {
+  ipUsuario: string;
+  userAgent: string | null;
+  totalHits: number;
+  urlsUnicas: number;
+  ultimaVisita: string;
+  primeraVisita: string;
+}
+export interface StatsBots {
+  totalEventos: number;
+  ipsUnicas: number;
+  botsUnicos: number;
+}
+export interface PaginaFila {
+  url: string;
+  hits: number;
+  uniques: number;
+}
+export interface BusquedaFallida {
+  termino: string;
+  totalIntentos: number;
+  ultimaBusqueda: string;
+}
+export interface AccesosResumen {
+  tab: TabAccesos;
+  trafico?: { contadores: ContadoresTrafico; usuarios: UsuarioTrafico[] };
+  bots?: { stats: StatsBots; bots: BotFila[] };
+  paginas?: { totalHits: number; paginas: PaginaFila[] };
+  fallidas?: { busquedas: BusquedaFallida[] };
+}
+
+export interface EventoHistorial {
+  id: number;
+  accion: string;
+  detalle: string | null;
+  url: string | null;
+  ipUsuario: string | null;
+  fecha: string;
+  esBot: boolean;
+}
+export interface DetalleUsuario {
+  usuarioId: number;
+  esGuest: boolean;
+  ip: string | null;
+  nombre: string;
+  correo: string | null;
+  fotoPerfil: string | null;
+  totalEventos: number;
+  accionFav: string;
+  primeraVisita: string | null;
+  ultimaVisita: string | null;
+  online: boolean;
+  fueBot: boolean;
+  urlsUnicas: number;
+  diasDesdePrimera: number;
+  primerReferrer: string | null;
+  primerUtm: string | null;
+  primerContacto: string | null;
+  primerApunte: string | null;
+}
+export interface DetalleResumen {
+  usuario: DetalleUsuario;
+  eventos: EventoHistorial[];
+}
+
+export async function getAdminAccesos(tab: TabAccesos): Promise<AccesosResumen> {
+  const res = await fetchConSesion(`/api/admin/accesos?tab=${tab}`);
+  if (!res || !res.ok) return { tab };
+  return res.json();
+}
