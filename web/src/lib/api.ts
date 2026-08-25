@@ -1330,3 +1330,31 @@ export async function getAdminUsuarios(f: FiltrosUsuarios): Promise<UsuariosResu
   if (!res || !res.ok) return { page: f.page, totalPages: 1, totalUsers: 0, totalUsersGlobal: 0, usuarios: [] };
   return res.json();
 }
+
+// Refleja los tipos de server/src/modules/adminApuntes/adminApuntes.types.ts — panel admin
+// "Apuntes" (admin_apuntes.php, "Gestión de Apuntes"). Lectura server-side (esta función);
+// "alternar" (única mutación portada) va por Route Handler porque la dispara
+// AdminApuntesPanel (Client Component). aprobar/rechazar/eliminar/censura de miniatura quedan
+// excluidos — ver la nota de alcance completa en el módulo del servidor.
+export interface ApunteAdminListado {
+  id: number;
+  titulo: string;
+  autor: string;
+  asignatura: string;
+  fechaSubida: string;
+  publico: boolean;
+  estado: string;
+  totalVentas: number;
+  miniaturaUrl: string;
+}
+
+export interface ApuntesAdminResumen {
+  q: string;
+  apuntes: ApunteAdminListado[];
+}
+
+export async function getAdminApuntes(q: string): Promise<ApuntesAdminResumen> {
+  const res = await fetchConSesion(`/api/admin/apuntes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  if (!res || !res.ok) return { q, apuntes: [] };
+  return res.json();
+}
