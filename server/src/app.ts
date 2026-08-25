@@ -7,6 +7,7 @@ import { adminAulasRouter } from "./modules/adminAulas/adminAulas.routes.js";
 import { adminAccesosRouter } from "./modules/adminAccesos/adminAccesos.routes.js";
 import { adminApuntesRouter } from "./modules/adminApuntes/adminApuntes.routes.js";
 import { adminAutoresRouter } from "./modules/adminAutores/adminAutores.routes.js";
+import { adminChatsRouter } from "./modules/adminChats/adminChats.routes.js";
 import { adminAvisosRouter } from "./modules/adminAvisos/adminAvisos.routes.js";
 import { adminComprasApuntesRouter } from "./modules/adminComprasApuntes/adminComprasApuntes.routes.js";
 import { adminConfigPreciosRouter } from "./modules/adminConfigPrecios/adminConfigPrecios.routes.js";
@@ -107,6 +108,7 @@ export function createApp(): Express {
   app.use("/api/admin/usuarios", adminUsuariosRouter);
   app.use("/api/admin/apuntes", adminApuntesRouter);
   app.use("/api/admin/accesos", adminAccesosRouter);
+  app.use("/api/admin/chats", adminChatsRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);

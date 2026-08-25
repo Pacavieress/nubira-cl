@@ -1453,3 +1453,109 @@ export async function getAdminAccesos(tab: TabAccesos): Promise<AccesosResumen> 
   if (!res || !res.ok) return { tab };
   return res.json();
 }
+
+// Refleja los tipos de server/src/modules/adminChats/adminChats.types.ts — panel admin
+// "Monitor Chats" (admin_chats.php, "Master Tracker"). Alcance confirmado con el usuario
+// antes de construir: se portan 3 mutaciones seguras (eliminar/restaurar chat, marcar DLP
+// revisado, aprobar archivo), todas DB-only. "liberar_mensaje_dlp" (inserta un mensaje
+// bloqueado en una conversación real + notificación real) NUNCA se porta sin aprobación
+// explícita dedicada del usuario — no asumir que queda disponible para retomar después.
+// "rechazar_archivo" (borra el archivo del disco) tampoco se porta — mismo bucket que
+// "eliminar" en Apuntes. Ambas quedan como link al sitio PHP real.
+export type FiltroChats = "activos" | "cerrados" | "contrato" | "cotizacion" | "inactivos" | "alertas_dlp" | "moderacion";
+
+export interface ChatListado {
+  id: number;
+  contratoId: number | null;
+  fechaOrden: string | null;
+  eliminado: boolean;
+  compradorId: number;
+  compradorNombre: string;
+  compradorFoto: string | null;
+  vendedorId: number;
+  vendedorNombre: string;
+  vendedorFoto: string | null;
+  servicioTitulo: string | null;
+}
+
+export interface ContadoresChats {
+  activos: number;
+  cerrados: number;
+  contrato: number;
+  cotizacion: number;
+  inactivos: number;
+  alertasDlp: number;
+  moderacion: number;
+}
+
+export interface MensajeChat {
+  id: number;
+  remitenteId: number;
+  mensaje: string;
+  archivoNombre: string | null;
+  archivoRuta: string | null;
+  archivoTipo: string | null;
+  archivoPeso: number | null;
+  enviadoEn: string | null;
+}
+
+export interface DlpIntento {
+  id: number;
+  categoria: string;
+  textoIntentado: string;
+  fecha: string | null;
+  revisadoAdmin: boolean;
+  remitenteNombre: string;
+}
+
+export interface ChatInfo {
+  id: number;
+  compradorId: number;
+  compradorNombre: string;
+  compradorFoto: string | null;
+  vendedorId: number;
+  vendedorNombre: string;
+  vendedorFoto: string | null;
+  servicioTitulo: string | null;
+  contratoId: number | null;
+  eliminado: boolean;
+}
+
+export interface MetadataChat {
+  totalMensajes: number;
+  archivos: number;
+  primero: string | null;
+  ultimo: string | null;
+}
+
+export interface ChatDetalle {
+  info: ChatInfo;
+  mensajes: MensajeChat[];
+  dlp: DlpIntento[];
+  metadata: MetadataChat;
+}
+
+export interface ArchivoModeracion {
+  id: number;
+  conversacionId: number;
+  archivoRuta: string;
+  archivoNombre: string | null;
+  archivoTipo: string | null;
+  archivoPeso: number | null;
+  enviadoEn: string | null;
+  remitenteNombre: string;
+}
+
+export async function getAdminChats(filtro: FiltroChats, orden: "asc" | "desc", q: string): Promise<{ chats: ChatListado[] }> {
+  const params = new URLSearchParams({ estado: filtro, orden });
+  if (q) params.set("q", q);
+  const res = await fetchConSesion(`/api/admin/chats?${params.toString()}`);
+  if (!res || !res.ok) return { chats: [] };
+  return res.json();
+}
+
+export async function getAdminChatsContadores(): Promise<ContadoresChats> {
+  const res = await fetchConSesion("/api/admin/chats/contadores");
+  if (!res || !res.ok) return { activos: 0, cerrados: 0, contrato: 0, cotizacion: 0, inactivos: 0, alertasDlp: 0, moderacion: 0 };
+  return res.json();
+}
