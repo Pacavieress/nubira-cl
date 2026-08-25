@@ -63,9 +63,9 @@ test("GET /api/servicios/:id sin cookie devuelve 200 con viewer anónimo", async
   const { url, close } = listen();
   try {
     const res = await fetch(`${url}/api/servicios/${servicioId}`);
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean; contratoId: number | null } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false, contratoId: null });
   } finally {
     await close();
   }
@@ -77,9 +77,9 @@ test("GET /api/servicios/:id con cookie del dueño real devuelve isOwner=true", 
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: `PHPSESSID=${SESSION_OWNER}` },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean; contratoId: number | null } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: true, esFavorito: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: true, esFavorito: false, contratoId: null });
   } finally {
     await close();
   }
@@ -91,9 +91,9 @@ test("GET /api/servicios/:id con cookie de OTRO usuario devuelve isAuthenticated
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: `PHPSESSID=${SESSION_OTRO}` },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean; contratoId: number | null } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: false, esFavorito: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: true, isOwner: false, esFavorito: false, contratoId: null });
   } finally {
     await close();
   }
@@ -105,9 +105,9 @@ test("optionalAuth NUNCA bloquea: cookie vencida devuelve 200 (no 401), viewer a
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: `PHPSESSID=${SESSION_VENCIDA}` },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean; contratoId: number | null } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false, contratoId: null });
   } finally {
     await close();
   }
@@ -119,9 +119,9 @@ test("optionalAuth NUNCA bloquea: cookie que no existe en sesiones_api devuelve 
     const res = await fetch(`${url}/api/servicios/${servicioId}`, {
       headers: { Cookie: "PHPSESSID=esto-no-existe-en-sesiones-api" },
     });
-    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean } };
+    const body = (await res.json()) as { viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean; contratoId: number | null } };
     assert.equal(res.status, 200);
-    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false });
+    assert.deepEqual(body.viewer, { isAuthenticated: false, isOwner: false, esFavorito: false, contratoId: null });
   } finally {
     await close();
   }

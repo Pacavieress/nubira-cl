@@ -49,6 +49,7 @@ import { homeRouter } from "./modules/home/home.routes.js";
 import { landingsRouter } from "./modules/landings/landings.routes.js";
 import { serviciosRouter } from "./modules/servicios/servicios.routes.js";
 import { tutoresRouter } from "./modules/tutores/tutores.routes.js";
+import { vistasDetalleRouter } from "./modules/vistasDetalle/vistasDetalle.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -71,6 +72,7 @@ export function createApp(): Express {
   app.use("/api/guias", guiasRouter);
   app.use("/api/desafio", desafioRouter);
   app.use("/api/compartir", compartirRouter);
+  app.use("/api/vistas", vistasDetalleRouter);
   app.use("/api/apuntes", apuntesRouter);
   app.use("/api/servicios", serviciosRouter);
   app.use("/api/tutores", tutoresRouter);

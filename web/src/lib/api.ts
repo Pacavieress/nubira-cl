@@ -87,10 +87,17 @@ export interface ServicioDetalle extends Omit<ServicioListado, "tutor"> {
   area: string | null;
   asignatura: string | null;
   // esFavorito agregado para el toggle de favoritos (Fase 7 de la migración) — ver
-  // FavoritoToggle.tsx.
-  viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean };
+  // FavoritoToggle.tsx. contratoId agregado al portar detalle_servicio.php completo
+  // (CTA "Ir al Aula Virtual") — ver servicios.types.ts::ViewerContext.
+  viewer: { isAuthenticated: boolean; isOwner: boolean; esFavorito: boolean; contratoId: number | null };
   valoraciones: ValoracionPublica[];
   tiempoRespuesta: { texto: string; tono: TonoRespuesta };
+  // Agregados al portar detalle_servicio.php completo (banner propietario, video, carrusel
+  // de recomendados) — ver ServicioDetallePublico en servicios.types.ts para las notas de
+  // alcance completas (especialmente la simplificación del motor de recomendación).
+  estado: string;
+  video: { path: string; thumbUrl: string | null } | null;
+  recomendaciones: ServicioListado[];
 }
 
 // BUG real pre-existente corregido acá (Fase 7, al construir favoritos): esta función

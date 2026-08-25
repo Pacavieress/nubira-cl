@@ -113,6 +113,7 @@ export function mapServicioDetalleRow(
   viewer: ViewerContext,
   valoraciones: ValoracionRow[],
   minutosRespuesta: number | null,
+  recomendaciones: ServicioRow[],
 ): ServicioDetallePublico {
   const base = mapServicioRow(row);
   return {
@@ -132,5 +133,18 @@ export function mapServicioDetalleRow(
     viewer,
     valoraciones: valoraciones.map(mapValoracionRow),
     tiempoRespuesta: formatearTiempoRespuesta(minutosRespuesta),
+    estado: row.estado,
+    // Puerto de detalle_servicio.php:589-608 — el video solo se muestra si video_estado
+    // (ya moderado por admin, ver adminVideos) es 'aprobado', igual que el PHP real. El
+    // poster cae a la portada del servicio si no hay video_thumb_path (línea 593-595 del
+    // PHP: mismo fallback, $portada_rel === base.portada acá).
+    video:
+      row.video_path && row.video_estado === "aprobado"
+        ? {
+            path: row.video_path,
+            thumbUrl: row.video_thumb_path ? `${env.assetsBaseUrl}/upload/servicios/${row.video_thumb_path}` : base.portada.card,
+          }
+        : null,
+    recomendaciones: recomendaciones.map(mapServicioRow),
   };
 }

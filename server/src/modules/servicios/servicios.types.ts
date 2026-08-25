@@ -92,6 +92,9 @@ export interface ViewerContext {
   // Agregado para favoritos (Fase 7 de la migración, server/src/modules/favoritos) — false
   // sin sesión, sin necesidad de tocar la BD (un visitante anónimo nunca tiene favoritos).
   esFavorito: boolean;
+  // Agregado para el CTA "Ir al Aula Virtual" (puerto de detalle_servicio.php:191-197) — id
+  // del contrato activo/en_progreso del viewer para este servicio, o null si no tiene uno.
+  contratoId: number | null;
 }
 
 export interface ServicioDetalleRow extends ServicioRow {
@@ -104,6 +107,12 @@ export interface ServicioDetalleRow extends ServicioRow {
   area: string | null;
   asignatura: string | null;
   verificacion_estado: string | null;
+  // Agregados para el detalle público completo (antes solo se seleccionaban para el
+  // listado, donde WHERE_VISIBLE ya garantiza 'aprobado' — el detalle los necesita crudos
+  // porque el propio dueño/admin puede ver un servicio no aprobado, ver servicios.controller.ts).
+  estado: string;
+  video_path: string | null;
+  video_thumb_path: string | null;
 }
 
 // ---- Reseñas individuales y tiempo de respuesta (extensión para el detalle) ----
@@ -146,4 +155,18 @@ export interface ServicioDetallePublico extends Omit<ServicioPublico, "tutor"> {
   viewer: ViewerContext;
   valoraciones: ValoracionPublica[];
   tiempoRespuesta: TiempoRespuesta;
+  // Puerto de detalle_servicio.php:115-121 — el propio dueño (o un admin) puede ver un
+  // servicio no aprobado (banner "En Revisión"/"Publicación Pausada"); cualquier otro
+  // visitante recibe 404 antes de llegar a construir esta respuesta (ver el controller).
+  estado: string;
+  video: { path: string; thumbUrl: string | null } | null;
+  // Puerto exacto de detalle_servicio.php:206-271 (motor de recomendación), CON una
+  // simplificación deliberada: el PHP real personaliza por afinidad de categoría usando
+  // `tracker_intereses` (historial de navegación del visitante, logueado o por huella
+  // IP+user-agent) — acá se usa directamente la categoría del propio servicio, que es
+  // exactamente el comportamiento de fallback del PHP cuando no hay señal de afinidad.
+  // Documentado como gap de personalización, no como bug: el resultado final (7
+  // recomendaciones de la misma categoría, excluyendo el propio servicio) es idéntico al
+  // caso sin datos de afinidad, que es el caso común para cualquier visitante nuevo.
+  recomendaciones: ServicioPublico[];
 }

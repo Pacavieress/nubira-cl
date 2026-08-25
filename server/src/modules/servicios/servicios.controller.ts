@@ -1,9 +1,12 @@
 import type { Request, Response } from "express";
+import { getUsuarioConRol } from "../auth/auth.repository.js";
 import { existeFavorito } from "../favoritos/favoritos.repository.js";
 import { mapServicioDetalleRow, mapServicioRow } from "./servicios.mapper.js";
 import {
+  getContratoActivo,
   getMinutosRespuestaTutor,
-  getServicioDetalleById,
+  getRecomendaciones,
+  getServicioDetalleByIdSinFiltro,
   getValoracionesByServicioId,
   searchServiciosAprobados,
 } from "./servicios.repository.js";
@@ -52,16 +55,37 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const row = await getServicioDetalleById(id);
+  // Puerto exacto de detalle_servicio.php:86-121: el servicio se busca SIN filtrar por
+  // estado/visible/bloqueado (a diferencia del listado) — la restricción de acceso se
+  // aplica después, en código, porque el dueño (o un admin) SÍ puede ver un servicio no
+  // aprobado (banner "En Revisión"/"Publicación Pausada"). Un visitante cualquiera sigue
+  // recibiendo 404 igual que antes para cualquier servicio no aprobado.
+  const row = await getServicioDetalleByIdSinFiltro(id);
   if (!row) {
     res.status(404).json({ error: "not_found" });
     return;
   }
 
-  const [valoraciones, minutosRespuesta, esFavorito] = await Promise.all([
+  const isOwner = req.usuarioId === row.alumno_id;
+  const isAuthenticated = req.usuarioId !== undefined;
+
+  let isAdmin = false;
+  if (isAuthenticated && !isOwner && row.estado !== "aprobado") {
+    const usuario = await getUsuarioConRol(req.usuarioId!);
+    isAdmin = usuario?.rol === "admin";
+  }
+
+  if (row.estado !== "aprobado" && !isOwner && !isAdmin) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+
+  const [valoraciones, minutosRespuesta, esFavorito, contratoId, recomendaciones] = await Promise.all([
     getValoracionesByServicioId(id),
     getMinutosRespuestaTutor(row.alumno_id),
-    req.usuarioId !== undefined ? existeFavorito(req.usuarioId, id) : Promise.resolve(false),
+    isAuthenticated ? existeFavorito(req.usuarioId!, id) : Promise.resolve(false),
+    isAuthenticated ? getContratoActivo(id, req.usuarioId!) : Promise.resolve(null),
+    getRecomendaciones(id, row.categoria),
   ]);
 
   // req.usuarioId lo pone optionalAuth (servicios.routes.ts) SOLO si había una sesión
@@ -69,13 +93,10 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
   res.status(200).json(
     mapServicioDetalleRow(
       row,
-      {
-        isAuthenticated: req.usuarioId !== undefined,
-        isOwner: req.usuarioId === row.alumno_id,
-        esFavorito,
-      },
+      { isAuthenticated, isOwner, esFavorito, contratoId },
       valoraciones,
       minutosRespuesta,
+      recomendaciones,
     ),
   );
 }

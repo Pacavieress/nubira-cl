@@ -119,7 +119,7 @@ const SELECT_SERVICIO_DETALLE = `
     s.id, s.slug, s.titulo, s.categoria, s.modalidad, s.precio, s.precio_oferta,
     s.cupos_oferta, s.oferta_termino, s.is_subvencionado, s.imagen, s.score_nubira, s.video_estado, s.es_paes,
     s.descripcion, s.ubicacion, s.duracion_minutos, s.horarios_json, s.nivel,
-    s.materia, s.area, s.asignatura,
+    s.materia, s.area, s.asignatura, s.estado, s.video_path, s.video_thumb_path,
     COALESCE(dp.institucion, a.institucion) AS institucion_maestra,
     a.id AS alumno_id, a.nombre AS nombre_tutor, a.foto_perfil, a.verificacion_estado,
     bi.archivo AS banco_archivo,
@@ -131,12 +131,54 @@ const SELECT_SERVICIO_DETALLE = `
   LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
 `;
 
+// Puerto exacto de detalle_servicio.php:86-100: el servicio se busca por id SIN filtrar por
+// estado/visible/bloqueado — esos 3 filtros no existen en la query real, la restricción de
+// acceso pasa después, en código (ver servicios.controller.ts), y depende de si el viewer es
+// el dueño o un admin. Deliberadamente DISTINTA de getServicioDetalleById (usada por
+// búsqueda/listado, donde WHERE_VISIBLE sí aplica) — no es la misma función con un flag,
+// porque acá el contrato de la función es "trae el servicio exista o no esté aprobado".
+export async function getServicioDetalleByIdSinFiltro(id: number): Promise<ServicioDetalleRow | null> {
+  const [rows] = await pool.query<ServicioDetalleRowPacket[]>(`${SELECT_SERVICIO_DETALLE} WHERE s.id = ? LIMIT 1`, [id]);
+  return rows[0] ?? null;
+}
+
 export async function getServicioDetalleById(id: number): Promise<ServicioDetalleRow | null> {
   const [rows] = await pool.query<ServicioDetalleRowPacket[]>(
     `${SELECT_SERVICIO_DETALLE} ${WHERE_VISIBLE} AND s.id = ? LIMIT 1`,
     [id],
   );
   return rows[0] ?? null;
+}
+
+interface ContratoRowPacket extends RowDataPacket {
+  id: number;
+}
+
+// Puerto exacto de detalle_servicio.php:191-197. NOTA: el enum real de `contratos.estado`
+// en esta BD no incluye el valor 'activo' (solo pendiente_pago/en_progreso/finalizado_*/
+// liberado/cancelado) — se replica el filtro tal cual el PHP real (bug-for-bug), donde
+// 'activo' es un valor que hoy nunca matchea nada; el filtro efectivo en la práctica es
+// solo "en_progreso". No se "corrige" silenciosamente a solo ese valor.
+export async function getContratoActivo(servicioId: number, usuarioId: number): Promise<number | null> {
+  const [rows] = await pool.query<ContratoRowPacket[]>(
+    "SELECT id FROM contratos WHERE servicio_id = ? AND estado IN ('activo', 'en_progreso') AND (comprador_id = ? OR vendedor_id = ?) LIMIT 1",
+    [servicioId, usuarioId, usuarioId],
+  );
+  return rows[0]?.id ?? null;
+}
+
+// Puerto SIMPLIFICADO de detalle_servicio.php:206-271 (motor de recomendación) — ver la
+// nota de alcance completa en ServicioDetallePublico.recomendaciones (servicios.types.ts):
+// sin personalización por afinidad (tracker_intereses), usa directamente la categoría del
+// servicio actual. Mismo WHERE/LIMIT/orden de columnas que el SELECT real.
+export async function getRecomendaciones(servicioId: number, categoria: string): Promise<ServicioRow[]> {
+  const [rows] = await pool.query<ServicioRowPacket[]>(
+    `${SELECT_SERVICIO} WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 AND a.bloqueado = 0 AND s.id != ?
+     ORDER BY CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, s.id DESC
+     LIMIT 7`,
+    [servicioId, categoria],
+  );
+  return rows;
 }
 
 // Puerto exacto de detalle_servicio.php:201 — mismo filtro (calificacion>0,
