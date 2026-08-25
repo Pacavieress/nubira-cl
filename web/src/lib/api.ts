@@ -1280,3 +1280,53 @@ export async function getAdminReclamos(estado: EstadoFiltroReclamos): Promise<Re
   if (!res || !res.ok) return { estado, contadores: { activos: 0, resuelto: 0, eliminado: 0, todos: 0 }, tickets: [] };
   return res.json();
 }
+
+// Refleja los tipos de server/src/modules/adminUsuarios/adminUsuarios.types.ts — panel admin
+// "Usuarios" (admin_usuarios.php, "Gestión de Usuarios"). Lectura server-side (esta función);
+// las mutaciones van por Route Handlers (web/src/app/api/admin/usuarios/...) porque las
+// dispara AdminUsuariosPanel (Client Component). "Reenviar confirmación" queda excluida
+// (envía correo real) — mismo criterio que aprobar/rechazar en Videos.
+export type FiltroRolUsuarios = "" | "admin" | "alumno";
+export type FiltroVerificadoUsuarios = "" | "si" | "no";
+
+export interface UsuarioListado {
+  id: number;
+  nombre: string | null;
+  correo: string | null;
+  fotoPerfil: string | null;
+  fechaRegistro: string | null;
+  bloqueado: boolean;
+  confirmado: boolean;
+  suspendidoHasta: string | null;
+  ultimoReenvio: string | null;
+  rol: string;
+  totalServicios: number;
+  totalApuntes: number;
+  totalReclamos: number;
+}
+
+export interface UsuariosResumen {
+  page: number;
+  totalPages: number;
+  totalUsers: number;
+  totalUsersGlobal: number;
+  usuarios: UsuarioListado[];
+}
+
+export interface FiltrosUsuarios {
+  q: string;
+  rol: FiltroRolUsuarios;
+  verificado: FiltroVerificadoUsuarios;
+  page: number;
+}
+
+export async function getAdminUsuarios(f: FiltrosUsuarios): Promise<UsuariosResumen> {
+  const params = new URLSearchParams();
+  if (f.q) params.set("q", f.q);
+  if (f.rol) params.set("rol", f.rol);
+  if (f.verificado) params.set("verificado", f.verificado);
+  params.set("page", String(f.page));
+  const res = await fetchConSesion(`/api/admin/usuarios?${params.toString()}`);
+  if (!res || !res.ok) return { page: f.page, totalPages: 1, totalUsers: 0, totalUsersGlobal: 0, usuarios: [] };
+  return res.json();
+}
