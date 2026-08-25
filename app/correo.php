@@ -259,6 +259,7 @@ function enviarCorreoConfirmacionCompra($correoComprador, $nombreComprador, $nom
     $cuerpo = plantillaMaestra("Solicitud Enviada 🚀", $html, "Ver Mensajes", $linkChat);
     return _enviarEmailBase($correoComprador, "Solicitud enviada: $tituloServicio", $cuerpo);
 }
+
 // ==========================================================
 // NUEVA FUNCIÓN: RECUPERACIÓN DE DEMANDA (MARKETING)
 // ==========================================================

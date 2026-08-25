@@ -13,19 +13,15 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/helpers/pago_apunte.php';
 
-use MercadoPago\MercadoPagoConfig;
-use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 
-// 1. SEGURIDAD Y SESIÓN
-if (!isset($_SESSION['usuario_id'])) {
-    // Redirección limpia al login de Nubira 2.0
-    header('Location: /login?redir=' . urlencode($_SERVER['HTTP_REFERER'] ?? '/vitrina-apuntes'));
-    exit;
-}
-
-$usuario_id  = (int)$_SESSION['usuario_id'];
+// 1. IDENTIDAD (opcional) — checkout de invitado sin fricción, cero campos, diseño revisado
+// 24/08/2026: sin sesión no se pide NADA, se va directo a MercadoPago igual que un usuario
+// logueado. La fila fantasma del comprador recién se crea al confirmarse el pago
+// (pago_exitoso.php/notificaciones_mp.php) — acá no hay ninguna identidad que resolver.
+$usuario_id  = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : null;
 $institucion = $_SESSION['institucion'] ?? 'Nubira';
 
 // 2. CAPTURA DE DATOS
@@ -47,7 +43,7 @@ if (!$apunte) {
     die("❌ Error: Apunte no encontrado.");
 }
 
-if ($apunte['id_alumno'] === $usuario_id) {
+if ($usuario_id !== null && $apunte['id_alumno'] === $usuario_id) {
     die("❌ Error: No puedes comprar tu propio apunte.");
 }
 
@@ -59,47 +55,24 @@ if ($precio <= 0 || empty($titulo)) {
     die("❌ Error: Este apunte no es procesable por la pasarela de pago.");
 }
 
-// 4. CONFIGURACIÓN MERCADOPAGO
-MercadoPagoConfig::setAccessToken(MP_ACCESS_TOKEN);
-
-// URLs DE RETORNO CORREGIDAS (Apunta a la carpeta /app/)
-$baseUrl    = 'https://nubira.cl';
-$successUrl = $baseUrl . "/app/pago_exitoso.php";
-$failureUrl = $baseUrl . "/app/pago_error.php";
-$pendingUrl = $successUrl;
-
-$client = new PreferenceClient();
-
 try {
-    // 5. CREAR PREFERENCIA
-    $preference = $client->create([
-        "items" => [[
-            "title"       => "Apunte Nubira: " . mb_substr($titulo, 0, 50),
-            "description" => "Acceso permanente al documento",
-            "quantity"    => 1,
-            "unit_price"  => $precio,
-            "currency_id" => "CLP"
-        ]],
-        "back_urls" => [
-            "success" => $successUrl,
-            "failure" => $failureUrl,
-            "pending" => $pendingUrl
-        ],
-        "auto_return"        => "approved",
-        "external_reference" => (string)$id_apunte, // Vital para pago_exitoso.php
-        "metadata" => [
-            "usuario_id"  => $usuario_id,
-            "institucion" => $institucion
-        ]
-    ]);
+    // 4-5. CREAR PREFERENCIA (helper compartido con app/helpers/pago_apunte.php)
+    $identidad = $usuario_id !== null
+        ? ['tipo' => 'usuario', 'usuario_id' => $usuario_id, 'institucion' => $institucion]
+        : ['tipo' => 'invitado'];
 
-    // Guardar contexto en sesión (por si se necesita en el retorno)
-    $_SESSION['pago'] = [
-        'id_apunte'   => $id_apunte,
-        'titulo'      => $titulo,
-        'monto'       => $precio,
-        'institucion' => $institucion
-    ];
+    $preference = crearPreferenciaApunte($id_apunte, ['id_alumno' => $apunte['id_alumno'], 'titulo' => $titulo, 'precio' => $precio], $identidad);
+
+    // Guardar contexto en sesión (por si se necesita en el retorno) — solo aplica al camino
+    // logueado, que sí tiene sesión donde guardarlo.
+    if ($usuario_id !== null) {
+        $_SESSION['pago'] = [
+            'id_apunte'   => $id_apunte,
+            'titulo'      => $titulo,
+            'monto'       => $precio,
+            'institucion' => $institucion
+        ];
+    }
 
     // 6. REDIRECCIÓN A LA PASARELA
     if (!empty($preference->init_point)) {

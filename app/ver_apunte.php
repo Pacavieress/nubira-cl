@@ -29,6 +29,7 @@ if (!file_exists($base_path . '/conexion.php')) {
 
 require_once $base_path . '/conexion.php';
 require_once $base_path . '/iconos.php';
+require_once $base_path . '/helpers/comprador_invitado.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [$base_path . '/seguridad_url.php', dirname($base_path) . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -305,15 +306,9 @@ if ($logueado) {
     }
 }
 
-// [OPT-2] Secret desde variable de entorno, con fallback temporal
-function build_file_url($id, $file, $uid) {
-    $secret = getenv('NUBIRA_HMAC_SECRET') ?: ($_ENV['NUBIRA_HMAC_SECRET'] ?? 'NUBIRA_SECRET_TEMP_CAMBIAR');
-    $exp = time() + 3600;
-    $sig = hash_hmac('sha256', "$id|$uid|$file|$exp", $secret);
-    return "/app/descargar_apunte.php?id=$id&archivo=" . urlencode($file) . "&exp=$exp&sig=$sig";
-}
-
-$fileUrl = build_file_url($id_apunte, $archivo, $usuario_id); 
+// enlaceDescargaApunte() vive en helpers/comprador_invitado.php — misma fórmula HMAC que
+// usan pago_exitoso.php/notificaciones_mp.php para el invitado, extraída para no duplicarla.
+$fileUrl = enlaceDescargaApunte($id_apunte, $archivo, $usuario_id);
 $inlineUrl = $fileUrl . "&inline=1"; 
 $login_redir = '/login?redir=' . urlencode($_SERVER['REQUEST_URI']);
 
@@ -633,9 +628,15 @@ if (!empty($thumb_url)) {
                                        data-track="click_contact" data-type="apunte" data-id="<?= $id_apunte ?>">
                                         Desbloquear por <?= $precio_fmt ?>
                                     </a>
+                                <?php elseif ($precio > 0): ?>
+                                    <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>"
+                                       class="block w-full bg-[#54A6D8] hover:bg-[#4895c2] text-white font-bold py-3.5 rounded-2xl hover:scale-[1.02] transition-all flex justify-center items-center gap-2"
+                                       data-track="click_contact" data-type="apunte" data-id="<?= $id_apunte ?>">
+                                        <?= icon('lock', 'w-5 h-5') ?> Comprar por <?= $precio_fmt ?>
+                                    </a>
                                 <?php else: ?>
                                     <a href="<?= $login_redir ?>" class="block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-2xl hover:scale-[1.02] transition-all flex justify-center items-center gap-2">
-                                        <?= icon('user', 'w-5 h-5') ?> <?= ($precio === 0) ? 'Inicia sesión para ver gratis' : 'Inicia sesión para comprar' ?>
+                                        <?= icon('user', 'w-5 h-5') ?> Inicia sesión para ver gratis
                                     </a>
                                 <?php endif; ?>
                             <?php endif; ?>
@@ -754,7 +755,7 @@ if (!empty($thumb_url)) {
                                 <?= icon('publish-doc', 'w-5 h-5') ?> Inicia sesión para descargar
                             </a>
                         <?php elseif (!$logueado && $precio > 0): ?>
-                            <a href="<?= $login_redir ?>" class="block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl hover:bg-[#4895c2] transition flex items-center justify-center gap-2">
+                            <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>" class="block w-full bg-[#54A6D8] text-white font-bold py-3.5 rounded-xl hover:bg-[#4895c2] transition flex items-center justify-center gap-2">
                                 <?= icon('lock', 'w-5 h-5') ?> Comprar por <?= $precio_fmt ?>
                             </a>
                         <?php endif; ?>
@@ -979,7 +980,7 @@ require_once $base_path . '/componentes/modal_compartir_apunte.php';
                 <?= icon('user', 'w-4 h-4') ?> Inicia sesión
             </a>
         <?php elseif (!$logueado && $precio > 0): ?>
-            <a href="<?= $login_redir ?>"
+            <a href="/iniciar-pago?id_apunte=<?= $id_apunte ?>&archivo=<?= urlencode($archivo) ?>"
                class="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-5 py-3 text-sm shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center gap-2">
                 <?= icon('lock', 'w-4 h-4') ?> Comprar
             </a>

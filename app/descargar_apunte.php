@@ -26,41 +26,52 @@ function salir($codigo = 403, $mensaje = "Error desconocido") {
     </div>");
 }
 
-/* Sesión Obligatoria */
-if (!isset($_SESSION['usuario_id'])) {
-    header("Location: /login?redir=" . urlencode($_SERVER['REQUEST_URI']));
-    exit;
-}
-
-$usuario_id = (int)$_SESSION['usuario_id'];
-$rol        = $_SESSION['rol'] ?? 'alumno';
-
 /* Params */
-$archivo   = isset($_GET['archivo']) ? basename($_GET['archivo']) : null;
-$id_apunte = (int)($_GET['id'] ?? 0);
-$exp       = (int)($_GET['exp'] ?? 0);
-$sig       = $_GET['sig'] ?? null;
-$inline    = !empty($_GET['inline']); // 1 = inline si aplica
+$archivo      = isset($_GET['archivo']) ? basename($_GET['archivo']) : null;
+$id_apunte    = (int)($_GET['id'] ?? 0);
+$exp          = (int)($_GET['exp'] ?? 0);
+$sig          = $_GET['sig'] ?? null;
+$comprador_id_url = (int)($_GET['comprador_id'] ?? 0);
+$inline       = !empty($_GET['inline']); // 1 = inline si aplica
 
-// Validación básica de entrada (Sin forzar firma temporalmente)
+// Validación básica de entrada
 if (!$archivo || $id_apunte <= 0) {
     salir(400, "Faltan parámetros. URL recibida incompleta.");
 }
 
-/* // Expiración del link
-if (time() > $exp) {
-    salir(403, "El enlace expiró. Hora servidor: " . time() . " | Expiración: " . $exp); 
-}
+$es_invitado = false;
 
-// Validación de Firma (HMAC SHA256)
-$secret = getenv('NUBIRA_HMAC_SECRET') ?: ($_ENV['NUBIRA_HMAC_SECRET'] ?? 'NUBIRA_SECRET_TEMP_CAMBIAR');
-$data = $id_apunte . '|' . $usuario_id . '|' . $archivo . '|' . $exp;
-$hash = hash_hmac('sha256', $data, $secret);
+if (isset($_SESSION['usuario_id'])) {
+    /* Sesión normal — comportamiento sin cambios respecto al esquema original */
+    $usuario_id = (int)$_SESSION['usuario_id'];
+    $rol        = $_SESSION['rol'] ?? 'alumno';
+} else {
+    /* Sin sesión: checkout de invitado (diseño aprobado 24/08/2026) — acá el link ES la
+       credencial completa, así que la firma HMAC + expiración (30 días, ver
+       app/helpers/comprador_invitado.php::enlaceDescargaApunte) se exigen de verdad, a
+       diferencia del camino con sesión de arriba, donde el chequeo real ya es la sesión +
+       la fila en `compras` más abajo. */
+    if ($comprador_id_url <= 0 || !$sig || !$exp) {
+        header("Location: /login?redir=" . urlencode($_SERVER['REQUEST_URI']));
+        exit;
+    }
 
-if (!hash_equals($hash, $sig)) {
-    salir(403, "Firma inválida. El 'secret' o los datos no coinciden con los que generó el botón en el frontend.");
+    if (time() > $exp) {
+        salir(403, "El enlace de descarga venció. Pide uno nuevo en nubira.cl/recuperar-apunte.");
+    }
+
+    $secret = getenv('NUBIRA_HMAC_SECRET') ?: ($_ENV['NUBIRA_HMAC_SECRET'] ?? 'NUBIRA_SECRET_TEMP_CAMBIAR');
+    $data = $id_apunte . '|' . $comprador_id_url . '|' . $archivo . '|' . $exp;
+    $hash = hash_hmac('sha256', $data, $secret);
+
+    if (!hash_equals($hash, (string)$sig)) {
+        salir(403, "Firma inválida.");
+    }
+
+    $usuario_id  = $comprador_id_url;
+    $rol         = 'alumno';
+    $es_invitado = true;
 }
-*/
 
 /* BD: Datos del Apunte */
 $stmt = $conn->prepare("SELECT titulo, precio, id_alumno, archivo FROM apuntes WHERE id = ? LIMIT 1");

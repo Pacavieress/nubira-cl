@@ -15,6 +15,7 @@ if (!$body) exit;
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/helpers/comprador_invitado.php';
 
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Payment\PaymentClient;
@@ -131,36 +132,66 @@ try {
         if ($es_apunte) {
             $apunte_id  = $contrato_id;
             $usuario_id = (int)($payment->metadata->usuario_id ?? 0);
+            $usuario_id = $usuario_id > 0 ? $usuario_id : null;
 
-            if ($usuario_id <= 0) {
-                file_put_contents(
-                    __DIR__ . '/mp_webhook.log',
-                    date('c') . " APUNTE SIN USUARIO: payment_id=$payment_id apunte=$apunte_id\n",
-                    FILE_APPEND
-                );
-                exit;
-            }
+            // Checkout de invitado (sin sesión, cero campos) — diseño revisado 24/08/2026. Sin
+            // metadata.usuario_id es invitado por definición (iniciar_pago.php nunca la manda
+            // para invitados). El webhook es el único camino que puede confirmar la compra si
+            // el invitado nunca vuelve al navegador, así que la venta se registra igual — lo
+            // único que ya no puede pasar acá es entregar el link (no hay pantalla que mostrar
+            // desde un webhook), consecuencia aceptada del diseño sin email.
+            $es_invitado = ($usuario_id === null);
 
             $monto_int = (int)$amount;
             $conn->begin_transaction();
             try {
-                // Anti-dup compras
-                $chk = $conn->prepare("SELECT id FROM compras WHERE payment_id = ? LIMIT 1");
+                // Anti-dup compras — además coordina identidad con pago_exitoso.php: si esa
+                // página ya procesó este payment_id (o esta es una reentrega del webhook),
+                // reutilizamos SU comprador en vez de crear una fila fantasma nueva. Mismo
+                // criterio que pago_exitoso.php — ver la nota ahí.
+                $chk = $conn->prepare("SELECT id, usuario_id FROM compras WHERE payment_id = ? LIMIT 1");
                 $chk->bind_param("s", $payment_id);
                 $chk->execute();
-                $chk->store_result();
-                if ($chk->num_rows === 0) {
-                    $chk->close();
+                $filaCompra = $chk->get_result()->fetch_assoc();
+                $chk->close();
+
+                if ($filaCompra) {
+                    $usuario_id = (int)$filaCompra['usuario_id'];
+                } else {
+                    if ($usuario_id === null) {
+                        $usuario_id = crearCompradorInvitado($conn);
+                    }
                     $servicio_cero = 0;
                     $estado        = 'pagado';
-                    $ins = $conn->prepare(
-                        "INSERT INTO compras (id_apunte, usuario_id, servicio_id, monto, estado_pago, payment_id, fecha) VALUES (?, ?, ?, ?, ?, ?, NOW())"
-                    );
-                    $ins->bind_param("iiiiss", $apunte_id, $usuario_id, $servicio_cero, $monto_int, $estado, $payment_id);
-                    $ins->execute();
-                    $ins->close();
-                } else {
-                    $chk->close();
+                    $insertOk = false;
+                    $errno = 0;
+                    try {
+                        $ins = $conn->prepare(
+                            "INSERT INTO compras (id_apunte, usuario_id, servicio_id, monto, estado_pago, payment_id, fecha) VALUES (?, ?, ?, ?, ?, ?, NOW())"
+                        );
+                        $ins->bind_param("iiiiss", $apunte_id, $usuario_id, $servicio_cero, $monto_int, $estado, $payment_id);
+                        $insertOk = $ins->execute();
+                        $errno = $ins->errno;
+                        $ins->close();
+                    } catch (mysqli_sql_exception $dupEx) {
+                        $errno = $dupEx->getCode();
+                    }
+
+                    if (!$insertOk) {
+                        // Carrera de verdad con pago_exitoso.php — mismo criterio que ahí: nos
+                        // rendimos y reutilizamos al comprador que ganó en vez de duplicar.
+                        if ($errno !== 1062) throw new RuntimeException("Error insertando compras (payment_id=$payment_id): errno=$errno");
+                        // LOCK IN SHARE MODE — ver la misma nota en pago_exitoso.php: un SELECT
+                        // normal no vería la fila que pago_exitoso.php acaba de confirmar bajo
+                        // REPEATABLE READ (probado en vivo, devolvía usuario_id=0 sin esto).
+                        $stmtGanador = $conn->prepare("SELECT usuario_id FROM compras WHERE payment_id = ? LOCK IN SHARE MODE");
+                        $stmtGanador->bind_param("s", $payment_id);
+                        $stmtGanador->execute();
+                        $rowGanador = $stmtGanador->get_result()->fetch_assoc();
+                        $stmtGanador->close();
+                        if (!$rowGanador) throw new RuntimeException("Carrera en compras sin ganador visible (payment_id=$payment_id)");
+                        $usuario_id = (int)$rowGanador['usuario_id'];
+                    }
                 }
 
                 // Anti-dup ventas_apuntes
@@ -197,9 +228,10 @@ try {
                 }
 
                 $conn->commit();
+
                 file_put_contents(
                     __DIR__ . '/mp_webhook.log',
-                    date('c') . " APUNTE OK: payment_id=$payment_id apunte=$apunte_id comprador=$usuario_id\n",
+                    date('c') . " APUNTE OK: payment_id=$payment_id apunte=$apunte_id comprador=$usuario_id" . ($es_invitado ? " (invitado)" : "") . "\n",
                     FILE_APPEND
                 );
             } catch (Throwable $ea) {
