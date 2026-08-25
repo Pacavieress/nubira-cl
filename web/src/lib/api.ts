@@ -1176,3 +1176,28 @@ export async function getAdminCupones(): Promise<CuponesResumen> {
   if (!res || !res.ok) return { cupones: [], servicios: [] };
   return res.json();
 }
+
+// Refleja ServicioConOferta (server/src/modules/adminOfertas/adminOfertas.types.ts) — panel
+// admin "Subsidios" (admin_ofertas.php, "Centro de Subsidios"). Lectura server-side (esta
+// función); aplicar/quitar oferta van por Route Handlers (web/src/app/api/admin/ofertas/...)
+// porque las dispara un Client Component, mismo patrón que adminOfertasApuntes.
+export type OrdenOfertas = "recientes" | "descuento" | "vencer" | "cupos" | "activas" | "precio_mayor" | "precio_menor";
+
+export interface ServicioConOferta {
+  id: number;
+  titulo: string;
+  categoria: string | null;
+  tutorNombre: string;
+  precio: number;
+  precioOferta: number | null;
+  cuposOferta: number;
+  isSubvencionado: boolean;
+  ofertaTermino: string | null;
+}
+
+export async function getAdminOfertas(orden: OrdenOfertas): Promise<ServicioConOferta[]> {
+  const res = await fetchConSesion(`/api/admin/ofertas?orden=${orden}`);
+  if (!res || !res.ok) return [];
+  const body = (await res.json()) as { servicios: ServicioConOferta[] };
+  return body.servicios;
+}
