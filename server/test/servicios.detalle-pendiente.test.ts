@@ -170,3 +170,21 @@ test("GET /api/servicios/:id: video es null cuando no hay video_path", async () 
     await close();
   }
 });
+
+test("GET /api/servicios/:id: tutorEnClase=true si el vendedor tiene CUALQUIER contrato en_progreso (no ligado a este servicio)", async () => {
+  const { url, close } = listen();
+  try {
+    // servicioAprobadoId y servicioPendienteId son ambos del mismo dueño (duenoId), que
+    // tiene un contrato en_progreso en servicioAprobadoId — tutorEnClase debe ser true en
+    // AMBOS, porque el chequeo es por vendedor_id, no por servicio_id (detalle_servicio.php:328).
+    const res1 = await fetch(`${url}/api/servicios/${servicioAprobadoId}`);
+    const body1 = await res1.json();
+    assert.equal(body1.tutorEnClase, true);
+
+    const res2 = await fetch(`${url}/api/servicios/${servicioPendienteId}`, { headers: { Cookie: `PHPSESSID=${SESSION_DUENO}` } });
+    const body2 = await res2.json();
+    assert.equal(body2.tutorEnClase, true, "mismo vendedor, otro servicio suyo — debe seguir siendo true");
+  } finally {
+    await close();
+  }
+});

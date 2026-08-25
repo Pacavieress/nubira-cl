@@ -167,6 +167,15 @@ export async function getContratoActivo(servicioId: number, usuarioId: number): 
   return rows[0]?.id ?? null;
 }
 
+// Puerto exacto de detalle_servicio.php:326-334 ("lógica de tutor en clase") — banner
+// "El tutor está en clase" en el sidebar. Nota: NO está ligado a este servicio en particular,
+// es "¿el vendedor tiene CUALQUIER contrato en_progreso en este momento?" (mismo alumno_id,
+// cualquier servicio suyo).
+export async function tutorEstaEnClase(tutorAlumnoId: number): Promise<boolean> {
+  const [rows] = await pool.query<ContratoRowPacket[]>("SELECT id FROM contratos WHERE vendedor_id = ? AND estado = 'en_progreso' LIMIT 1", [tutorAlumnoId]);
+  return rows.length > 0;
+}
+
 // Puerto SIMPLIFICADO de detalle_servicio.php:206-271 (motor de recomendación) — ver la
 // nota de alcance completa en ServicioDetallePublico.recomendaciones (servicios.types.ts):
 // sin personalización por afinidad (tracker_intereses), usa directamente la categoría del

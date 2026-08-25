@@ -114,6 +114,7 @@ export function mapServicioDetalleRow(
   valoraciones: ValoracionRow[],
   minutosRespuesta: number | null,
   recomendaciones: ServicioRow[],
+  tutorEnClase: boolean,
 ): ServicioDetallePublico {
   const base = mapServicioRow(row);
   return {
@@ -134,6 +135,7 @@ export function mapServicioDetalleRow(
     valoraciones: valoraciones.map(mapValoracionRow),
     tiempoRespuesta: formatearTiempoRespuesta(minutosRespuesta),
     estado: row.estado,
+    tutorEnClase,
     // Puerto de detalle_servicio.php:589-608 — el video solo se muestra si video_estado
     // (ya moderado por admin, ver adminVideos) es 'aprobado', igual que el PHP real. El
     // poster cae a la portada del servicio si no hay video_thumb_path (línea 593-595 del

@@ -9,6 +9,7 @@ import {
   getServicioDetalleByIdSinFiltro,
   getValoracionesByServicioId,
   searchServiciosAprobados,
+  tutorEstaEnClase,
 } from "./servicios.repository.js";
 
 const DEFAULT_LIMIT = 20;
@@ -80,12 +81,13 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const [valoraciones, minutosRespuesta, esFavorito, contratoId, recomendaciones] = await Promise.all([
+  const [valoraciones, minutosRespuesta, esFavorito, contratoId, recomendaciones, tutorEnClase] = await Promise.all([
     getValoracionesByServicioId(id),
     getMinutosRespuestaTutor(row.alumno_id),
     isAuthenticated ? existeFavorito(req.usuarioId!, id) : Promise.resolve(false),
     isAuthenticated ? getContratoActivo(id, req.usuarioId!) : Promise.resolve(null),
     getRecomendaciones(id, row.categoria),
+    tutorEstaEnClase(row.alumno_id),
   ]);
 
   // req.usuarioId lo pone optionalAuth (servicios.routes.ts) SOLO si había una sesión
@@ -97,6 +99,7 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
       valoraciones,
       minutosRespuesta,
       recomendaciones,
+      tutorEnClase,
     ),
   );
 }

@@ -98,6 +98,7 @@ export interface ServicioDetalle extends Omit<ServicioListado, "tutor"> {
   estado: string;
   video: { path: string; thumbUrl: string | null } | null;
   recomendaciones: ServicioListado[];
+  tutorEnClase: boolean;
 }
 
 // BUG real pre-existente corregido acá (Fase 7, al construir favoritos): esta función

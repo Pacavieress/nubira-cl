@@ -160,6 +160,8 @@ export interface ServicioDetallePublico extends Omit<ServicioPublico, "tutor"> {
   // visitante recibe 404 antes de llegar a construir esta respuesta (ver el controller).
   estado: string;
   video: { path: string; thumbUrl: string | null } | null;
+  // Puerto de detalle_servicio.php:326-334 — banner "El tutor está en clase" (sidebar).
+  tutorEnClase: boolean;
   // Puerto exacto de detalle_servicio.php:206-271 (motor de recomendación), CON una
   // simplificación deliberada: el PHP real personaliza por afinidad de categoría usando
   // `tracker_intereses` (historial de navegación del visitante, logueado o por huella
