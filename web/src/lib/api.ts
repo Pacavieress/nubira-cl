@@ -1201,3 +1201,37 @@ export async function getAdminOfertas(orden: OrdenOfertas): Promise<ServicioConO
   const body = (await res.json()) as { servicios: ServicioConOferta[] };
   return body.servicios;
 }
+
+// Refleja VideoServicio (server/src/modules/adminVideos/adminVideos.types.ts) — panel admin
+// "Videos" (admin_videos.php, moderación de videos de presentación). 100% lectura:
+// aprobar/rechazar envían correo real + push notification al tutor, quedan excluidos y
+// enlazan al sitio PHP real, mismo criterio que el resto de esta ronda de paneles.
+export type EstadoVideo = "pendiente" | "aprobado" | "rechazado" | "todos";
+
+export interface VideoServicio {
+  id: number;
+  titulo: string;
+  categoria: string | null;
+  materia: string | null;
+  precio: number;
+  videoPath: string;
+  videoEstado: "pendiente" | "aprobado" | "rechazado";
+  videoMotivoRechazo: string | null;
+  videoSubidoEn: string | null;
+  alumnoId: number;
+  tutorNombre: string;
+  tutorFotoPerfil: string | null;
+  tutorCorreo: string;
+}
+
+export interface VideosResumen {
+  filtro: EstadoVideo;
+  totalPendientes: number;
+  videos: VideoServicio[];
+}
+
+export async function getAdminVideos(filtro: EstadoVideo): Promise<VideosResumen> {
+  const res = await fetchConSesion(`/api/admin/videos?filtro=${filtro}`);
+  if (!res || !res.ok) return { filtro, totalPendientes: 0, videos: [] };
+  return res.json();
+}

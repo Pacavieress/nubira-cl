@@ -19,6 +19,7 @@ import { adminRecordatoriosRouter } from "./modules/adminRecordatorios/adminReco
 import { adminReportesServiciosRouter } from "./modules/adminReportesServicios/adminReportesServicios.routes.js";
 import { adminServiciosRouter } from "./modules/adminServicios/adminServicios.routes.js";
 import { adminSolicitudesRouter } from "./modules/adminSolicitudes/adminSolicitudes.routes.js";
+import { adminVideosRouter } from "./modules/adminVideos/adminVideos.routes.js";
 import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
@@ -97,6 +98,7 @@ export function createApp(): Express {
   app.use("/api/admin/login-fallos", adminLoginFallosRouter);
   app.use("/api/admin/reportes-servicios", adminReportesServiciosRouter);
   app.use("/api/admin/solicitudes", adminSolicitudesRouter);
+  app.use("/api/admin/videos", adminVideosRouter);
   app.use("/api", authRouter);
 
   app.use(notFoundHandler);
