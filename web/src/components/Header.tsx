@@ -29,7 +29,23 @@ import { HeaderSearchForm } from "./HeaderSearchForm";
 //
 // `q` es opcional: solo busqueda/page.tsx lo pasa (prefill del input con el término ya
 // buscado, igual que header.php:185 `value="<?= htmlspecialchars($_GET['q'] ?? '') ?>"`).
-export async function Header({ titulo, q }: { titulo: string; q?: string }) {
+//
+// `ocultarBuscador`/`ocultarBotonesPublicar` [26/08/2026] — puerto de $ocultar_buscador/
+// $ocultar_botones_publicar (header.php:143-147, "modo lectura" que usan las páginas de
+// contenido estático como sobre-nosotros.php/privacidad.php/terminos.php para no distraer
+// con el buscador ni los botones de publicar). Ambos con default false (mismo default que
+// el PHP: si la página no pasa nada, se muestran).
+export async function Header({
+  titulo,
+  q,
+  ocultarBuscador = false,
+  ocultarBotonesPublicar = false,
+}: {
+  titulo: string;
+  q?: string;
+  ocultarBuscador?: boolean;
+  ocultarBotonesPublicar?: boolean;
+}) {
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
   const sesion = await getSesion();
 
@@ -50,11 +66,11 @@ export async function Header({ titulo, q }: { titulo: string; q?: string }) {
         </div>
 
         <div className="flex-1 max-w-xl mx-1 md:mx-4">
-          <HeaderSearchForm q={q} />
+          {!ocultarBuscador && <HeaderSearchForm q={q} />}
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2 md:gap-4">
-          {sesion?.mostrarBotonesPublicar && (
+          {!ocultarBotonesPublicar && sesion?.mostrarBotonesPublicar && (
             <div className="hidden lg:flex items-center gap-3">
               <Link
                 href="/formulario-subir-apunte"
