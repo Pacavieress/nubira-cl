@@ -1,4 +1,4 @@
-import type { DatosBancariosRow, SolicitudRetiro, SolicitudRetiroRow } from "./miBilletera.types.js";
+import type { DatosBancariosCompletos, DatosBancariosCompletosRow, DatosBancariosRow, SolicitudRetiro, SolicitudRetiroRow } from "./miBilletera.types.js";
 
 // Puerto exacto de datos_bancarios.php:223 — últimos 4 dígitos, o '••••' si el número
 // registrado tiene menos de 4 caracteres.
@@ -14,4 +14,14 @@ export function mapDatosBancarios(row: DatosBancariosRow | null): { banco: strin
 
 export function mapSolicitudRetiroRow(row: SolicitudRetiroRow): SolicitudRetiro {
   return { monto: row.monto, fechaSolicitud: row.fecha_solicitud, estado: row.estado };
+}
+
+export function mapDatosBancariosCompletos(row: DatosBancariosCompletosRow): DatosBancariosCompletos {
+  return {
+    banco: row.banco,
+    tipoCuenta: row.tipo_cuenta,
+    numeroCuenta: row.numero_cuenta,
+    titularNombre: row.titular_nombre,
+    rut: row.rut,
+  };
 }

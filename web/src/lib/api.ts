@@ -512,6 +512,29 @@ export async function getMiBilletera(): Promise<MiBilletera | null> {
   return res.json();
 }
 
+// Refleja DatosBancariosCompletos/DatosBancariosParaEditar (server/src/modules/miBilletera/
+// miBilletera.types.ts) [26/08/2026] — a diferencia de MiBilletera.datosBancarios (arriba,
+// solo banco + últimos 4 dígitos para el resumen), esta trae la fila completa sin
+// enmascarar: es lo que el propio dueño necesita para editar su formulario.
+export interface DatosBancariosCompletos {
+  banco: string;
+  tipoCuenta: string;
+  numeroCuenta: string;
+  titularNombre: string;
+  rut: string;
+}
+
+export interface DatosBancariosParaEditar {
+  bancos: string[];
+  datos: DatosBancariosCompletos | null;
+}
+
+export async function getDatosBancariosParaEditar(): Promise<DatosBancariosParaEditar | null> {
+  const res = await fetchConSesion("/api/me/mi-billetera/datos-bancarios");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
 // Refleja PerfilCuenta (server/src/modules/configurarCuenta/configurarCuenta.types.ts).
 // Cambiar contraseña y eliminar cuenta NO están acá — ver ese archivo para el porqué
 // (siguen enlazando a la página PHP real).

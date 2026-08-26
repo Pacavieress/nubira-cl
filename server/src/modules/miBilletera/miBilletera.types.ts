@@ -1,11 +1,18 @@
-// Puerto de app/datos_bancarios.php:26-76 — SOLO lectura (cálculo de saldo + historial de
-// retiros). La acción real de dinero ("Solicitar Retiro", línea 180-186) es un
-// <form method="POST"> nativo hacia /solicitar-retiro protegido con un csrf_token que vive
-// en la sesión PHP ($_SESSION['csrf_token']) — Node no tiene acceso a esa sesión PHP más
-// allá de sesiones_api (usuario_id), así que no se puede replicar ese POST de forma segura
-// desde acá. web/ enlaza directo a la página PHP real para esa acción (mismo patrón que
-// "Editar Servicio"/"Editar Apunte" en /mis-publicaciones) — no se introduce ningún camino
-// nuevo para mover dinero, solo se lee el estado ya calculado en server/PHP real.
+// Puerto de app/datos_bancarios.php:26-76 (lectura de saldo + historial), y [26/08/2026]
+// también de app/solicitar_retiro.php (118 líneas) y app/editar_datos_bancarios.php (298
+// líneas) — completos, no solo lectura. El comentario viejo de este archivo (ya no
+// vigente, se deja como rastro) decía que no se podía replicar el POST real porque el
+// csrf_token vive en la sesión PHP, inaccesible desde Node. Ese razonamiento quedó
+// obsoleto: el resto de este port ya resolvió el mismo problema con requireAuth (cookie de
+// sesiones_api) en vez de CSRF — mismo criterio ya usado en perfil.controller.ts::
+// putMiPerfilBio ("acá no hay CSRF de sesión PHP que validar porque requireAuth ya cubre
+// el mismo problema que el CSRF busca prevenir"). Se aplica acá igual.
+//
+// Deliberadamente NO portado: el push notification a admin (id=1) que
+// solicitar_retiro.php:108-111 dispara vía enviar_push_nubira()/OneSignal — es
+// infraestructura de notificaciones propia de PHP sin equivalente en server/, y no es
+// parte de mover el dinero en sí (el admin sigue viendo la solicitud en /admin/retiros
+// igual, solo sin el push inmediato).
 
 export interface SolicitudRetiroRow {
   monto: number;
@@ -39,4 +46,38 @@ export interface MiBilleteraPublico {
   // el render — acá se enmascara antes de que el dato cruce la red hacia web/.
   datosBancarios: { banco: string; numeroCuentaEnmascarado: string } | null;
   historialRetiros: SolicitudRetiro[];
+}
+
+// Fila completa de datos_pago_usuario — a diferencia de DatosBancariosRow (arriba, solo
+// banco+numero_cuenta para el resumen enmascarado), esta SÍ lleva el número de cuenta sin
+// enmascarar: es lo que necesita el propio dueño para ver/editar su formulario. Nunca se
+// expone a otro usuario que no sea el dueño (requireAuth ya garantiza usuarioId = dueño).
+export interface DatosBancariosCompletosRow {
+  banco: string;
+  tipo_cuenta: string;
+  numero_cuenta: string;
+  titular_nombre: string;
+  rut: string;
+}
+
+export interface DatosBancariosCompletos {
+  banco: string;
+  tipoCuenta: string;
+  numeroCuenta: string;
+  titularNombre: string;
+  rut: string;
+}
+
+export interface DatosBancariosParaEditar {
+  bancos: string[];
+  datos: DatosBancariosCompletos | null;
+}
+
+// Puerto exacto de editar_datos_bancarios.php:43-47 (mismos 5 campos, mismo trim).
+export interface GuardarDatosBancariosInput {
+  banco: string;
+  tipoCuenta: string;
+  numeroCuenta: string;
+  titularNombre: string;
+  rut: string;
 }

@@ -1,6 +1,6 @@
-import type { RowDataPacket } from "mysql2";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
-import type { DatosBancariosRow, SolicitudRetiroRow } from "./miBilletera.types.js";
+import type { DatosBancariosCompletosRow, DatosBancariosRow, GuardarDatosBancariosInput, SolicitudRetiroRow } from "./miBilletera.types.js";
 
 interface ConfigRow extends RowDataPacket {
   clave: string;
@@ -14,6 +14,10 @@ interface TotalRow extends RowDataPacket {
 }
 interface DatosBancariosDbRow extends DatosBancariosRow, RowDataPacket {}
 interface SolicitudRetiroDbRow extends SolicitudRetiroRow, RowDataPacket {}
+interface DatosBancariosCompletosDbRow extends DatosBancariosCompletosRow, RowDataPacket {}
+interface BancoRow extends RowDataPacket {
+  nombre: string;
+}
 
 // Puerto exacto de datos_bancarios.php:30-34 (misma query, mismos defaults si la fila no
 // existe: mínimo 10000, comisión 0).
@@ -75,4 +79,72 @@ export async function getHistorialRetiros(usuarioId: number): Promise<SolicitudR
     [usuarioId],
   );
   return rows;
+}
+
+// Puerto exacto de editar_datos_bancarios.php:37 (mismo ORDER BY).
+export async function getBancos(): Promise<string[]> {
+  const [rows] = await pool.query<BancoRow[]>("SELECT nombre FROM bancos ORDER BY nombre ASC");
+  return rows.map((r) => r.nombre);
+}
+
+// Fila COMPLETA (con numero_cuenta sin enmascarar) para el propio dueño ver/editar su
+// formulario — puerto exacto de editar_datos_bancarios.php:30-35. Distinto de
+// getDatosBancarios() (arriba, banco+numero_cuenta) usado para el resumen enmascarado.
+export async function getDatosBancariosCompletos(usuarioId: number): Promise<DatosBancariosCompletosRow | null> {
+  const [rows] = await pool.query<DatosBancariosCompletosDbRow[]>(
+    "SELECT banco, tipo_cuenta, numero_cuenta, titular_nombre, rut FROM datos_pago_usuario WHERE usuario_id = ?",
+    [usuarioId],
+  );
+  return rows[0] ?? null;
+}
+
+// Puerto exacto de editar_datos_bancarios.php:62-72 — INSERT si no había fila, UPDATE si
+// ya existía (mismo criterio real: 1 fila por usuario en datos_pago_usuario).
+export async function upsertDatosBancarios(usuarioId: number, input: GuardarDatosBancariosInput): Promise<void> {
+  const existentes = await getDatosBancarios(usuarioId);
+  if (existentes) {
+    await pool.query("UPDATE datos_pago_usuario SET banco = ?, tipo_cuenta = ?, numero_cuenta = ?, titular_nombre = ?, rut = ? WHERE usuario_id = ?", [
+      input.banco,
+      input.tipoCuenta,
+      input.numeroCuenta,
+      input.titularNombre,
+      input.rut,
+      usuarioId,
+    ]);
+  } else {
+    await pool.query(
+      "INSERT INTO datos_pago_usuario (usuario_id, banco, tipo_cuenta, numero_cuenta, titular_nombre, rut) VALUES (?, ?, ?, ?, ?, ?)",
+      [usuarioId, input.banco, input.tipoCuenta, input.numeroCuenta, input.titularNombre, input.rut],
+    );
+  }
+}
+
+// Puerto exacto de solicitar_retiro.php:83-107 (INSERT + vincular contratos.
+// solicitud_retiro_id, misma transacción — para no dejar contratos sin vincular si la
+// vinculación falla a mitad de camino). `estado` arranca siempre en 'pendiente', igual que
+// el PHP real (nunca se aprueba sola desde este endpoint).
+export async function crearSolicitudRetiro(usuarioId: number, monto: number, institucion: string): Promise<void> {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [result] = await conn.query<ResultSetHeader>(
+      "INSERT INTO solicitudes_retiro (usuario_id, monto, institucion, estado, fecha_solicitud) VALUES (?, ?, ?, 'pendiente', NOW())",
+      [usuarioId, monto, institucion],
+    );
+    const solicitudId = result.insertId;
+    await conn.query(
+      `UPDATE contratos
+       SET solicitud_retiro_id = ?
+       WHERE vendedor_id = ?
+       AND estado IN ('liberado', 'finalizado', 'completado')
+       AND solicitud_retiro_id IS NULL`,
+      [solicitudId, usuarioId],
+    );
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
