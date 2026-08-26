@@ -142,11 +142,7 @@ RewriteRule ^apuntes/?$               app/vitrina_apuntes.php           [L,QSA]
 RewriteRule ^vitrina-apuntes/?$       /apuntes                          [R=301,L]
 RewriteRule ^explorar-apuntes/?$      /apuntes                          [R=301,L]
 
-RewriteRule ^vitrina-proyectos$       app/vitrina_proyectos.php         [L,QSA]
 RewriteRule ^descubre$                app/descubre.php                  [L,QSA]
-
-# Cargas AJAX
-RewriteRule ^cargar-proyectos$        app/cargar_proyectos.php          [L,QSA]
 
 # === URL CANÓNICA SEO (Fase 1) ===
 RewriteRule ^servicios/(.+)-(\d+)/?$ app/detalle_servicio.php?servicio_id=$2&slug_captured=$1 [L,QSA]
