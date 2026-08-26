@@ -316,6 +316,25 @@ export async function getLandingClases(slug: string): Promise<LandingClases | nu
   return res.json();
 }
 
+// Refleja LandingApuntes (server/src/modules/landings/landings.types.ts) [26/08/2026,
+// Grupo C] — mismo motor que LandingClases (landing_categoria.php, rama tipo=apuntes).
+export interface LandingApuntes {
+  categoria: string;
+  seo: { titulo: string; descripcion: string; h1: string; intro: string | null; noindex: boolean };
+  total: number;
+  apuntes: ApunteListado[];
+  faqs: { pregunta: string; respuesta: string }[];
+}
+
+export async function getLandingApuntes(slug: string): Promise<LandingApuntes | null> {
+  const res = await fetch(`${API_URL}/api/landings/apuntes/${slug}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`La API de landings respondió ${res.status}`);
+  }
+  return res.json();
+}
+
 // Refleja ApunteComprado/ServicioContratado/MisComprasPublico
 // (server/src/modules/compras/compras.types.ts). Mismo criterio que los demás tipos de
 // esta página: no es un import compartido a propósito.
@@ -573,6 +592,61 @@ export async function getMisMetricas(): Promise<PublicacionMetrica[] | null> {
   if (!res || !res.ok) return null;
   const body = (await res.json()) as { data: PublicacionMetrica[] };
   return body.data;
+}
+
+// Refleja MetricaDetalle (server/src/modules/metricas/metricas.types.ts) [26/08/2026,
+// Grupo C] — puerto de app/metricas_detalle.php completo (funnel, sparkline de 30 días,
+// dispositivos, orígenes, ubicación). Página de solo lectura: se llama directo desde el
+// Server Component de la página (mismo patrón que getMisMetricas arriba), sin proxy en
+// web/api/ porque ningún Client Component la necesita.
+export interface Delta {
+  dir: "up" | "down" | "flat";
+  label: string;
+}
+
+export interface FunnelEtapa {
+  label: string;
+  valor: number;
+}
+
+export interface OrigenStat {
+  origen: string;
+  total: number;
+}
+
+export interface UbicacionStat {
+  ciudad: string | null;
+  pais: string | null;
+  visitas: number;
+}
+
+export interface MetricaDetalle {
+  publicacion: {
+    id: number;
+    tipo: "servicio" | "apunte";
+    titulo: string;
+    precio: number | null;
+    imagenUrl: string;
+    editarHref: string;
+  };
+  visitas30d: number;
+  deltaVisitas: Delta | null;
+  tiempoPromedioSegundos: number;
+  deltaTiempo: Delta | null;
+  pctLeyo: number;
+  deltaLeyo: Delta | null;
+  visitasTotal: number;
+  funnel: FunnelEtapa[];
+  visitasPorDia: number[];
+  dispositivos: { movil: number; tablet: number; desktop: number };
+  origenes: OrigenStat[];
+  ubicaciones: UbicacionStat[];
+}
+
+export async function getMiMetricaDetalle(tipo: string, id: string): Promise<MetricaDetalle | null> {
+  const res = await fetchConSesion(`/api/me/metricas/${tipo}/${id}`);
+  if (!res || !res.ok) return null;
+  return res.json();
 }
 
 // Refleja CategoriaHub/GuiasHubGeneral (server/src/modules/guias/guias.types.ts).

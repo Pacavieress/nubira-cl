@@ -140,3 +140,86 @@ test("GET /api/landings/clases/lenguaje: sin fila en seo_categorias_contenido ->
     await close();
   }
 });
+
+// ============================================================================
+// Grupo C (26/08/2026) — tipo=apuntes, cerrando la asimetría con tipo=clases (mismo
+// archivo PHP real, landing_categoria.php, ambas ramas). apuntes.categoria en la BD local
+// real está en minúsculas ('derecho', 'paes') a diferencia de servicios.categoria
+// ('Matemáticas') — confirmado que igual matchea contra el nombre canónico ('Derecho') por
+// collation case-insensitive, mismo comportamiento que tendría la query real en MySQL.
+// ============================================================================
+
+interface LandingApuntesBody {
+  categoria: string;
+  seo: { titulo: string; descripcion: string; h1: string; intro: string | null; noindex: boolean };
+  total: number;
+  apuntes: { id: number; titulo: string }[];
+  faqs: { pregunta: string; respuesta: string }[];
+}
+
+test("GET /api/landings/apuntes/:slug inexistente devuelve 404", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/landings/apuntes/no-existe-esta-categoria`);
+    assert.equal(res.status, 404);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/landings/apuntes/derecho: apunte real, categoria en minúscula en BD matchea igual (Derecho)", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/landings/apuntes/derecho`);
+    const body = (await res.json()) as LandingApuntesBody;
+    assert.equal(res.status, 200);
+    assert.equal(body.categoria, "Derecho");
+    assert.ok(body.total >= 1, "debería haber al menos 1 apunte real de Derecho en la BD local");
+    assert.equal(body.apuntes.length, body.total);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/landings/apuntes/paes: refuerzo amplio (LIKE + nivel_academico='paes'), no categoria exacta", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/landings/apuntes/paes`);
+    const body = (await res.json()) as LandingApuntesBody;
+    assert.equal(res.status, 200);
+    assert.equal(body.categoria, "PAES");
+    assert.ok(body.total > 0, "debería haber apuntes reales relacionados con PAES en la BD local");
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/landings/apuntes/matematicas: sin apuntes reales en esa categoría -> total=0, estado vacío coherente", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/landings/apuntes/matematicas`);
+    const body = (await res.json()) as LandingApuntesBody;
+    assert.equal(res.status, 200);
+    assert.equal(body.categoria, "Matemáticas");
+    assert.equal(body.total, 0);
+    assert.equal(body.apuntes.length, 0);
+    assert.equal(body.seo.noindex, true, "total<3 -> siempre noindex");
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/landings/apuntes/derecho: copy usa 'Apuntes'/'apuntes y resúmenes', no el texto de 'Clases'", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/landings/apuntes/derecho`);
+    const body = (await res.json()) as LandingApuntesBody;
+    assert.equal(res.status, 200);
+    assert.equal(body.seo.h1, "Apuntes de Derecho en Chile");
+    assert.equal(body.seo.titulo, "Apuntes de Derecho universidad Chile | Nubira");
+    assert.ok(body.seo.descripcion.includes("apuntes y resúmenes"));
+    assert.ok(!body.seo.descripcion.includes("clases particulares"));
+  } finally {
+    await close();
+  }
+});

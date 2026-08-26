@@ -2,6 +2,13 @@ export function formatoCLP(valor: number): string {
   return `$${valor.toLocaleString("es-CL")}`;
 }
 
+// Puerto exacto de det_format_tiempo() en app/metricas_detalle.php:276-280.
+export function formatoTiempo(segundos: number): string {
+  if (segundos <= 0) return "—";
+  if (segundos < 60) return `${segundos}s`;
+  return `${Math.floor(segundos / 60)}m ${segundos % 60}s`;
+}
+
 // Puerto de abreviar_conteo() (app/cargar_apuntes.php:31-36) — usado para "1.2K descargas".
 // PHP concatena un float de round(): 2.0 se imprime "2", no "2.0" — toFixed(1) siempre deja
 // el decimal, así que se recorta a mano cuando es entero para igualar ese comportamiento.

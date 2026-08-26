@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getMisMetricas } from "@/lib/api";
 import { getSesion } from "@/lib/sesion";
@@ -5,9 +6,10 @@ import { Header } from "@/components/Header";
 
 // Puerto de app/metricas.php — mismo gate (línea 7: sin sesión -> /login), misma lista
 // (servicios + apuntes aprobados/visibles, mezclados por fecha DESC) con visitas de 30
-// días + flecha de tendencia. Sin la página de detalle por publicación (/metricas/:tipo/:id,
-// app/metricas_detalle.php — 582 líneas con gráficos) — cada fila enlaza al PHP real para
-// eso, fuera de alcance de esta pieza.
+// días + flecha de tendencia.
+//
+// [26/08/2026, Grupo C] Cada fila ya enlaza a la página de detalle propia
+// (/metricas/:tipo/:id) en vez de al PHP real — ver web/src/app/metricas/[tipo]/[id]/page.tsx.
 export default async function MetricasPage() {
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
   const sesion = await getSesion();
@@ -21,7 +23,9 @@ export default async function MetricasPage() {
   return (
     <>
       <Header titulo="Métricas" />
-      <main className="pt-20 pb-28 md:pb-16 px-4 md:px-8 lg:ml-64 max-w-[720px] mx-auto">
+      {/* lg:pl-64 en vez de lg:ml-64 — overflow horizontal bajo <body flex flex-col>, ver
+          web/src/app/apuntes/page.tsx para el diagnóstico completo. */}
+      <main className="pt-20 pb-28 md:pb-16 px-4 md:px-8 lg:pl-64 max-w-[720px] mx-auto">
         <header className="mb-4">
           <h1 className="text-xl font-medium text-[#222222] tracking-[-0.01em]">Métricas</h1>
           <p className="text-xs text-gray-400 mt-0.5">Últimos 30 días</p>
@@ -35,9 +39,9 @@ export default async function MetricasPage() {
         ) : (
           <div className="space-y-2">
             {publicaciones.map((pub) => (
-              <a
+              <Link
                 key={`${pub.tipo}-${pub.id}`}
-                href={`${phpSiteUrl}/metricas/${pub.tipo}/${pub.id}`}
+                href={`/metricas/${pub.tipo}/${pub.id}`}
                 className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 px-4 py-3 hover:border-gray-200 hover:shadow-sm transition-all"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -59,7 +63,7 @@ export default async function MetricasPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-300 shrink-0">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                 </svg>
-              </a>
+              </Link>
             ))}
           </div>
         )}

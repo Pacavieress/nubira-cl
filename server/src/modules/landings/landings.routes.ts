@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { getLandingClases } from "./landings.controller.js";
+import { getLandingApuntes, getLandingClases } from "./landings.controller.js";
 
 export const landingsRouter = Router();
 
-// Puerto de landing_categoria.php con tipo=clases únicamente — ver landings.types.ts
-// para por qué tipo=apuntes queda fuera de esta pieza.
+// Puerto completo de landing_categoria.php, ambos tipos — ver landings.types.ts para el
+// historial de por qué tipo=apuntes se dejó fuera antes y por qué esa razón ya no aplica.
 landingsRouter.get("/clases/:slug", getLandingClases);
+landingsRouter.get("/apuntes/:slug", getLandingApuntes);

@@ -1,11 +1,22 @@
+import type { ApunteRow, ApuntePublico } from "../apuntes/apuntes.types.js";
 import type { ServicioPublico, ServicioRow } from "../servicios/servicios.types.js";
 
-// Puerto de app/landing_categoria.php — SOLO tipo=clases (tipo=apuntes se deja fuera a
-// propósito: server/src/modules/landings NO tiene ninguna fila configurada en
-// seo_categorias_contenido para tipo='apuntes' hoy — confirmado contra la BD real, cero
-// contenido SEO real que portar — y además /apuntes/[cat] colisionaría con la ruta de
-// listado /apuntes ya construida en web/, a diferencia de /clases/[cat] que no choca con
-// nada existente).
+// Puerto de app/landing_categoria.php — [26/08/2026] ahora también tipo=apuntes, cerrando
+// la asimetría con tipo=clases (mismo archivo PHP real para ambos). La nota vieja de este
+// comentario decía 2 razones para dejarlo fuera — reevaluadas al retomar esta pieza:
+//   1. "cero fila en seo_categorias_contenido para tipo='apuntes'" — SIGUE siendo cierto
+//      hoy (reconfirmado contra la BD real, 0 filas), pero eso no es un bloqueante: la
+//      página real ya tiene un fallback genérico para cuando no hay override SEO — es
+//      exactamente el mismo camino que ya toman 9 de las 16 categorías de "clases" (solo
+//      7 tienen fila real). Renderiza con el fallback como cualquier otra, no un caso
+//      especial.
+//   2. "colisión de ruta con /apuntes ya construida" — no es una colisión real: Next.js
+//      App Router soporta nativamente un `page.tsx` estático y un `[cat]/page.tsx`
+//      dinámico como hermanos bajo el mismo segmento (`/apuntes` matchea el primero,
+//      `/apuntes/matematicas` el segundo) — mismo patrón que cualquier `/blog` +
+//      `/blog/[slug]`. Tampoco hay colisión en Express (`/api/landings/apuntes/:slug` es
+//      un prefijo literal distinto de `/api/landings/clases/:slug`). El propio `.htaccess`
+//      real tampoco choca (`apuntes/?$` vs `apuntes/([a-z]+)/?$` son patrones distintos).
 
 // Puerto exacto de nubira_categorias_seo() en app/helpers/seo.php:81-100 — mapeo fijo
 // slug → nombre canónico de categoría. Only 7 de estos 16 tienen fila en
@@ -90,5 +101,19 @@ export interface LandingClases {
   seo: LandingSeo;
   total: number;
   servicios: ServicioPublico[];
+  faqs: LandingFaq[];
+}
+
+export interface LandingApuntesRaw {
+  categoria: string;
+  seoRow: SeoCategoriaContenidoRow | null;
+  apuntes: ApunteRow[];
+}
+
+export interface LandingApuntes {
+  categoria: string;
+  seo: LandingSeo;
+  total: number;
+  apuntes: ApuntePublico[];
   faqs: LandingFaq[];
 }
