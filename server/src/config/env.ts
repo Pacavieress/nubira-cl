@@ -37,4 +37,12 @@ export const env = {
     password: process.env.DB_PASSWORD ?? "",
     database: required("DB_NAME"),
   },
+  // Checkpoint 2 (Pago) — mismo token real de producción que usa app/.env del sitio PHP
+  // (confirmado live_mode=true contra la API real de MercadoPago, no un token de pruebas).
+  mpAccessToken: required("MP_ACCESS_TOKEN"),
+  // Ver .env.example: back_urls apuntan a WEB_BASE_URL (web/), notification_url apunta a
+  // API_PUBLIC_URL (esta API) — ninguno de los 2 es alcanzable desde MercadoPago mientras
+  // el entorno sea localhost; el webhook real solo puede probarse en vivo una vez deployado.
+  webBaseUrl: process.env.WEB_BASE_URL ?? "http://localhost:3000",
+  apiPublicUrl: process.env.API_PUBLIC_URL ?? "http://localhost:4000",
 };

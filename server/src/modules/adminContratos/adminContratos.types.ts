@@ -1,10 +1,8 @@
-// Puerto de admin_contratos.php — SOLO la parte de lectura (stats + listado filtrable +
-// modal de detalle). Deliberadamente SIN las acciones de escritura del PHP real
-// (liberar/cancelar/revertir/eliminar contrato — cada una es un archivo aparte,
-// /app/{liberar,cancelar,revertir,eliminar}_contrato.php, que mueve dinero real o borra
-// filas de forma permanente): decisión de alcance, no un olvido — mismo criterio que
-// mi-billetera.php, que enlaza al sitio PHP real para "Solicitar Retiro" en vez de
-// reconstruir ese flujo.
+// Puerto de admin_contratos.php — lectura (stats + listado filtrable + modal de detalle) +
+// [26/08/2026, Grupo de Contratación] liberar/cancelar/revertir contrato, las 3 mutaciones
+// que este comentario documentaba antes como excluidas a propósito. "eliminar contrato"
+// (borrado permanente de fila) sigue fuera — no se tocó, no estaba en el alcance
+// confirmado de esta pieza.
 export type EstadoContrato = "pendiente_pago" | "en_progreso" | "liberado" | "cancelado";
 
 export interface ContratoAdmin {

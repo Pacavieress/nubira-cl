@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { ESTADOS_VALIDOS, getStatsPorEstado, listarContratos } from "./adminContratos.repository.js";
+import { ESTADOS_VALIDOS, cancelarContrato, getStatsPorEstado, liberarContrato, listarContratos, revertirContrato } from "./adminContratos.repository.js";
 import type { ContratosResumen, EstadoContrato } from "./adminContratos.types.js";
 
 function esEstadoValido(valor: unknown): valor is EstadoContrato {
@@ -30,4 +30,36 @@ export async function getContratos(req: Request, res: Response): Promise<void> {
   };
 
   res.status(200).json(body);
+}
+
+function contratoIdDesdeParams(req: Request): number | null {
+  const id = Number(req.params.id);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+export async function postLiberarContrato(req: Request, res: Response): Promise<void> {
+  const id = contratoIdDesdeParams(req);
+  if (!id) {
+    res.status(400).json({ error: "contrato_invalido" });
+    return;
+  }
+  res.status(200).json({ ok: await liberarContrato(id) });
+}
+
+export async function postCancelarContrato(req: Request, res: Response): Promise<void> {
+  const id = contratoIdDesdeParams(req);
+  if (!id) {
+    res.status(400).json({ error: "contrato_invalido" });
+    return;
+  }
+  res.status(200).json({ ok: await cancelarContrato(id) });
+}
+
+export async function postRevertirContrato(req: Request, res: Response): Promise<void> {
+  const id = contratoIdDesdeParams(req);
+  if (!id) {
+    res.status(400).json({ error: "contrato_invalido" });
+    return;
+  }
+  res.status(200).json({ ok: await revertirContrato(id) });
 }

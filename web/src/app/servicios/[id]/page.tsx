@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getServicioDetalle } from "@/lib/api";
 import { formatoCLP } from "@/lib/formato";
 import { parsearHorariosServicio } from "@/lib/horarios";
@@ -406,12 +407,12 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                     </>
                   ) : (
                     <>
-                      <a
-                        href={`${phpSiteUrl}/app/contratar_servicio.php?servicio_id=${servicio.id}`}
+                      <Link
+                        href={`/contratar/${servicio.id}`}
                         className="w-full text-white bg-[#54A6D8] hover:bg-blue-600 font-bold rounded-xl text-sm px-5 py-3.5 text-center transition-all flex items-center justify-center"
                       >
                         {servicio.ofertaVigente && servicio.precioOferta !== null ? `Contratar por ${formatoCLP(servicio.precioOferta)}` : "Contratar Servicio"}
-                      </a>
+                      </Link>
                       <a
                         href={`${phpSiteUrl}/app/iniciar_chat.php?servicio_id=${servicio.id}`}
                         className="mt-3 w-full bg-white text-[#54A6D8] border-2 border-[#54A6D8] font-bold rounded-xl text-sm px-5 py-3 hover:bg-blue-50 transition-all shadow-sm flex items-center justify-center gap-2"
@@ -505,12 +506,12 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                   <IconChatOutline className="w-4 h-4" />
                   <span>Iniciar chat</span>
                 </a>
-                <a
-                  href={`${phpSiteUrl}/app/contratar_servicio.php?servicio_id=${servicio.id}`}
+                <Link
+                  href={`/contratar/${servicio.id}`}
                   className="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-4 py-3 text-xs shadow-md transition-all whitespace-nowrap"
                 >
                   Contratar
-                </a>
+                </Link>
               </div>
             )}
           </div>

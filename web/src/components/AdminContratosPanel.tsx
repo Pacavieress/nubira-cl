@@ -11,12 +11,32 @@ const BADGE: Record<string, string> = {
   cancelado: "bg-red-50 text-red-700 border border-red-200",
 };
 
-// Puerto de admin_contratos.php — SOLO la tabla + modal de detalle (100% lectura). Las
-// acciones de liberar/cancelar/revertir/eliminar del PHP real quedan fuera de alcance (ver
-// nota en server/src/modules/adminContratos/adminContratos.types.ts) — el link "Ver Chat"
-// sí se conserva porque solo navega, no muta nada.
-export function AdminContratosPanel({ contratos, phpSiteUrl }: { contratos: ContratoAdmin[]; phpSiteUrl: string }) {
+// Puerto de admin_contratos.php — tabla + modal de detalle + liberar/cancelar/revertir
+// [26/08/2026, Grupo de Contratación]. "Eliminar" (borrado permanente) sigue fuera de
+// alcance — ver nota en server/src/modules/adminContratos/adminContratos.types.ts. El link
+// "Ver Chat" navega al sitio PHP real, sin mutar nada.
+export function AdminContratosPanel({ contratos: contratosIniciales, phpSiteUrl }: { contratos: ContratoAdmin[]; phpSiteUrl: string }) {
+  const [contratos, setContratos] = useState(contratosIniciales);
   const [seleccionado, setSeleccionado] = useState<ContratoAdmin | null>(null);
+  const [procesando, setProcesando] = useState<number | null>(null);
+
+  async function ejecutarAccion(c: ContratoAdmin, accion: "liberar" | "cancelar" | "revertir", confirmacion: string) {
+    if (!window.confirm(confirmacion)) return;
+    setProcesando(c.id);
+    try {
+      const res = await fetch(`/api/admin/contratos/${c.id}/${accion}`, { method: "POST" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      if (res.ok && data?.ok) {
+        const nuevoEstado = accion === "revertir" ? "en_progreso" : accion === "liberar" ? "liberado" : "cancelado";
+        setContratos((prev) => prev.map((x) => (x.id === c.id ? { ...x, estado: nuevoEstado } : x)));
+        setSeleccionado((prev) => (prev && prev.id === c.id ? { ...prev, estado: nuevoEstado } : prev));
+      } else {
+        window.alert("No se pudo completar la acción. El contrato puede haber cambiado de estado — recarga la página.");
+      }
+    } finally {
+      setProcesando(null);
+    }
+  }
 
   return (
     <>
@@ -74,12 +94,55 @@ export function AdminContratosPanel({ contratos, phpSiteUrl }: { contratos: Cont
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button type="button" onClick={() => setSeleccionado(c)} className="p-2 text-gray-400 hover:text-[#54A6D8] hover:bg-sky-50 rounded-lg transition-all" title="Ver detalle">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
+                      <div className="flex justify-end items-center gap-1">
+                        <button type="button" onClick={() => setSeleccionado(c)} className="p-2 text-gray-400 hover:text-[#54A6D8] hover:bg-sky-50 rounded-lg transition-all" title="Ver detalle">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+
+                        {c.estado === "en_progreso" && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={procesando === c.id}
+                              onClick={() => ejecutarAccion(c, "liberar", "¿CONFIRMAR? Se liberará el dinero al vendedor.")}
+                              className="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-all disabled:opacity-40"
+                              title="Liberar fondos"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={procesando === c.id}
+                              onClick={() => ejecutarAccion(c, "cancelar", "¿CONFIRMAR? Se cancelará y reembolsará al comprador.")}
+                              className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-all disabled:opacity-40"
+                              title="Cancelar contrato"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </>
+                        )}
+
+                        {(c.estado === "liberado" || c.estado === "cancelado") && (
+                          <button
+                            type="button"
+                            disabled={procesando === c.id}
+                            onClick={() => ejecutarAccion(c, "revertir", "¿Revertir estado a EN PROGRESO?")}
+                            className="p-2 text-orange-400 hover:bg-orange-50 rounded-lg transition-all disabled:opacity-40"
+                            title="Revertir estado"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

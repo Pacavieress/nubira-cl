@@ -1665,3 +1665,52 @@ export async function getAdminChatsContadores(): Promise<ContadoresChats> {
   if (!res || !res.ok) return { activos: 0, cerrados: 0, contrato: 0, cotizacion: 0, inactivos: 0, alertasDlp: 0, moderacion: 0 };
   return res.json();
 }
+
+// Refleja server/src/modules/contratos/contratos.types.ts — Grupo de Contratación
+// (26/08/2026). El checkout termina en un contrato 'pendiente_pago' y redirige al sitio PHP
+// real para pagar (Checkpoint 2, no construido todavía) — mismo puente usado en el resto de
+// esta migración.
+export interface ServicioCheckout {
+  id: number;
+  titulo: string;
+  vendedorId: number;
+  vendedorNombre: string;
+  institucion: string | null;
+  precioOriginal: number;
+  montoInicial: number;
+  esOferta: boolean;
+  modalidad: string;
+  categoria: string;
+  imagenUrl: string;
+  horarios: Record<string, string[]> | null;
+}
+
+export type ResultadoCupon =
+  | { ok: true; cuponId: number; descuentoPorcentaje: number; montoFinal: number; mensaje: string }
+  | { ok: false; error: string };
+
+export async function getContratoCheckout(servicioId: number): Promise<{ servicio: ServicioCheckout; cupon: ResultadoCupon | null } | null> {
+  const res = await fetchConSesion(`/api/me/contratos/checkout/${servicioId}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+// Checkpoint 2 (Pago) — 26/08/2026. Puerto unificado de iniciar_pago_servicio.php +
+// iniciar_pago_contrato.php + notificaciones_mp.php + pago_exitoso_contrato.php +
+// pago_error_contrato.php + pago_pendiente_contrato.php. Ver server/src/modules/
+// pagoContratos/pagoContratos.types.ts para los 2 hallazgos reales corregidos al portar.
+export type AccionProcesarPago = "aprobado" | "aprobado_ya_procesado" | "pendiente" | "rechazado" | "sin_cambios";
+
+export interface ResultadoRetornoPago {
+  ok: boolean;
+  error?: string;
+  accion?: AccionProcesarPago;
+  status?: string;
+  contrato?: { id: number; estado: string; monto: number; servicioTitulo: string };
+}
+
+export async function getConfirmarRetornoPago(paymentId: string): Promise<ResultadoRetornoPago | null> {
+  const res = await fetchConSesion(`/api/me/pago-contratos/retorno?paymentId=${encodeURIComponent(paymentId)}`);
+  if (!res) return null;
+  return res.json();
+}

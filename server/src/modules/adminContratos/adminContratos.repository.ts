@@ -1,4 +1,4 @@
-import type { RowDataPacket } from "mysql2";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
 import type { EstadoContrato } from "./adminContratos.types.js";
 
@@ -46,4 +46,40 @@ export async function listarContratos(estado?: EstadoContrato): Promise<Contrato
     params,
   );
   return rows;
+}
+
+// [26/08/2026] Grupo de Contratación — las 3 mutaciones admin que el comentario de arriba
+// (línea 1-7) documentaba como excluidas a propósito. Mismo criterio "no error, solo 0
+// filas" que el resto de este port: affected_rows decide éxito, sin CSRF de sesión PHP
+// (requireAdmin ya cubre ese mismo problema).
+
+// Puerto exacto de liberar_contrato.php:25 — libera el pago retenido (pasa a alimentar
+// getGananciasServicios() de Mi Billetera, que ya lee 'liberado' sin cambios).
+export async function liberarContrato(contratoId: number): Promise<boolean> {
+  const [result] = await pool.query<ResultSetHeader>(
+    "UPDATE contratos SET estado = 'liberado', fecha_cierre = NOW() WHERE id = ? AND estado = 'en_progreso'",
+    [contratoId],
+  );
+  return result.affectedRows > 0;
+}
+
+// Puerto exacto de cancelar_contrato.php:26.
+export async function cancelarContrato(contratoId: number): Promise<boolean> {
+  const [result] = await pool.query<ResultSetHeader>(
+    "UPDATE contratos SET estado = 'cancelado', fecha_cierre = NOW() WHERE id = ? AND estado = 'en_progreso'",
+    [contratoId],
+  );
+  return result.affectedRows > 0;
+}
+
+// Puerto exacto de revertir_contrato.php:31 — a diferencia de liberar/cancelar, el PHP
+// real NO restringe el estado de origen en el WHERE (revierte desde cualquier estado a
+// 'en_progreso') — se replica tal cual, es una acción de "deshacer" deliberadamente amplia
+// para el admin, no un descuido.
+export async function revertirContrato(contratoId: number): Promise<boolean> {
+  const [result] = await pool.query<ResultSetHeader>(
+    "UPDATE contratos SET estado = 'en_progreso', fecha_cierre = NULL WHERE id = ?",
+    [contratoId],
+  );
+  return result.affectedRows > 0;
 }

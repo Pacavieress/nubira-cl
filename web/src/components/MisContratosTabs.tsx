@@ -34,6 +34,29 @@ function CardContrato({ contrato, tipoVista, phpSiteUrl }: { contrato: ContratoA
   const tiempoRestante = tiempoHastaClase(contrato.fechaClase);
   const personaLabel = tipoVista === "comprador" ? "con" : "Alumno:";
   const primerNombre = contrato.otraPersonaNombre.split(" ")[0];
+  const [pagando, setPagando] = useState(false);
+
+  // Checkpoint 2 (Pago) — puerto de iniciar_pago_contrato.php (botón "Pagar" para
+  // reintentar un contrato pendiente_pago), unificado con el mismo endpoint que ya usa
+  // ContratarForm.tsx en vez de puentear al PHP real.
+  async function pagar() {
+    setPagando(true);
+    try {
+      const res = await fetch(`/api/me/pago-contratos/${contrato.id}/preferencia`, { method: "POST" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; yaProcesado?: boolean; initPoint?: string } | null;
+      if (res.ok && data?.ok && data.initPoint) {
+        window.location.href = data.initPoint;
+        return;
+      }
+      if (res.ok && data?.ok && data.yaProcesado) {
+        window.location.href = `${phpSiteUrl}/app/mini_aula.php?id=${contrato.id}`;
+        return;
+      }
+      setPagando(false);
+    } catch {
+      setPagando(false);
+    }
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 flex flex-col md:flex-row gap-4 md:items-center hover:shadow-md transition">
@@ -75,12 +98,14 @@ function CardContrato({ contrato, tipoVista, phpSiteUrl }: { contrato: ContratoA
 
       <div className="w-full md:w-auto shrink-0">
         {tipoVista === "comprador" && contrato.estado === "pendiente_pago" ? (
-          <a
-            href={`${phpSiteUrl}/app/iniciar_pago_contrato.php?id_contrato=${contrato.id}`}
-            className="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition w-full md:w-auto"
+          <button
+            type="button"
+            onClick={pagar}
+            disabled={pagando}
+            className="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition w-full md:w-auto disabled:opacity-50"
           >
-            Pagar
-          </a>
+            {pagando ? "Procesando..." : "Pagar"}
+          </button>
         ) : (
           <a
             href={`${phpSiteUrl}/app/mini_aula.php?id=${contrato.id}`}
