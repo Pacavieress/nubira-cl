@@ -9,21 +9,32 @@ import { usePathname } from "next/navigation";
 // líneas 101/145/160-171) — antes excluidos porque web/ no sabía quién visitaba; ahora que
 // layout.tsx pasa `usuarioId` (vía getSesion(), ver web/src/lib/sesion.ts) sí se portan.
 //
+// [Auditoría de fidelidad] Contenedor, íconos (32px, mismo <path> SVG), espaciado, colores
+// de estado activo y bloque de logout confirmados 1:1 contra sidebar.php — sin el bug de
+// aplanado de layout que sí tuvo detalle_servicio.php en su primera pasada. Único ajuste:
+// "Mi Perfil" ya deja de ser link externo cuando hay sesión — desde que /mi-perfil existe
+// en web/ (pieza portada en esta misma sesión), navega con next/link como ruta interna
+// (`externo: esGuest`), no como el resto de comentario abajo sugiere.
+//
 // Sin badges (no leídos en Mensajes, punto de alerta de perfil incompleto en Mi Perfil) —
 // deferred a propósito, mismo criterio que los badges del panel admin: requieren
-// endpoints de conteo en vivo que no son parte de este paso, no un olvido.
+// endpoints de conteo en vivo que no son parte de este paso, no un olvido. Nota para
+// retomar: el segundo (alerta de perfil incompleto) ya tiene su dato real disponible
+// (perfil.completitud, ver server/src/modules/perfil/) — faltaría exponerlo desde
+// layout.tsx sin pagar el costo de una query extra en cada carga de página, algo que
+// amerita su propia decisión, no agregarlo de paso acá.
 //
 // "Inicio" apunta a "/" (hoy un redirect a /servicios, ver web/src/app/page.tsx) en vez de
 // a /explorar como el sitio real — mismo alcance que la decisión de mover la grilla de
 // servicios a /servicios y dejar "/" reservado para un futuro port de vitrina.php.
 //
-// "Recursos"/"Mensajes"/"Mi Perfil" (ninguno construido en web/ todavía) enlazan al sitio
-// PHP real en pestaña nueva (target="_blank") — mismo patrón que el logo/breadcrumb de
-// Header.tsx. "Cerrar Sesión" es la ÚNICA excepción deliberada: NO usa target="_blank"
-// porque muta la sesión (logout.php destruye sesiones_api) — abrirlo en pestaña nueva
-// dejaría la pestaña de web/ mostrando un sidebar "logueado" obsoleto hasta la próxima
-// navegación; en la misma pestaña, el usuario ve el resultado real (aterriza en el / de
-// PHP ya deslogueado) y si vuelve a web/ el layout se re-renderiza reflejando el logout.
+// "Recursos"/"Mensajes" (sin ruta propia en web/ todavía) enlazan al sitio PHP real en
+// pestaña nueva (target="_blank") — mismo patrón que el logo/breadcrumb de Header.tsx.
+// "Cerrar Sesión" es la ÚNICA excepción deliberada: NO usa target="_blank" porque muta la
+// sesión (logout.php destruye sesiones_api) — abrirlo en pestaña nueva dejaría la pestaña
+// de web/ mostrando un sidebar "logueado" obsoleto hasta la próxima navegación; en la misma
+// pestaña, el usuario ve el resultado real (aterriza en el / de PHP ya deslogueado) y si
+// vuelve a web/ el layout se re-renderiza reflejando el logout.
 //
 // PHP_SITE_URL es server-only a propósito (ver web/.env) — Sidebar es Client Component
 // (necesita usePathname() para el estado activo), así que lo recibe por prop desde
