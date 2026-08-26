@@ -2,10 +2,18 @@ import { cookies } from "next/headers";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4000";
 
+// nombre/iniciales/fotoPerfil/mostrarBotonesPublicar/perfilIncompleto [26/08/2026] — lo
+// que Header.tsx necesita para su propio espejo de header.php (avatar real, botones de
+// publicar, punto de alerta). Ver server/src/modules/auth/auth.routes.ts para el cálculo.
 export interface Sesion {
   usuarioId: number;
   rol: string | null;
   esAdmin: boolean;
+  nombre: string | null;
+  iniciales: string;
+  fotoPerfil: string | null;
+  mostrarBotonesPublicar: boolean;
+  perfilIncompleto: boolean;
 }
 
 // Next.js corre esto en un Server Component — la llamada de acá a server/ es

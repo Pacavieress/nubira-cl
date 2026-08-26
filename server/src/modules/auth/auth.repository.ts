@@ -38,3 +38,25 @@ export async function getUsuarioConRol(usuarioId: number): Promise<UsuarioConRol
   );
   return rows[0] ?? null;
 }
+
+export interface UsuarioHeader {
+  nombre: string;
+  foto_perfil: string | null;
+  bio: string | null;
+  intencion_uso: string | null;
+}
+
+interface UsuarioHeaderRow extends UsuarioHeader, RowDataPacket {}
+
+// Consulta propia y separada de getUsuarioConRol: esa corre en CADA request autenticado
+// vía requireAuth/requireAdmin (auth.middleware.ts), así que no conviene cargarla con
+// columnas que solo usa GET /me para armar el Header (avatar/iniciales/botones de
+// publicar) — puerto de las columnas que header.php:53,68-85,133-134,146-147 lee de
+// alumnos para lo mismo.
+export async function getUsuarioParaHeader(usuarioId: number): Promise<UsuarioHeader | null> {
+  const [rows] = await pool.query<UsuarioHeaderRow[]>(
+    "SELECT nombre, foto_perfil, bio, intencion_uso FROM alumnos WHERE id = ? LIMIT 1",
+    [usuarioId],
+  );
+  return rows[0] ?? null;
+}

@@ -82,7 +82,7 @@ export default async function BusquedaPage({ searchParams }: BusquedaPageProps) 
 
   return (
     <>
-      <Header titulo={`Resultados para "${q}"`} />
+      <Header titulo={`Resultados para "${q}"`} q={q} />
       <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-8 lg:ml-64">
         <p className="text-sm text-gray-500 mb-6">
           Resultados para &quot;<span className="font-medium text-gray-800">{q}</span>&quot;
