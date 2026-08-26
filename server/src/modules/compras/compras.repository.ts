@@ -5,6 +5,15 @@ import type { ApunteCompradoRow, ServicioContratadoRow } from "./compras.types.j
 interface ApunteCompradoDbRow extends ApunteCompradoRow, RowDataPacket {}
 interface ServicioContratadoDbRow extends ServicioContratadoRow, RowDataPacket {}
 
+// Puerto exacto de perfil.php:392 ($ha_comprado_algo — SOLO tabla `compras`, es decir
+// compra de apuntes; NO incluye contratos de servicios, a diferencia de mis_compras.php
+// que sí junta ambos). Usado para el gating de la tile "Mis Compras" del panel de gestión
+// — ver server/src/modules/perfil/perfil.mapper.ts::construirAccesos.
+export async function existeAlgunaCompraDeApunte(usuarioId: number): Promise<boolean> {
+  const [rows] = await pool.query<RowDataPacket[]>("SELECT 1 FROM compras WHERE usuario_id = ? LIMIT 1", [usuarioId]);
+  return rows.length > 0;
+}
+
 // Puerto exacto de app/mis_compras.php:43-56 (mismo JOIN, mismo ORDER BY).
 export async function getApuntesCompradosByUsuario(usuarioId: number): Promise<ApunteCompradoRow[]> {
   const [rows] = await pool.query<ApunteCompradoDbRow[]>(

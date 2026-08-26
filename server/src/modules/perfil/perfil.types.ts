@@ -36,14 +36,16 @@ export interface CompletitudPerfil {
   servicioFaltaVideoId: number | null;
 }
 
-// Puerto de accesos_user (app/componentes/panel_gestion.php:54-67) — SOLO como lista de
-// links (decisión de alcance: NO el grid visual de 34 tiles con íconos/colores/badges de
-// contador, eso es una pieza propia y más grande). Mismos 12 destinos, mismo filtro
-// tutor/alumno (herramientas_tutor/ocultar_para_tutor), SIN badges de contador (mensajes
-// no leídos, ventas pendientes, etc. — cada uno exigiría su propia query, fuera de alcance).
+// Puerto de accesos_user (app/componentes/panel_gestion.php:54-67/117-139) — [REHECHO
+// 26/08/2026, ver perfil.mapper.ts::construirAccesos] mismos 12 destinos + ícono real +
+// mismo gating de 3 vías (herramientas_tutor / herramientas_alumno / ocultar_para_tutor).
+// Sigue SIN badges de contador en vivo (mensajes no leídos, ventas pendientes, etc. —
+// mismo criterio ya decidido para el hub /admin: cada uno exigiría su propio endpoint de
+// conteo, fuera de alcance de esta pieza).
 export interface AccesoPanel {
   titulo: string;
   href: string;
+  iconoSvg: string;
 }
 
 export interface PerfilPropio extends TutorPublico {

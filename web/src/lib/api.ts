@@ -228,9 +228,9 @@ export async function getTutorPerfil(id: number): Promise<TutorPerfil | null> {
 
 // Refleja PerfilPropio (server/src/modules/perfil/perfil.types.ts) — la vista de "mi
 // propio perfil" (perfil.php con $es_propio=true), a diferencia de TutorPerfil arriba
-// (cómo un visitante ve el perfil de OTRO). Alcance confirmado con el usuario: header +
-// banner de completitud + bio editable + gamificación + lista simple de accesos (NO el
-// grid visual de 34 tiles de panel_gestion.php, eso es una pieza aparte).
+// (cómo un visitante ve el perfil de OTRO). `accesos` ahora es un espejo tal cual del grid
+// Bento de panel_gestion.php (26/08/2026, ver web/src/app/mi-perfil/page.tsx::PanelGestion)
+// — icono real + gating de 3 vías, sin badges de contador en vivo.
 export interface CompletitudPerfil {
   faltaFoto: boolean;
   faltaBio: boolean;
@@ -260,6 +260,7 @@ export interface GamificacionPerfil {
 export interface AccesoPanel {
   titulo: string;
   href: string;
+  iconoSvg: string;
 }
 
 export interface PerfilPropio extends TutorPerfil {

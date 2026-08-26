@@ -5,12 +5,19 @@ import { pool } from "../src/db/pool.js";
 
 const SESSION_LECTURA = "test-perfil-session-lectura";
 const SESSION_BIO = "test-perfil-session-bio";
+const SESSION_COMPRADOR = "test-perfil-session-comprador";
 
 // Fixture de LECTURA: alumno REAL con servicios reales, confirmado antes de escribir estos
 // tests (4 servicios aprobados/visibles, todos sin horarios_json ni video, foto y banco
 // reales, bio real ~58 caracteres) — solo se LEE, nunca se muta, así que es seguro
 // reutilizar datos reales en vez de crear un fixture sintético.
 const ALUMNO_LECTURA_ID = 10036;
+
+// Fixture de LECTURA #2: alumno REAL comprador puro — confirmado antes de escribir este
+// test que tiene >=1 fila en `compras`, CERO servicios/apuntes publicados y CERO
+// valoraciones como vendedor (o sea, esCreador debe dar false). Cubre el caso inverso al
+// fixture de arriba: "Mis Compras" visible, tiles de tutor ausentes, "Desafío de hoy" visible.
+const ALUMNO_COMPRADOR_ID = 10050;
 
 // Fixture de ESCRITURA: alumno de prueba insertado y eliminado en este mismo archivo — el
 // endpoint de guardar bio muta alumnos.bio Y recalcula servicios.score_nubira de TODOS los
@@ -23,6 +30,11 @@ before(async () => {
   await pool.query(
     "INSERT INTO sesiones_api (session_id, usuario_id, expira_en) VALUES (?, ?, NOW() + INTERVAL 1 HOUR)",
     [SESSION_LECTURA, ALUMNO_LECTURA_ID],
+  );
+
+  await pool.query(
+    "INSERT INTO sesiones_api (session_id, usuario_id, expira_en) VALUES (?, ?, NOW() + INTERVAL 1 HOUR)",
+    [SESSION_COMPRADOR, ALUMNO_COMPRADOR_ID],
   );
 
   const [insAlumno] = await pool.query(
@@ -44,7 +56,7 @@ before(async () => {
 });
 
 after(async () => {
-  await pool.query("DELETE FROM sesiones_api WHERE session_id IN (?, ?)", [SESSION_LECTURA, SESSION_BIO]);
+  await pool.query("DELETE FROM sesiones_api WHERE session_id IN (?, ?, ?)", [SESSION_LECTURA, SESSION_BIO, SESSION_COMPRADOR]);
   await pool.query("DELETE FROM servicios WHERE id = ?", [servicioBioId]);
   await pool.query("DELETE FROM alumnos WHERE id = ?", [alumnoBioId]);
   await pool.end();
@@ -99,10 +111,42 @@ test("GET /api/me/perfil: alumno real con servicios reales trae completitud/gami
     assert.ok(titulos.includes("Mis Publicaciones"));
     assert.ok(titulos.includes("Mi Billetera"));
     assert.ok(!titulos.includes("Desafío de hoy"));
-    assert.ok(titulos.includes("Mis Compras"), "tile compartido, visible para todos");
+    // Bug real corregido 26/08/2026: "Mis Compras" solo debe verse si el usuario compró
+    // algo alguna vez (tabla `compras`) — este fixture real (10036) no tiene ninguna fila
+    // ahí, confirmado con una query directa antes de escribir esta aserción.
+    assert.ok(!titulos.includes("Mis Compras"), "este fixture no compró nada -> no debe verse");
+    // Cada tile ahora también trae su ícono real (mismo SVG que panel_gestion.php).
+    for (const acceso of body.accesos as { titulo: string; iconoSvg: string }[]) {
+      assert.ok(acceso.iconoSvg && acceso.iconoSvg.includes("<path"), `"${acceso.titulo}" debe traer iconoSvg`);
+    }
 
     // vistasPerfil es un dato propio (privado) — no debe faltar en la respuesta.
     assert.equal(typeof body.vistasPerfil, "number");
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/me/perfil: alumno real comprador (sin publicaciones) ve 'Mis Compras' pero ninguna tile de tutor", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/perfil`, { headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    assert.equal(res.status, 200);
+
+    const body = await res.json();
+    assert.equal(body.id, ALUMNO_COMPRADOR_ID);
+    assert.equal(body.esCreador, false, "sin publicaciones ni reseñas como vendedor -> no es creador");
+
+    const titulos = body.accesos.map((a: { titulo: string }) => a.titulo);
+    assert.ok(titulos.includes("Mis Compras"), "este fixture sí compró algo -> debe verse");
+    assert.ok(titulos.includes("Desafío de hoy"), "no es tutor -> Desafío de hoy visible");
+    assert.ok(!titulos.includes("Mis Publicaciones"), "no es tutor -> sin tiles de tutor");
+    assert.ok(!titulos.includes("Mi Billetera"), "no es tutor -> sin tiles de tutor");
+    assert.ok(!titulos.includes("Métricas"), "no es tutor -> sin tiles de tutor");
+    // Siempre visibles, sin importar el rol.
+    assert.ok(titulos.includes("Configurar Cuenta"));
+    assert.ok(titulos.includes("Mis Evaluaciones"));
+    assert.ok(titulos.includes("Soporte"));
   } finally {
     await close();
   }

@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { searchApuntesPublicos } from "../apuntes/apuntes.repository.js";
+import { existeAlgunaCompraDeApunte } from "../compras/compras.repository.js";
 import { getDatosBancarios } from "../miBilletera/miBilletera.repository.js";
 import { getMinutosRespuestaTutor, searchServiciosAprobados } from "../servicios/servicios.repository.js";
 import { getResenasPorRol, getTutorById } from "../tutores/tutores.repository.js";
@@ -26,19 +27,31 @@ import type { ActualizarBioError, ActualizarBioExito } from "./perfil.types.js";
 export async function getMiPerfil(req: Request, res: Response): Promise<void> {
   const usuarioId = req.usuarioId as number;
 
-  const [tutor, resenasComoTutor, resenasComoAlumno, { rows: servicios }, { rows: apuntes }, minutosRespuesta, datosBancarios, serviciosResumen, { vistasPerfil, maxScore }, resenasVendedorParaScore] =
-    await Promise.all([
-      getTutorById(usuarioId),
-      getResenasPorRol(usuarioId, "vendedor"),
-      getResenasPorRol(usuarioId, "comprador"),
-      searchServiciosAprobados({ alumnoId: usuarioId, page: 1, limit: 30 }),
-      searchApuntesPublicos({ alumnoId: usuarioId, page: 1, limit: 30 }),
-      getMinutosRespuestaTutor(usuarioId),
-      getDatosBancarios(usuarioId),
-      getServiciosPropiosResumen(usuarioId),
-      getVistasYMaxScore(usuarioId),
-      contarResenasVendedorParaScore(usuarioId),
-    ]);
+  const [
+    tutor,
+    resenasComoTutor,
+    resenasComoAlumno,
+    { rows: servicios },
+    { rows: apuntes },
+    minutosRespuesta,
+    datosBancarios,
+    serviciosResumen,
+    { vistasPerfil, maxScore },
+    resenasVendedorParaScore,
+    haCompradoAlgo,
+  ] = await Promise.all([
+    getTutorById(usuarioId),
+    getResenasPorRol(usuarioId, "vendedor"),
+    getResenasPorRol(usuarioId, "comprador"),
+    searchServiciosAprobados({ alumnoId: usuarioId, page: 1, limit: 30 }),
+    searchApuntesPublicos({ alumnoId: usuarioId, page: 1, limit: 30 }),
+    getMinutosRespuestaTutor(usuarioId),
+    getDatosBancarios(usuarioId),
+    getServiciosPropiosResumen(usuarioId),
+    getVistasYMaxScore(usuarioId),
+    contarResenasVendedorParaScore(usuarioId),
+    existeAlgunaCompraDeApunte(usuarioId),
+  ]);
 
   if (!tutor) {
     res.status(404).json({ error: "not_found" });
@@ -57,6 +70,7 @@ export async function getMiPerfil(req: Request, res: Response): Promise<void> {
     vistasPerfil,
     maxScore,
     resenasVendedorParaScore,
+    haCompradoAlgo,
   );
 
   res.status(200).json(perfil);
