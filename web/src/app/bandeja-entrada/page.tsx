@@ -21,7 +21,7 @@ export default async function BandejaEntradaPage() {
     <>
       <Header titulo="Mensajes" />
       <main className="pt-20 pb-28 md:pb-10 lg:ml-64 px-4 max-w-4xl mx-auto min-h-screen">
-        <BandejaChats itemsIniciales={items} phpSiteUrl={phpSiteUrl} />
+        <BandejaChats itemsIniciales={items} />
       </main>
     </>
   );

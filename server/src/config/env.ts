@@ -33,6 +33,9 @@ export const env = {
   // usan para adjuntos de chat (distinto de uploadDir/upload — este vive dentro de app/).
   // Misma asunción de filesystem compartido documentada arriba para uploadDir.
   chatArchivosDir: process.env.CHAT_ARCHIVOS_DIR ?? path.resolve(__dirname, "../../../app/chat_archivos"),
+  // Grupo Mini Aula — mismo directorio real que app/entregas_servicio.php usa
+  // (DOCUMENT_ROOT/upload_mini_aula, es decir la raíz del repo, no app/).
+  materialesAulaDir: process.env.MATERIALES_AULA_DIR ?? path.resolve(__dirname, "../../../upload_mini_aula"),
   db: {
     host: required("DB_HOST"),
     port: Number(process.env.DB_PORT ?? 3306),

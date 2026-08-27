@@ -375,9 +375,9 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                     (pagos y chat fuera de alcance) y enlazan al sitio real. */}
                 <div className="space-y-3">
                   {contratoId ? (
-                    <a href={`${phpSiteUrl}/app/mini_aula.php?id=${contratoId}`} className="block w-full bg-green-600 text-white font-bold py-3 rounded-xl text-center hover:bg-green-700 transition shadow-md">
+                    <Link href={`/aula/${contratoId}`} className="block w-full bg-green-600 text-white font-bold py-3 rounded-xl text-center hover:bg-green-700 transition shadow-md">
                       Ir al Aula Virtual
-                    </a>
+                    </Link>
                   ) : isOwner ? (
                     <a href={`${phpSiteUrl}/app/editar_servicio.php?id=${servicio.id}`} className="block w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-center hover:bg-gray-200 transition">
                       Editar Servicio

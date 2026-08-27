@@ -246,7 +246,7 @@ export function ComprasAcordeon({
                         <div className="flex justify-end items-center gap-1 bg-gray-100 p-1 rounded-full">
                           {!cerrado && s.estado !== "" ? (
                             <a
-                              href={`${phpSiteUrl}/app/mini_aula.php?id=${s.id}`}
+                              href={`/aula/${s.id}`}
                               className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white hover:text-emerald-500 transition"
                               title="Ir al Aula"
                             >

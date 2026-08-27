@@ -1775,3 +1775,70 @@ export async function getMensajesChatPrevio(chatId: number): Promise<{ mensajes:
   if (!res || !res.ok) return null;
   return res.json();
 }
+
+// Grupo Mini Aula — Pieza 2 (27/08/2026). Shell sin video/pizarra, ver
+// server/src/modules/aula/aula.types.ts para el alcance completo.
+export interface AulaDetalle {
+  id: number;
+  servicioId: number;
+  servicioTitulo: string;
+  esVendedor: boolean;
+  esComprador: boolean;
+  esAdmin: boolean;
+  otroNombre: string;
+  estado: string;
+  tieneReserva: boolean;
+  fechaAmigable: string | null;
+  claseIniTs: string;
+  claseFinTs: string;
+  ventanaAperturaTs: string;
+  finGraciaTs: string;
+  esPreClase: boolean;
+  esAulaActiva: boolean;
+  esPostClase: boolean;
+  videoHabilitado: boolean;
+  esFinalizado: boolean;
+  finalizadoComprador: boolean;
+  finalizadoVendedor: boolean;
+  compradorPuedeFinalizar: boolean;
+  compradorEsperandoInicio: boolean;
+  vendedorEsperandoAlumno: boolean;
+  vendedorPuedeConfirmar: boolean;
+}
+
+export async function getAulaDetalle(contratoId: number): Promise<AulaDetalle | null> {
+  const res = await fetchConSesion(`/api/me/aula/${contratoId}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+export interface MensajeAula {
+  id: number;
+  remitenteId: number;
+  mensaje: string;
+  fecha: string;
+  visto: boolean;
+}
+
+export async function getMensajesAula(contratoId: number): Promise<{ mensajes: MensajeAula[]; otroEscribiendo: boolean } | null> {
+  const res = await fetchConSesion(`/api/me/aula/${contratoId}/mensajes`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+export interface ArchivoContrato {
+  id: number;
+  nombreOriginal: string;
+  pesoKb: number;
+  fecha: string;
+  esMio: boolean;
+  subidoPor: string;
+  url: string;
+}
+
+export async function getArchivosContrato(contratoId: number): Promise<ArchivoContrato[]> {
+  const res = await fetchConSesion(`/api/me/aula/${contratoId}/archivos`);
+  if (!res || !res.ok) return [];
+  const data = (await res.json()) as { archivos: ArchivoContrato[] };
+  return data.archivos;
+}

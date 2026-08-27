@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getConfirmarRetornoPago } from "@/lib/api";
 import { getSesion } from "@/lib/sesion";
 import { formatoCLP } from "@/lib/formato";
@@ -53,7 +54,7 @@ export default async function PagoRetornoPage({ searchParams }: RetornoPageProps
 
   // "aprobado" o "aprobado_ya_procesado" — mismo criterio que pago_exitoso_contrato.php
   // (yaProcesado no cambia lo que se le muestra al comprador, solo evita reenviar correos).
-  return <EstadoExitoso phpSiteUrl={phpSiteUrl} contrato={contrato} />;
+  return <EstadoExitoso contrato={contrato} />;
 }
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -67,7 +68,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function EstadoExitoso({ phpSiteUrl, contrato }: { phpSiteUrl: string; contrato: { id: number; monto: number; servicioTitulo: string } }) {
+function EstadoExitoso({ contrato }: { contrato: { id: number; monto: number; servicioTitulo: string } }) {
   return (
     <Layout>
       <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -82,9 +83,9 @@ function EstadoExitoso({ phpSiteUrl, contrato }: { phpSiteUrl: string; contrato:
       <div className="bg-gray-50 rounded-2xl p-4 mb-8 text-left flex items-start gap-3 border border-gray-100">
         <p className="text-[11px] text-gray-500">El pago no se entregará al tutor hasta que el servicio sea realizado por completo y tú estés conforme.</p>
       </div>
-      <a href={`${phpSiteUrl}/app/mini_aula.php?id=${contrato.id}`} className="block w-full bg-[#54A6D8] hover:bg-blue-600 text-white px-6 py-4 rounded-xl font-bold transition-colors shadow-lg shadow-blue-200">
+      <Link href={`/aula/${contrato.id}`} className="block w-full bg-[#54A6D8] hover:bg-blue-600 text-white px-6 py-4 rounded-xl font-bold transition-colors shadow-lg shadow-blue-200">
         Ir al Aula Virtual
-      </a>
+      </Link>
     </Layout>
   );
 }

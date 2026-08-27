@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { ResultadoCupon, ServicioCheckout } from "@/lib/api";
 import type { DisponibilidadServicio } from "@/lib/horarios";
 import { formatoCLP } from "@/lib/formato";
@@ -42,6 +43,7 @@ export function ContratarForm({
   cuponInicial: ResultadoCupon | null;
   phpSiteUrl: string;
 }) {
+  const router = useRouter();
   const dias = proximosDias(14);
   const diasHabilitados = new Set(disponibilidad.dias.map((d) => d.dia));
 
@@ -128,7 +130,7 @@ export function ContratarForm({
         return;
       }
       if ((data.montoFinal ?? 0) === 0) {
-        window.location.href = `${phpSiteUrl}/app/mini_aula.php?id=${data.contratoId}`;
+        router.push(`/aula/${data.contratoId}`);
         return;
       }
 
@@ -146,7 +148,7 @@ export function ContratarForm({
         return;
       }
       if (dataPref.yaProcesado || !dataPref.initPoint) {
-        window.location.href = `${phpSiteUrl}/app/mini_aula.php?id=${data.contratoId}`;
+        router.push(`/aula/${data.contratoId}`);
         return;
       }
       window.location.href = dataPref.initPoint;

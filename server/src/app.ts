@@ -41,6 +41,7 @@ import { contratosRouter } from "./modules/contratos/contratos.routes.js";
 import { misContratosRouter } from "./modules/misContratos/misContratos.routes.js";
 import { pagoContratosRouter, pagoContratosWebhookRouter } from "./modules/pagoContratos/pagoContratos.routes.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
+import { aulaRouter } from "./modules/aula/aula.routes.js";
 import { misPublicacionesRouter } from "./modules/misPublicaciones/misPublicaciones.routes.js";
 import { perfilRouter } from "./modules/perfil/perfil.routes.js";
 import { publicarRouter } from "./modules/publicar/publicar.routes.js";
@@ -90,6 +91,7 @@ export function createApp(): Express {
   app.use("/api/me/contratos", contratosRouter);
   app.use("/api/me/pago-contratos", pagoContratosRouter);
   app.use("/api/me/chat", chatRouter);
+  app.use("/api/me/aula", aulaRouter);
   app.use("/api/pago-contratos", pagoContratosWebhookRouter);
   app.use("/api/me/mi-billetera", miBilleteraRouter);
   app.use("/api/me/configurar-cuenta", configurarCuentaRouter);

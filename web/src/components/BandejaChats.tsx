@@ -28,7 +28,7 @@ function iniciales(nombreCorto: string): string {
   return (primero + segundo).toUpperCase();
 }
 
-export function BandejaChats({ itemsIniciales, phpSiteUrl }: { itemsIniciales: ChatBandejaItem[]; phpSiteUrl: string }) {
+export function BandejaChats({ itemsIniciales }: { itemsIniciales: ChatBandejaItem[] }) {
   const [items, setItems] = useState(itemsIniciales);
   const [editando, setEditando] = useState(false);
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
@@ -162,7 +162,7 @@ export function BandejaChats({ itemsIniciales, phpSiteUrl }: { itemsIniciales: C
           items.map((chat) => {
             const uniqueId = `${chat.tipo}_${chat.id}`;
             const esAula = chat.tipo === "aula";
-            const href = esAula ? `${phpSiteUrl}/app/mini_aula.php?id=${chat.id}` : `/chat/${chat.id}`;
+            const href = esAula ? `/aula/${chat.id}` : `/chat/${chat.id}`;
             const marcado = seleccionados.has(uniqueId);
             const tiempo = tiempoTranscurrido(chat.fechaSort);
 
@@ -250,15 +250,9 @@ export function BandejaChats({ itemsIniciales, phpSiteUrl }: { itemsIniciales: C
                   className="transition-transform duration-300"
                   style={editando ? { transform: "translateX(30px)", pointerEvents: "none" } : undefined}
                 >
-                  {esAula ? (
-                    <a href={href} className="block w-full">
-                      {Contenido}
-                    </a>
-                  ) : (
-                    <Link href={href} className="block w-full">
-                      {Contenido}
-                    </Link>
-                  )}
+                  <Link href={href} className="block w-full">
+                    {Contenido}
+                  </Link>
                 </div>
               </div>
             );

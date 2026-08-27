@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ContratoAgenda } from "@/lib/api";
 import { agruparContratos, contarActivas, formatearFechaClase, tiempoHastaClase } from "@/lib/agenda";
@@ -29,12 +30,13 @@ function IconoCalendario() {
   );
 }
 
-function CardContrato({ contrato, tipoVista, phpSiteUrl }: { contrato: ContratoAgenda; tipoVista: "comprador" | "vendedor"; phpSiteUrl: string }) {
+function CardContrato({ contrato, tipoVista }: { contrato: ContratoAgenda; tipoVista: "comprador" | "vendedor" }) {
   const fechaAmigable = formatearFechaClase(contrato.fechaClase);
   const tiempoRestante = tiempoHastaClase(contrato.fechaClase);
   const personaLabel = tipoVista === "comprador" ? "con" : "Alumno:";
   const primerNombre = contrato.otraPersonaNombre.split(" ")[0];
   const [pagando, setPagando] = useState(false);
+  const router = useRouter();
 
   // Checkpoint 2 (Pago) — puerto de iniciar_pago_contrato.php (botón "Pagar" para
   // reintentar un contrato pendiente_pago), unificado con el mismo endpoint que ya usa
@@ -49,7 +51,7 @@ function CardContrato({ contrato, tipoVista, phpSiteUrl }: { contrato: ContratoA
         return;
       }
       if (res.ok && data?.ok && data.yaProcesado) {
-        window.location.href = `${phpSiteUrl}/app/mini_aula.php?id=${contrato.id}`;
+        router.push(`/aula/${contrato.id}`);
         return;
       }
       setPagando(false);
@@ -107,26 +109,26 @@ function CardContrato({ contrato, tipoVista, phpSiteUrl }: { contrato: ContratoA
             {pagando ? "Procesando..." : "Pagar"}
           </button>
         ) : (
-          <a
-            href={`${phpSiteUrl}/app/mini_aula.php?id=${contrato.id}`}
+          <Link
+            href={`/aula/${contrato.id}`}
             className="flex items-center justify-center gap-2 bg-[#54A6D8] hover:bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition w-full md:w-auto"
           >
             Ir al Aula
-          </a>
+          </Link>
         )}
       </div>
     </div>
   );
 }
 
-function CardCompacta({ contrato, phpSiteUrl }: { contrato: ContratoAgenda; phpSiteUrl: string }) {
+function CardCompacta({ contrato }: { contrato: ContratoAgenda }) {
   const fechaAmigable = formatearFechaClase(contrato.fechaClase ?? contrato.fechaEstimada);
   const primerNombre = contrato.otraPersonaNombre.split(" ")[0];
   const barra = BARRA_COLOR[contrato.estado] ?? "bg-gray-300";
 
   return (
-    <a
-      href={`${phpSiteUrl}/app/mini_aula.php?id=${contrato.id}`}
+    <Link
+      href={`/aula/${contrato.id}`}
       className="flex items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all group"
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -147,7 +149,7 @@ function CardCompacta({ contrato, phpSiteUrl }: { contrato: ContratoAgenda; phpS
       <span className="text-[#54A6D8] text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 flex-shrink-0">
         Ver
       </span>
-    </a>
+    </Link>
   );
 }
 
@@ -155,13 +157,11 @@ function Seccion({
   titulo,
   contratos,
   tipoVista,
-  phpSiteUrl,
   colorTitulo = "text-gray-900",
 }: {
   titulo: string;
   contratos: ContratoAgenda[];
   tipoVista: "comprador" | "vendedor";
-  phpSiteUrl: string;
   colorTitulo?: string;
 }) {
   if (contratos.length === 0) return null;
@@ -173,7 +173,7 @@ function Seccion({
       </h2>
       <div className="space-y-3">
         {contratos.map((c) => (
-          <CardContrato key={c.id} contrato={c} tipoVista={tipoVista} phpSiteUrl={phpSiteUrl} />
+          <CardContrato key={c.id} contrato={c} tipoVista={tipoVista} />
         ))}
       </div>
     </div>
@@ -183,14 +183,12 @@ function Seccion({
 function TabContenido({
   contratos,
   tipoVista,
-  phpSiteUrl,
   textoVacioActivo,
   tituloVacio,
   subtituloVacio,
 }: {
   contratos: ContratoAgenda[];
   tipoVista: "comprador" | "vendedor";
-  phpSiteUrl: string;
   textoVacioActivo: { titulo: string; subtitulo: string; cta?: boolean };
   tituloVacio: string;
   subtituloVacio: string;
@@ -212,10 +210,10 @@ function TabContenido({
     <div className="space-y-4">
       {tieneActivas ? (
         <>
-          <Seccion titulo="Hoy" contratos={grupos.hoy} tipoVista={tipoVista} phpSiteUrl={phpSiteUrl} colorTitulo="text-emerald-600" />
-          <Seccion titulo="Esta semana" contratos={grupos.esta_semana} tipoVista={tipoVista} phpSiteUrl={phpSiteUrl} colorTitulo="text-[#54A6D8]" />
-          <Seccion titulo="Más adelante" contratos={grupos.mas_adelante} tipoVista={tipoVista} phpSiteUrl={phpSiteUrl} />
-          <Seccion titulo="Sin fecha agendada" contratos={grupos.sin_fecha} tipoVista={tipoVista} phpSiteUrl={phpSiteUrl} colorTitulo="text-amber-600" />
+          <Seccion titulo="Hoy" contratos={grupos.hoy} tipoVista={tipoVista} colorTitulo="text-emerald-600" />
+          <Seccion titulo="Esta semana" contratos={grupos.esta_semana} tipoVista={tipoVista} colorTitulo="text-[#54A6D8]" />
+          <Seccion titulo="Más adelante" contratos={grupos.mas_adelante} tipoVista={tipoVista} />
+          <Seccion titulo="Sin fecha agendada" contratos={grupos.sin_fecha} tipoVista={tipoVista} colorTitulo="text-amber-600" />
         </>
       ) : (
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-center mb-6">
@@ -242,7 +240,7 @@ function TabContenido({
           </summary>
           <div className="space-y-2 pt-3">
             {grupos.pasada.map((c) => (
-              <CardCompacta key={c.id} contrato={c} phpSiteUrl={phpSiteUrl} />
+              <CardCompacta key={c.id} contrato={c} />
             ))}
           </div>
         </details>
@@ -254,11 +252,9 @@ function TabContenido({
 export function MisContratosTabs({
   comoComprador,
   comoVendedor,
-  phpSiteUrl,
 }: {
   comoComprador: ContratoAgenda[];
   comoVendedor: ContratoAgenda[];
-  phpSiteUrl: string;
 }) {
   const [tab, setTab] = useState<"comprador" | "vendedor">("comprador");
   const activasComprador = contarActivas(comoComprador);
@@ -293,7 +289,6 @@ export function MisContratosTabs({
         <TabContenido
           contratos={comoComprador}
           tipoVista="comprador"
-          phpSiteUrl={phpSiteUrl}
           textoVacioActivo={{ titulo: "No tienes clases próximas", subtitulo: "Explora servicios y agenda tu siguiente clase.", cta: true }}
           tituloVacio="No tienes clases contratadas"
           subtituloVacio="Busca un profesor y comienza a aprender."
@@ -302,7 +297,6 @@ export function MisContratosTabs({
         <TabContenido
           contratos={comoVendedor}
           tipoVista="vendedor"
-          phpSiteUrl={phpSiteUrl}
           textoVacioActivo={{ titulo: "No tienes clases agendadas próximamente", subtitulo: "Cuando un alumno agende una clase, aparecerá aquí." }}
           tituloVacio="No tienes alumnos activos"
           subtituloVacio="Publica un nuevo servicio para atraer estudiantes."

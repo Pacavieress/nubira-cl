@@ -186,7 +186,7 @@ export function AdminContratosPanel({ contratos: contratosIniciales, phpSiteUrl 
                 </div>
               </div>
               <a
-                href={`${phpSiteUrl}/app/mini_aula.php?id=${seleccionado.id}`}
+                href={`/aula/${seleccionado.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full py-3.5 bg-[#54A6D8] hover:bg-[#4a95c5] text-white text-center rounded-xl font-bold shadow-md shadow-blue-200 transition-transform active:scale-95"

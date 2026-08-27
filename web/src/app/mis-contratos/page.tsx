@@ -29,7 +29,6 @@ export default async function MisContratosPage() {
         <MisContratosTabs
           comoComprador={contratos?.comoComprador ?? []}
           comoVendedor={contratos?.comoVendedor ?? []}
-          phpSiteUrl={phpSiteUrl}
         />
       </main>
     </>
