@@ -9,7 +9,10 @@ import {
   getArchivosContrato,
   getAulaDetalle,
   getEstadoAula,
+  getEstadoPresenciaSala,
   getMensajesAula,
+  registrarPresenciaSala,
+  salirDeSala,
   setTypingAula,
   subirArchivoContrato,
 } from "./aula.repository.js";
@@ -90,6 +93,43 @@ export async function getEstadoAulaHandler(req: Request, res: Response): Promise
     return;
   }
   const estado = await getEstadoAula(contratoId, usuarioId);
+  if (!estado) {
+    res.status(403).json({ error: "sin_acceso" });
+    return;
+  }
+  res.status(200).json(estado);
+}
+
+export async function postPresenciaAula(req: Request, res: Response): Promise<void> {
+  const usuarioId = req.usuarioId as number;
+  const contratoId = Number(req.params.id);
+  if (!Number.isInteger(contratoId) || contratoId <= 0) {
+    res.status(400).json({ ok: false, error: "contrato_invalido" });
+    return;
+  }
+  const ok = await registrarPresenciaSala(usuarioId, contratoId, await esAdminReq(req));
+  res.status(ok ? 200 : 403).json({ ok });
+}
+
+export async function deletePresenciaAula(req: Request, res: Response): Promise<void> {
+  const usuarioId = req.usuarioId as number;
+  const contratoId = Number(req.params.id);
+  if (!Number.isInteger(contratoId) || contratoId <= 0) {
+    res.status(400).json({ ok: false, error: "contrato_invalido" });
+    return;
+  }
+  const ok = await salirDeSala(usuarioId, contratoId, await esAdminReq(req));
+  res.status(ok ? 200 : 403).json({ ok });
+}
+
+export async function getPresenciaAulaHandler(req: Request, res: Response): Promise<void> {
+  const usuarioId = req.usuarioId as number;
+  const contratoId = Number(req.params.id);
+  if (!Number.isInteger(contratoId) || contratoId <= 0) {
+    res.status(400).json({ error: "contrato_invalido" });
+    return;
+  }
+  const estado = await getEstadoPresenciaSala(contratoId, usuarioId, await esAdminReq(req));
   if (!estado) {
     res.status(403).json({ error: "sin_acceso" });
     return;

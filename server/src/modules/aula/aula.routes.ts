@@ -2,12 +2,15 @@ import { Router } from "express";
 import multer from "multer";
 import { requireAuth } from "../auth/auth.middleware.js";
 import {
+  deletePresenciaAula,
   getArchivoAulaHandler,
   getArchivosAulaHandler,
   getAulaDetalleHandler,
   getEstadoAulaHandler,
   getMensajesAulaHandler,
+  getPresenciaAulaHandler,
   postEnviarMensajeAula,
+  postPresenciaAula,
   postSubirArchivoAula,
   postTypingAula,
 } from "./aula.controller.js";
@@ -25,5 +28,8 @@ aulaRouter.get("/:id/estado", requireAuth, getEstadoAulaHandler);
 aulaRouter.get("/:id/mensajes", requireAuth, getMensajesAulaHandler);
 aulaRouter.post("/:id/mensajes", requireAuth, postEnviarMensajeAula);
 aulaRouter.post("/:id/typing", requireAuth, postTypingAula);
+aulaRouter.get("/:id/presencia", requireAuth, getPresenciaAulaHandler);
+aulaRouter.post("/:id/presencia", requireAuth, postPresenciaAula);
+aulaRouter.delete("/:id/presencia", requireAuth, deletePresenciaAula);
 aulaRouter.get("/:id/archivos", requireAuth, getArchivosAulaHandler);
 aulaRouter.post("/:id/archivos", requireAuth, uploadMaterial.single("archivo"), postSubirArchivoAula);

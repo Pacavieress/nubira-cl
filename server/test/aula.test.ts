@@ -36,6 +36,7 @@ let contratoPreClaseId: number;
 let contratoActivaId: number;
 let contratoPostClaseGraciaId: number;
 let contratoPostClaseCerradaId: number;
+let contratoPostClaseVentanaActividadId: number; // fuera de la gracia fija (60min), dentro del tope duro (90min)
 
 before(async () => {
   const ts = Date.now();
@@ -104,13 +105,32 @@ before(async () => {
     vendedorId,
     compradorId,
   ]);
+
+  // Empezó hace 135 min, duró 60 -> terminó hace 75 min: pasó la gracia fija (60 min) pero
+  // sigue dentro del tope duro (90 min) — ventana exacta donde la extensión por actividad
+  // (Fase 3) es la única que puede mantener el video habilitado.
+  contratoPostClaseVentanaActividadId = await crearContrato("en_progreso");
+  await pool.query("INSERT INTO reservas_slots (contrato_id, servicio_id, tutor_id, alumno_id, fecha_clase, duracion_minutos, estado) VALUES (?, ?, ?, ?, NOW() - INTERVAL 135 MINUTE, 60, 'reservado')", [
+    contratoPostClaseVentanaActividadId,
+    servicioId,
+    vendedorId,
+    compradorId,
+  ]);
 });
 
 after(async () => {
   await pool.query("DELETE FROM sesiones_api WHERE session_id IN (?, ?, ?, ?)", [SESSION_COMPRADOR, SESSION_VENDEDOR, SESSION_AJENO, SESSION_ADMIN]);
-  const contratoIds = [contratoSinReservaId, contratoPreClaseId, contratoActivaId, contratoPostClaseGraciaId, contratoPostClaseCerradaId];
+  const contratoIds = [
+    contratoSinReservaId,
+    contratoPreClaseId,
+    contratoActivaId,
+    contratoPostClaseGraciaId,
+    contratoPostClaseCerradaId,
+    contratoPostClaseVentanaActividadId,
+  ];
   await pool.query(`DELETE FROM chat_aula WHERE contrato_id IN (${contratoIds.map(() => "?").join(",")})`, contratoIds);
   await pool.query(`DELETE FROM chat_typing_aula WHERE contrato_id IN (${contratoIds.map(() => "?").join(",")})`, contratoIds).catch(() => {});
+  await pool.query(`DELETE FROM sala_presencia WHERE contrato_id IN (${contratoIds.map(() => "?").join(",")})`, contratoIds).catch(() => {});
   await pool.query(`DELETE FROM dlp_intentos WHERE conversacion_id IN (${contratoIds.map(() => "?").join(",")})`, contratoIds);
   await pool.query(`DELETE FROM contrato_archivos WHERE contrato_id IN (${contratoIds.map(() => "?").join(",")})`, contratoIds);
   await pool.query(`DELETE FROM reservas_slots WHERE contrato_id IN (${contratoIds.map(() => "?").join(",")})`, contratoIds);
@@ -209,6 +229,56 @@ test("GET aula detalle: terminó hace 3 horas -> post_clase, fuera de la gracia,
     assert.equal(body.videoHabilitado, false);
   } finally {
     await close();
+  }
+});
+
+test("GET aula detalle: fuera de la gracia fija (60min), sin heartbeat en sala_presencia -> video sigue cerrado", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoPostClaseVentanaActividadId}`, { headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` } });
+    const body = (await res.json()) as { esPostClase: boolean; videoHabilitado: boolean };
+    assert.equal(body.esPostClase, true);
+    assert.equal(body.videoHabilitado, false);
+  } finally {
+    await close();
+  }
+});
+
+test("GET aula detalle: fuera de la gracia fija pero con heartbeat reciente en sala_presencia -> video se reabre (extensión por actividad, Fase 3)", async () => {
+  const { url, close } = listen();
+  try {
+    const resPing = await fetch(`${url}/api/me/aula/${contratoPostClaseVentanaActividadId}/presencia`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` },
+    });
+    assert.equal(resPing.status, 200);
+
+    const res = await fetch(`${url}/api/me/aula/${contratoPostClaseVentanaActividadId}`, { headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    const body = (await res.json()) as { esPostClase: boolean; videoHabilitado: boolean };
+    assert.equal(body.esPostClase, true);
+    assert.equal(body.videoHabilitado, true);
+  } finally {
+    await close();
+    await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ?", [contratoPostClaseVentanaActividadId]).catch(() => {});
+  }
+});
+
+test("GET aula detalle: heartbeat reciente pero ya pasó el tope duro (90min) -> video sigue cerrado", async () => {
+  const { url, close } = listen();
+  try {
+    const resPing = await fetch(`${url}/api/me/aula/${contratoPostClaseCerradaId}/presencia`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` },
+    });
+    assert.equal(resPing.status, 200);
+
+    const res = await fetch(`${url}/api/me/aula/${contratoPostClaseCerradaId}`, { headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    const body = (await res.json()) as { esPostClase: boolean; videoHabilitado: boolean };
+    assert.equal(body.esPostClase, true);
+    assert.equal(body.videoHabilitado, false);
+  } finally {
+    await close();
+    await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ?", [contratoPostClaseCerradaId]).catch(() => {});
   }
 });
 
@@ -498,5 +568,104 @@ test("GET archivo aula: usuario ajeno no puede descargar aunque conozca el id", 
   } finally {
     await close();
     await pool.query("DELETE FROM contrato_archivos WHERE id = ?", [archivoId]);
+  }
+});
+
+// ============================================================================
+// Presencia en la sala (Fase 3 — sala_presencia)
+// ============================================================================
+
+test("POST presencia: usuario ajeno (no participante, no admin) recibe 403", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { method: "POST", headers: { Cookie: `PHPSESSID=${SESSION_AJENO}` } });
+    assert.equal(res.status, 403);
+  } finally {
+    await close();
+  }
+});
+
+test("POST presencia sin sesión devuelve 401", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { method: "POST" });
+    assert.equal(res.status, 401);
+  } finally {
+    await close();
+  }
+});
+
+test("POST presencia + GET presencia: el vendedor ve al comprador como activo; el comprador no se ve a sí mismo", async () => {
+  const { url, close } = listen();
+  try {
+    const resPing = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, {
+      method: "POST",
+      headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` },
+    });
+    const bodyPing = (await resPing.json()) as { ok: boolean };
+    assert.equal(bodyPing.ok, true);
+
+    const resVendedor = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` } });
+    const bodyVendedor = (await resVendedor.json()) as { activo: boolean; usuarioId: number | null };
+    assert.equal(bodyVendedor.activo, true);
+    assert.equal(bodyVendedor.usuarioId, compradorId);
+
+    const resComprador = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    const bodyComprador = (await resComprador.json()) as { activo: boolean; usuarioId: number | null };
+    assert.equal(bodyComprador.activo, false);
+    assert.equal(bodyComprador.usuarioId, null);
+  } finally {
+    await close();
+    await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ?", [contratoSinReservaId]).catch(() => {});
+  }
+});
+
+test("DELETE presencia (salir): borra la fila propia, el otro participante deja de verlo activo de inmediato", async () => {
+  const { url, close } = listen();
+  try {
+    await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { method: "POST", headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    const resSalir = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { method: "DELETE", headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    assert.equal(resSalir.status, 200);
+
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` } });
+    const body = (await res.json()) as { activo: boolean };
+    assert.equal(body.activo, false);
+  } finally {
+    await close();
+    await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ?", [contratoSinReservaId]).catch(() => {});
+  }
+});
+
+test("GET presencia: un ping con más de 25s de antigüedad ya no cuenta como activo", async () => {
+  const { url, close } = listen();
+  try {
+    await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { method: "POST", headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    await pool.query("UPDATE sala_presencia SET ultimo_ping = NOW() - INTERVAL 30 SECOND WHERE contrato_id = ? AND usuario_id = ?", [
+      contratoSinReservaId,
+      compradorId,
+    ]);
+
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` } });
+    const body = (await res.json()) as { activo: boolean };
+    assert.equal(body.activo, false);
+  } finally {
+    await close();
+    await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ?", [contratoSinReservaId]).catch(() => {});
+  }
+});
+
+test("GET presencia: el admin puede consultar sin ser parte del contrato (observador)", async () => {
+  const { url, close } = listen();
+  try {
+    await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { method: "POST", headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` } });
+
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/presencia`, { headers: { Cookie: `PHPSESSID=${SESSION_ADMIN}` } });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { activo: boolean; usuarioId: number | null };
+    assert.equal(body.activo, true);
+    assert.equal(body.usuarioId, vendedorId);
+  } finally {
+    await close();
+    await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ?", [contratoSinReservaId]).catch(() => {});
   }
 });

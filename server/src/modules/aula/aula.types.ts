@@ -10,10 +10,16 @@
 //   a una llamada — la integración de Daily (vanilla vs. @daily-co/daily-react) es su
 //   propia decisión de arquitectura, no algo para decidir de paso acá.
 // - Pizarra (Excalidraw): agrupada con video en la Fase 4 del diseño acordado.
-// - Presencia real (reemplazo de sala_activa_<id>.txt por una tabla): es su propia Fase 3.
-//   Acá la ventana de gracia post-horario es FIJA (60 min), sin la extensión por heartbeat
-//   que el PHP real tiene — esa extensión depende exactamente del mecanismo que la Fase 3
-//   va a reemplazar, así que no tiene sentido construirla dos veces.
+//
+// ACTUALIZADO (Fase 3, 27/08/2026): sala_presencia ya reemplazó sala_activa_<id>.txt como
+// fuente de la extensión de gracia por actividad — ver getAulaDetalle()/registrarPresenciaSala()
+// en aula.repository.ts. Los endpoints de presencia (entrar/ping/salir/estado) existen y
+// están probados, pero nada en el shell de Next los llama todavía: "Entrar a la Sala" sigue
+// bridgeando al PHP real (que sigue usando su propio archivo, sin tocar), así que hoy no hay
+// tráfico real escribiendo en la tabla — quedará operativo de punta a punta recién cuando la
+// Fase 4 construya la videollamada real en Next y la conecte a estos mismos endpoints. Por
+// eso tampoco se agregó un badge "el otro ya está en la sala" en AulaShell.tsx todavía: sin
+// nadie escribiendo en la tabla, sería una UI que nunca podría mostrar nada real.
 //
 // CORRECCIÓN DELIBERADA (mismo criterio "no repliques el bug" de todo el port):
 // enviar_mensajes_chat_mini_aula.php NO tiene la regla 5d de enviar_mensaje.php (teléfono
@@ -86,4 +92,9 @@ export interface ArchivoContrato {
 export interface EstadoAula {
   chatNoLeidos: number;
   totalArchivos: number;
+}
+
+export interface EstadoPresenciaSala {
+  activo: boolean;
+  usuarioId: number | null;
 }

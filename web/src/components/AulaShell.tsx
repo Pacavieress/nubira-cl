@@ -10,10 +10,10 @@ import { AulaMateriales } from "@/components/AulaMateriales";
 // video/WebRTC (Fase 4, decisión de arquitectura propia) ni pizarra (agrupada con video) —
 // "Entrar a la Sala" bridgea al sitio PHP real, que sí tiene la videollamada funcionando.
 //
-// Simplificación deliberada de la ventana de gracia post-horario: FIJA en 60 min, sin la
-// extensión por heartbeat que el PHP real tiene (esa depende de sala_activa_<id>.txt, que
-// la Fase 3 de este mismo diseño va a reemplazar por una tabla real — no tiene sentido
-// construir la lógica de heartbeat dos veces).
+// La ventana de gracia post-horario (detalle.videoHabilitado) ya incluye la extensión real
+// por actividad (Fase 3, sala_presencia) además de la gracia fija de 60 min — ver
+// aula.repository.ts. Nada acá necesitó cambiar: este componente solo consume el booleano
+// ya calculado, sin conocer la lógica de heartbeat detrás.
 
 type Vista = "material" | "reunion";
 

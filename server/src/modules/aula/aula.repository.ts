@@ -29,9 +29,14 @@ interface SlotAulaRow extends RowDataPacket {
   clase_fin: string;
   ventana_apertura: string;
   fin_gracia: string;
+  tope_duro: string;
 }
 
 const GRACIA_POST_CLASE_MIN = 60;
+// Puerto de mini_aula.php:108-110 — extensión de la gracia fija por actividad real
+// (Fase 3, ver sala_presencia más abajo).
+const HEARTBEAT_VENTANA_MIN = 10;
+const TOPE_DURO_POST_CLASE_MIN = 90;
 
 export async function getAulaDetalle(contratoId: number, usuarioId: number, esAdminSesion: boolean) {
   const sql = `SELECT c.id, c.servicio_id, c.comprador_id, c.vendedor_id, c.estado,
@@ -70,7 +75,8 @@ export async function getAulaDetalle(contratoId: number, usuarioId: number, esAd
             duracion_minutos,
             DATE_FORMAT(DATE_ADD(fecha_clase, INTERVAL duracion_minutos MINUTE), '%Y-%m-%d %H:%i:%s') AS clase_fin,
             DATE_FORMAT(DATE_SUB(fecha_clase, INTERVAL ${BUFFER_ANTES_MIN} MINUTE), '%Y-%m-%d %H:%i:%s') AS ventana_apertura,
-            DATE_FORMAT(DATE_ADD(DATE_ADD(fecha_clase, INTERVAL duracion_minutos MINUTE), INTERVAL ${GRACIA_POST_CLASE_MIN} MINUTE), '%Y-%m-%d %H:%i:%s') AS fin_gracia
+            DATE_FORMAT(DATE_ADD(DATE_ADD(fecha_clase, INTERVAL duracion_minutos MINUTE), INTERVAL ${GRACIA_POST_CLASE_MIN} MINUTE), '%Y-%m-%d %H:%i:%s') AS fin_gracia,
+            DATE_FORMAT(DATE_ADD(DATE_ADD(fecha_clase, INTERVAL duracion_minutos MINUTE), INTERVAL ${TOPE_DURO_POST_CLASE_MIN} MINUTE), '%Y-%m-%d %H:%i:%s') AS tope_duro
      FROM reservas_slots WHERE contrato_id = ? LIMIT 1`,
     [contratoId],
   );
@@ -97,7 +103,14 @@ export async function getAulaDetalle(contratoId: number, usuarioId: number, esAd
     esPreClase = ahora < ventanaAperturaTs;
     esAulaActiva = ahora >= ventanaAperturaTs && ahora <= claseFinTs;
     esPostClase = ahora > claseFinTs;
-    videoHabilitado = esAulaActiva || (esPostClase && ahora <= finGraciaTs);
+
+    // Puerto de mini_aula.php:103-126 (hallazgo #2 INFORME-MINI-AULA.md) — Fase 3: ahora que
+    // sala_presencia reemplaza sala_activa_<id>.txt, se restaura la extensión real que
+    // Pieza 2 había simplificado a solo la gracia fija: heartbeat reciente (<10 min) en la
+    // sala extiende el acceso más allá de los 60 min fijos, hasta un tope duro de 90 min.
+    const enGraciaPorHorario = esPostClase && ahora <= finGraciaTs;
+    const enGraciaPorActividad = esPostClase && ahora <= slot.tope_duro && (await huboActividadRecienteEnSala(contratoId));
+    videoHabilitado = esAulaActiva || enGraciaPorHorario || enGraciaPorActividad;
   } else {
     // Sin reserva -> sin ventana horaria que respetar (mismo efecto que el rango de 365
     // días del PHP real: siempre "activa", nunca pre/post clase).
@@ -180,6 +193,86 @@ async function puedeAccederAula(contratoId: number, usuarioId: number, esAdmin: 
   const params = esAdmin ? [contratoId] : [contratoId, usuarioId, usuarioId];
   const [rows] = await pool.query<ContratoAulaRow[]>(sql, params);
   return rows[0] ?? null;
+}
+
+// ============================================================================
+// Presencia en la sala (Fase 3 — reemplaza app/ping_reunion.php y
+// sala_activa_<id>.txt, un único archivo plano por contrato que solo guardaba el
+// último usuario que hizo ping). A diferencia del archivo (un solo "slot", el ping
+// de un usuario pisaba el del otro), la tabla trackea un heartbeat POR usuario —
+// corrección natural al dejar de depender de un archivo de una sola ranura, no una
+// decisión de producto aparte. El propio PHP (ping_reunion.php) sigue usando el
+// archivo — no se modifica un sistema legacy que la migración va a reemplazar por
+// completo, mismo criterio que el resto de esta migración con el código PHP viejo.
+// ============================================================================
+
+const VENTANA_ACTIVO_SEGUNDOS = 25;
+
+let tablaSalaPresenciaVerificada = false;
+async function asegurarTablaSalaPresencia(): Promise<void> {
+  if (tablaSalaPresenciaVerificada) return;
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS sala_presencia (
+      contrato_id INT NOT NULL,
+      usuario_id INT NOT NULL,
+      ultimo_ping DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (contrato_id, usuario_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+  );
+  tablaSalaPresenciaVerificada = true;
+}
+
+async function huboActividadRecienteEnSala(contratoId: number): Promise<boolean> {
+  await asegurarTablaSalaPresencia();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT 1 FROM sala_presencia WHERE contrato_id = ? AND ultimo_ping > (NOW() - INTERVAL ${HEARTBEAT_VENTANA_MIN} MINUTE) LIMIT 1`,
+    [contratoId],
+  );
+  return rows.length > 0;
+}
+
+// Puerto de las acciones 'entrar'/'ping' de ping_reunion.php — mismo efecto (registra
+// timestamp), unificadas en una sola operación porque en el PHP real ya hacían
+// exactamente lo mismo (solo se distinguían por nombre, nunca por comportamiento).
+export async function registrarPresenciaSala(usuarioId: number, contratoId: number, esAdmin: boolean): Promise<boolean> {
+  const contrato = await puedeAccederAula(contratoId, usuarioId, esAdmin);
+  if (!contrato) return false;
+  await asegurarTablaSalaPresencia();
+  await pool.query("INSERT INTO sala_presencia (contrato_id, usuario_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE ultimo_ping = CURRENT_TIMESTAMP", [
+    contratoId,
+    usuarioId,
+  ]);
+  return true;
+}
+
+// Puerto de la acción 'salir' — a diferencia del archivo (unlink inmediato), acá basta con
+// borrar la fila propia; el resto de participantes deja de verla "activa" de inmediato en
+// vez de esperar los 25s de la ventana (mismo efecto que buscaba el unlink() real).
+export async function salirDeSala(usuarioId: number, contratoId: number, esAdmin: boolean): Promise<boolean> {
+  const contrato = await puedeAccederAula(contratoId, usuarioId, esAdmin);
+  if (!contrato) return false;
+  await asegurarTablaSalaPresencia();
+  await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ? AND usuario_id = ?", [contratoId, usuarioId]);
+  return true;
+}
+
+// Puerto de la acción 'estado' — CORRECCIÓN DELIBERADA vs. el PHP real: ping_reunion.php
+// devuelve el último usuario_id que pingeó tal cual (aunque sea uno mismo) y deja que el
+// JS del cliente compare "data.usuario_id != mi_id" para decidir si mostrar el badge
+// (mini_aula.php:811). Acá el filtro "no soy yo" se hace en el servidor — es la fuente de
+// verdad, no un detalle que cada consumidor del endpoint tenga que recordar replicar.
+export async function getEstadoPresenciaSala(contratoId: number, usuarioId: number, esAdmin: boolean): Promise<{ activo: boolean; usuarioId: number | null } | null> {
+  const contrato = await puedeAccederAula(contratoId, usuarioId, esAdmin);
+  if (!contrato) return null;
+  await asegurarTablaSalaPresencia();
+  const [rows] = await pool.query<(RowDataPacket & { usuario_id: number })[]>(
+    `SELECT usuario_id FROM sala_presencia
+     WHERE contrato_id = ? AND usuario_id != ? AND ultimo_ping > (NOW() - INTERVAL ${VENTANA_ACTIVO_SEGUNDOS} SECOND)
+     ORDER BY ultimo_ping DESC LIMIT 1`,
+    [contratoId, usuarioId],
+  );
+  const row = rows[0];
+  return { activo: !!row, usuarioId: row ? row.usuario_id : null };
 }
 
 // ============================================================================
