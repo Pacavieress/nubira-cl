@@ -23,7 +23,11 @@ import type { ServicioCompartir } from "./compartir.types.js";
 // Puerto VISUAL (ver nota de alcance en svgCard.ts) de nb_generar_imagen_post()
 // (imagen_compartir.php:429-536) — SOLO formato POST 4:5, mismo criterio de slices que
 // Compartir Apuntes/Desafío: HISTORY queda para otra pieza si hace falta.
-const VERSION_IMAGEN_SERVICIO = "node-v1";
+// Incrementar (v1 -> v2 -> ...) invalida automáticamente el cache de /upload/compartir/
+// cuando cambia el diseño visual — mismo criterio que NB_IMG_VERSION en imagen_compartir.php
+// (PHP), que se bumpeó en el mismo cambio (30/08/2026: badge "Disponible" reubicado, features
+// en 1 columna).
+const VERSION_IMAGEN_SERVICIO = "node-v2";
 const W = 1080;
 const H = 1350;
 const M = 110;
@@ -87,30 +91,28 @@ function formatoCLP(valor: number): string {
   return `$${Math.round(valor).toLocaleString("es-CL")}`;
 }
 
-// Puerto de las 4 "features fijas" (imagen_compartir.php:388-411) — grilla 2x2, mismos
-// textos, mismo padX=M para alinear con el resto de la card.
+// Puerto de las 4 "features fijas" (imagen_compartir.php:388-411) — 1 sola columna
+// alineada a la izquierda (ANTES: grilla 2x2), texto más grande (18px -> 30px). Cambio de
+// diseño pedido explícitamente por el usuario (30/08/2026) y confirmado contra 2 prototipos
+// renderizados antes de tocar este archivo — ver el mismo cambio espejado en
+// nb_dibujar_features_fijas() (imagen_compartir.php).
 function dibujarFeaturesFijas(yTop: number): { svg: string; yFin: number } {
   const features = ["Clase 100% online en Nubira", "Chat anónimo antes de contratar", "Horarios publicados por el tutor", "Garantía Nubira"];
   const padX = M;
-  const gap = 40;
-  const size = 18;
-  const rowGap = 40;
-  const colW = (W - padX * 2 - gap) / 2;
-  const dotR = 4;
-  const dotGap = 10;
+  const size = 30;
+  const rowGap = 58;
+  const dotR = 7;
+  const dotGap = 16;
 
   const partes: string[] = [];
   features.forEach((label, i) => {
-    const fila = Math.floor(i / 2);
-    const col = i % 2;
-    const colX = padX + col * (colW + gap);
-    const yBase = yTop + 14 + fila * rowGap;
+    const yBase = yTop + 14 + i * rowGap;
     const cyDot = yBase - size * 0.35;
-    partes.push(`<circle cx="${colX + dotR}" cy="${cyDot}" r="${dotR}" fill="${PALETA_MARCA.acento}" />`);
-    partes.push(textoIzquierda(label, "semibold", size, PALETA_MARCA.txt, colX + dotR * 2 + dotGap, yBase));
+    partes.push(`<circle cx="${padX + dotR}" cy="${cyDot}" r="${dotR}" fill="${PALETA_MARCA.acento}" />`);
+    partes.push(textoIzquierda(label, "semibold", size, PALETA_MARCA.txt, padX + dotR * 2 + dotGap, yBase));
   });
 
-  return { svg: partes.join("\n"), yFin: yTop + 14 + rowGap + 16 };
+  return { svg: partes.join("\n"), yFin: yTop + 14 + (features.length - 1) * rowGap + 20 };
 }
 
 // Puerto de nb_dibujar_precio_centrado() (imagen_compartir.php:128-190) — con oferta
@@ -183,7 +185,9 @@ function dibujarPrecioCentrado(s: ServicioCompartir, yBase: number): string {
 export async function generarImagenServicioPost(s: ServicioCompartir): Promise<Buffer> {
   const partes: string[] = [];
 
-  // PARTE 1: avatar grande + badge "Disponible" + nombre + institución.
+  // PARTE 1: avatar grande + nombre + institución (el badge "Disponible" ya NO va acá —
+  // se movió a PARTE 2, debajo de la línea de rating, cambio pedido explícitamente por el
+  // usuario 30/08/2026).
   const diamAv = 400;
   const avTop = 150;
   const avLeft = M;
@@ -202,15 +206,14 @@ export async function generarImagenServicioPost(s: ServicioCompartir): Promise<B
   const yNombre = avTop + 90;
   partes.push(textoIzquierda(nombre, "bold", 40, PALETA_MARCA.acento, colX, yNombre));
 
-  const wNombre = medirAnchoTexto(nombre, "bold", 40);
-  partes.push(pillSolidoIzquierda("Disponible", colX + wNombre + 20, yNombre - 32, "#10B981", PALETA_MARCA.blanco).svg);
-
   const instRaw = (s.institucionMaestra ?? "").trim();
   const inst = instRaw !== "" ? abreviarInstitucion(instRaw, 22).toUpperCase() : "TUTOR PARTICULAR";
   const yInst = yNombre + 45;
   partes.push(textoIzquierda(inst, "regular", 24, PALETA_MARCA.txt2, colX, yInst));
 
-  // PARTE 2: badge categoría (separado) + línea de rating (separada).
+  // PARTE 2: badge categoría + línea de rating + badge "Disponible" — los 3 apilados en la
+  // misma columna (colX). "Disponible" vivía antes al lado del nombre (PARTE 1); bajó acá
+  // debajo de "★ Nuevo"/rating, cambio pedido explícitamente por el usuario 30/08/2026.
   const cat = (s.categoria ?? "").trim().toUpperCase();
   const yCatBadge = yInst + 30;
   const badgeCat = badgePillIzquierda(cat, colX, yCatBadge, PALETA_MARCA.acento, PALETA_MARCA.acento);
@@ -219,9 +222,14 @@ export async function generarImagenServicioPost(s: ServicioCompartir): Promise<B
   const yRating = yCatBadge + badgeCat.alto + 34;
   partes.push(estrellaConRating(s.ratingProm, s.ratingVotos, colX, yRating, 26, PALETA_MARCA.acento));
 
+  const yDisponibleTop = yRating + 24;
+  const badgeDisponible = pillSolidoIzquierda("Disponible", colX, yDisponibleTop, "#10B981", PALETA_MARCA.blanco);
+  partes.push(badgeDisponible.svg);
+  const yDisponibleBottom = yDisponibleTop + badgeDisponible.alto;
+
   // PARTE 3: título genérico (categoría en acento) — sin bio (mismo criterio de privacidad
   // documentado en el PHP real: el texto libre de la bio puede filtrar el apellido completo).
-  let y = Math.max(avBottom, yRating + 20) + 110;
+  let y = Math.max(avBottom, yDisponibleBottom + 20) + 110;
 
   const categoriaTxt = (s.categoria ?? "").trim();
   const tituloGenerico = `Clases particulares de ${categoriaTxt}`;
@@ -233,16 +241,19 @@ export async function generarImagenServicioPost(s: ServicioCompartir): Promise<B
     partes.push(textoCentrado(lineaTit, "semibold", 34, PALETA_MARCA.txt, W / 2, y));
   }
   y += 46 + 40;
-  y += 100; // mismo aire que deja la bio removida en el PHP real.
+  // Gap reducido (100 -> 35): con las features ahora en 1 columna más alta (4 filas en vez
+  // de 2), había que subirlas para no empujar el precio/botón fuera del canvas — mismo
+  // cambio pedido explícitamente por el usuario 30/08/2026, confirmado en el prototipo.
+  y += 35;
 
-  // PARTE 4: features 2x2 + precio + botón (izquierda) + marca (misma fila).
+  // PARTE 4: features en 1 columna + precio + botón (izquierda) + marca (misma fila).
   const featuresResult = dibujarFeaturesFijas(y);
   partes.push(featuresResult.svg);
 
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   const ofertaVigenteCard = s.isSubvencionado && (s.ofertaTermino === null || s.ofertaTermino >= hoy) && (s.precioOferta ?? 0) > 0;
-  y = featuresResult.yFin + 120;
+  y = featuresResult.yFin + 80;
   if (ofertaVigenteCard) y += 65;
 
   partes.push(dibujarPrecioCentrado(s, y));

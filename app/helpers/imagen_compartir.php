@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v22');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v23');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -386,27 +386,25 @@ if (!function_exists('nb_dibujar_badge_categoria')) {
 }
 
 if (!function_exists('nb_dibujar_features_fijas')) {
-    // 4 features fijas en grilla 2x2 (textos nuevos más largos que en 4 columnas —
-    // verificado con nb_wrap_texto real: en 4 columnas 2 de las 4 frases se truncaban).
+    // 1 sola columna alineada a la izquierda, texto más grande (18px -> 30px) — ANTES
+    // grilla 2x2. Cambio de diseño pedido explícitamente por el usuario (30/08/2026),
+    // confirmado contra 2 prototipos renderizados antes de tocar este archivo — ver el
+    // mismo cambio espejado en dibujarFeaturesFijas() (compartirServicio.generador.ts).
     function nb_dibujar_features_fijas($img, string $fSemi, int $W, int $yTop, int $cTxt, int $cAcentoDot): int {
         $features = [
             'Clase 100% online en Nubira', 'Chat anónimo antes de contratar',
             'Horarios publicados por el tutor', 'Garantía Nubira',
         ];
-        $padX = 110; $gap = 40; $size = 18; $rowGap = 40; // padX debe coincidir con $M de nb_generar_imagen_post()
-        $colW = (int)(($W - $padX * 2 - $gap) / 2);
-        $dotR = 4; $dotGap = 10;
+        $padX = 110; $size = 30; $rowGap = 58; // padX debe coincidir con $M de nb_generar_imagen_post()
+        $dotR = 7; $dotGap = 16;
 
         foreach ($features as $i => $label) {
-            $fila = (int)($i / 2);
-            $col  = $i % 2;
-            $colX = $padX + $col * ($colW + $gap);
-            $yBase = $yTop + 14 + $fila * $rowGap;
+            $yBase = $yTop + 14 + $i * $rowGap;
             $cyDot = $yBase - (int)($size * 0.35);
-            imagefilledellipse($img, $colX + $dotR, $cyDot, $dotR * 2, $dotR * 2, $cAcentoDot);
-            nb_texto_izquierda($img, $fSemi, $size, $cTxt, $label, $colX + $dotR * 2 + $dotGap, $yBase);
+            imagefilledellipse($img, $padX + $dotR, $cyDot, $dotR * 2, $dotR * 2, $cAcentoDot);
+            nb_texto_izquierda($img, $fSemi, $size, $cTxt, $label, $padX + $dotR * 2 + $dotGap, $yBase);
         }
-        return $yTop + 14 + $rowGap + 16;
+        return $yTop + 14 + (count($features) - 1) * $rowGap + 20;
     }
 }
 
@@ -445,7 +443,9 @@ if (!function_exists('nb_generar_imagen_post')) {
         $cVerdeDisp = imagecolorallocate($img, 16, 185, 129);
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
-        /* ===== PARTE 1: avatar grande + badge Disponible + nombre + institución ===== */
+        /* ===== PARTE 1: avatar grande + nombre + institución (badge Disponible ya NO va
+           acá — se movió a PARTE 2, debajo de la línea de rating, cambio pedido
+           explícitamente por el usuario 30/08/2026) ===== */
         // Margen de seguridad lateral: colchón visual para compartir en redes,
         // independiente de si la plataforma finalmente recorta o no la imagen.
         $M = 110;
@@ -461,17 +461,16 @@ if (!function_exists('nb_generar_imagen_post')) {
         $yNombre = $avTop + 90; // misma relación con avTop que en H=1080, para no desalinear con el avatar más grande
         nb_texto_izquierda($img, $fBold, 40, $cAcento, $nombre, $colX, $yNombre);
 
-        // Badge decorativo puro — ya no depende de tiempo de respuesta real.
-        $wNombre = nb_ancho_texto($fBold, 40, $nombre);
-        nb_dibujar_badge_pill($img, $fSemi, 20, 'Disponible', $colX + $wNombre + 20, $yNombre - 32, $cVerdeDisp, $cBlanco);
-
         $instRaw = trim((string)($s['institucion_maestra'] ?? $s['institucion'] ?? ''));
         $inst = $instRaw !== '' ? mb_strtoupper(html_entity_decode(abreviar_institucion($instRaw, 22)), 'UTF-8') : 'TUTOR PARTICULAR';
         $inst = nb_truncar_una_linea($fReg, 24, $inst, $colMaxW);
         $yInst = $yNombre + 45;
         nb_texto_izquierda($img, $fReg, 24, $cTxt2, $inst, $colX, $yInst);
 
-        /* ===== PARTE 2: badge categoría (separado) + línea de rating (separada) ===== */
+        /* ===== PARTE 2: badge categoría + línea de rating + badge Disponible — los 3
+           apilados en la misma columna ($colX). "Disponible" vivía antes al lado del
+           nombre (PARTE 1); bajó acá debajo de "★ Nuevo"/rating, cambio pedido
+           explícitamente por el usuario 30/08/2026. ===== */
         $cat = mb_strtoupper(trim((string)($s['categoria'] ?? '')), 'UTF-8');
         $yCatBadge = $yInst + 30;
         [$bwCat, $bhCat] = nb_dibujar_badge_categoria($img, $fSemi, $cat, $colX, $yCatBadge, $cAcento, $cBlanco, $cAcento);
@@ -481,8 +480,12 @@ if (!function_exists('nb_generar_imagen_post')) {
         $yRating = $yCatBadge + $bhCat + 34;
         nb_dibujar_cat_rating_izquierda($img, '', $fBold, $fSemi, 26, $prom, $votos, $colX, $yRating, $cAcento, $cAcento);
 
+        $yDisponibleTop = $yRating + 24;
+        [$bwDisp, $bhDisp] = nb_dibujar_badge_pill($img, $fSemi, 20, 'Disponible', $colX, $yDisponibleTop, $cVerdeDisp, $cBlanco);
+        $yDisponibleBottom = $yDisponibleTop + $bhDisp;
+
         /* ===== PARTE 3: título genérico (categoría en acento) — sin bio (privacidad: ver nota) ===== */
-        $y = max($avBottom, $yRating + 20) + 110;
+        $y = max($avBottom, $yDisponibleBottom + 20) + 110;
 
         $categoriaTxt = trim((string)($s['categoria'] ?? ''));
         $tituloGenerico = 'Clases particulares de ' . $categoriaTxt;
@@ -504,19 +507,21 @@ if (!function_exists('nb_generar_imagen_post')) {
         // el apellido completo del tutor (ej. "Soy Karen Almonacid..."), lo que anula la
         // protección de privacidad que ya aplica nombre_publico_tutor() más arriba ("Karen A.").
         // La bio SIGUE mostrándose normal en perfil.php — este cambio es solo para la imagen
-        // pública compartible. El espacio liberado se redistribuye como aire entre secciones
-        // (ver los 3 gaps de PARTE 4 más abajo), no queda vacío al fondo del canvas.
-        $y += 100;
+        // pública compartible.
+        // Gap reducido (100 -> 35, 30/08/2026): con las features ahora en 1 columna más alta
+        // (4 filas en vez de 2), había que subirlas para no empujar el precio/botón fuera
+        // del canvas — cambio pedido explícitamente por el usuario, confirmado en prototipo.
+        $y += 35;
 
-        /* ===== PARTE 4: features 2x2 + precio (negro) + botón (izquierda) + marca (misma fila) ===== */
+        /* ===== PARTE 4: features en 1 columna + precio (negro) + botón (izquierda) + marca (misma fila) ===== */
         $yFeaturesFin = nb_dibujar_features_fijas($img, $fSemi, $W, $y, $cTxt, $cAcento);
 
         $ofertaVigenteCard = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
             && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'))
             && (float)($s['precio_oferta'] ?? 0) > 0;
-        $y = $yFeaturesFin + 120;
+        $y = $yFeaturesFin + 80;
         if ($ofertaVigenteCard) {
-            $y += 65; // espacio extra para que el badge OFERTA (dibujado sobre el precio) no choque con la fila 2 de features
+            $y += 65; // espacio extra para que el badge OFERTA (dibujado sobre el precio) no choque con las features
         }
 
         nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 48, 32, $W, $y, $cTxt, $cTxt2);
