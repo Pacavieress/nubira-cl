@@ -4,22 +4,19 @@
 // + app/count_files.php (los últimos 2 fusionados en un solo endpoint de estado, ver
 // aula.repository.ts) — Grupo Mini Aula, Pieza 2 (27/08/2026).
 //
-// FUERA DE ALCANCE A PROPÓSITO en esta pieza (confirmado con el usuario, fases separadas):
-// - Video/WebRTC (Daily.co): la pestaña "Reunión" muestra el estado/mensaje correcto
-//   (según horario), pero "Entrar a la Sala" bridgea al sitio PHP real en vez de unirse
-//   a una llamada — la integración de Daily (vanilla vs. @daily-co/daily-react) es su
-//   propia decisión de arquitectura, no algo para decidir de paso acá.
-// - Pizarra (Excalidraw): agrupada con video en la Fase 4 del diseño acordado.
+// ACTUALIZADO (Fase 4, video/WebRTC + pizarra): Video/WebRTC (Daily.co, vanilla daily-js
+// con iframe prebuilt — misma decisión que ya usa el PHP real, NO @daily-co/daily-react, ver
+// AulaVideo.tsx) y Pizarra (Excalidraw) ya están portados. "Entrar a la Sala" ahora se une a
+// la llamada real DENTRO de Next (ya no bridgea a mini_aula.php) — mismo nombre de sala/
+// pizarra que el PHP real (mismos salts, verificado byte a byte, ver aula.repository.ts), así
+// que un comprador en Next y un vendedor todavía en el PHP viejo terminan en la MISMA sala
+// real durante la transición. Como ahora SÍ hay tráfico real escribiendo en sala_presencia,
+// el badge "el otro ya está en la sala" (antes diferido por falta de datos reales) también se
+// agregó a AulaShell.tsx.
 //
 // ACTUALIZADO (Fase 3, 27/08/2026): sala_presencia ya reemplazó sala_activa_<id>.txt como
 // fuente de la extensión de gracia por actividad — ver getAulaDetalle()/registrarPresenciaSala()
-// en aula.repository.ts. Los endpoints de presencia (entrar/ping/salir/estado) existen y
-// están probados, pero nada en el shell de Next los llama todavía: "Entrar a la Sala" sigue
-// bridgeando al PHP real (que sigue usando su propio archivo, sin tocar), así que hoy no hay
-// tráfico real escribiendo en la tabla — quedará operativo de punta a punta recién cuando la
-// Fase 4 construya la videollamada real en Next y la conecte a estos mismos endpoints. Por
-// eso tampoco se agregó un badge "el otro ya está en la sala" en AulaShell.tsx todavía: sin
-// nadie escribiendo en la tabla, sería una UI que nunca podría mostrar nada real.
+// en aula.repository.ts.
 //
 // CORRECCIÓN DELIBERADA (mismo criterio "no repliques el bug" de todo el port):
 // enviar_mensajes_chat_mini_aula.php NO tiene la regla 5d de enviar_mensaje.php (teléfono
@@ -53,6 +50,7 @@ export interface AulaDetalle {
   esAulaActiva: boolean;
   esPostClase: boolean;
   videoHabilitado: boolean;
+  pizarraUrl: string | null;
   esFinalizado: boolean;
   finalizadoComprador: boolean;
   finalizadoVendedor: boolean;
@@ -98,3 +96,7 @@ export interface EstadoPresenciaSala {
   activo: boolean;
   usuarioId: number | null;
 }
+
+export type ResultadoSalaVideo =
+  | { ok: true; roomUrl: string; userName: string }
+  | { ok: false; error: "sin_acceso" | "video_deshabilitado" };

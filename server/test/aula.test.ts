@@ -1,12 +1,31 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import { createApp } from "../src/app.js";
 import { pool } from "../src/db/pool.js";
 
 // Puerto del Grupo Mini Aula — Pieza 2 (27/08/2026), shell sin video: mini_aula.php +
-// chat_mini_aula.php + entregas_servicio.php + endpoints _mini_aula. Fixtures sintéticos —
-// necesita control total sobre reservas_slots (para las 4 ventanas de tiempo) y sobre el
-// contenido de mensajes (DLP determinística).
+// chat_mini_aula.php + entregas_servicio.php + endpoints _mini_aula. Fase 3 (sala_presencia)
+// y Fase 4 (video Daily.co + pizarra Excalidraw) después. Fixtures sintéticos — necesita
+// control total sobre reservas_slots (para las 4 ventanas de tiempo) y sobre el contenido de
+// mensajes (DLP determinística).
+
+// Réplica independiente de la fórmula real (aula.repository.ts) para las aserciones de
+// Fase 4 — si algún día alguien cambia el salt en un solo lugar sin querer, este test debe
+// notarlo por divergencia, no por coincidencia con el mismo código que está probando.
+function hashSeguridadSalaEsperado(contratoId: number): string {
+  return crypto.createHash("md5").update(`${contratoId}nubira_secreto_2026`).digest("hex").slice(0, 8);
+}
+function salaVideoUrlEsperada(contratoId: number): string {
+  const hash = hashSeguridadSalaEsperado(contratoId);
+  return `https://nubira-cl.daily.co/aula-${contratoId}-${hash}`;
+}
+function pizarraUrlEsperada(contratoId: number): string {
+  const hash = hashSeguridadSalaEsperado(contratoId);
+  const roomId = crypto.createHash("md5").update(`nubira_pizarra_${contratoId}_${hash}`).digest("hex").slice(0, 20);
+  const key = crypto.createHash("md5").update(`key_${contratoId}_${hash}`).digest("base64url");
+  return `https://excalidraw.com/#room=${roomId},${key}`;
+}
 
 function listen(): { url: string; close: () => Promise<void> } {
   const app = createApp();
@@ -304,6 +323,26 @@ test("GET aula detalle: comprador puede finalizar cuando el contrato está en_pr
     const body = (await res.json()) as { compradorPuedeFinalizar: boolean; vendedorEsperandoAlumno: boolean };
     assert.equal(res.status, 200);
     assert.equal(body.compradorPuedeFinalizar, true);
+  } finally {
+    await close();
+  }
+});
+
+test("GET aula detalle: pizarraUrl solo aparece para el vendedor real, ni para el comprador ni para el admin en bypass", async () => {
+  const { url, close } = listen();
+  try {
+    const resVendedor = await fetch(`${url}/api/me/aula/${contratoSinReservaId}`, { headers: { Cookie: `PHPSESSID=${SESSION_VENDEDOR}` } });
+    const bodyVendedor = (await resVendedor.json()) as { pizarraUrl: string | null };
+    assert.equal(bodyVendedor.pizarraUrl, pizarraUrlEsperada(contratoSinReservaId));
+
+    const resComprador = await fetch(`${url}/api/me/aula/${contratoSinReservaId}`, { headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    const bodyComprador = (await resComprador.json()) as { pizarraUrl: string | null };
+    assert.equal(bodyComprador.pizarraUrl, null);
+
+    const resAdmin = await fetch(`${url}/api/me/aula/${contratoSinReservaId}`, { headers: { Cookie: `PHPSESSID=${SESSION_ADMIN}` } });
+    const bodyAdmin = (await resAdmin.json()) as { pizarraUrl: string | null; esAdmin: boolean };
+    assert.equal(bodyAdmin.esAdmin, true);
+    assert.equal(bodyAdmin.pizarraUrl, null);
   } finally {
     await close();
   }
@@ -667,5 +706,69 @@ test("GET presencia: el admin puede consultar sin ser parte del contrato (observ
   } finally {
     await close();
     await pool.query("DELETE FROM sala_presencia WHERE contrato_id = ?", [contratoSinReservaId]).catch(() => {});
+  }
+});
+
+// ============================================================================
+// Video (Fase 4 — Daily.co, iframe prebuilt vanilla daily-js)
+// ============================================================================
+
+test("GET video sin sesión devuelve 401", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/video`);
+    assert.equal(res.status, 401);
+  } finally {
+    await close();
+  }
+});
+
+test("GET video: usuario ajeno (no participante, no admin) recibe 403", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/video`, { headers: { Cookie: `PHPSESSID=${SESSION_AJENO}` } });
+    assert.equal(res.status, 403);
+  } finally {
+    await close();
+  }
+});
+
+test("GET video: video deshabilitado (pre_clase) devuelve 409 sin URL", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoPreClaseId}/video`, { headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    assert.equal(res.status, 409);
+    const body = (await res.json()) as { ok: boolean; error: string };
+    assert.equal(body.ok, false);
+    assert.equal(body.error, "video_deshabilitado");
+  } finally {
+    await close();
+  }
+});
+
+test("GET video: aula activa devuelve la URL determinística real (idéntica al PHP) y el nombre real del usuario", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoSinReservaId}/video`, { headers: { Cookie: `PHPSESSID=${SESSION_COMPRADOR}` } });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { ok: boolean; roomUrl: string; userName: string };
+    assert.equal(body.ok, true);
+    assert.equal(body.roomUrl, salaVideoUrlEsperada(contratoSinReservaId));
+    assert.equal(body.userName, "AulaComprador");
+  } finally {
+    await close();
+  }
+});
+
+test("GET video: el admin puede iniciar la sala aunque no sea participante (bypass total, igual que mini_aula.php)", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/me/aula/${contratoPreClaseId}/video`, { headers: { Cookie: `PHPSESSID=${SESSION_ADMIN}` } });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { ok: boolean; roomUrl: string };
+    assert.equal(body.ok, true);
+    assert.equal(body.roomUrl, salaVideoUrlEsperada(contratoPreClaseId));
+  } finally {
+    await close();
   }
 });

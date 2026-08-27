@@ -1,10 +1,98 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
 import { env } from "../../config/env.js";
 import { verificarDlp } from "../../lib/dlp.js";
-import type { ArchivoContrato, EstadoAula, MensajeAula, ResultadoEnviarMensajeAula } from "./aula.types.js";
+import type { ArchivoContrato, EstadoAula, MensajeAula, ResultadoEnviarMensajeAula, ResultadoSalaVideo } from "./aula.types.js";
+
+// ============================================================================
+// URLs de sala (video Daily.co + pizarra Excalidraw) — Fase 4. Puerto EXACTO de
+// mini_aula.php:192-205: mismos salts ("nubira_secreto_2026", "nubira_pizarra_", "key_"),
+// no un detalle de implementación — determinan el nombre real de la sala/pizarra, así que
+// un comprador en Next y un vendedor todavía en el PHP viejo (o viceversa, durante la
+// transición) deben terminar en la MISMA sala real. Verificado byte a byte contra el PHP
+// real (md5+base64url) antes de portar — cambiar cualquiera de estos strings o el cálculo
+// del hash rompería esa compatibilidad cruzada de forma silenciosa.
+// ============================================================================
+
+const DAILY_DOMINIO = "https://nubira-cl.daily.co/";
+const EXCALIDRAW_BASE = "https://excalidraw.com/#room=";
+
+function hashSeguridadSala(contratoId: number): string {
+  return crypto
+    .createHash("md5")
+    .update(`${contratoId}nubira_secreto_2026`)
+    .digest("hex")
+    .slice(0, 8);
+}
+
+function computeSalaVideoUrl(contratoId: number): { nombreSala: string; url: string } {
+  const hash = hashSeguridadSala(contratoId);
+  const nombreSala = `aula-${contratoId}-${hash}`;
+  return { nombreSala, url: `${DAILY_DOMINIO}${nombreSala}` };
+}
+
+function computePizarraUrl(contratoId: number): string {
+  const hash = hashSeguridadSala(contratoId);
+  const roomId = crypto
+    .createHash("md5")
+    .update(`nubira_pizarra_${contratoId}_${hash}`)
+    .digest("hex")
+    .slice(0, 20);
+  // md5(..., true) de PHP = digest binario crudo (16 bytes); base64_encode + substr(0,22) +
+  // strtr(+/= -> -_ sin relleno) es exactamente base64url sin padding sobre esos 16 bytes.
+  const key = crypto.createHash("md5").update(`key_${contratoId}_${hash}`).digest("base64url");
+  return `${EXCALIDRAW_BASE}${roomId},${key}`;
+}
+
+// Puerto de mini_aula.php:207-231 — best-effort a propósito, igual que el PHP real: la
+// respuesta de Daily se ignora por completo (si la sala ya existe, la API devuelve error, y
+// no importa — lo único que importa es que exista para cuando el usuario haga join()).
+async function asegurarSalaDailyExiste(nombreSala: string): Promise<void> {
+  if (!env.dailyApiKey) return;
+  try {
+    await fetch("https://api.daily.co/v1/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.dailyApiKey}` },
+      body: JSON.stringify({
+        name: nombreSala,
+        privacy: "public",
+        properties: {
+          exp: Math.floor(Date.now() / 1000) + 86400 * 30,
+          enable_prejoin_ui: false,
+          enable_network_ui: true,
+          enable_screenshare: true,
+          enable_chat: false,
+        },
+      }),
+    });
+  } catch {
+    // Best-effort — igual que el PHP real, que tampoco revisa curl_exec().
+  }
+}
+
+// Puerto de mini_aula.php:656-699 (iniciarClase(), la parte de servidor) — asegura que la
+// sala Daily existe y devuelve la URL real + el nombre a mostrar. A diferencia del PHP (que
+// dispara la creación de sala en CADA carga de la página, incluso antes de que el usuario
+// haga click en "Entrar a la Sala"), acá se dispara solo cuando el usuario realmente hace
+// click — AulaShell.tsx hace poll de getAulaDetalle cada 30s, y llamar a la API de Daily en
+// cada uno de esos polls sería un uso real y evitable de su cuota, sin ningún beneficio
+// (el join() de todos modos espera esta misma llamada antes de intentar conectar).
+export async function ensureSalaVideo(contratoId: number, usuarioId: number, esAdmin: boolean): Promise<ResultadoSalaVideo> {
+  const detalle = await getAulaDetalle(contratoId, usuarioId, esAdmin);
+  if (!detalle) return { ok: false, error: "sin_acceso" };
+  if (!detalle.videoHabilitado) return { ok: false, error: "video_deshabilitado" };
+
+  const [rows] = await pool.query<(RowDataPacket & { nombre: string })[]>("SELECT nombre FROM alumnos WHERE id = ? LIMIT 1", [usuarioId]);
+  const userName = rows[0]?.nombre ?? "Usuario";
+
+  const { nombreSala, url } = computeSalaVideoUrl(contratoId);
+  await asegurarSalaDailyExiste(nombreSala);
+
+  return { ok: true, roomUrl: url, userName };
+}
 
 // ============================================================================
 // Detalle del aula (app/mini_aula.php:1-230, sin el bloque de Daily.co/pizarra)
@@ -176,6 +264,11 @@ export async function getAulaDetalle(contratoId: number, usuarioId: number, esAd
     esAulaActiva,
     esPostClase,
     videoHabilitado,
+    // Puerto de mini_aula.php:417-422 — la pestaña Pizarra (y por lo tanto la URL) es
+    // visible SOLO para el vendedor real, ni siquiera para el admin en bypass (a diferencia
+    // del resto de los campos "de admin", $es_vendedor_real nunca se fuerza a true) — misma
+    // restricción de producto del PHP real, no una omisión a corregir acá.
+    pizarraUrl: esVendedorReal ? computePizarraUrl(contrato.id) : null,
     esFinalizado,
     finalizadoComprador: !!contrato.finalizado_comprador,
     finalizadoVendedor: !!contrato.finalizado_vendedor,

@@ -5,17 +5,20 @@ import Link from "next/link";
 import type { AulaDetalle, ArchivoContrato, MensajeAula } from "@/lib/api";
 import { AulaChat } from "@/components/AulaChat";
 import { AulaMateriales } from "@/components/AulaMateriales";
+import { AulaVideo } from "@/components/AulaVideo";
+import { AulaPizarra } from "@/components/AulaPizarra";
 
-// Puerto de app/mini_aula.php (shell) — Grupo Mini Aula, Pieza 2 (27/08/2026). Sin
-// video/WebRTC (Fase 4, decisión de arquitectura propia) ni pizarra (agrupada con video) —
-// "Entrar a la Sala" bridgea al sitio PHP real, que sí tiene la videollamada funcionando.
+// Puerto de app/mini_aula.php (shell) — Grupo Mini Aula, Pieza 2 (27/08/2026) + Fase 3
+// (sala_presencia) + Fase 4 (video Daily.co + pizarra Excalidraw, ver AulaVideo.tsx/
+// AulaPizarra.tsx). "Entrar a la Sala" ya no bridgea al sitio PHP — se une a la llamada real
+// dentro de Next.
 //
 // La ventana de gracia post-horario (detalle.videoHabilitado) ya incluye la extensión real
 // por actividad (Fase 3, sala_presencia) además de la gracia fija de 60 min — ver
 // aula.repository.ts. Nada acá necesitó cambiar: este componente solo consume el booleano
 // ya calculado, sin conocer la lógica de heartbeat detrás.
 
-type Vista = "material" | "reunion";
+type Vista = "material" | "reunion" | "pizarra";
 
 function Countdown({ objetivoIso }: { objetivoIso: string }) {
   const [restante, setRestante] = useState({ d: 0, h: 0, m: 0, s: 0, listo: false });
@@ -74,18 +77,16 @@ export function AulaShell({
   mensajesIniciales,
   archivosIniciales,
   usuarioId,
-  phpSiteUrl,
 }: {
   detalleInicial: AulaDetalle;
   mensajesIniciales: MensajeAula[];
   archivosIniciales: ArchivoContrato[];
   usuarioId: number;
-  phpSiteUrl: string;
 }) {
   const [detalle, setDetalle] = useState(detalleInicial);
   const [vista, setVista] = useState<Vista>("material");
   const [chatAbierto, setChatAbierto] = useState(false);
-  const [badges, setBadges] = useState({ chatNoLeidos: 0, totalArchivos: archivosIniciales.length });
+  const [badges, setBadges] = useState({ chatNoLeidos: 0, totalArchivos: archivosIniciales.length, otroEnSala: false });
   const [procesando, setProcesando] = useState(false);
 
   const bloqueadoChat = ["cancelado", "finalizado", "disputa"].includes(detalle.estado);
@@ -98,10 +99,21 @@ export function AulaShell({
   useEffect(() => {
     async function poll() {
       if (document.hidden) return;
-      const res = await fetch(`/api/me/aula/${detalle.id}/estado`, { cache: "no-store" });
-      if (res.ok) {
-        const data = (await res.json()) as { chatNoLeidos: number; totalArchivos: number };
-        setBadges(data);
+      // Fase 4: se suma la consulta de presencia (¿el otro ya está en la videollamada?) al
+      // mismo poll de 8s del badge de chat/archivos en vez de un timer propio — mismo
+      // criterio de coordinar timers ya aplicado en Pieza 2/Fase 3, evita sumar un séptimo
+      // timer disperso a una página que históricamente tuvo demasiados (INFORME-MINI-AULA.md).
+      const [resEstado, resPresencia] = await Promise.all([
+        fetch(`/api/me/aula/${detalle.id}/estado`, { cache: "no-store" }),
+        fetch(`/api/me/aula/${detalle.id}/presencia`, { cache: "no-store" }),
+      ]);
+      if (resEstado.ok) {
+        const data = (await resEstado.json()) as { chatNoLeidos: number; totalArchivos: number };
+        setBadges((prev) => ({ ...prev, ...data }));
+      }
+      if (resPresencia.ok) {
+        const data = (await resPresencia.json()) as { activo: boolean };
+        setBadges((prev) => ({ ...prev, otroEnSala: data.activo }));
       }
     }
     const timer = setInterval(poll, 8000);
@@ -143,8 +155,6 @@ export function AulaShell({
     }
   }
 
-  const urlAulaPhp = `${phpSiteUrl}/app/mini_aula.php?id=${detalle.id}`;
-
   return (
     <div className="w-full h-dvh flex flex-col bg-gray-50 overflow-hidden">
       <header className="h-16 bg-white/95 backdrop-blur-md flex items-center justify-between px-4 border-b border-gray-100 shrink-0 z-30">
@@ -177,10 +187,20 @@ export function AulaShell({
               <button
                 type="button"
                 onClick={() => setVista("reunion")}
-                className={`px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all ${vista === "reunion" ? "bg-[#54A6D8] text-white shadow-md" : "text-gray-500 hover:bg-gray-100"}`}
+                className={`px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all relative ${vista === "reunion" ? "bg-[#54A6D8] text-white shadow-md" : "text-gray-500 hover:bg-gray-100"}`}
               >
                 Reunión
+                {badges.otroEnSala && vista !== "reunion" && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
               </button>
+              {detalle.esVendedor && detalle.pizarraUrl && (
+                <button
+                  type="button"
+                  onClick={() => setVista("pizarra")}
+                  className={`px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition-all ${vista === "pizarra" ? "bg-[#54A6D8] text-white shadow-md" : "text-gray-500 hover:bg-gray-100"}`}
+                >
+                  Pizarra
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setChatAbierto((v) => !v)}
@@ -224,11 +244,12 @@ export function AulaShell({
           </div>
 
           <div className="flex-1 p-4 md:p-6 overflow-hidden">
-            {vista === "material" ? (
+            {vista === "material" && (
               <AulaMateriales contratoId={detalle.id} archivosIniciales={archivosIniciales} puedeSubir={!["cancelado", "finalizado"].includes(detalle.estado)} />
-            ) : (
-              <div className="w-full h-full bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden relative flex items-center justify-center">
-                {detalle.esPreClase ? (
+            )}
+            {vista === "reunion" &&
+              (detalle.esPreClase ? (
+                <div className="w-full h-full bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden relative flex items-center justify-center">
                   <div className="max-w-md w-full text-center p-6">
                     <h2 className="text-xl font-bold mb-2 text-gray-800">Tu clase aún no comienza</h2>
                     <p className="text-sm text-gray-500 mb-6">{detalle.fechaAmigable}</p>
@@ -238,42 +259,11 @@ export function AulaShell({
                     </div>
                     <p className="text-xs text-gray-400">Podrás entrar al aula 5 minutos antes del inicio.</p>
                   </div>
-                ) : (
-                  <div className="text-center p-6">
-                    <h2 className="text-xl font-bold mb-2 text-gray-800">Sala de Reunión</h2>
-                    {detalle.estado === "cancelado" ? (
-                      <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Esta clase fue cancelada.</p>
-                    ) : detalle.esPostClase && !detalle.videoHabilitado ? (
-                      <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Esta clase ya finalizó.</p>
-                    ) : detalle.esPostClase && detalle.videoHabilitado ? (
-                      <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">El horario programado terminó, pero la sala sigue disponible por si necesitas reconectarte.</p>
-                    ) : detalle.tieneReserva ? (
-                      <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
-                        Clase agendada: <strong className="text-gray-700">{detalle.fechaAmigable}</strong>
-                      </p>
-                    ) : (
-                      <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Videollamada segura e integrada.</p>
-                    )}
-
-                    {detalle.videoHabilitado ? (
-                      <a
-                        href={urlAulaPhp}
-                        className="inline-block bg-[#54A6D8] text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-sky-100 hover:scale-105 transition-transform"
-                      >
-                        Entrar a la Sala
-                      </a>
-                    ) : (
-                      <>
-                        <button disabled className="bg-gray-200 text-gray-400 px-8 py-3 rounded-2xl font-bold cursor-not-allowed">
-                          Sala cerrada
-                        </button>
-                        <p className="text-xs text-gray-400 mt-3 max-w-xs mx-auto">El horario de la videollamada finalizó. Puedes seguir usando el chat y el material para coordinar.</p>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              ) : (
+                <AulaVideo contratoId={detalle.id} detalle={detalle} />
+              ))}
+            {vista === "pizarra" && detalle.pizarraUrl && <AulaPizarra pizarraUrl={detalle.pizarraUrl} />}
           </div>
         </div>
 

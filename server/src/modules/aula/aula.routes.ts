@@ -9,6 +9,7 @@ import {
   getEstadoAulaHandler,
   getMensajesAulaHandler,
   getPresenciaAulaHandler,
+  getVideoAulaHandler,
   postEnviarMensajeAula,
   postPresenciaAula,
   postSubirArchivoAula,
@@ -28,6 +29,7 @@ aulaRouter.get("/:id/estado", requireAuth, getEstadoAulaHandler);
 aulaRouter.get("/:id/mensajes", requireAuth, getMensajesAulaHandler);
 aulaRouter.post("/:id/mensajes", requireAuth, postEnviarMensajeAula);
 aulaRouter.post("/:id/typing", requireAuth, postTypingAula);
+aulaRouter.get("/:id/video", requireAuth, getVideoAulaHandler);
 aulaRouter.get("/:id/presencia", requireAuth, getPresenciaAulaHandler);
 aulaRouter.post("/:id/presencia", requireAuth, postPresenciaAula);
 aulaRouter.delete("/:id/presencia", requireAuth, deletePresenciaAula);

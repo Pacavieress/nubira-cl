@@ -1776,8 +1776,8 @@ export async function getMensajesChatPrevio(chatId: number): Promise<{ mensajes:
   return res.json();
 }
 
-// Grupo Mini Aula — Pieza 2 (27/08/2026). Shell sin video/pizarra, ver
-// server/src/modules/aula/aula.types.ts para el alcance completo.
+// Grupo Mini Aula — Pieza 2 (27/08/2026) + Fase 3 (sala_presencia) + Fase 4 (video Daily.co
+// + pizarra Excalidraw). Ver server/src/modules/aula/aula.types.ts para el alcance completo.
 export interface AulaDetalle {
   id: number;
   servicioId: number;
@@ -1797,6 +1797,7 @@ export interface AulaDetalle {
   esAulaActiva: boolean;
   esPostClase: boolean;
   videoHabilitado: boolean;
+  pizarraUrl: string | null;
   esFinalizado: boolean;
   finalizadoComprador: boolean;
   finalizadoVendedor: boolean;
@@ -1810,6 +1811,13 @@ export async function getAulaDetalle(contratoId: number): Promise<AulaDetalle | 
   const res = await fetchConSesion(`/api/me/aula/${contratoId}`);
   if (!res || !res.ok) return null;
   return res.json();
+}
+
+export type ResultadoSalaVideo = { ok: true; roomUrl: string; userName: string } | { ok: false; error: string };
+
+export interface EstadoPresenciaSala {
+  activo: boolean;
+  usuarioId: number | null;
 }
 
 export interface MensajeAula {

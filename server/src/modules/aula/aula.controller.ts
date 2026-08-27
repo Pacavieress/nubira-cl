@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { getUsuarioConRol } from "../auth/auth.repository.js";
 import {
+  ensureSalaVideo,
   enviarMensajeAula,
   getArchivoContratoInfo,
   getArchivosContrato,
@@ -98,6 +99,21 @@ export async function getEstadoAulaHandler(req: Request, res: Response): Promise
     return;
   }
   res.status(200).json(estado);
+}
+
+export async function getVideoAulaHandler(req: Request, res: Response): Promise<void> {
+  const usuarioId = req.usuarioId as number;
+  const contratoId = Number(req.params.id);
+  if (!Number.isInteger(contratoId) || contratoId <= 0) {
+    res.status(400).json({ ok: false, error: "contrato_invalido" });
+    return;
+  }
+  const resultado = await ensureSalaVideo(contratoId, usuarioId, await esAdminReq(req));
+  if (!resultado.ok) {
+    res.status(resultado.error === "sin_acceso" ? 403 : 409).json(resultado);
+    return;
+  }
+  res.status(200).json(resultado);
 }
 
 export async function postPresenciaAula(req: Request, res: Response): Promise<void> {

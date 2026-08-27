@@ -52,4 +52,9 @@ export const env = {
   // el entorno sea localhost; el webhook real solo puede probarse en vivo una vez deployado.
   webBaseUrl: process.env.WEB_BASE_URL ?? "http://localhost:3000",
   apiPublicUrl: process.env.API_PUBLIC_URL ?? "http://localhost:4000",
+  // Grupo Mini Aula, Fase 4 (video) — mismo valor real que app/.env del sitio PHP. Opcional
+  // (no required()): si falta, la creación de sala en Daily simplemente falla y se ignora
+  // (best-effort, mismo criterio que el PHP real que nunca revisa la respuesta de su curl),
+  // no bloquea el arranque del resto de la API.
+  dailyApiKey: process.env.DAILY_API_KEY ?? "",
 };
