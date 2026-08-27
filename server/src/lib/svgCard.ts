@@ -245,24 +245,6 @@ export function botonGenerico(texto: string, xCentro: number, yTop: number, colo
   return { svg, alto };
 }
 
-// Botón sólido ANCLADO A LA IZQUIERDA en x — puerto de nb_dibujar_boton_agendar()
-// (imagen_compartir.php:413-425). A diferencia de botonGenerico (centrado, tamaños fijos
-// calibrados para "Jugar ahora" del Desafío), acá size/padX/padY son parámetros porque el
-// botón real de servicios usa una métrica distinta (26/40/18 vs. 30/48/22).
-export function botonIzquierdo(texto: string, x: number, yTop: number, colorFondo: string, size = 26, padX = 40, padY = 18): { svg: string; alto: number; ancho: number } {
-  const anchoTexto = medirAnchoTexto(texto, "bold", size);
-  const alto = Math.round(size * 1.15) + padY * 2;
-  const ancho = anchoTexto + padX * 2;
-  const r = Math.round(alto / 2);
-  const yBaseline = yTop + alto - padY - Math.round(size * 0.22);
-
-  const svg = `
-    <rect x="${x}" y="${yTop}" width="${ancho}" height="${alto}" rx="${r}" fill="${colorFondo}" />
-    ${textoIzquierda(texto, "bold", size, "#FFFFFF", x + padX, yBaseline)}
-  `;
-  return { svg, alto, ancho };
-}
-
 // Círculo numerado (1/2/3) — puerto visual de la parte "número" de
 // nb_desafio_preguntas_dibujar_bloque() (imagen_compartir_desafio.php:236-239).
 export function circuloNumerado(numero: number, cx: number, cy: number, diametro: number, colorFondo: string, colorTexto: string): string {

@@ -5,7 +5,6 @@ import { abreviarInstitucion } from "../../lib/institucion.js";
 import {
   avatarCircular,
   badgePillIzquierda,
-  botonIzquierdo,
   cargarImagenComoDataUri,
   envolverTexto,
   estrellaConRating,
@@ -25,9 +24,10 @@ import type { ServicioCompartir } from "./compartir.types.js";
 // Compartir Apuntes/Desafío: HISTORY queda para otra pieza si hace falta.
 // Incrementar (v1 -> v2 -> ...) invalida automáticamente el cache de /upload/compartir/
 // cuando cambia el diseño visual — mismo criterio que NB_IMG_VERSION en imagen_compartir.php
-// (PHP), que se bumpeó en el mismo cambio (30/08/2026: badge "Disponible" reubicado, features
-// en 1 columna).
-const VERSION_IMAGEN_SERVICIO = "node-v2";
+// (PHP). v3 (30/08/2026): precio pasa a recuadro de color alineado a la izquierda, botón
+// "Agendar clase" eliminado, "Nubira.cl" vuelve a su posición original como elemento
+// independiente.
+const VERSION_IMAGEN_SERVICIO = "node-v3";
 const W = 1080;
 const H = 1350;
 const M = 110;
@@ -96,90 +96,101 @@ function formatoCLP(valor: number): string {
 // diseño pedido explícitamente por el usuario (30/08/2026) y confirmado contra 2 prototipos
 // renderizados antes de tocar este archivo — ver el mismo cambio espejado en
 // nb_dibujar_features_fijas() (imagen_compartir.php).
-function dibujarFeaturesFijas(yTop: number): { svg: string; yFin: number } {
+function dibujarFeaturesFijas(yTop: number): { svg: string; yFin: number; xTexto: number } {
   const features = ["Clase 100% online en Nubira", "Chat anónimo antes de contratar", "Horarios publicados por el tutor", "Garantía Nubira"];
   const padX = M;
   const size = 30;
   const rowGap = 58;
   const dotR = 7;
   const dotGap = 16;
+  const xTexto = padX + dotR * 2 + dotGap;
 
   const partes: string[] = [];
   features.forEach((label, i) => {
     const yBase = yTop + 14 + i * rowGap;
     const cyDot = yBase - size * 0.35;
     partes.push(`<circle cx="${padX + dotR}" cy="${cyDot}" r="${dotR}" fill="${PALETA_MARCA.acento}" />`);
-    partes.push(textoIzquierda(label, "semibold", size, PALETA_MARCA.txt, padX + dotR * 2 + dotGap, yBase));
+    partes.push(textoIzquierda(label, "semibold", size, PALETA_MARCA.txt, xTexto, yBase));
   });
 
-  return { svg: partes.join("\n"), yFin: yTop + 14 + (features.length - 1) * rowGap + 20 };
+  return { svg: partes.join("\n"), yFin: yTop + 14 + (features.length - 1) * rowGap + 20, xTexto };
 }
 
-// Puerto de nb_dibujar_precio_centrado() (imagen_compartir.php:128-190) — con oferta
-// vigente: badge OFERTA verde + precio oferta grande + original tachado, ambos centrados
-// como bloque; sin oferta vigente: precio normal + "CLP" chico, o "Gratis" si no hay precio.
-// $ofertaVigente acá usa EXACTAMENTE las mismas 3 condiciones que la función real que se
-// está portando (is_subvencionado + oferta_termino sin vencer) — DELIBERADAMENTE distinto
-// del computeOfertaVigente() de servicios.mapper.ts (que además exige cupos_oferta>0):
-// esa es una inconsistencia preexistente del propio código PHP fuente (el comentario
-// original en imagen_compartir.php se declara equivalente a vitrina.php, pero no chequea
-// cupos_oferta) — no corresponde "corregirla" en este port, que busca fidelidad visual a
-// la función real, no a otra función distinta del sitio.
-function dibujarPrecioCentrado(s: ServicioCompartir, yBase: number): string {
+// Puerto de nb_dibujar_precio_centrado() (imagen_compartir.php:128-190+) — RENOMBRADO
+// visualmente: el precio ya NO va centrado, va en un recuadro de color alineado a la
+// izquierda (mismo x que el texto de las features) — cambio pedido explícitamente por el
+// usuario (30/08/2026), confirmado contra 3 prototipos (incluida la rama OFERTA con datos
+// sintéticos, sin caso real disponible en la BD local) antes de tocar este archivo. Mismo
+// tamaño de letra que antes (48/32), texto ahora blanco para contraste sobre el recuadro.
+// $ofertaVigente sigue usando las mismas 3 condiciones de la función real (ver nota
+// preexistente sobre la inconsistencia deliberada con computeOfertaVigente() de
+// servicios.mapper.ts — no se tocó, no es parte de este cambio de diseño).
+function dibujarPrecioCaja(s: ServicioCompartir, xLeft: number, yTop: number): { svg: string; alto: number } {
   const of = s.precioOferta ?? 0;
   const pr = s.precio;
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   const ofertaVigente = s.isSubvencionado && (s.ofertaTermino === null || s.ofertaTermino >= hoy);
+  const padX = 28;
+  const padY = 20;
+  const szMain = 48;
+  const szClp = 32;
+  const rx = 20;
+  const alto = Math.round(szMain * 1.15) + padY * 2;
+  const yBaseline = yTop + alto - padY - Math.round(szMain * 0.22);
 
   if (of <= 0 && pr <= 0) {
-    return textoCentrado("Gratis", "bold", 48, PALETA_MARCA.txt, W / 2, yBase);
+    const w = medirAnchoTexto("Gratis", "bold", szMain);
+    const ancho = w + padX * 2;
+    const svg = `<rect x="${xLeft}" y="${yTop}" width="${ancho}" height="${alto}" rx="${rx}" fill="${PALETA_MARCA.acento}" />\n${textoIzquierda("Gratis", "bold", szMain, "#FFFFFF", xLeft + padX, yBaseline)}`;
+    return { svg, alto };
   }
 
   if (of > 0 && ofertaVigente) {
+    // Badge OFERTA arriba-izquierda del recuadro (empuja el recuadro hacia abajo, `alto`
+    // devuelto incluye ese offset para que el caller avance correctamente).
     const badgeTxt = "OFERTA";
-    const bw = medirAnchoTexto(badgeTxt, "bold", 22);
-    const bx1 = Math.round((W - bw - 36) / 2);
-    const by1 = yBase - 115;
-    const badge = pillSolidoIzquierda(badgeTxt, bx1, by1, "#16A34A", "#FFFFFF", 22, 18, 11);
+    const badge = pillSolidoIzquierda(badgeTxt, xLeft, yTop - 8, "#16A34A", "#FFFFFF", 20, 14, 8);
 
-    // Segmentos SIN espacios embebidos + gaps fijos en px entre ellos — no medirAnchoTexto
-    // de un string con espacio: esa medición es un bbox de TINTA (ver nota de
-    // textoCentradoDosColores en svgCard.ts), un espacio no tiene tinta, así que un gap
-    // "medido" así siempre da 0 y los segmentos quedan pegados. Con 3 segmentos de colores
-    // Y tamaños DISTINTOS en la misma línea (a diferencia del título, que son solo 2 y
-    // podían resolverse con tspans) un gap fijo en px es más simple que forzar tspans con
-    // baseline-shift entre tamaños de fuente distintos.
-    const szOrig = 28;
+    const szOrig = 26;
     const ofTxt = `$${Math.round(of).toLocaleString("es-CL")}`;
     const clpTxt = "CLP";
     const origTxt = `$${Math.round(pr).toLocaleString("es-CL")}`;
     const gapOfClp = 6;
-    const gapClpOrig = 22;
+    const gapClpOrig = 18;
 
-    const wOf = medirAnchoTexto(ofTxt, "bold", 48);
-    const wClp = medirAnchoTexto(clpTxt, "semibold", 32);
+    const wOf = medirAnchoTexto(ofTxt, "bold", szMain);
+    const wClp = medirAnchoTexto(clpTxt, "semibold", szClp);
     const wOrig = medirAnchoTexto(origTxt, "regular", szOrig);
-    let x = Math.round((W - wOf - gapOfClp - wClp - gapClpOrig - wOrig) / 2);
+    const anchoContenido = wOf + gapOfClp + wClp + gapClpOrig + wOrig;
+    const ancho = anchoContenido + padX * 2;
+    const yTopCaja = yTop + badge.alto - 4;
+    const yBase = yTopCaja + alto - padY - Math.round(szMain * 0.22);
 
-    const partes: string[] = [badge.svg];
-    partes.push(textoIzquierda(ofTxt, "bold", 48, PALETA_MARCA.txt, x, yBase));
+    let x = xLeft + padX;
+    const partes: string[] = [`<rect x="${xLeft}" y="${yTopCaja}" width="${ancho}" height="${alto}" rx="${rx}" fill="${PALETA_MARCA.acento}" />`, badge.svg, textoIzquierda(ofTxt, "bold", szMain, "#FFFFFF", x, yBase)];
     x += wOf + gapOfClp;
-    partes.push(textoIzquierda(clpTxt, "semibold", 32, PALETA_MARCA.txt, x, yBase));
+    partes.push(textoIzquierda(clpTxt, "semibold", szClp, "#FFFFFF", x, yBase));
     x += wClp + gapClpOrig;
-    const yo = yBase - Math.round((48 - szOrig) * 0.45);
-    partes.push(textoIzquierda(origTxt, "regular", szOrig, PALETA_MARCA.txt2, x, yo));
+    const yo = yBase - Math.round((szMain - szOrig) * 0.45);
+    partes.push(textoIzquierda(origTxt, "regular", szOrig, "#E0F0FA", x, yo));
     const lineY = yo - Math.round(szOrig * 0.3);
-    partes.push(`<line x1="${x}" y1="${lineY}" x2="${x + wOrig}" y2="${lineY}" stroke="${PALETA_MARCA.txt2}" stroke-width="3" />`);
-    return partes.join("\n");
+    partes.push(`<line x1="${x}" y1="${lineY}" x2="${x + wOrig}" y2="${lineY}" stroke="#E0F0FA" stroke-width="3" />`);
+
+    return { svg: partes.join("\n"), alto: alto + (badge.alto - 4) };
   }
 
   const mainTxt = formatoCLP(pr);
-  const wMain = medirAnchoTexto(mainTxt, "bold", 48);
-  const wClp = medirAnchoTexto("CLP", "semibold", 32);
+  const wMain = medirAnchoTexto(mainTxt, "bold", szMain);
   const gap = 6;
-  const x = Math.round((W - wMain - gap - wClp) / 2);
-  return `${textoIzquierda(mainTxt, "bold", 48, PALETA_MARCA.txt, x, yBase)}\n${textoIzquierda("CLP", "semibold", 32, PALETA_MARCA.txt, x + wMain + gap, yBase)}`;
+  const wClp = medirAnchoTexto("CLP", "semibold", szClp);
+  const ancho = wMain + gap + wClp + padX * 2;
+  const svg = [
+    `<rect x="${xLeft}" y="${yTop}" width="${ancho}" height="${alto}" rx="${rx}" fill="${PALETA_MARCA.acento}" />`,
+    textoIzquierda(mainTxt, "bold", szMain, "#FFFFFF", xLeft + padX, yBaseline),
+    textoIzquierda("CLP", "semibold", szClp, "#FFFFFF", xLeft + padX + wMain + gap, yBaseline),
+  ].join("\n");
+  return { svg, alto };
 }
 
 export async function generarImagenServicioPost(s: ServicioCompartir): Promise<Buffer> {
@@ -241,27 +252,28 @@ export async function generarImagenServicioPost(s: ServicioCompartir): Promise<B
     partes.push(textoCentrado(lineaTit, "semibold", 34, PALETA_MARCA.txt, W / 2, y));
   }
   y += 46 + 40;
-  // Gap reducido (100 -> 35): con las features ahora en 1 columna más alta (4 filas en vez
-  // de 2), había que subirlas para no empujar el precio/botón fuera del canvas — mismo
-  // cambio pedido explícitamente por el usuario 30/08/2026, confirmado en el prototipo.
-  y += 35;
+  // Gap ajustado (35 -> 60, 30/08/2026): con el botón "Agendar clase" eliminado y el precio
+  // en un recuadro más compacto que antes, se redistribuyó el aire disponible para no dejar
+  // un hueco vacío raro al final del canvas — confirmado contra 3 prototipos.
+  y += 60;
 
-  // PARTE 4: features en 1 columna + precio + botón (izquierda) + marca (misma fila).
+  // PARTE 4: features en 1 columna + precio en recuadro (izquierda) + marca (30/08/2026:
+  // botón "Agendar clase" ELIMINADO por completo — pedido explícito del usuario).
   const featuresResult = dibujarFeaturesFijas(y);
   partes.push(featuresResult.svg);
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const ofertaVigenteCard = s.isSubvencionado && (s.ofertaTermino === null || s.ofertaTermino >= hoy) && (s.precioOferta ?? 0) > 0;
-  y = featuresResult.yFin + 80;
-  if (ofertaVigenteCard) y += 65;
+  y = featuresResult.yFin + 90;
 
-  partes.push(dibujarPrecioCentrado(s, y));
-  y += 95;
+  // "Nubira.cl" — misma altura/posición que tenía originalmente (esquina inferior derecha,
+  // antes en la fila del botón) pero ahora como elemento independiente: la coordenada NO se
+  // calcula en función de la altura del recuadro de precio, es una constante propia (+57
+  // desde el tope del recuadro) — confirmado explícitamente contra 2 variantes descartadas
+  // (marca arriba del todo, y compartiendo fila con el precio) antes de aplicar esta.
+  partes.push(textoDerecha("Nubira.cl", "bold", 28, PALETA_MARCA.acento, W - M, y + 57));
 
-  const boton = botonIzquierdo("Agendar clase", M, y, PALETA_MARCA.acento);
-  partes.push(boton.svg);
-  partes.push(textoDerecha("Nubira.cl", "bold", 28, PALETA_MARCA.acento, W - M, y + 42));
+  const precioResult = dibujarPrecioCaja(s, featuresResult.xTexto, y);
+  partes.push(precioResult.svg);
+  y += precioResult.alto;
 
   return renderizarCardJpeg(partes.join("\n"), W, H, 90);
 }

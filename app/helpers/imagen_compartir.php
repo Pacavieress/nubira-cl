@@ -8,7 +8,7 @@ require_once __DIR__ . '/institucion.php';
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
-if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v23');
+if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v24');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -125,11 +125,15 @@ if (!function_exists('nb_formato_precio')) {
     }
 }
 
-if (!function_exists('nb_dibujar_precio_centrado')) {
-    // Precio POST centrado.
-    // Con oferta: badge OFERTA verde centrado (yBase-115) + oferta grande + original tachado.
-    // Sin oferta: precio normal + CLP chico. Sin precio: "Gratis".
-    function nb_dibujar_precio_centrado($img, array $s, string $fBold, string $fSemi, string $fReg, float $szBig, float $szCLP, int $W, int $yBase, int $cTxt, int $cTxt2): void {
+if (!function_exists('nb_dibujar_precio_caja')) {
+    // Precio POST en recuadro de color, alineado a la izquierda (mismo x que el texto de
+    // las features) — ANTES centrado (nb_dibujar_precio_centrado). Cambio pedido
+    // explícitamente por el usuario (30/08/2026), confirmado contra 3 prototipos (incluida
+    // la rama OFERTA con datos sintéticos, sin caso real disponible en la BD local) antes de
+    // tocar este archivo. Mismo tamaño de letra que antes (48/32), texto ahora blanco para
+    // contraste sobre el recuadro. Devuelve el alto total dibujado (incluye el badge OFERTA
+    // si aplica) para que el caller pueda avanzar $y.
+    function nb_dibujar_precio_caja($img, array $s, string $fBold, string $fSemi, string $fReg, int $xLeft, int $yTop, int $cAcento): int {
         $of = (float)($s['precio_oferta'] ?? 0);
         $pr = (float)($s['precio'] ?? 0);
         // Mismo criterio que "Precios de última hora" en vitrina.php: is_subvencionado=1
@@ -138,54 +142,67 @@ if (!function_exists('nb_dibujar_precio_centrado')) {
         $ofertaVigente = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
             && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'));
 
+        $padX = 28; $padY = 20; $szMain = 48; $szCLP = 32; $rx = 20;
+        $alto = (int)($szMain * 1.15) + $padY * 2;
+        $cBlanco = imagecolorallocate($img, 255, 255, 255);
+        $yBaseline = $yTop + $alto - $padY - (int)($szMain * 0.22);
+
         if ($of <= 0 && $pr <= 0) {
-            nb_texto_centrado($img, $fBold, $szBig, $cTxt, 'Gratis', $W, $yBase);
-            return;
+            $w = nb_ancho_texto($fBold, $szMain, 'Gratis');
+            $ancho = $w + $padX * 2;
+            nb_rect_redondeado($img, $xLeft, $yTop, $xLeft + $ancho, $yTop + $alto, $rx, $cAcento);
+            imagettftext($img, $szMain, 0, $xLeft + $padX, $yBaseline, $cBlanco, $fBold, 'Gratis');
+            return $alto;
         }
 
         if ($of > 0 && $ofertaVigente) {
-            // Badge OFERTA verde centrado, 115px encima del baseline del precio
-            $badge   = 'OFERTA';
-            $bw      = nb_ancho_texto($fBold, 22, $badge);
-            $bx1     = (int)(($W - $bw - 36) / 2);
-            $by1     = $yBase - 115;
-            $cVerde  = imagecolorallocate($img, 22, 163, 74);
-            $cBlanco = imagecolorallocate($img, 255, 255, 255);
-            nb_rect_redondeado($img, $bx1, $by1, $bx1 + $bw + 36, $by1 + 44, 14, $cVerde);
-            imagettftext($img, 22, 0, $bx1 + 18, $by1 + 31, $cBlanco, $fBold, $badge);
+            // Badge OFERTA arriba-izquierda del recuadro (empuja el recuadro hacia abajo,
+            // el alto devuelto incluye ese offset para que el caller avance correctamente).
+            $cVerde = imagecolorallocate($img, 22, 163, 74);
+            [$bw, $bh] = nb_dibujar_badge_pill($img, $fBold, 20, 'OFERTA', $xLeft, $yTop - 8, $cVerde, $cBlanco, 14, 8);
 
-            // Bloque precio: "$10.800 CLP $18.000" (tachado) centrado en $W
-            $szOrig  = 28;
+            $szOrig = 26;
             $ofTxt   = '$' . number_format($of, 0, ',', '.');
-            $clpTxt  = ' CLP';
-            $origTxt = ' $' . number_format($pr, 0, ',', '.');
+            $clpTxt  = 'CLP';
+            $origTxt = '$' . number_format($pr, 0, ',', '.');
+            $gapOfClp = 6; $gapClpOrig = 18;
 
-            $wOf   = nb_ancho_texto($fBold, $szBig, $ofTxt);
-            $wCLP  = nb_ancho_texto($fSemi, $szCLP, $clpTxt);
+            $wOf   = nb_ancho_texto($fBold, $szMain, $ofTxt);
+            $wClp  = nb_ancho_texto($fSemi, $szCLP, $clpTxt);
             $wOrig = nb_ancho_texto($fReg,  $szOrig, $origTxt);
-            $x = (int)(($W - $wOf - $wCLP - $wOrig) / 2);
+            $anchoContenido = $wOf + $gapOfClp + $wClp + $gapClpOrig + $wOrig;
+            $ancho = $anchoContenido + $padX * 2;
+            $yTopCaja = $yTop + $bh - 4;
+            $yBase = $yTopCaja + $alto - $padY - (int)($szMain * 0.22);
 
-            imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $ofTxt);
-            $x += $wOf;
-            imagettftext($img, $szCLP, 0, $x, $yBase, $cTxt, $fSemi, $clpTxt);
-            $x += $wCLP;
-            // Precio original: subir para alinear visualmente con la línea base del precio grande
-            $yo = $yBase - (int)(($szBig - $szOrig) * 0.45);
-            imagettftext($img, $szOrig, 0, $x, $yo, $cTxt2, $fReg, $origTxt);
-            // Tachado horizontal centrado en la altura del cap
+            nb_rect_redondeado($img, $xLeft, $yTopCaja, $xLeft + $ancho, $yTopCaja + $alto, $rx, $cAcento);
+
+            $x = $xLeft + $padX;
+            imagettftext($img, $szMain, 0, $x, $yBase, $cBlanco, $fBold, $ofTxt);
+            $x += $wOf + $gapOfClp;
+            imagettftext($img, $szCLP, 0, $x, $yBase, $cBlanco, $fSemi, $clpTxt);
+            $x += $wClp + $gapClpOrig;
+            $cClaro = imagecolorallocate($img, 224, 240, 250); // #E0F0FA — legible sobre el acento, distinto del gris txt2 (pensado para fondo claro)
+            $yo = $yBase - (int)(($szMain - $szOrig) * 0.45);
+            imagettftext($img, $szOrig, 0, $x, $yo, $cClaro, $fReg, $origTxt);
             $lineY = $yo - (int)($szOrig * 0.3);
             imagesetthickness($img, 3);
-            imageline($img, $x, $lineY, $x + $wOrig, $lineY, $cTxt2);
+            imageline($img, $x, $lineY, $x + $wOrig, $lineY, $cClaro);
             imagesetthickness($img, 1);
-        } else {
-            // Sin oferta: precio normal + CLP chico
-            $mainTxt = '$' . number_format($pr, 0, ',', '.');
-            $wMain = nb_ancho_texto($fBold, $szBig, $mainTxt);
-            $wCLP  = nb_ancho_texto($fSemi, $szCLP, ' CLP');
-            $x = (int)(($W - $wMain - $wCLP) / 2);
-            imagettftext($img, $szBig, 0, $x, $yBase, $cTxt, $fBold, $mainTxt);
-            imagettftext($img, $szCLP, 0, $x + $wMain, $yBase, $cTxt, $fSemi, ' CLP');
+
+            return $alto + ($bh - 4);
         }
+
+        // Sin oferta: precio normal + CLP chico, dentro del recuadro
+        $mainTxt = '$' . number_format($pr, 0, ',', '.');
+        $wMain = nb_ancho_texto($fBold, $szMain, $mainTxt);
+        $gap = 6;
+        $wClp = nb_ancho_texto($fSemi, $szCLP, 'CLP');
+        $ancho = $wMain + $gap + $wClp + $padX * 2;
+        nb_rect_redondeado($img, $xLeft, $yTop, $xLeft + $ancho, $yTop + $alto, $rx, $cAcento);
+        imagettftext($img, $szMain, 0, $xLeft + $padX, $yBaseline, $cBlanco, $fBold, $mainTxt);
+        imagettftext($img, $szCLP, 0, $xLeft + $padX + $wMain + $gap, $yBaseline, $cBlanco, $fSemi, 'CLP');
+        return $alto;
     }
 }
 
@@ -408,20 +425,6 @@ if (!function_exists('nb_dibujar_features_fijas')) {
     }
 }
 
-if (!function_exists('nb_dibujar_boton_agendar')) {
-    function nb_dibujar_boton_agendar($img, string $fBold, int $x, int $yTop, int $cAcento, int $cBlanco): int {
-        $txt = 'Agendar clase';
-        $size = 26;
-        $w = nb_ancho_texto($fBold, $size, $txt);
-        $padX = 40; $padY = 18;
-        $bw = $w + $padX * 2;
-        $bh = (int)($size * 1.15) + $padY * 2;
-        nb_rect_redondeado($img, $x, $yTop, $x + $bw, $yTop + $bh, (int)($bh / 2), $cAcento);
-        imagettftext($img, $size, 0, $x + $padX, $yTop + $bh - $padY - (int)($size * 0.22), $cBlanco, $fBold, $txt);
-        return $bh;
-    }
-}
-
 /* ---------- Generador POST 1080x1080 ---------- */
 
 if (!function_exists('nb_generar_imagen_post')) {
@@ -508,31 +511,31 @@ if (!function_exists('nb_generar_imagen_post')) {
         // protección de privacidad que ya aplica nombre_publico_tutor() más arriba ("Karen A.").
         // La bio SIGUE mostrándose normal en perfil.php — este cambio es solo para la imagen
         // pública compartible.
-        // Gap reducido (100 -> 35, 30/08/2026): con las features ahora en 1 columna más alta
-        // (4 filas en vez de 2), había que subirlas para no empujar el precio/botón fuera
-        // del canvas — cambio pedido explícitamente por el usuario, confirmado en prototipo.
-        $y += 35;
+        // Gap ajustado (35 -> 60, 30/08/2026): con el botón "Agendar clase" eliminado y el
+        // precio en un recuadro más compacto que antes, se redistribuyó el aire disponible
+        // para no dejar un hueco vacío raro al final del canvas — confirmado contra 3 prototipos.
+        $y += 60;
 
-        /* ===== PARTE 4: features en 1 columna + precio (negro) + botón (izquierda) + marca (misma fila) ===== */
+        /* ===== PARTE 4: features en 1 columna + precio en recuadro (izquierda) + marca
+           (30/08/2026: botón "Agendar clase" ELIMINADO por completo — pedido explícito del
+           usuario) ===== */
         $yFeaturesFin = nb_dibujar_features_fijas($img, $fSemi, $W, $y, $cTxt, $cAcento);
+        $y = $yFeaturesFin + 90;
 
-        $ofertaVigenteCard = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
-            && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'))
-            && (float)($s['precio_oferta'] ?? 0) > 0;
-        $y = $yFeaturesFin + 80;
-        if ($ofertaVigenteCard) {
-            $y += 65; // espacio extra para que el badge OFERTA (dibujado sobre el precio) no choque con las features
-        }
+        // "Nubira.cl" — misma altura/posición que tenía originalmente (esquina inferior
+        // derecha, antes en la fila del botón) pero ahora como elemento independiente: la
+        // coordenada NO se calcula en función de la altura del recuadro de precio, es una
+        // constante propia (+57 desde el tope del recuadro) — confirmado explícitamente
+        // contra 2 variantes descartadas (marca arriba del todo, y compartiendo fila con
+        // el precio) antes de aplicar esta.
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - $M, $y + 57);
 
-        nb_dibujar_precio_centrado($img, $s, $fBold, $fSemi, $fReg, 48, 32, $W, $y, $cTxt, $cTxt2);
-        $y += 95;
-
-        $bhBoton = nb_dibujar_boton_agendar($img, $fBold, $M, $y, $cAcento, $cBlanco);
-
-        // Marca en la misma fila que el botón (izquierda), centrada verticalmente respecto
-        // a su altura (65px) — antes iba apilada debajo y se sentían "encimados".
-        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - $M, $y + 42);
-        $y += $bhBoton;
+        // xTexto de las features: mismo cálculo que adentro de nb_dibujar_features_fijas
+        // (padX=$M, dotR=7, dotGap=16) — el precio se alinea con el TEXTO de la lista, no
+        // con los puntos.
+        $xTextoFeatures = $M + 7 * 2 + 16;
+        $altoPrecio = nb_dibujar_precio_caja($img, $s, $fBold, $fSemi, $fReg, $xTextoFeatures, $y, $cAcento);
+        $y += $altoPrecio;
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
