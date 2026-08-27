@@ -1,5 +1,6 @@
-import type { RowDataPacket } from "mysql2";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
+import type { SegmentoAviso, UsuarioBusqueda } from "./adminAvisos.types.js";
 
 // total/destinatarios vienen como STRING desde mysql2 (COUNT/SUM sin CAST, mismo gotcha
 // documentado en adminComprasApuntes) — el controller los convierte con Number().
@@ -76,4 +77,107 @@ export async function listarLectores(campanaId: number): Promise<LectorRow[]> {
     [campanaId],
   );
   return rows;
+}
+
+// Puerto exacto del subquery de "tutor" de admin_enviar_aviso_masivo.php:85-89 — usuario con
+// al menos 1 publicación aprobada (servicio o apunte).
+const SQL_TUTORES_IDS = `(
+    SELECT DISTINCT alumno_id FROM servicios WHERE estado = 'aprobado' AND COALESCE(visible, 1) = 1
+    UNION
+    SELECT DISTINCT id_alumno FROM apuntes WHERE estado = 'aprobado' AND bloqueado = 0 AND COALESCE(visible, 1) = 1
+)`;
+
+interface IdRow extends RowDataPacket {
+  id: number;
+}
+
+// Puerto exacto de admin_enviar_aviso_masivo.php:91-126 — resuelve la lista de IDs
+// destinatarios según segmento. 'usuario' se valida aparte (ver existeUsuarioValido) antes
+// de llamar acá; si llega sin usuarioId válido, esta función simplemente no lo encuentra
+// (WHERE id = ? con ? = 0 nunca matchea un alumno real).
+export async function resolverDestinatarios(segmento: SegmentoAviso, usuarioId: number | null): Promise<number[]> {
+  let sql: string;
+  const params: number[] = [];
+
+  switch (segmento) {
+    case "tutores":
+      sql = `SELECT id FROM alumnos WHERE id IN ${SQL_TUTORES_IDS} AND rol != 'admin' AND visible = 1 AND bloqueado = 0`;
+      break;
+    case "no_tutores":
+      sql = `SELECT id FROM alumnos WHERE id NOT IN ${SQL_TUTORES_IDS} AND rol != 'admin' AND visible = 1 AND bloqueado = 0`;
+      break;
+    case "usuario":
+      sql = "SELECT id FROM alumnos WHERE id = ?";
+      params.push(usuarioId ?? 0);
+      break;
+    case "todos":
+    default:
+      sql = "SELECT id FROM alumnos WHERE rol != 'admin' AND visible = 1 AND bloqueado = 0";
+      break;
+  }
+
+  const [rows] = await pool.query<IdRow[]>(sql, params);
+  return rows.map((r) => r.id);
+}
+
+// Puerto exacto de la validación de admin_enviar_aviso_masivo.php:108.
+export async function existeUsuarioValido(usuarioId: number): Promise<boolean> {
+  const [rows] = await pool.query<IdRow[]>("SELECT id FROM alumnos WHERE id = ? AND rol != 'admin' AND visible = 1 AND bloqueado = 0", [usuarioId]);
+  return rows.length > 0;
+}
+
+interface UsuarioBusquedaRow extends UsuarioBusqueda, RowDataPacket {}
+
+// Puerto exacto de admin_buscar_usuarios.php:18-27 (mismo LIMIT 10).
+export async function buscarUsuarios(q: string): Promise<UsuarioBusqueda[]> {
+  const like = `%${q}%`;
+  const [rows] = await pool.query<UsuarioBusquedaRow[]>(
+    `SELECT id, nombre, correo, COALESCE(institucion, '') AS institucion
+     FROM alumnos
+     WHERE (nombre LIKE ? OR correo LIKE ?) AND rol != 'admin' AND visible = 1 AND bloqueado = 0
+     ORDER BY nombre ASC
+     LIMIT 10`,
+    [like, like],
+  );
+  return rows;
+}
+
+// Puerto exacto de admin_enviar_aviso_masivo.php:148-176 (transacción campaña + N avisos),
+// SIN la sección 7c de imágenes (fuera de alcance de esta pieza — ver nota en
+// adminAvisos.types.ts). Devuelve el id de la campaña recién creada.
+export async function crearCampanaConDestinatarios(
+  adminId: number,
+  titulo: string,
+  mensaje: string,
+  tipo: string,
+  segmento: string,
+  destinatarios: number[],
+): Promise<number> {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [resCampana] = await conn.query<ResultSetHeader>(
+      `INSERT INTO avisos_campanas (admin_id, titulo, mensaje, tipo, segmento, total_destinatarios)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [adminId, titulo, mensaje, tipo, segmento, destinatarios.length],
+    );
+    const campanaId = resCampana.insertId;
+
+    for (const destinoId of destinatarios) {
+      await conn.query(
+        `INSERT INTO avisos_admin (admin_id, destino_id, mensaje, tipo, campana_id)
+         VALUES (?, ?, ?, ?, ?)`,
+        [adminId, destinoId, mensaje, tipo, campanaId],
+      );
+    }
+
+    await conn.commit();
+    return campanaId;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }

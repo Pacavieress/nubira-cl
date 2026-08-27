@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { AvisoCampana, AvisoLector } from "@/lib/api";
-import { AvisoMensaje } from "@/components/AvisoMensaje";
+import { AvisoMensaje, AVISO_ICONO_KEYS } from "@/components/AvisoMensaje";
 
 const TIPO_BADGE: Record<string, string> = {
   info: "bg-gray-100 text-gray-700",
@@ -17,10 +17,265 @@ const SEGMENTO_LABEL: Record<string, string> = {
   usuario: "Usuario específico",
 };
 
-// Puerto de admin_avisos.php — SOLO lectura: métricas, historial en acordeón, detalle de
-// lectores. Crear/enviar/eliminar/duplicar campaña quedan fuera de alcance (enlazan al
-// sitio PHP real) — ver nota en server/src/modules/adminAvisos/adminAvisos.types.ts.
-export function AdminAvisosPanel({ campanas, phpSiteUrl }: { campanas: AvisoCampana[]; phpSiteUrl: string }) {
+interface UsuarioBusqueda {
+  id: number;
+  nombre: string;
+  correo: string;
+  institucion: string;
+}
+
+// Formulario de nueva campaña — puerto de admin_avisos.php (crear + enviar), autorizado
+// explícitamente por el usuario. Ver adminAvisos.types.ts (server/) para lo que sigue
+// deliberadamente fuera de alcance (imágenes, duplicar, eliminar).
+function NuevaCampanaForm({ onCreada }: { onCreada: (campana: AvisoCampana) => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [titulo, setTitulo] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [tipo, setTipo] = useState<"info" | "novedad" | "importante">("info");
+  const [segmento, setSegmento] = useState<"todos" | "tutores" | "no_tutores" | "usuario">("todos");
+  const [busqueda, setBusqueda] = useState("");
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<UsuarioBusqueda[]>([]);
+  const [usuarioSel, setUsuarioSel] = useState<UsuarioBusqueda | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
+
+  async function buscarUsuarios(q: string) {
+    setBusqueda(q);
+    setUsuarioSel(null);
+    if (q.trim().length < 2) {
+      setResultadosBusqueda([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/avisos/buscar-usuarios?q=${encodeURIComponent(q)}`);
+      if (!res.ok) return;
+      setResultadosBusqueda(await res.json());
+    } catch {
+      setResultadosBusqueda([]);
+    }
+  }
+
+  function insertarEnMensaje(antes: string, despues: string) {
+    setMensaje((m) => `${m}${antes}texto${despues}`);
+  }
+
+  async function enviar() {
+    setError(null);
+    setExito(null);
+    if (segmento === "usuario" && !usuarioSel) {
+      setError("Selecciona un usuario primero.");
+      return;
+    }
+    const confirmado = window.confirm(`¿Enviar campaña a "${SEGMENTO_LABEL[segmento]}"? Esta acción manda un aviso real y no se puede deshacer.`);
+    if (!confirmado) return;
+
+    setEnviando(true);
+    try {
+      const res = await fetch("/api/admin/avisos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titulo, mensaje, tipo, segmento, usuarioId: usuarioSel?.id ?? null }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.mensaje ?? data?.error ?? "Error al enviar la campaña.");
+        return;
+      }
+      setExito(`Campaña enviada a ${data.enviados} usuario${data.enviados === 1 ? "" : "s"}.`);
+      onCreada({
+        id: data.campanaId,
+        titulo,
+        mensaje,
+        tipo,
+        segmento,
+        totalDestinatarios: data.enviados,
+        leidos: 0,
+        fechaCreacion: new Date().toISOString(),
+        imagenes: [],
+      });
+      setTitulo("");
+      setMensaje("");
+      setTipo("info");
+      setSegmento("todos");
+      setUsuarioSel(null);
+      setBusqueda("");
+    } catch {
+      setError("Error de conexión.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  if (!abierto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        className="w-full bg-white border border-gray-100 rounded-3xl px-6 py-4 text-left text-sm font-semibold text-gray-700 hover:border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-2"
+      >
+        <span className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-base leading-none">+</span>
+        Nueva campaña
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-100 rounded-3xl p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-sm">Nueva campaña</h2>
+        <button type="button" onClick={() => setAbierto(false)} className="text-gray-400 hover:text-gray-700 text-sm">
+          Cerrar
+        </button>
+      </div>
+
+      <div>
+        <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Título interno</label>
+        <input
+          type="text"
+          maxLength={150}
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          placeholder="Ej: Configura tus horarios"
+          className="w-full mt-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:border-[#54A6D8] focus:ring-2 focus:ring-[#54A6D8]/10 outline-none text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Mensaje al usuario</label>
+        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 mb-1.5">
+          <button
+            type="button"
+            onClick={() => insertarEnMensaje("[b]", "[/b]")}
+            title="Negrita"
+            className="w-8 h-8 rounded-lg border border-gray-200 hover:border-[#54A6D8] hover:bg-sky-50 flex items-center justify-center text-xs font-bold text-gray-600 transition-colors"
+          >
+            B
+          </button>
+          <span className="w-px h-5 bg-gray-200 mx-1" />
+          {AVISO_ICONO_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => insertarEnMensaje(`[icon:${key}]`, "")}
+              title={key}
+              className="px-2 h-8 rounded-lg border border-gray-200 hover:border-[#54A6D8] hover:bg-sky-50 text-[10px] text-gray-600 transition-colors"
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+        <textarea
+          maxLength={1000}
+          rows={4}
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+          placeholder="Escribe el mensaje que verán los usuarios..."
+          className="w-full p-4 border border-gray-200 rounded-lg focus:border-[#54A6D8] focus:ring-2 focus:ring-[#54A6D8]/10 outline-none text-sm resize-none"
+        />
+        <p className="text-[11px] text-gray-400 text-right mt-1">{mensaje.length} / 1000</p>
+
+        <div className="mt-2 border border-gray-200 rounded-xl p-4 bg-gray-50">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Vista previa</p>
+          <AvisoMensaje mensaje={mensaje} className="text-[15px] text-gray-700 leading-snug break-words whitespace-pre-line" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Tipo</label>
+          <select
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as typeof tipo)}
+            className="w-full mt-1 px-4 py-2.5 border border-gray-200 rounded-lg outline-none text-sm bg-white"
+          >
+            <option value="info">Info</option>
+            <option value="novedad">Novedad</option>
+            <option value="importante">Importante</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Enviar a</label>
+          <select
+            value={segmento}
+            onChange={(e) => setSegmento(e.target.value as typeof segmento)}
+            className="w-full mt-1 px-4 py-2.5 border border-gray-200 rounded-lg outline-none text-sm bg-white"
+          >
+            <option value="todos">Todos los usuarios</option>
+            <option value="tutores">Solo tutores (con publicaciones)</option>
+            <option value="no_tutores">Solo no-tutores</option>
+            <option value="usuario">Usuario específico</option>
+          </select>
+        </div>
+      </div>
+
+      {segmento === "usuario" && (
+        <div className="relative">
+          <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Buscar usuario</label>
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => buscarUsuarios(e.target.value)}
+            placeholder="Nombre o correo..."
+            autoComplete="off"
+            className="w-full mt-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:border-[#54A6D8] focus:ring-2 focus:ring-[#54A6D8]/10 outline-none text-sm"
+          />
+          {resultadosBusqueda.length > 0 && !usuarioSel && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-10">
+              {resultadosBusqueda.map((u) => (
+                <button
+                  type="button"
+                  key={u.id}
+                  onClick={() => {
+                    setUsuarioSel(u);
+                    setResultadosBusqueda([]);
+                    setBusqueda(u.nombre);
+                  }}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                >
+                  <p className="text-sm font-medium">{u.nombre}</p>
+                  <p className="text-[11px] text-gray-500">
+                    {u.correo} · {u.institucion || "Sin institución"}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+          {usuarioSel && (
+            <div className="mt-2 flex items-center justify-between gap-3 px-3 py-2 bg-sky-50 border border-sky-200 rounded-lg">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{usuarioSel.nombre}</p>
+                <p className="text-[11px] text-gray-500 truncate">{usuarioSel.correo}</p>
+              </div>
+              <button type="button" onClick={() => (setUsuarioSel(null), setBusqueda(""))} className="text-gray-400 hover:text-rose-500 shrink-0">
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+        <p className="text-rose-500 text-[12px]">{error}</p>
+        {exito && <p className="text-emerald-600 text-[12px] font-medium">{exito}</p>}
+        <button
+          type="button"
+          disabled={enviando || titulo.trim().length < 3 || mensaje.trim().length < 5}
+          onClick={enviar}
+          className="ml-auto px-6 py-2.5 bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 text-white text-[13px] font-medium rounded-lg transition-all active:scale-[0.98]"
+        >
+          {enviando ? "Enviando..." : "Enviar campaña"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Puerto de admin_avisos.php — historial en acordeón, detalle de lectores, y crear+enviar
+// campaña (NuevaCampanaForm arriba). Sigue SIN eliminar/duplicar campaña ni subir imágenes —
+// ver nota en server/src/modules/adminAvisos/adminAvisos.types.ts.
+export function AdminAvisosPanel({ campanas: campanasIniciales, phpSiteUrl }: { campanas: AvisoCampana[]; phpSiteUrl: string }) {
+  const [campanas, setCampanas] = useState(campanasIniciales);
   const [abierta, setAbierta] = useState<number | null>(null);
   const [lectores, setLectores] = useState<Record<number, AvisoLector[] | "cargando" | "error">>({});
   const [modalLectoresId, setModalLectoresId] = useState<number | null>(null);
@@ -39,17 +294,20 @@ export function AdminAvisosPanel({ campanas, phpSiteUrl }: { campanas: AvisoCamp
     }
   }
 
-  if (campanas.length === 0) {
-    return <div className="bg-white border border-gray-100 rounded-3xl px-6 py-16 text-center text-gray-400 text-sm">Aún no se han enviado campañas.</div>;
-  }
-
   const modalCampana = campanas.find((c) => c.id === modalLectoresId) ?? null;
   const estadoLectores = modalLectoresId ? lectores[modalLectoresId] : undefined;
 
   return (
     <>
-      <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden divide-y divide-gray-50">
-        {campanas.map((c) => {
+      <div className="mb-3">
+        <NuevaCampanaForm onCreada={(c) => setCampanas((prev) => [c, ...prev])} />
+      </div>
+
+      {campanas.length === 0 ? (
+        <div className="bg-white border border-gray-100 rounded-3xl px-6 py-16 text-center text-gray-400 text-sm">Aún no se han enviado campañas.</div>
+      ) : (
+        <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden divide-y divide-gray-50">
+          {campanas.map((c) => {
           const pct = c.totalDestinatarios > 0 ? Math.round((c.leidos / c.totalDestinatarios) * 100) : 0;
           const abiertaAhora = abierta === c.id;
 
@@ -107,12 +365,13 @@ export function AdminAvisosPanel({ campanas, phpSiteUrl }: { campanas: AvisoCamp
               )}
             </div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
 
       <div className="flex justify-end mt-3">
         <a href={`${phpSiteUrl}/admin/avisos`} target="_blank" rel="noopener noreferrer" className="text-[12px] font-medium text-gray-500 hover:text-gray-700">
-          Crear / eliminar campañas (en el sitio real) →
+          Duplicar / eliminar campañas (en el sitio real) →
         </a>
       </div>
 

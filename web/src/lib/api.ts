@@ -1128,6 +1128,28 @@ export async function getAdminAvisos(): Promise<AvisosResumen | null> {
   return res.json();
 }
 
+// Refleja adminDespertarDormidos.types.ts (server/) — panel "Despertar Dormidos"
+// (enviar_despertar_dormidos.php, modo WEB). Filtros de proveedor/orden que el PHP real
+// resolvía en el servidor se resuelven acá en el cliente sobre este mismo listado completo.
+export interface UsuarioDormido {
+  alumnoId: number;
+  nombre: string;
+  correo: string;
+  estado: "pendiente" | "enviado" | "fallo";
+  fechaEnviado: string | null;
+}
+
+export interface DespertarDormidosResumen {
+  usuarios: UsuarioDormido[];
+  stats: { total: number; enviados: number; pendientes: number; fallidos: number };
+}
+
+export async function getAdminDespertarDormidos(): Promise<DespertarDormidosResumen | null> {
+  const res = await fetchConSesion("/api/admin/despertar-dormidos");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
 // Refleja OfertaApunte (server/src/modules/adminOfertasApuntes/adminOfertasApuntes.types.ts)
 // — panel admin "Promo Apuntes" (admin_ofertas_apuntes.php). Las 3 mutaciones (precio,
 // aplicar/quitar promo) se portan completas: son UPDATE puros, sin efecto externo.

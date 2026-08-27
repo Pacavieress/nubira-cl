@@ -64,4 +64,10 @@ export const env = {
     passNoreply: process.env.SMTP_PASS_NOREPLY ?? "",
     passContacto: process.env.SMTP_PASS_CONTACTO ?? "",
   },
+  // Puerto de UNSUB_SECRET (app/config.php:40) — misma clave HMAC que firma los links de
+  // /unsubscribe. Mismo fallback que el PHP real (`getenv('UNSUB_SECRET') ?: ''`): ni
+  // app/.env ni server/.env la tienen seteada hoy en local, así que ambos lados generan el
+  // mismo HMAC "vacío" — si algún día se define en producción, hay que espejarla acá
+  // también o los links firmados por un lado no van a verificar contra el otro.
+  unsubSecret: process.env.UNSUB_SECRET ?? "",
 };

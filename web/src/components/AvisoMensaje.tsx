@@ -88,6 +88,10 @@ const ICONOS: Record<string, React.ReactNode> = {
   ),
 };
 
+// Reusado por el toolbar de composición de AdminAvisosPanel.tsx — misma whitelist que el
+// render, así el botón de ícono nunca ofrece insertar uno que después no se muestre.
+export const AVISO_ICONO_KEYS = Object.keys(ICONOS);
+
 function parsearBold(texto: string, keyPrefix: string): React.ReactNode[] {
   const partes = texto.split(/(\[b\][\s\S]+?\[\/b\])/g);
   return partes.map((parte, i) => {

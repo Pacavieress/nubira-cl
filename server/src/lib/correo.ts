@@ -20,6 +20,12 @@ const CUENTAS: Record<CuentaRemitente, { user: string; name: string; pass: strin
   contacto: { user: "contacto@nubira.cl", name: "Equipo Nubira", pass: env.smtp.passContacto },
 };
 
+// Expuesta para callers que necesitan la dirección real (ej. el mailto: del header
+// List-Unsubscribe en adminDespertarDormidos) sin duplicar el mapeo cuenta -> dirección.
+export function direccionRemitente(cuenta: CuentaRemitente): string {
+  return CUENTAS[cuenta].user;
+}
+
 const transportersCache: Partial<Record<CuentaRemitente, Transporter>> = {};
 
 function getTransporter(cuenta: CuentaRemitente): Transporter {
@@ -82,7 +88,17 @@ function plantillaMaestra(titulo: string, contenidoHtml: string): string {
 // Puerto de enviarCorreo() (la función genérica que admin_retiros.php realmente usa, no las
 // plantillas específicas por caso de uso). Nunca lanza — devuelve false ante cualquier falla
 // (credencial faltante, SMTP caído, destinatario inválido) para que el caller decida.
-export async function enviarCorreo(destinatario: string, asunto: string, contenidoHtml: string, cuenta: CuentaRemitente = "noreply"): Promise<boolean> {
+//
+// `headers` opcional — puerto de enviarDormidoConUnsubscribe() (app/helpers/campanas.php):
+// permite agregar List-Unsubscribe/List-Unsubscribe-Post a campañas masivas sin bifurcar en
+// un transporter/función aparte. Vacío por defecto, sin efecto en los callers existentes.
+export async function enviarCorreo(
+  destinatario: string,
+  asunto: string,
+  contenidoHtml: string,
+  cuenta: CuentaRemitente = "noreply",
+  headers?: Record<string, string>,
+): Promise<boolean> {
   const credenciales = CUENTAS[cuenta];
   if (!credenciales.pass) {
     console.error(`[correo] Falta SMTP_PASS_${cuenta.toUpperCase()} en el entorno — no se pudo enviar "${asunto}" a ${destinatario}`);
@@ -95,6 +111,7 @@ export async function enviarCorreo(destinatario: string, asunto: string, conteni
       replyTo: credenciales.user,
       subject: asunto,
       html: plantillaMaestra(asunto, contenidoHtml),
+      headers,
     });
     return true;
   } catch (err) {
