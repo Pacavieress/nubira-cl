@@ -948,6 +948,41 @@ export async function getAdminContratos(estado?: string): Promise<ContratosResum
   return res.json();
 }
 
+// Refleja SolicitudRetiroAdmin/ConfiguracionFinanciera (server/src/modules/adminRetiros/
+// adminRetiros.types.ts) — panel admin "Retiros" (admin_retiros.php). Autorizado con alcance
+// completo (aprobar/rechazar dinero real) — a diferencia de los paneles admin anteriores.
+export interface SolicitudRetiroAdmin {
+  id: number;
+  monto: number;
+  estado: "pendiente" | "aprobado" | "rechazado";
+  fechaSolicitud: string;
+  fechaPago: string | null;
+  transferenciaId: string | null;
+  tutorNombre: string;
+  tutorCorreo: string;
+  datosBancarios: { banco: string; tipoCuenta: string; numeroCuenta: string; titularNombre: string; rut: string } | null;
+}
+
+export interface ConfiguracionFinanciera {
+  minimoRetiro: number;
+  comisionActual: number;
+}
+
+export interface RetirosAdminListado {
+  solicitudes: SolicitudRetiroAdmin[];
+  configuracion: ConfiguracionFinanciera;
+}
+
+export async function getAdminRetiros(estado?: string, institucion?: string): Promise<RetirosAdminListado | null> {
+  const params = new URLSearchParams();
+  if (estado) params.set("estado", estado);
+  if (institucion) params.set("institucion", institucion);
+  const qs = params.toString();
+  const res = await fetchConSesion(`/api/admin/retiros${qs ? `?${qs}` : ""}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
 // Refleja AutorServicio (server/src/modules/adminAutores/adminAutores.types.ts) — panel
 // admin "Autores de Servicios" (admin_autores_servicios.php). SOLO lectura — ver nota de
 // alcance en el tipo del server sobre la acción "Escribir correo" excluida.

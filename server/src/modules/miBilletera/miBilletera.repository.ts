@@ -34,6 +34,18 @@ export async function getConfiguracionFinanciera(): Promise<{ minimoRetiro: numb
   return { minimoRetiro, comisionActual };
 }
 
+// Puerto exacto de admin_retiros.php:39-49 — upsert de las 2 claves (ON DUPLICATE KEY
+// UPDATE), consumido por Admin Retiros. Vive acá junto al getter porque ambos son la misma
+// fuente de verdad (tabla `configuracion`), no un detalle propio del panel admin.
+export async function setConfiguracionFinanciera(minimoRetiro: number, comisionActual: number): Promise<void> {
+  await pool.query("INSERT INTO configuracion (clave, valor) VALUES ('monto_minimo_retiro', ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)", [
+    String(minimoRetiro),
+  ]);
+  await pool.query("INSERT INTO configuracion (clave, valor) VALUES ('comision_plataforma', ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)", [
+    String(comisionActual),
+  ]);
+}
+
 // Puerto exacto de datos_bancarios.php:39-44 (mismo filtro de estados, misma fórmula neto).
 export async function getGananciasServicios(vendedorId: number): Promise<number> {
   const [rows] = await pool.query<TotalRow[]>(

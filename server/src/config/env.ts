@@ -57,4 +57,11 @@ export const env = {
   // (best-effort, mismo criterio que el PHP real que nunca revisa la respuesta de su curl),
   // no bloquea el arranque del resto de la API.
   dailyApiKey: process.env.DAILY_API_KEY ?? "",
+  // SMTP (Hostinger) — puerto de app/correo.php. Opcional (no required()): si falta, el
+  // envío de correo falla con un error explícito (ver src/lib/correo.ts) en vez de tumbar el
+  // arranque del resto de la API — mismo criterio que dailyApiKey arriba.
+  smtp: {
+    passNoreply: process.env.SMTP_PASS_NOREPLY ?? "",
+    passContacto: process.env.SMTP_PASS_CONTACTO ?? "",
+  },
 };
