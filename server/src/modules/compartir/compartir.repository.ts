@@ -1,6 +1,6 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
-import type { ApunteCompartir, DatosPreguntasCompartir, FormatoShare, MateriaCompartir, OpcionLetra, PreguntaCompartir, ServicioCompartir } from "./compartir.types.js";
+import type { ApunteCompartir, DatosPreguntasCompartir, FormatoShare, MateriaCompartir, NovedadCompartir, OpcionLetra, PreguntaCompartir, ServicioCompartir } from "./compartir.types.js";
 
 export async function getMateriaActiva(slug: string): Promise<MateriaCompartir | null> {
   const [rows] = await pool.query<RowDataPacket[]>("SELECT slug, nombre FROM materias WHERE slug = ? AND activa = 1 LIMIT 1", [slug]);
@@ -183,4 +183,18 @@ export async function getServicioParaCompartir(id: number): Promise<ServicioComp
     ratingProm: Number(row.rating_prom),
     ratingVotos: row.rating_votos,
   };
+}
+
+interface NovedadCompartirDbRow extends RowDataPacket {
+  id: number;
+  titulo: string;
+  cuerpo: string;
+}
+
+// Puerto exacto de la SELECT de nb_obtener_imagen_novedad() (imagen_compartir.php:854-859) —
+// sin gate de estado (la tabla `novedades` no tiene columna estado/visible, cualquier fila
+// creada es servible, mismo criterio que el PHP real).
+export async function getNovedadParaCompartir(id: number): Promise<NovedadCompartir | null> {
+  const [rows] = await pool.query<NovedadCompartirDbRow[]>("SELECT id, titulo, cuerpo FROM novedades WHERE id = ? LIMIT 1", [id]);
+  return rows[0] ?? null;
 }

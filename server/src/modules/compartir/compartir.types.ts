@@ -58,3 +58,12 @@ export interface DatosPreguntasCompartir {
   materia: MateriaCompartir;
   preguntas: PreguntaCompartir[];
 }
+
+// Puerto de la fila que arma nb_obtener_imagen_novedad() (imagen_compartir.php:847-878) —
+// solo título+cuerpo, sin ningún dato de usuario (ver nota de alcance en
+// compartirNovedad.generador.ts).
+export interface NovedadCompartir {
+  id: number;
+  titulo: string;
+  cuerpo: string;
+}

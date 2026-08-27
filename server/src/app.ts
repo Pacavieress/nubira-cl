@@ -17,6 +17,7 @@ import { adminCuentasRouter } from "./modules/adminCuentas/adminCuentas.routes.j
 import { adminCuponesRouter } from "./modules/adminCupones/adminCupones.routes.js";
 import { adminDominiosRouter } from "./modules/adminDominios/adminDominios.routes.js";
 import { adminLoginFallosRouter } from "./modules/adminLoginFallos/adminLoginFallos.routes.js";
+import { adminMarketingCardsRouter } from "./modules/adminMarketingCards/adminMarketingCards.routes.js";
 import { adminOfertasRouter } from "./modules/adminOfertas/adminOfertas.routes.js";
 import { adminOfertasApuntesRouter } from "./modules/adminOfertasApuntes/adminOfertasApuntes.routes.js";
 import { adminReclamosRouter } from "./modules/adminReclamos/adminReclamos.routes.js";
@@ -116,6 +117,7 @@ export function createApp(): Express {
   app.use("/api/admin/ofertas-apuntes", adminOfertasApuntesRouter);
   app.use("/api/admin/aulas", adminAulasRouter);
   app.use("/api/admin/login-fallos", adminLoginFallosRouter);
+  app.use("/api/admin/marketing-cards", adminMarketingCardsRouter);
   app.use("/api/admin/reportes-servicios", adminReportesServiciosRouter);
   app.use("/api/admin/solicitudes", adminSolicitudesRouter);
   app.use("/api/admin/videos", adminVideosRouter);

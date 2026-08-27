@@ -3,6 +3,8 @@ import {
   getImagenApuntePost,
   getImagenDesafioPost,
   getImagenDesafioPreguntas,
+  getImagenNovedadHistory,
+  getImagenNovedadPost,
   getImagenServicioPost,
   postTrackShareApunte,
   postTrackShareDesafio,
@@ -21,3 +23,10 @@ compartirRouter.post("/apunte/track", postTrackShareApunte);
 
 compartirRouter.get("/servicio/:id/post", getImagenServicioPost);
 compartirRouter.post("/servicio/track", postTrackShareServicio);
+
+// Puerto de app/img_novedad.php — usado por el panel Marketing/Cards (adminMarketingCards),
+// no por ningún flujo de compartir de usuario final (a diferencia de los 3 de arriba) — vive
+// acá de todos modos porque es arquitectónicamente idéntico (imagen pública cacheada por
+// fingerprint, sin sesión) y así no se duplica el patrón cache-en-disco en otro módulo.
+compartirRouter.get("/novedad/:id/post", getImagenNovedadPost);
+compartirRouter.get("/novedad/:id/history", getImagenNovedadHistory);

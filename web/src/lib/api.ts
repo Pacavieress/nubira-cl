@@ -1907,3 +1907,62 @@ export async function getArchivosContrato(contratoId: number): Promise<ArchivoCo
   const data = (await res.json()) as { archivos: ArchivoContrato[] };
   return data.archivos;
 }
+
+// Refleja adminMarketingCards.types.ts (server/) — panel "Marketing / Cards", tab Servicios
+// (admin_marketing_cards.php?tab=servicios). Puro curador: la imagen de cada card se arma en
+// el cliente como `/api/servicio/compartir/{id}/post` (proxy ya existente hacia
+// server/src/modules/compartir, reutilizado tal cual) — por eso no hay `imgUrl` acá.
+export interface FiltrosServiciosMarketing {
+  categoria: string;
+  institucion: string;
+  conVideo: boolean;
+  fechaDesde: string;
+  fechaHasta: string;
+}
+
+export interface ServicioMarketing {
+  id: number;
+  titulo: string;
+  categoria: string;
+  institucion: string | null;
+  fechaPublicacion: string;
+  conVideo: boolean;
+  tutorNombre: string;
+}
+
+export interface ServiciosMarketingResumen {
+  total: number;
+  servicios: ServicioMarketing[];
+  categoriasDisponibles: string[];
+  institucionesDisponibles: string[];
+}
+
+const RESUMEN_SERVICIOS_MARKETING_VACIO: ServiciosMarketingResumen = { total: 0, servicios: [], categoriasDisponibles: [], institucionesDisponibles: [] };
+
+export async function getAdminMarketingServicios(f: FiltrosServiciosMarketing): Promise<ServiciosMarketingResumen> {
+  const params = new URLSearchParams();
+  if (f.categoria) params.set("categoria", f.categoria);
+  if (f.institucion) params.set("institucion", f.institucion);
+  if (f.conVideo) params.set("conVideo", "1");
+  if (f.fechaDesde) params.set("fechaDesde", f.fechaDesde);
+  if (f.fechaHasta) params.set("fechaHasta", f.fechaHasta);
+  const res = await fetchConSesion(`/api/admin/marketing-cards/servicios?${params.toString()}`);
+  if (!res || !res.ok) return RESUMEN_SERVICIOS_MARKETING_VACIO;
+  return res.json();
+}
+
+// Refleja adminMarketingCards.types.ts (server/) — panel "Marketing / Cards", tab Novedades.
+// La imagen se arma en el cliente como `/api/novedad/compartir/{id}/post|history` (mismo
+// patrón de proxy binario que los servicios).
+export interface NovedadMarketing {
+  id: number;
+  titulo: string;
+  cuerpo: string;
+  creadoEn: string;
+}
+
+export async function getAdminMarketingNovedades(): Promise<NovedadMarketing[]> {
+  const res = await fetchConSesion("/api/admin/marketing-cards/novedades");
+  if (!res || !res.ok) return [];
+  return res.json();
+}

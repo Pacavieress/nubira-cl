@@ -367,6 +367,18 @@ export function avatarCircular(dataUri: string | null, cx: number, cyTop: number
   `;
 }
 
+// Puerto visual de nb_rect_redondeado() (imagen_compartir.php:543-554) usado como "marco" —
+// dos rects anidados (borde como relleno exterior, blanco 2px adentro) en vez de un stroke
+// real: mismo truco ya usado en badgePillIzquierda/pillSolidoIzquierda de este archivo, para
+// que el borde se vea nítido a cualquier grosor sin depender de cómo resvg antialiasea un
+// stroke centrado en el borde del rect.
+export function marcoRedondeado(x: number, y: number, w: number, h: number, radio: number, colorBorde: string, colorFondo: string): string {
+  return `
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${radio}" fill="${colorBorde}" />
+    <rect x="${x + 2}" y="${y + 2}" width="${w - 4}" height="${h - 4}" rx="${Math.max(0, radio - 2)}" fill="${colorFondo}" />
+  `;
+}
+
 // Ensambla el documento SVG completo (fondo + fuentes embebidas), lo rasteriza con resvg
 // (PNG) y usa sharp SOLO para la conversión final PNG->JPEG (resvg no exporta JPEG
 // directo) — mismo criterio, dos librerías, cada una en lo suyo.

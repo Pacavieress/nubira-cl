@@ -1,8 +1,8 @@
-import { test, after } from "node:test";
+import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { RowDataPacket } from "mysql2";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { createApp } from "../src/app.js";
 import { pool } from "../src/db/pool.js";
 import { env } from "../src/config/env.js";
@@ -21,11 +21,25 @@ const APUNTE_SIN_PORTADA_ID = 323;
 // ya aceptado para el caso de promo de apuntes.
 const SERVICIO_ID = 8943;
 let archivosGenerados: string[] = [];
+let archivosNovedadGenerados: string[] = [];
+let novedadId: number;
+
+before(async () => {
+  const [ins] = await pool.query<ResultSetHeader>("INSERT INTO novedades (titulo, cuerpo) VALUES (?, ?)", [
+    "[TEST compartir] Novedad de prueba",
+    "Cuerpo de prueba para el test automatizado de compartirNovedad.",
+  ]);
+  novedadId = ins.insertId;
+});
 
 after(async () => {
   for (const nombre of archivosGenerados) {
     await fs.rm(path.join(env.uploadDir, "compartir", nombre), { force: true });
   }
+  for (const nombre of archivosNovedadGenerados) {
+    await fs.rm(path.join(env.uploadDir, "novedades", nombre), { force: true });
+  }
+  await pool.query("DELETE FROM novedades WHERE id = ?", [novedadId]);
   await pool.query("DELETE FROM shares_desafio WHERE materia_slug = ? AND ip = 'test-fixture'", [MATERIA_SLUG]);
   await pool.query("DELETE FROM shares_apunte WHERE apunte_id = ? AND ip = 'test-fixture'", [APUNTE_CON_PORTADA_ID]);
   await pool.query("DELETE FROM shares_servicio WHERE servicio_id = ? AND ip = 'test-fixture'", [SERVICIO_ID]);
@@ -460,6 +474,86 @@ test("POST /api/compartir/servicio/track con datos válidos: registra la fila re
     );
     assert.equal(rows.length, 1);
     assert.equal((rows[0] as { formato: string }).formato, "share");
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/novedad/:id/post con id inexistente devuelve 404", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/novedad/999999999/post`);
+    assert.equal(res.status, 404);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/novedad/:id/post: novedad real genera un JPEG real (1080x1080), con Cache-Control largo", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/novedad/${novedadId}/post`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "image/jpeg");
+    assert.match(res.headers.get("cache-control") ?? "", /max-age=86400/);
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    assert.ok(buffer.length > 1000, "debe ser un JPEG real, no un placeholder vacío");
+    assert.equal(buffer[0], 0xff);
+    assert.equal(buffer[1], 0xd8);
+    assert.equal(buffer[2], 0xff);
+
+    const dir = path.join(env.uploadDir, "novedades");
+    const archivos = await fs.readdir(dir);
+    const archivoCard = archivos.find((f) => f.startsWith(`nov_${novedadId}_post_`));
+    assert.ok(archivoCard, "debe cachear en disco");
+    archivosNovedadGenerados.push(archivoCard!);
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/novedad/:id/post: segunda llamada es cache-hit (mismo archivo en disco, no se regenera)", async () => {
+  const { url, close } = listen();
+  try {
+    const res1 = await fetch(`${url}/api/compartir/novedad/${novedadId}/post`);
+    const buf1 = Buffer.from(await res1.arrayBuffer());
+
+    const dir = path.join(env.uploadDir, "novedades");
+    const archivos = await fs.readdir(dir);
+    const archivoCard = archivos.find((f) => f.startsWith(`nov_${novedadId}_post_`));
+    assert.ok(archivoCard);
+    const statAntes = await fs.stat(path.join(dir, archivoCard!));
+
+    const res2 = await fetch(`${url}/api/compartir/novedad/${novedadId}/post`);
+    const buf2 = Buffer.from(await res2.arrayBuffer());
+    const statDespues = await fs.stat(path.join(dir, archivoCard!));
+
+    assert.deepEqual(buf1, buf2, "el contenido debe ser idéntico (mismo archivo cacheado)");
+    assert.equal(statAntes.mtimeMs, statDespues.mtimeMs, "el archivo no debe haberse regenerado (mismo mtime)");
+  } finally {
+    await close();
+  }
+});
+
+test("GET /api/compartir/novedad/:id/history: novedad real genera un JPEG real (1080x1920)", async () => {
+  const { url, close } = listen();
+  try {
+    const res = await fetch(`${url}/api/compartir/novedad/${novedadId}/history`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "image/jpeg");
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    assert.ok(buffer.length > 1000, "debe ser un JPEG real, no un placeholder vacío");
+    assert.equal(buffer[0], 0xff);
+    assert.equal(buffer[1], 0xd8);
+    assert.equal(buffer[2], 0xff);
+
+    const dir = path.join(env.uploadDir, "novedades");
+    const archivos = await fs.readdir(dir);
+    const archivoCard = archivos.find((f) => f.startsWith(`nov_${novedadId}_history_`));
+    assert.ok(archivoCard, "debe cachear en disco, en un archivo distinto al de post");
+    archivosNovedadGenerados.push(archivoCard!);
   } finally {
     await close();
   }

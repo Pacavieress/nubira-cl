@@ -10,9 +10,11 @@ import {
 } from "./compartirDesafio.generador.js";
 import { fingerprintApunte, generarImagenApuntePost } from "./compartirApunte.generador.js";
 import { fingerprintServicio, generarImagenServicioPost } from "./compartirServicio.generador.js";
+import { fingerprintNovedad, generarImagenNovedadHistory, generarImagenNovedadPost } from "./compartirNovedad.generador.js";
 import {
   getApunteParaCompartir,
   getMateriaActiva,
+  getNovedadParaCompartir,
   getPreguntasParaCompartir,
   getServicioParaCompartir,
   registrarShareApunte,
@@ -181,6 +183,65 @@ export async function getImagenServicioPost(req: Request, res: Response): Promis
     buffer = await fs.readFile(archivo);
   } catch {
     buffer = await generarImagenServicioPost(servicio);
+    await fs.writeFile(archivo, buffer);
+  }
+
+  res.setHeader("Content-Type", "image/jpeg");
+  res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+  res.status(200).send(buffer);
+}
+
+// Puerto de app/img_novedad.php — sin el rate-limit propio del PHP real (mismo criterio ya
+// aplicado a getImagenServicioPost/getImagenApuntePost/getImagenDesafioPost: deliberadamente
+// no portado). Público a propósito, sin requireAuth — la novedad no tiene ningún dato
+// sensible (es texto que el propio admin redactó para redes sociales), mismo criterio que el
+// resto de este módulo.
+export async function getImagenNovedadPost(req: Request, res: Response): Promise<void> {
+  const id = Number(req.params.id);
+  const novedad = Number.isInteger(id) && id > 0 ? await getNovedadParaCompartir(id) : null;
+
+  if (!novedad) {
+    res.status(404).json({ error: "novedad_invalida" });
+    return;
+  }
+
+  const fp = fingerprintNovedad(novedad);
+  const dir = path.join(env.uploadDir, "novedades");
+  await fs.mkdir(dir, { recursive: true });
+  const archivo = path.join(dir, `nov_${novedad.id}_post_${fp}.jpg`);
+
+  let buffer: Buffer;
+  try {
+    buffer = await fs.readFile(archivo);
+  } catch {
+    buffer = await generarImagenNovedadPost(novedad);
+    await fs.writeFile(archivo, buffer);
+  }
+
+  res.setHeader("Content-Type", "image/jpeg");
+  res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+  res.status(200).send(buffer);
+}
+
+export async function getImagenNovedadHistory(req: Request, res: Response): Promise<void> {
+  const id = Number(req.params.id);
+  const novedad = Number.isInteger(id) && id > 0 ? await getNovedadParaCompartir(id) : null;
+
+  if (!novedad) {
+    res.status(404).json({ error: "novedad_invalida" });
+    return;
+  }
+
+  const fp = fingerprintNovedad(novedad);
+  const dir = path.join(env.uploadDir, "novedades");
+  await fs.mkdir(dir, { recursive: true });
+  const archivo = path.join(dir, `nov_${novedad.id}_history_${fp}.jpg`);
+
+  let buffer: Buffer;
+  try {
+    buffer = await fs.readFile(archivo);
+  } catch {
+    buffer = await generarImagenNovedadHistory(novedad);
     await fs.writeFile(archivo, buffer);
   }
 
