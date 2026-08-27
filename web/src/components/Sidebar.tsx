@@ -48,7 +48,7 @@ interface NavItem {
   externo?: boolean;
 }
 
-function construirNavItems(phpSiteUrl: string, usuarioId: number | null): NavItem[] {
+function construirNavItems(phpSiteUrl: string, nextjsSiteUrl: string, usuarioId: number | null): NavItem[] {
   const esGuest = usuarioId === null;
 
   return [
@@ -65,12 +65,12 @@ function construirNavItems(phpSiteUrl: string, usuarioId: number | null): NavIte
     ),
   },
   {
-    href: esGuest
-      ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/bandeja-entrada")}`
-      : `${phpSiteUrl}/bandeja-entrada`,
+    // "Mensajes" ya tiene página propia en Next.js (Grupo Mensajes/Chat, Pieza 1,
+    // 26/08/2026) — mismo criterio que "Mi Perfil" arriba: navega como ruta interna.
+    href: esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent(`${nextjsSiteUrl}/bandeja-entrada`)}` : "/bandeja-entrada",
     label: "Mensajes",
-    activo: () => false,
-    externo: true,
+    activo: (p) => p === "/bandeja-entrada" || p.startsWith("/chat/"),
+    externo: esGuest,
     icono: (
       <path
         strokeLinecap="round"
@@ -117,7 +117,7 @@ function construirNavItems(phpSiteUrl: string, usuarioId: number | null): NavIte
     ),
   },
   {
-    href: esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/mi-perfil")}` : "/mi-perfil",
+    href: esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent(`${nextjsSiteUrl}/mi-perfil`)}` : "/mi-perfil",
     label: "Mi Perfil",
     activo: (p) => p === "/mi-perfil",
     externo: esGuest,
@@ -132,9 +132,9 @@ function construirNavItems(phpSiteUrl: string, usuarioId: number | null): NavIte
   ];
 }
 
-export function Sidebar({ phpSiteUrl, usuarioId }: { phpSiteUrl: string; usuarioId: number | null }) {
+export function Sidebar({ phpSiteUrl, nextjsSiteUrl, usuarioId }: { phpSiteUrl: string; nextjsSiteUrl: string; usuarioId: number | null }) {
   const pathname = usePathname();
-  const navItems = construirNavItems(phpSiteUrl, usuarioId);
+  const navItems = construirNavItems(phpSiteUrl, nextjsSiteUrl, usuarioId);
 
   return (
     <aside className="hidden lg:flex lg:flex-col fixed top-14 left-0 h-[calc(100%-3.5rem)] w-56 bg-white/95 backdrop-blur-sm border-r border-[#f0f0f0]/80 z-40 overflow-y-auto">

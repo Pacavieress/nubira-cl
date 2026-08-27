@@ -21,20 +21,25 @@ import { usePathname } from "next/navigation";
 // ningún ítem de logout (solo 5 slots fijos), a diferencia de sidebar.php que sí lo tiene
 // en desktop. Agregar uno acá sería inventar UI que el sitio real no tiene.
 //
-// No se arma el parámetro `redir` de vuelta a una URL de web/ en ningún caso — son 2 apps
-// distintas, un redir a una ruta de acá no tendría a dónde volver del lado del login PHP real.
+// [26/08/2026] El comentario que vivía acá decía que nunca se arma un `redir` de vuelta a
+// una ruta de web/ porque "son 2 apps distintas, no tendría a dónde volver" — eso ya no es
+// cierto: login.php ahora acepta `redir` absoluto hacia NEXTJS_TRUSTED_ORIGINS (ver
+// app/helpers/redir_seguro.php del lado PHP), justo para esto. perfilUrl y mensajesUrl
+// arman ambos un redir absoluto hacia nextjsSiteUrl porque /mi-perfil y /bandeja-entrada
+// viven en Next.js — /bandeja-entrada se portó en el Grupo Mensajes/Chat, Pieza 1.
 //
 // "Descubrir" reemplaza al modal_explora.php real (no construido en web/) por un link
 // directo a /busqueda — mismo ícono, propósito equivalente ("buscar/descubrir"),
 // simplificado de modal a navegación de página completa.
-export function BottomNav({ phpSiteUrl, usuarioId }: { phpSiteUrl: string; usuarioId: number | null }) {
+export function BottomNav({ phpSiteUrl, nextjsSiteUrl, usuarioId }: { phpSiteUrl: string; nextjsSiteUrl: string; usuarioId: number | null }) {
   const pathname = usePathname();
   const loginUrl = `${phpSiteUrl}/login`;
   const esGuest = usuarioId === null;
-  const mensajesUrl = esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/bandeja-entrada")}` : `${phpSiteUrl}/bandeja-entrada`;
-  const perfilUrl = esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent("/mi-perfil")}` : "/mi-perfil";
+  const mensajesUrl = esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent(`${nextjsSiteUrl}/bandeja-entrada`)}` : "/bandeja-entrada";
+  const perfilUrl = esGuest ? `${phpSiteUrl}/login?redir=${encodeURIComponent(`${nextjsSiteUrl}/mi-perfil`)}` : "/mi-perfil";
 
   const esInicio = pathname === "/";
+  const esMensajes = pathname === "/bandeja-entrada" || pathname.startsWith("/chat/");
   const esPerfil = pathname === "/mi-perfil";
   const clsBase = "flex flex-col items-center justify-center gap-1 w-full outline-none select-none";
   const clsActivo = "text-[#54A6D8] font-medium";
@@ -79,16 +84,29 @@ export function BottomNav({ phpSiteUrl, usuarioId }: { phpSiteUrl: string; usuar
         </li>
 
         <li>
-          <a href={mensajesUrl} aria-label="Mensajes" className={`${clsBase} ${clsInactivo}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.495 1.141.143 1.65-.6.866-1.42 1.586-2.38 2.115 1.576.166 3.09.043 4.41-.33.61-.171 1.256-.123 1.833.125A9.01 9.01 0 0 0 12 20.25Z"
-              />
-            </svg>
-            <span className="tracking-[0.01em] leading-none mt-0.5">Mensajes</span>
-          </a>
+          {esGuest ? (
+            <a href={mensajesUrl} aria-label="Mensajes" className={`${clsBase} ${clsInactivo}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.495 1.141.143 1.65-.6.866-1.42 1.586-2.38 2.115 1.576.166 3.09.043 4.41-.33.61-.171 1.256-.123 1.833.125A9.01 9.01 0 0 0 12 20.25Z"
+                />
+              </svg>
+              <span className="tracking-[0.01em] leading-none mt-0.5">Mensajes</span>
+            </a>
+          ) : (
+            <Link href={mensajesUrl} aria-label="Mensajes" className={`${clsBase} ${esMensajes ? clsActivo : clsInactivo}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.495 1.141.143 1.65-.6.866-1.42 1.586-2.38 2.115 1.576.166 3.09.043 4.41-.33.61-.171 1.256-.123 1.833.125A9.01 9.01 0 0 0 12 20.25Z"
+                />
+              </svg>
+              <span className="tracking-[0.01em] leading-none mt-0.5">Mensajes</span>
+            </Link>
+          )}
         </li>
 
         <li>

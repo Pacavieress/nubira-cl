@@ -9,6 +9,7 @@ import { CompartirServicioBoton } from "@/components/CompartirServicioBoton";
 import { DescripcionExpandible } from "@/components/DescripcionExpandible";
 import { FavoritoToggle } from "@/components/FavoritoToggle";
 import { Header } from "@/components/Header";
+import { IniciarChatBoton } from "@/components/IniciarChatBoton";
 import { ServicioCardCarrusel } from "@/components/ServicioCardCarrusel";
 import { TiempoRespuestaPill } from "@/components/TiempoRespuestaPill";
 import { VideoTutorPlayer } from "@/components/VideoTutorPlayer";
@@ -413,13 +414,13 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                       >
                         {servicio.ofertaVigente && servicio.precioOferta !== null ? `Contratar por ${formatoCLP(servicio.precioOferta)}` : "Contratar Servicio"}
                       </Link>
-                      <a
-                        href={`${phpSiteUrl}/app/iniciar_chat.php?servicio_id=${servicio.id}`}
-                        className="mt-3 w-full bg-white text-[#54A6D8] border-2 border-[#54A6D8] font-bold rounded-xl text-sm px-5 py-3 hover:bg-blue-50 transition-all shadow-sm flex items-center justify-center gap-2"
+                      <IniciarChatBoton
+                        servicioId={servicio.id}
+                        className="mt-3 w-full bg-white text-[#54A6D8] border-2 border-[#54A6D8] font-bold rounded-xl text-sm px-5 py-3 hover:bg-blue-50 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
                       >
                         <IconChatOutline className="w-5 h-5" />
                         <span>Iniciar chat</span>
-                      </a>
+                      </IniciarChatBoton>
                     </>
                   )}
                 </div>
@@ -499,13 +500,13 @@ export default async function DetalleServicio({ params }: DetalleProps) {
               </div>
             ) : (
               <div className="flex gap-2 shrink-0">
-                <a
-                  href={`${phpSiteUrl}/app/iniciar_chat.php?servicio_id=${servicio.id}`}
-                  className="border border-[#54A6D8] bg-white text-[#54A6D8] font-bold rounded-xl px-3 py-3 text-xs whitespace-nowrap transition-all flex items-center justify-center gap-1.5"
+                <IniciarChatBoton
+                  servicioId={servicio.id}
+                  className="border border-[#54A6D8] bg-white text-[#54A6D8] font-bold rounded-xl px-3 py-3 text-xs whitespace-nowrap transition-all flex items-center justify-center gap-1.5 disabled:opacity-60"
                 >
                   <IconChatOutline className="w-4 h-4" />
                   <span>Iniciar chat</span>
-                </a>
+                </IniciarChatBoton>
                 <Link
                   href={`/contratar/${servicio.id}`}
                   className="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-4 py-3 text-xs shadow-md transition-all whitespace-nowrap"

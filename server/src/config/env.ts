@@ -29,6 +29,10 @@ export const env = {
   // asunción para LECTURA); la topología de hosting en producción sigue sin decidir.
   // Default: resuelto relativo a este archivo (server/src/config/env.ts -> repo root/upload).
   uploadDir: process.env.UPLOAD_DIR ?? path.resolve(__dirname, "../../../upload"),
+  // Grupo Mensajes/Chat — mismo directorio real que app/enviar_archivo.php/ver_archivo_chat.php
+  // usan para adjuntos de chat (distinto de uploadDir/upload — este vive dentro de app/).
+  // Misma asunción de filesystem compartido documentada arriba para uploadDir.
+  chatArchivosDir: process.env.CHAT_ARCHIVOS_DIR ?? path.resolve(__dirname, "../../../app/chat_archivos"),
   db: {
     host: required("DB_HOST"),
     port: Number(process.env.DB_PORT ?? 3306),

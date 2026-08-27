@@ -1714,3 +1714,64 @@ export async function getConfirmarRetornoPago(paymentId: string): Promise<Result
   if (!res) return null;
   return res.json();
 }
+
+// Grupo Mensajes/Chat pre-contrato — Pieza 1 (26/08/2026). Puerto de bandeja_entrada.php +
+// chat_previo_contrato.php. Ver server/src/modules/chat/chat.types.ts para el alcance
+// completo y las 2 decisiones de puerto documentadas ahí (bandeja real vs. mis_chats.php
+// secundario; adjuntos nuevos diferidos junto con su moderación).
+export interface ChatBandejaItem {
+  id: number;
+  tipo: "negociacion" | "aula";
+  fechaSort: string;
+  servicioTitulo: string;
+  otroId: number;
+  otroNombre: string;
+  otroFotoUrl: string | null;
+  ultimoMensaje: string | null;
+  sinLeer: number;
+}
+
+export async function getBandejaChats(): Promise<ChatBandejaItem[]> {
+  const res = await fetchConSesion("/api/me/chat/bandeja");
+  if (!res || !res.ok) return [];
+  const data = (await res.json()) as { items: ChatBandejaItem[] };
+  return data.items;
+}
+
+export interface ChatDetalle {
+  id: number;
+  servicioId: number;
+  servicioTitulo: string;
+  esVendedor: boolean;
+  otroId: number;
+  otroNombre: string;
+  otroFotoUrl: string | null;
+  otroOnline: boolean;
+  destinatarioSuspendido: boolean;
+  tutorInactivo: boolean;
+  limiteMensajesAlcanzado: boolean;
+  contratoId: number | null;
+  servicio: { precio: number; precioOferta: number | null; esOferta: boolean; duracionMinutos: number };
+}
+
+export async function getChatDetalle(chatId: number): Promise<ChatDetalle | null> {
+  const res = await fetchConSesion(`/api/me/chat/${chatId}`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+export interface MensajeChatPrevio {
+  id: number;
+  remitenteId: number;
+  esSistema: boolean;
+  mensaje: string;
+  enviadoEn: string;
+  leido: boolean;
+  archivo: { nombre: string; tipo: string; peso: number; url: string } | null;
+}
+
+export async function getMensajesChatPrevio(chatId: number): Promise<{ mensajes: MensajeChatPrevio[]; otroEscribiendo: boolean } | null> {
+  const res = await fetchConSesion(`/api/me/chat/${chatId}/mensajes`);
+  if (!res || !res.ok) return null;
+  return res.json();
+}
