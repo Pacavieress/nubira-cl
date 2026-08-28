@@ -250,23 +250,6 @@ require_once __DIR__ . '/componentes/sidebar.php';
     <p class="text-sm md:text-base text-gray-600 mt-2 md:mt-3 max-w-2xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
     <?php endif; ?>
 
-    <!-- Micro-trust: mismo patrón visual (ícono gris + label) que la banda bajo el listado,
-         condensado a una fila compacta que envuelve en móvil sin romper el layout. -->
-    <div class="flex flex-wrap gap-x-5 gap-y-2 mt-2 md:mt-4">
-      <div class="inline-flex items-center gap-1.5">
-        <span class="text-gray-400 shrink-0"><?= icon('academic-cap', 'w-4 h-4') ?></span>
-        <span class="text-xs font-medium text-[#222222]">Tutores verificados</span>
-      </div>
-      <div class="inline-flex items-center gap-1.5">
-        <span class="text-gray-400 shrink-0"><?= icon('shield-check', 'w-4 h-4') ?></span>
-        <span class="text-xs font-medium text-[#222222]">Pago protegido con Garantía Nubira</span>
-      </div>
-      <div class="inline-flex items-center gap-1.5">
-        <span class="text-gray-400 shrink-0"><?= icon('laptop', 'w-4 h-4') ?></span>
-        <span class="text-xs font-medium text-[#222222]">Clase online en Mini Aula</span>
-      </div>
-    </div>
-
     <div class="flex flex-wrap gap-2 mt-3 md:mt-5" role="group" aria-label="Filtrar por materia">
       <?php
         $qs_sin_materia = $_GET; unset($qs_sin_materia['materia']);
@@ -284,18 +267,17 @@ require_once __DIR__ . '/componentes/sidebar.php';
     </div>
 
     <?php if ($total > 0): ?>
-      <p class="text-xs text-gray-400 mt-2 md:mt-4 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
+      <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 mt-2 md:mt-4">
+        <p class="text-xs text-gray-400 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
+        <select id="orden_landing" onchange="irA('orden', this.value)" class="appearance-none pl-2.5 pr-6 py-1 text-[11px] font-bold bg-white border border-gray-200 rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
+          <option value="" <?= $orden_usuario === '' ? 'selected' : '' ?>>Más recientes</option>
+          <option value="calificacion" <?= $orden_usuario === 'calificacion' ? 'selected' : '' ?>>Mejor calificados</option>
+          <option value="precio_asc" <?= $orden_usuario === 'precio_asc' ? 'selected' : '' ?>>Menor precio</option>
+          <option value="precio_desc" <?= $orden_usuario === 'precio_desc' ? 'selected' : '' ?>>Mayor precio</option>
+        </select>
+      </div>
     <?php endif; ?>
   </header>
-
-  <div class="flex justify-end mb-4">
-    <select id="orden_landing" onchange="irA('orden', this.value)" class="appearance-none pl-3 pr-7 py-1.5 text-xs font-bold bg-white border border-gray-200 rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
-      <option value="" <?= $orden_usuario === '' ? 'selected' : '' ?>>Más recientes</option>
-      <option value="calificacion" <?= $orden_usuario === 'calificacion' ? 'selected' : '' ?>>Mejor calificados</option>
-      <option value="precio_asc" <?= $orden_usuario === 'precio_asc' ? 'selected' : '' ?>>Menor precio</option>
-      <option value="precio_desc" <?= $orden_usuario === 'precio_desc' ? 'selected' : '' ?>>Mayor precio</option>
-    </select>
-  </div>
   <?php else: ?>
   <header class="mb-4">
     <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
@@ -323,32 +305,6 @@ require_once __DIR__ . '/componentes/sidebar.php';
       </p>
       <a href="/explorar" class="inline-block mt-4 text-[#54A6D8] font-semibold hover:underline">Explorar todo &rarr;</a>
     </div>
-  <?php endif; ?>
-
-  <?php if ($categoria === 'PAES'): ?>
-  <section class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-gray-100 pt-8">
-    <div class="flex items-start gap-3">
-      <span class="text-gray-400 shrink-0"><?= icon('academic-cap', 'w-5 h-5') ?></span>
-      <div>
-        <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Tutores verificados con correo institucional</p>
-        <p class="text-[11px] text-gray-500">Correo institucional confirmado con su universidad.</p>
-      </div>
-    </div>
-    <div class="flex items-start gap-3">
-      <span class="text-gray-400 shrink-0"><?= icon('shield-check', 'w-5 h-5') ?></span>
-      <div>
-        <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Garantía Nubira</p>
-        <p class="text-[11px] text-gray-500">Tu pago queda protegido hasta confirmar la clase.</p>
-      </div>
-    </div>
-    <div class="flex items-start gap-3">
-      <span class="text-gray-400 shrink-0"><?= icon('chat-bubble', 'w-5 h-5') ?></span>
-      <div>
-        <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Chat anónimo antes de contratar</p>
-        <p class="text-[11px] text-gray-500">Resuelve tus dudas con el tutor sin compartir tu WhatsApp.</p>
-      </div>
-    </div>
-  </section>
   <?php endif; ?>
 
   <?php if (!empty($faqs)): ?>
