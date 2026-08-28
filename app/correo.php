@@ -60,7 +60,10 @@ function getSmtpConfig($tipo = 'noreply') {
 /* ==========================================================
    FUNCIÓN CORE: El motor de envío (Privada)
    ========================================================== */
-function _enviarEmailBase($destinatario, $asunto, $htmlBody, $altText = '', $usarContacto = false) {
+// $headersExtra: pares [nombre => valor] opcionales (ej. List-Unsubscribe para
+// campañas). Parámetro opcional al final — no afecta a ningún llamador existente
+// que no lo pase (recordatorios, confirmaciones, y demás correos transaccionales).
+function _enviarEmailBase($destinatario, $asunto, $htmlBody, $altText = '', $usarContacto = false, array $headersExtra = []) {
     $mail = new PHPMailer(true);
     $smtpKey = $usarContacto ? 'contacto' : 'noreply';
     $credenciales = getSmtpConfig($smtpKey);
@@ -84,6 +87,10 @@ function _enviarEmailBase($destinatario, $asunto, $htmlBody, $altText = '', $usa
         
         // El Reply-To debe ser el mismo que el From para evitar alertas de SPAM
         $mail->addReplyTo($credenciales['user'], $credenciales['name']);
+
+        foreach ($headersExtra as $nombreHeader => $valorHeader) {
+            $mail->addCustomHeader($nombreHeader, $valorHeader);
+        }
 
         $mail->isHTML(true);
         $mail->Subject = $asunto;

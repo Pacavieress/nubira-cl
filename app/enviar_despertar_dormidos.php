@@ -28,7 +28,7 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre): string {
 <p>Hoy hay estudiantes y tutores activos en la plataforma resolviendo dudas y agendando clases particulares.</p>
 
 <p style=\"text-align:center; margin:32px 0;\">
-  <a href=\"https://nubira.cl/explorar\"
+  <a href=\"https://nubira.cl/explorar?utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=despertar_dormidos\"
      style=\"background:#54A6D8;color:white;padding:13px 28px;
             text-decoration:none;border-radius:8px;font-weight:bold;
             font-size:16px;display:inline-block;\">
@@ -115,7 +115,12 @@ if (php_sapi_name() === 'cli') {
         }
         $html      = generarHtmlEmailDespertarDormidos($primer_nombre);
         $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
-        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', false);
+        $unsubUrl  = generarUnsubUrl($correo);
+        $headersUnsub = [
+            'List-Unsubscribe'      => '<mailto:' . getSmtpConfig('noreply')['user'] . '?subject=unsubscribe>, <' . $unsubUrl . '>',
+            'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
+        ];
+        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', false, $headersUnsub);
         $exito_int = $exito ? 1 : 0;
         $stmt_log->bind_param('issssi', $admin_id_cli, $admin_nombre, $correo, $asunto, $html, $exito_int);
         $stmt_log->execute();
@@ -193,23 +198,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    // Guard real en el servidor: excluye a quien ya tiene exito=1 para esta campaña,
+    // aunque el admin lo haya vuelto a seleccionar a mano con el filtro "todos".
+    // Usa $admin_nombre (misma variable que ya define la campaña arriba, línea ~154)
+    // en vez de repetir el literal, para que no puedan divergir.
     $stmt = $conn->prepare("
         SELECT a.id, a.nombre, LOWER(TRIM(a.correo)) AS correo
         FROM alumnos a
         WHERE a.id IN ($placeholders)
           AND a.visible = 1
           AND a.confirmado = 1
+          AND a.recibir_emails = 1
           AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
           AND NOT EXISTS (SELECT 1 FROM contratos c WHERE c.comprador_id = a.id)
           AND NOT EXISTS (SELECT 1 FROM apuntes ap WHERE ap.id_alumno = a.id)
+          AND NOT EXISTS (SELECT 1 FROM unsubscribed u WHERE LOWER(TRIM(u.correo)) = LOWER(TRIM(a.correo)))
+          AND LOWER(TRIM(a.correo)) NOT IN (
+              SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+              WHERE admin_nombre = ? AND exito = 1
+          )
         ORDER BY a.id ASC
     ");
-    $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+    $params_sel = array_merge($ids, [$admin_nombre]);
+    $stmt->bind_param(str_repeat('i', count($ids)) . 's', ...$params_sel);
     $stmt->execute();
     $usuarios = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    $omitidos = count($ids) - count($usuarios);
+    // Cuántos de los IDs pedidos ya estaban contactados con éxito — se reporta aparte,
+    // no se cuentan como enviados ni como fallidos.
+    $stmt_ya = $conn->prepare("
+        SELECT COUNT(DISTINCT a.id)
+        FROM alumnos a
+        WHERE a.id IN ($placeholders)
+          AND LOWER(TRIM(a.correo)) IN (
+              SELECT LOWER(TRIM(destinatario)) FROM correos_admin
+              WHERE admin_nombre = ? AND exito = 1
+          )
+    ");
+    $params_ya = array_merge($ids, [$admin_nombre]);
+    $stmt_ya->bind_param(str_repeat('i', count($ids)) . 's', ...$params_ya);
+    $stmt_ya->execute();
+    $stmt_ya->bind_result($ya_contactados);
+    $stmt_ya->fetch();
+    $stmt_ya->close();
+
+    $omitidos = count($ids) - count($usuarios) - $ya_contactados;
 
     $admin_id = (int)$_SESSION['usuario_id'];
     $stmt_log = $conn->prepare(
@@ -239,7 +273,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $html         = generarHtmlEmailDespertarDormidos($primer_nombre);
         }
         $html_full = plantillaMaestra($asunto_final, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
-        $exito     = _enviarEmailBase($correo, $asunto_final, $html_full, '', false);
+        $unsubUrl  = generarUnsubUrl($correo);
+        $headersUnsub = [
+            'List-Unsubscribe'      => '<mailto:' . getSmtpConfig('noreply')['user'] . '?subject=unsubscribe>, <' . $unsubUrl . '>',
+            'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
+        ];
+        $exito     = _enviarEmailBase($correo, $asunto_final, $html_full, '', false, $headersUnsub);
         $exito_int = $exito ? 1 : 0;
 
         $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto_final, $html, $exito_int);
@@ -253,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt_log->close();
     $conn->close();
 
-    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos]);
+    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos, 'ya_contactados' => $ya_contactados]);
     exit;
 }
 
