@@ -244,15 +244,15 @@ require_once __DIR__ . '/componentes/sidebar.php';
   </nav>
 
   <?php if ($categoria === 'PAES'): ?>
-  <header class="mb-6 md:mb-8">
-    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
+  <header class="mb-4 md:mb-8">
+    <h1 class="text-2xl md:text-4xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
     <?php if (!empty($intro)): ?>
-    <p class="text-sm md:text-base text-gray-600 mt-3 max-w-2xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
+    <p class="text-sm md:text-base text-gray-600 mt-2 md:mt-3 max-w-2xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
     <?php endif; ?>
 
     <!-- Micro-trust: mismo patrón visual (ícono gris + label) que la banda bajo el listado,
          condensado a una fila compacta que envuelve en móvil sin romper el layout. -->
-    <div class="flex flex-wrap gap-x-5 gap-y-2 mt-4">
+    <div class="flex flex-wrap gap-x-5 gap-y-2 mt-2 md:mt-4">
       <div class="inline-flex items-center gap-1.5">
         <span class="text-gray-400 shrink-0"><?= icon('academic-cap', 'w-4 h-4') ?></span>
         <span class="text-xs font-medium text-[#222222]">Tutores verificados</span>
@@ -267,7 +267,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
       </div>
     </div>
 
-    <div class="flex flex-wrap gap-2 mt-5" role="group" aria-label="Filtrar por materia">
+    <div class="flex flex-wrap gap-2 mt-3 md:mt-5" role="group" aria-label="Filtrar por materia">
       <?php
         $qs_sin_materia = $_GET; unset($qs_sin_materia['materia']);
         foreach ($MATERIAS_PAES as $slug_materia => $info_materia):
@@ -283,13 +283,8 @@ require_once __DIR__ . '/componentes/sidebar.php';
       <?php endforeach; ?>
     </div>
 
-    <a href="#listado-clases" class="inline-flex items-center gap-1.5 mt-5 px-5 py-2.5 rounded-full bg-[#54A6D8] text-white text-sm font-bold hover:bg-[#3d8fc4] transition-colors duration-150 ease-out shadow-sm">
-      Encontrar mi tutor PAES
-      <?= icon('arrow-right', 'w-4 h-4') ?>
-    </a>
-
     <?php if ($total > 0): ?>
-      <p class="text-xs text-gray-400 mt-4 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
+      <p class="text-xs text-gray-400 mt-2 md:mt-4 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
     <?php endif; ?>
   </header>
 
