@@ -22,6 +22,35 @@ if (!in_array($tipo, ['clases', 'apuntes'], true) || !isset($MAPA[$slug])) {
 }
 $categoria = $MAPA[$slug];
 
+// 1b. ORDEN — mismo mapa whitelist que busqueda.php:206-212, reutilizado acá.
+// Whitelist cerrada: $orden_sql_landing solo puede salir del array de abajo, nunca de
+// $_GET directo, así que no hay riesgo de inyección al concatenarlo en el ORDER BY.
+$orden_usuario = trim($_GET['orden'] ?? '');
+$ORDENES_VALIDOS_LANDING = ['', 'precio_asc', 'precio_desc', 'calificacion'];
+if (!in_array($orden_usuario, $ORDENES_VALIDOS_LANDING, true)) $orden_usuario = '';
+$MAPA_ORDENES_LANDING = [
+    ''             => 's.fecha_publicacion DESC',
+    'precio_asc'   => 's.precio ASC',
+    'precio_desc'  => 's.precio DESC',
+    'calificacion' => 'rating_promedio DESC, total_votos DESC',
+];
+$orden_sql_landing = $MAPA_ORDENES_LANDING[$orden_usuario];
+
+// 1c. CHIPS DE MATERIA — solo tienen efecto en la landing PAES (categoria === 'PAES'),
+// donde el listado agrupa varias materias reales. Filtro en PHP sobre $filas ya traídas
+// (no en SQL) porque son ~decenas de filas, no miles — evita complicar el bind_param
+// dinámico de la rama PAES de abajo por una ganancia de performance que no aplica acá.
+$MATERIAS_PAES = [
+    'matematicas' => ['label' => 'Matemática', 'match' => ['Matemática', 'Matemáticas', 'Cálculo', 'Álgebra']],
+    'lenguaje'    => ['label' => 'Lenguaje',   'match' => ['Lenguaje', 'Lectora', 'Comprensión Lectora']],
+    // [PAES] Nadie etiqueta sus tarjetas como "Ciencias" — el chip agrupa las 3 materias
+    // reales (Biología/Física/Química) explícitamente, con y sin tilde por datos inconsistentes.
+    'ciencias'    => ['label' => 'Ciencias',   'match' => ['Ciencias', 'Ciencia', 'Biología', 'Biologia', 'Física', 'Fisica', 'Química', 'Quimica']],
+    'historia'    => ['label' => 'Historia',   'match' => ['Historia']],
+];
+$materia_paes = trim($_GET['materia'] ?? '');
+if (!isset($MATERIAS_PAES[$materia_paes])) $materia_paes = '';
+
 // 2. CONTENIDO SEO — se lee PRIMERO para obtener filtro_titulo antes del query principal
 $titulo_h1 = $parrafo_intro = $meta_desc_db = $filtro_like = null;
 $indexable = false; // opt-in: sin fila en seo_categorias_contenido, la categoría no se indexa.
@@ -75,15 +104,15 @@ if ($tipo === 'clases') {
         // sin tener el flag es_paes marcado. Usa la palabra completa "PAES" (no la raíz
         // recortada de plurales que usa busqueda.php para texto libre de usuario).
         $like_paes = '%PAES%';
-        $sql  = $sql_select . " AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1) ORDER BY s.fecha_publicacion DESC";
+        $sql  = $sql_select . " AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1) ORDER BY {$orden_sql_landing}";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ssssss", $like_paes, $like_paes, $like_paes, $like_paes, $like_paes, $like_paes);
     } elseif ($filtro_like) {
-        $sql  = $sql_select . " AND (s.titulo LIKE ?) ORDER BY s.fecha_publicacion DESC";
+        $sql  = $sql_select . " AND (s.titulo LIKE ?) ORDER BY {$orden_sql_landing}";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $filtro_like);
     } else {
-        $sql  = $sql_select . " AND (s.categoria = ?) ORDER BY s.fecha_publicacion DESC";
+        $sql  = $sql_select . " AND (s.categoria = ?) ORDER BY {$orden_sql_landing}";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $categoria);
     }
@@ -118,6 +147,23 @@ $stmt->execute();
 $res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) { $filas[] = $row; }
 $stmt->close();
+
+// [PAES] Chip de materia activo: filtra $filas ya traídas por coincidencia de texto
+// contra categoria/materia/asignatura/area/titulo (mismos campos "amplios" de arriba).
+if ($tipo === 'clases' && $categoria === 'PAES' && $materia_paes !== '') {
+    $terminos = $MATERIAS_PAES[$materia_paes]['match'];
+    $filas = array_values(array_filter($filas, function ($row) use ($terminos) {
+        $texto = mb_strtolower(implode(' ', [
+            $row['categoria'] ?? '', $row['materia'] ?? '', $row['asignatura'] ?? '',
+            $row['area'] ?? '', $row['titulo'] ?? '',
+        ]), 'UTF-8');
+        foreach ($terminos as $t) {
+            if (mb_stripos($texto, mb_strtolower($t, 'UTF-8')) !== false) return true;
+        }
+        return false;
+    }));
+}
+
 $total = count($filas);
 $noindex = ($total < 3 || !$indexable);
 
@@ -127,12 +173,15 @@ $tipo_servicio = ($tipo === 'clases') ? 'clases particulares y tutorías' : 'apu
 $seo_title = "$tipo_palabra de $categoria universidad Chile | Nubira";
 $seo_desc  = $meta_desc_db
     ?: "Encuentra $tipo_servicio de $categoria en universidades chilenas (PUC, USACH, U. de Chile, UNAB y más). Pago protegido con Garantía Nubira.";
-$h1    = $titulo_h1 ?: "$tipo_palabra de $categoria en Chile";
-// [PAES] Sin fallback genérico: si no hay parrafo_intro real, no se muestra ningún texto.
-// Todas las demás categorías conservan el fallback genérico exactamente igual que hoy.
+// [PAES] H1/intro con fallback de conversión propio (28/08/2026, hero dedicado más abajo)
+// — reemplaza la decisión previa de "sin fallback genérico" para PAES, ya que ahora esta
+// landing tiene un hero real que necesita subtítulo siempre presente. El resto de
+// categorías conserva el fallback genérico exactamente igual que hoy.
 if ($categoria === 'PAES') {
-    $intro = $parrafo_intro ?: null;
+    $h1    = $titulo_h1 ?: 'Encuentra tu tutor PAES en Chile';
+    $intro = $parrafo_intro ?: 'Tutores universitarios verificados en Matemática, Lenguaje, Ciencias e Historia. Practica con ejercicios tipo PAES y agenda tu primera clase hoy mismo.';
 } else {
+    $h1    = $titulo_h1 ?: "$tipo_palabra de $categoria en Chile";
     $intro = $parrafo_intro ?: "Próximamente más información sobre $categoria en Nubira.";
 }
 
@@ -174,7 +223,7 @@ $faqs = $FAQS_POR_CATEGORIA[$categoria] ?? [];
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
-  <style> body { font-family: 'Inter', sans-serif; } </style>
+  <style> html { scroll-behavior: smooth; } body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-white text-gray-900 antialiased overflow-x-hidden">
 
@@ -194,6 +243,65 @@ require_once __DIR__ . '/componentes/sidebar.php';
     <span class="text-gray-800 font-medium"><?= htmlspecialchars($categoria) ?></span>
   </nav>
 
+  <?php if ($categoria === 'PAES'): ?>
+  <header class="mb-6 md:mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
+    <?php if (!empty($intro)): ?>
+    <p class="text-sm md:text-base text-gray-600 mt-3 max-w-2xl leading-relaxed"><?= htmlspecialchars($intro) ?></p>
+    <?php endif; ?>
+
+    <!-- Micro-trust: mismo patrón visual (ícono gris + label) que la banda bajo el listado,
+         condensado a una fila compacta que envuelve en móvil sin romper el layout. -->
+    <div class="flex flex-wrap gap-x-5 gap-y-2 mt-4">
+      <div class="inline-flex items-center gap-1.5">
+        <span class="text-gray-400 shrink-0"><?= icon('academic-cap', 'w-4 h-4') ?></span>
+        <span class="text-xs font-medium text-[#222222]">Tutores verificados</span>
+      </div>
+      <div class="inline-flex items-center gap-1.5">
+        <span class="text-gray-400 shrink-0"><?= icon('shield-check', 'w-4 h-4') ?></span>
+        <span class="text-xs font-medium text-[#222222]">Pago protegido con Garantía Nubira</span>
+      </div>
+      <div class="inline-flex items-center gap-1.5">
+        <span class="text-gray-400 shrink-0"><?= icon('laptop', 'w-4 h-4') ?></span>
+        <span class="text-xs font-medium text-[#222222]">Clase online en Mini Aula</span>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mt-5" role="group" aria-label="Filtrar por materia">
+      <?php
+        $qs_sin_materia = $_GET; unset($qs_sin_materia['materia']);
+        foreach ($MATERIAS_PAES as $slug_materia => $info_materia):
+          $chip_activo = ($materia_paes === $slug_materia);
+          $qs_chip = $qs_sin_materia;
+          if (!$chip_activo) $qs_chip['materia'] = $slug_materia;
+          $href_chip = '?' . http_build_query($qs_chip);
+      ?>
+      <a href="<?= htmlspecialchars($href_chip) ?>"
+         class="px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $chip_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
+        <?= htmlspecialchars($info_materia['label']) ?>
+      </a>
+      <?php endforeach; ?>
+    </div>
+
+    <a href="#listado-clases" class="inline-flex items-center gap-1.5 mt-5 px-5 py-2.5 rounded-full bg-[#54A6D8] text-white text-sm font-bold hover:bg-[#3d8fc4] transition-colors duration-150 ease-out shadow-sm">
+      Encontrar mi tutor PAES
+      <?= icon('arrow-right', 'w-4 h-4') ?>
+    </a>
+
+    <?php if ($total > 0): ?>
+      <p class="text-xs text-gray-400 mt-4 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
+    <?php endif; ?>
+  </header>
+
+  <div class="flex justify-end mb-4">
+    <select id="orden_landing" onchange="irA('orden', this.value)" class="appearance-none pl-3 pr-7 py-1.5 text-xs font-bold bg-white border border-gray-200 rounded-full outline-none cursor-pointer focus:ring-2 focus:ring-gray-300 transition-all">
+      <option value="" <?= $orden_usuario === '' ? 'selected' : '' ?>>Más recientes</option>
+      <option value="calificacion" <?= $orden_usuario === 'calificacion' ? 'selected' : '' ?>>Mejor calificados</option>
+      <option value="precio_asc" <?= $orden_usuario === 'precio_asc' ? 'selected' : '' ?>>Menor precio</option>
+      <option value="precio_desc" <?= $orden_usuario === 'precio_desc' ? 'selected' : '' ?>>Mayor precio</option>
+    </select>
+  </div>
+  <?php else: ?>
   <header class="mb-4">
     <h1 class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight"><?= htmlspecialchars($h1) ?></h1>
     <?php if (!empty($intro)): ?>
@@ -203,18 +311,49 @@ require_once __DIR__ . '/componentes/sidebar.php';
       <p class="text-xs text-gray-400 mt-2 uppercase tracking-wide font-bold"><?= $total ?> resultado<?= $total === 1 ? '' : 's' ?></p>
     <?php endif; ?>
   </header>
+  <?php endif; ?>
 
   <?php if ($total > 0): ?>
-    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full">
+    <div id="listado-clases" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full scroll-mt-20">
       <?php foreach ($filas as $fila): ?>
         <?= render_card_servicio_grid($fila, ['hide_inst' => false, 'compacto' => false]) ?>
       <?php endforeach; ?>
     </div>
   <?php else: ?>
-    <div class="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-10 text-center text-gray-500">
-      <p class="font-medium">Aún no hay <?= htmlspecialchars(strtolower($tipo_palabra)) ?> de <?= htmlspecialchars($categoria) ?> publicados.</p>
+    <div id="listado-clases" class="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-10 text-center text-gray-500 scroll-mt-20">
+      <p class="font-medium">
+        <?= ($categoria === 'PAES' && $materia_paes !== '')
+              ? 'No hay clases PAES de ' . htmlspecialchars($MATERIAS_PAES[$materia_paes]['label']) . ' publicadas todavía.'
+              : 'Aún no hay ' . htmlspecialchars(strtolower($tipo_palabra)) . ' de ' . htmlspecialchars($categoria) . ' publicados.' ?>
+      </p>
       <a href="/explorar" class="inline-block mt-4 text-[#54A6D8] font-semibold hover:underline">Explorar todo &rarr;</a>
     </div>
+  <?php endif; ?>
+
+  <?php if ($categoria === 'PAES'): ?>
+  <section class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-gray-100 pt-8">
+    <div class="flex items-start gap-3">
+      <span class="text-gray-400 shrink-0"><?= icon('academic-cap', 'w-5 h-5') ?></span>
+      <div>
+        <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Tutores verificados con correo institucional</p>
+        <p class="text-[11px] text-gray-500">Correo institucional confirmado con su universidad.</p>
+      </div>
+    </div>
+    <div class="flex items-start gap-3">
+      <span class="text-gray-400 shrink-0"><?= icon('shield-check', 'w-5 h-5') ?></span>
+      <div>
+        <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Garantía Nubira</p>
+        <p class="text-[11px] text-gray-500">Tu pago queda protegido hasta confirmar la clase.</p>
+      </div>
+    </div>
+    <div class="flex items-start gap-3">
+      <span class="text-gray-400 shrink-0"><?= icon('chat-bubble', 'w-5 h-5') ?></span>
+      <div>
+        <p class="text-sm font-medium tracking-[-0.01em] text-[#222222]">Chat anónimo antes de contratar</p>
+        <p class="text-[11px] text-gray-500">Resuelve tus dudas con el tutor sin compartir tu WhatsApp.</p>
+      </div>
+    </div>
+  </section>
   <?php endif; ?>
 
   <?php if (!empty($faqs)): ?>
@@ -241,6 +380,13 @@ require_once __DIR__ . '/componentes/modal_explora.php';
 ?>
 
 <script>
+    // Mismo patrón que busqueda.php: cambia un query param y recarga (SSR, sin JS de estado).
+    function irA(param, valor) {
+        const url = new URL(window.location.href);
+        if (valor === '') { url.searchParams.delete(param); } else { url.searchParams.set(param, valor); }
+        window.location.href = url.toString();
+    }
+
     function setupModal(triggerId, modalId, cardId, closeId) {
         const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
         if(!btn || !modal) return;
