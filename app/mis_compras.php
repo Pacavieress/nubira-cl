@@ -16,6 +16,7 @@ if (!file_exists($app_dir . '/conexion.php')) {
 }
 require_once $app_dir . '/conexion.php';
 require_once $app_dir . '/iconos.php';
+require_once $app_dir . '/helpers/seo.php'; // url_servicio()
 
 // HELPER: Lógica de Privacidad
 if (!function_exists('formatearNombrePrivado')) {
@@ -64,8 +65,13 @@ $stmt->close();
 /* ===============================
    CONSULTA SERVICIOS
 ================================ */
+// s.estado/s.visible + al.visible/al.bloqueado: mismo criterio de "servicio activo"
+// que landing_categoria.php (estado en aprobado/publicado/activo, visible=1, tutor no
+// bloqueado) — join ya existente, solo se amplían las columnas seleccionadas.
 $sqlServicios = "
-SELECT c.id, s.titulo, al.nombre AS vendedor_nombre, c.monto, c.fecha_pago, c.estado
+SELECT c.id, s.id AS servicio_id, s.slug, s.titulo, s.estado AS servicio_estado, s.visible AS servicio_visible,
+       al.id AS vendedor_id, al.nombre AS vendedor_nombre, al.visible AS tutor_visible, al.bloqueado AS tutor_bloqueado,
+       c.monto, c.fecha_pago, c.estado
 FROM contratos c
 JOIN servicios s ON s.id = c.servicio_id
 JOIN alumnos al ON al.id = c.vendedor_id
@@ -240,8 +246,22 @@ require_once $app_dir . '/componentes/sidebar.php';
                                 $clase = $estilos[$estado] ?? 'bg-gray-50 text-gray-500 border border-gray-100';
                                 $texto = $txt[$estado] ?? 'Revisión';
                                 $is_cerrado = in_array($estado, ['finalizado_vendedor', 'finalizado_comprador', 'liberado', 'cancelado']);
+                                // Solo los 3 estados de éxito habilitan "Contratar de nuevo" — un
+                                // cancelado sigue siendo $is_cerrado (candado normal) pero no debe
+                                // ofrecer recompra.
+                                $fue_exitoso = in_array($estado, ['finalizado_vendedor', 'finalizado_comprador', 'liberado'], true);
 
                                 $inicial_tutor = strtoupper(substr(formatearNombrePrivado($s['vendedor_nombre']), 0, 1));
+
+                                // Mismo criterio de "servicio activo" que landing_categoria.php:
+                                // estado en aprobado/publicado/activo + visible=1, y tutor no bloqueado
+                                // (alumnos.visible con COALESCE porque NULL ahí se trata como visible).
+                                $servicio_activo = in_array(strtolower(trim($s['servicio_estado'] ?? '')), ['aprobado', 'publicado', 'activo'], true)
+                                    && (int)($s['servicio_visible'] ?? 0) === 1
+                                    && (int)($s['tutor_visible'] ?? 1) !== 0
+                                    && (int)($s['tutor_bloqueado'] ?? 0) === 0;
+
+                                $link_servicio = url_servicio((int)($s['servicio_id'] ?? 0), $s['slug'] ?? null);
                             ?>
                             <li class="flex items-center justify-between p-4 md:px-4 hover:bg-gray-50 transition-colors gap-3 active:bg-gray-100">
                                 <div class="flex items-center gap-3 flex-1 min-w-0 z-20">
@@ -254,7 +274,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                                             <div class="w-4 h-4 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[7px] font-bold shrink-0">
                                                 <?= $inicial_tutor ?>
                                             </div>
-                                            <span class="truncate"><?= formatearNombrePrivado($s['vendedor_nombre'] ?? '') ?></span>
+                                            <a href="<?= htmlspecialchars($link_servicio) ?>" class="truncate hover:text-[#54A6D8] hover:underline"><?= formatearNombrePrivado($s['vendedor_nombre'] ?? '') ?></a>
                                             <span>•</span>
                                             <span class="<?= $clase ?> px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide"><?= htmlspecialchars($texto) ?></span>
                                         </div>
@@ -270,6 +290,10 @@ require_once $app_dir . '/componentes/sidebar.php';
                                         <?php if (!$is_cerrado && $estado !== ''): ?>
                                             <a href="/app/mini_aula.php?id=<?= (int)($s['id'] ?? 0) ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white hover:text-emerald-500 active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Ir al Aula">
                                                 <i class="fa-solid fa-door-open text-xs"></i>
+                                            </a>
+                                        <?php elseif ($fue_exitoso && $servicio_activo): ?>
+                                            <a href="<?= htmlspecialchars($link_servicio) ?>" class="flex items-center gap-1.5 bg-[#54A6D8] text-white px-3 py-1 rounded-full text-[11px] font-bold shadow-sm hover:bg-blue-600 transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Contratar de nuevo">
+                                                <i class="fa-solid fa-rotate-right text-[9px]"></i> Contratar de nuevo
                                             </a>
                                         <?php else: ?>
                                             <button disabled class="w-7 h-7 flex items-center justify-center rounded-full text-gray-300 cursor-not-allowed" title="Servicio Cerrado">
