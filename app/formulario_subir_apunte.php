@@ -187,14 +187,23 @@ if ($subtema === '') $subtema = null;
         }
         @chmod($ruta_final_apunte, 0644);
 
-        $sql = "INSERT INTO apuntes (titulo, semestre, anio, descripcion, archivo, id_alumno, institucion, publico, precio, fecha_subida, ia_version, ia_used, ia_accepted, ia_keywords, asignatura, materia, subtema, nivel_academico) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)";
+        // [NUBIRA] Categoria derivada de materia via materia_categoria_map — taxonomía oficial
+        // de apuntes pasa a ser la misma de servicios.categoria (ya no 'general').
+        $mapa_categoria = [];
+        $resMapa = $conn->query("SELECT materia_slug, categoria_servicio FROM materia_categoria_map");
+        if ($resMapa) {
+            while ($rm = $resMapa->fetch_assoc()) $mapa_categoria[$rm['materia_slug']] = $rm['categoria_servicio'];
+        }
+        $categoria = ($materia !== null && isset($mapa_categoria[$materia])) ? $mapa_categoria[$materia] : 'Otros';
+
+        $sql = "INSERT INTO apuntes (titulo, semestre, anio, descripcion, archivo, id_alumno, institucion, publico, precio, fecha_subida, ia_version, ia_used, ia_accepted, ia_keywords, asignatura, materia, subtema, nivel_academico, categoria) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
     echo json_encode(['error' => 'Error de base de datos']); exit;
 }
 
-$stmt->bind_param("siissisisiisssss", $titulo, $semestre, $anio, $descripcion, $filename_original, $usuario_id, $inst, $precio, $ia_version, $ia_used, $ia_accepted, $ia_keywords, $asignatura, $materia, $subtema, $nivel_academico);
+$stmt->bind_param("siissisisiissssss", $titulo, $semestre, $anio, $descripcion, $filename_original, $usuario_id, $inst, $precio, $ia_version, $ia_used, $ia_accepted, $ia_keywords, $asignatura, $materia, $subtema, $nivel_academico, $categoria);
         
         if (!$stmt) {
     echo json_encode(['error' => 'Prepare falló: ' . $conn->error]); exit;
