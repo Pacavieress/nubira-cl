@@ -17,7 +17,9 @@ if ($is_guest) {
     $_SESSION['redirigir_despues_login'] = $_SERVER['REQUEST_URI'];
 }
 
-require_once __DIR__ . '/conexion.php';
+// Carga inteligente de rutas (mismo patrón que vitrina_apuntes.php)
+$app_dir = file_exists(__DIR__ . '/conexion.php') ? __DIR__ : __DIR__ . '/app';
+require_once $app_dir . '/conexion.php';
 
 // =========================================================================
 // 🛡️ [NUBIRA SHIELD] MIDDLEWARE ANTI-BOT (Nivel Arquitectura)
@@ -63,6 +65,31 @@ $qs_inst      = trim($_GET['institucion'] ?? '');
 $qs_orden     = trim($_GET['orden'] ?? ''); //
 $orden = trim($_GET['orden'] ?? '');
 
+// [NUBIRA] Chips de categoría — mismo patrón que vitrina_apuntes.php. Taxonomía real
+// de servicios.categoria (13 valores posibles, ver publicar_servicio.php), solo se
+// muestran las que tienen al menos 1 servicio activo.
+$categorias_chips = [];
+$stmtCat = $conn->prepare("
+    SELECT s.categoria, COUNT(*) AS total
+    FROM servicios s
+    LEFT JOIN alumnos a ON s.alumno_id = a.id
+    WHERE s.estado = 'aprobado' AND s.visible = 1
+      AND COALESCE(a.visible, 1) = 1 AND COALESCE(a.bloqueado, 0) = 0
+      AND s.categoria IS NOT NULL AND s.categoria != ''
+    GROUP BY s.categoria
+    ORDER BY total DESC
+");
+if ($stmtCat) {
+    $stmtCat->execute();
+    $resCat = $stmtCat->get_result();
+    while ($rc = $resCat->fetch_assoc()) $categorias_chips[] = $rc;
+    $stmtCat->close();
+}
+
+$qs_categoria = trim($_GET['categoria'] ?? '');
+$categorias_validas = array_column($categorias_chips, 'categoria');
+if (!in_array($qs_categoria, $categorias_validas, true)) $qs_categoria = '';
+
 // [SENSOR NUBIRA] REGISTRO DE ACTIVIDAD TOTAL (Visitas y Búsquedas)
 if (file_exists(__DIR__ . '/logger.php')) {
     require_once __DIR__ . '/logger.php';
@@ -98,6 +125,7 @@ $initial_params = ['pagina' => 1, 'limit' => 12];
 if ($qs_q)       $initial_params['q'] = $qs_q;
 if ($qs_mod)     $initial_params['modalidad'] = $qs_mod;
 if ($qs_orden)   $initial_params['orden'] = $qs_orden; // [NUBIRA 2.0] Se lo pasamos al lazy load
+if ($qs_categoria) $initial_params['categoria'] = $qs_categoria;
 $initial_params['_seed'] = time();
 
 if ($rol === 'admin') {
@@ -235,6 +263,31 @@ require_once __DIR__ . '/componentes/header.php';
             <?php if($qs_q): ?>
                 <p class="text-sm text-gray-500 mt-1">Resultados para "<span class="font-medium text-gray-800"><?= htmlspecialchars($qs_q) ?></span>"</p>
             <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (!empty($categorias_chips)): ?>
+        <div class="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible no-scrollbar gap-2 mt-4 pb-1 md:pb-0" role="group" aria-label="Filtrar por categoría">
+          <?php
+            $qs_sin_categoria = $_GET; unset($qs_sin_categoria['categoria']);
+            $href_todos = '?' . http_build_query($qs_sin_categoria);
+            $todos_activo = ($qs_categoria === '');
+          ?>
+          <a href="<?= htmlspecialchars($href_todos) ?>"
+             class="shrink-0 px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $todos_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
+            Todos
+          </a>
+          <?php foreach ($categorias_chips as $cc):
+            $chip_activo = ($qs_categoria === $cc['categoria']);
+            $qs_chip = $qs_sin_categoria;
+            if (!$chip_activo) $qs_chip['categoria'] = $cc['categoria'];
+            $href_chip = '?' . http_build_query($qs_chip);
+          ?>
+          <a href="<?= htmlspecialchars($href_chip) ?>"
+             class="shrink-0 px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $chip_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
+            <?= htmlspecialchars($cc['categoria']) ?> (<?= (int)$cc['total'] ?>)
+          </a>
+          <?php endforeach; ?>
+        </div>
         <?php endif; ?>
       </div>
 
