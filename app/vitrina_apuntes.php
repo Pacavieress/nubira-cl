@@ -251,14 +251,14 @@ require_once $app_dir . '/componentes/header.php';
     <?php endif; ?>
 
     <?php if (!empty($categorias_chips)): ?>
-    <div class="flex flex-wrap gap-2 mt-4" role="group" aria-label="Filtrar por categoría">
+    <div class="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible no-scrollbar gap-2 mt-4 pb-1 md:pb-0" role="group" aria-label="Filtrar por categoría">
       <?php
         $qs_sin_categoria = $_GET; unset($qs_sin_categoria['categoria']);
         $href_todos = '?' . http_build_query($qs_sin_categoria);
         $todos_activo = ($qs_categoria === '');
       ?>
       <a href="<?= htmlspecialchars($href_todos) ?>"
-         class="px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $todos_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
+         class="shrink-0 px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $todos_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
         Todos
       </a>
       <?php foreach ($categorias_chips as $cc):
@@ -268,7 +268,7 @@ require_once $app_dir . '/componentes/header.php';
         $href_chip = '?' . http_build_query($qs_chip);
       ?>
       <a href="<?= htmlspecialchars($href_chip) ?>"
-         class="px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $chip_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
+         class="shrink-0 px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $chip_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
         <?= htmlspecialchars($cc['categoria']) ?> (<?= (int)$cc['total'] ?>)
       </a>
       <?php endforeach; ?>
