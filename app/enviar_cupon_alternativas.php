@@ -13,6 +13,7 @@ require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/correo.php';
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/tutores_alternativos.php';
+require_once __DIR__ . '/helpers/campanas.php'; // generarUnsubUrl()
 
 date_default_timezone_set('America/Santiago');
 
@@ -34,7 +35,8 @@ function generarHtmlEmailCuponAlternativas(string $primer_nombre, string $catego
         $fotoUrl = !empty($alt['foto_perfil'])
             ? 'https://nubira.cl/app/perfil/fotos/' . $alt['foto_perfil']
             : 'https://ui-avatars.com/api/?name=' . urlencode($alt['nombre_tutor']) . '&background=54A6D8&color=fff&size=128&bold=true';
-        $linkServicio = 'https://nubira.cl/servicios/' . $alt['slug'] . '-' . (int)$alt['id'];
+        $linkServicio = 'https://nubira.cl/servicios/' . $alt['slug'] . '-' . (int)$alt['id']
+            . '?utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=cupon_alternativas';
 
         $cardsHtml .= "
         <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='margin-bottom:12px;'>
@@ -77,6 +79,11 @@ $sql_base = "
         GROUP BY c.id, c.comprador_id, c.vendedor_id, c.servicio_id
     ) t
     JOIN alumnos a_comprador ON a_comprador.id = t.comprador_id
+      AND a_comprador.visible = 1
+      AND a_comprador.confirmado = 1
+      AND a_comprador.bloqueado = 0
+      AND a_comprador.recibir_emails = 1
+      AND NOT EXISTS (SELECT 1 FROM unsubscribed u WHERE LOWER(TRIM(u.correo)) = LOWER(TRIM(a_comprador.correo)))
     JOIN servicios s ON s.id = t.servicio_id
 ";
 
@@ -95,6 +102,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!is_array($envios_raw) || empty($envios_raw)) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'Sin destinatarios seleccionados.']);
+        exit;
+    }
+    // Tope real en servidor — el MAX_LOTE=10 del JS es solo UX, no protegía nada acá.
+    if (count($envios_raw) > 10) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Máximo 10 destinatarios por envío.']);
         exit;
     }
 
@@ -137,18 +150,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usuarios[$row['comprador_id']] = $row;
     }
 
-    // Protección anti doble envío: excluir solo si recibió esta campaña Y pagó algo después
+    // Protección anti doble envío: excluir a cualquiera que ya recibió esta campaña,
+    // haya convertido o no (mismo criterio que enviar_despertar_dormidos.php).
     $stmt_ya = $conn->prepare("
-        SELECT DISTINCT LOWER(TRIM(ca.destinatario)) AS correo
-        FROM correos_admin ca
-        JOIN alumnos a ON LOWER(TRIM(a.correo)) = LOWER(TRIM(ca.destinatario))
-        WHERE ca.admin_nombre = ? AND ca.exito = 1
-          AND EXISTS (
-              SELECT 1 FROM contratos c
-              WHERE c.comprador_id = a.id
-                AND c.fecha_pago IS NOT NULL
-                AND c.fecha_pago > ca.fecha_envio
-          )
+        SELECT DISTINCT LOWER(TRIM(destinatario)) AS correo
+        FROM correos_admin
+        WHERE admin_nombre = ? AND exito = 1
     ");
     $stmt_ya->bind_param("s", $admin_nombre);
     $stmt_ya->execute();
@@ -189,9 +196,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $asunto        = "Un {$porcentaje}% de descuento para tu próxima clase en Nubira";
         $html          = generarHtmlEmailCuponAlternativas($primer_nombre, $row['categoria'], $alternativas, $codigo, $porcentaje);
         $primera       = $alternativas[0];
-        $link_cupon    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera['id'] . "&codigo_beca=" . rawurlencode($codigo);
+        $link_cupon    = "https://nubira.cl/app/contratar_servicio.php?servicio_id=" . (int)$primera['id'] . "&amp;codigo_beca=" . rawurlencode($codigo)
+            . "&amp;utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=cupon_alternativas";
         $html_full     = plantillaMaestra($asunto, $html, 'Usar mi descuento', $link_cupon, "Un {$porcentaje}% de descuento para tu próxima clase en Nubira.");
-        $exito         = _enviarEmailBase($correo, $asunto, $html_full, '', false);
+        $unsubUrl      = generarUnsubUrl($correo);
+        $headersUnsub  = [
+            'List-Unsubscribe'      => '<mailto:' . getSmtpConfig('noreply')['user'] . '?subject=unsubscribe>, <' . $unsubUrl . '>',
+            'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
+        ];
+        $exito         = _enviarEmailBase($correo, $asunto, $html_full, '', false, $headersUnsub);
         $exito_int     = $exito ? 1 : 0;
 
         $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
@@ -301,13 +314,7 @@ $sql = "SELECT t.comprador_id, t.vendedor_id, t.servicio_id, t.ultimo_mensaje_co
                a_comprador.nombre, LOWER(TRIM(a_comprador.correo)) AS correo,
                (SELECT MAX(ca.fecha_envio) FROM correos_admin ca
                    WHERE LOWER(TRIM(ca.destinatario)) = LOWER(TRIM(a_comprador.correo))
-                     AND ca.admin_nombre = ? AND ca.exito = 1
-                     AND EXISTS (
-                         SELECT 1 FROM contratos c
-                         WHERE c.comprador_id = a_comprador.id
-                           AND c.fecha_pago IS NOT NULL
-                           AND c.fecha_pago > ca.fecha_envio
-                     )) AS fecha_enviado "
+                     AND ca.admin_nombre = ? AND ca.exito = 1) AS fecha_enviado "
         . sprintf($sql_base, "") . " ORDER BY t.comprador_id ASC, t.ultimo_mensaje_comprador DESC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $admin_nombre);
@@ -353,7 +360,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
     <div>
       <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Campaña: Cupón + Tutores Alternativos</h1>
-      <p class="text-sm text-gray-500 mt-0.5">Estudiantes sin respuesta en los últimos 30 días. Pega el código de cupón ya creado en /admin/cupones para cada uno.</p>
+      <p class="text-sm text-gray-500 mt-0.5">Estudiantes con conversaciones sin contratar (últimos 30 días). Pega el código de cupón ya creado en /admin/cupones para cada uno.</p>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
