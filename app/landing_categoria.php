@@ -179,7 +179,7 @@ $seo_desc  = $meta_desc_db
 // categorías conserva el fallback genérico exactamente igual que hoy.
 if ($categoria === 'PAES') {
     $h1    = $titulo_h1 ?: 'Encuentra tu tutor PAES en Chile';
-    $intro = $parrafo_intro ?: 'Tutores universitarios verificados en Matemática, Lenguaje, Ciencias e Historia. Practica con ejercicios tipo PAES y agenda tu primera clase hoy mismo.';
+    $intro = $parrafo_intro ?: 'Tutores universitarios verificados para tu preparación PAES.';
 } else {
     $h1    = $titulo_h1 ?: "$tipo_palabra de $categoria en Chile";
     $intro = $parrafo_intro ?: "Próximamente más información sobre $categoria en Nubira.";
@@ -235,6 +235,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
 
 <main class="pt-20 pb-28 md:pb-10 lg:ml-64 px-4 max-w-[1600px] mx-auto md:px-8">
 
+  <?php if ($categoria !== 'PAES'): ?>
   <nav class="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
     <a href="/explorar" class="hover:text-gray-700">Inicio</a>
     <span class="mx-1">/</span>
@@ -242,6 +243,7 @@ require_once __DIR__ . '/componentes/sidebar.php';
     <span class="mx-1">/</span>
     <span class="text-gray-800 font-medium"><?= htmlspecialchars($categoria) ?></span>
   </nav>
+  <?php endif; ?>
 
   <?php if ($categoria === 'PAES'): ?>
   <header class="mb-4 md:mb-8">
