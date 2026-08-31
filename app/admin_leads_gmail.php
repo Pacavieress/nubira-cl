@@ -21,6 +21,13 @@ if (!isset($_SESSION['csrf_leads_gmail'])) {
     $_SESSION['csrf_leads_gmail'] = bin2hex(random_bytes(32));
 }
 $csrf_token   = $_SESSION['csrf_leads_gmail'];
+
+// [NUBIRA CSRF] Token separado para el trigger de enviar_recuperar_gmails.php
+// (script externo, requiere su propio token — no reusar csrf_leads_gmail).
+if (!isset($_SESSION['csrf_recuperar_gmails'])) {
+    $_SESSION['csrf_recuperar_gmails'] = bin2hex(random_bytes(32));
+}
+$csrf_token_recuperar = $_SESSION['csrf_recuperar_gmails'];
 $admin_nombre = 'recuperar_gmails_jun2026';
 $asunto       = 'Ya puedes registrarte en Nubira con cualquier email';
 
@@ -279,13 +286,18 @@ require_once $app_dir . '/componentes/sidebar.php';
           </svg>
           Ver preview del email
         </button>
-        <a href="/app/enviar_recuperar_gmails.php?limite=5"
-           class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-          </svg>
-          Reenviar campaña
-        </a>
+        <form action="/app/enviar_recuperar_gmails.php" method="POST"
+              onsubmit="return confirm('¿Reenviar la campaña a los próximos 5 leads pendientes?');">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token_recuperar) ?>">
+          <input type="hidden" name="limite" value="5">
+          <button type="submit"
+                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            Reenviar campaña
+          </button>
+        </form>
       </div>
     </div>
 

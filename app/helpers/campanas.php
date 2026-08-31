@@ -69,7 +69,7 @@ porque en ese momento solo permitíamos correos institucionales.</p>
 </ul>
 
 <p style=\"text-align:center; margin:32px 0;\">
-  <a href=\"https://nubira.cl/registro\"
+  <a href=\"https://nubira.cl/registro?utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=recuperar_gmails\"
      style=\"background:#54A6D8;color:white;padding:13px 28px;
             text-decoration:none;border-radius:8px;font-weight:bold;
             font-size:16px;display:inline-block;\">

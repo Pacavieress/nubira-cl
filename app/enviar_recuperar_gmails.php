@@ -16,6 +16,20 @@ if (!$es_cli) {
         http_response_code(403);
         exit('403 - Acceso restringido a administradores.');
     }
+
+    // [NUBIRA CSRF] Este script envía correos reales — exige POST + token válido
+    // (mismo patrón que admin_leads_gmail.php). Un GET (link directo, prefetch,
+    // <img src> malicioso) ya no dispara ningún envío.
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        exit('405 - Usa el botón "Reenviar campaña" del panel /admin/leads-gmail (requiere POST).');
+    }
+    $token_valido = isset($_SESSION['csrf_recuperar_gmails'])
+        && hash_equals($_SESSION['csrf_recuperar_gmails'], $_POST['csrf_token'] ?? '');
+    if (!$token_valido) {
+        http_response_code(403);
+        exit('403 - Token inválido o sesión expirada. Vuelve a cargar el panel e intenta de nuevo.');
+    }
 }
 
 require_once __DIR__ . '/conexion.php';
@@ -27,8 +41,8 @@ if (!defined('LOG_PATH')) define('LOG_PATH', __DIR__ . '/log_correos.txt');
 set_time_limit(600);
 
 // ── Límite configurable ───────────────────────────────────────
-// Web: ?limite=N — CLI: primer argumento. Default 5 (seguro).
-$raw_limite = $es_cli ? ($argv[1] ?? 5) : ($_GET['limite'] ?? 5);
+// Web: POST limite=N — CLI: primer argumento. Default 5 (seguro).
+$raw_limite = $es_cli ? ($argv[1] ?? 5) : ($_POST['limite'] ?? 5);
 $LIMITE     = (int)$raw_limite; // 0 = sin límite
 
 // ── Constantes de campaña ─────────────────────────────────────
