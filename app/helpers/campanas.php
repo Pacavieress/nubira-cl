@@ -219,9 +219,10 @@ function nb_bloque_cupon_html(string $codigo, int $porcentaje, ?string $fecha_ex
     </div>";
 }
 
-function nb_generar_email_cupon_promocional(string $primer_nombre, string $codigo, int $porcentaje, ?string $fecha_expiracion, string $intro): string {
+function nb_generar_email_cupon_promocional(string $primer_nombre, string $codigo, int $porcentaje, ?string $fecha_expiracion, string $intro, string $correo): string {
     $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     $bloqueCupon = nb_bloque_cupon_html($codigo, $porcentaje, $fecha_expiracion);
+    $unsub_safe = htmlspecialchars(generarUnsubUrl($correo), ENT_QUOTES, 'UTF-8');
     return "
 <p>Hola <strong>{$nombre_safe}</strong>,</p>
 <p>{$intro}</p>
@@ -245,6 +246,10 @@ function nb_generar_email_cupon_promocional(string $primer_nombre, string $codig
   <a href=\"https://facebook.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
     <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
   </a>
+</p>
+<hr style=\"margin:30px 0;border:none;border-top:1px solid #eee;\">
+<p style=\"font-size:11px;color:#888;\">
+  Si no quieres seguir recibiendo estos correos, puedes <a href=\"{$unsub_safe}\" style=\"color:#888;\">darte de baja aquí</a>.
 </p>
 ";
 }
