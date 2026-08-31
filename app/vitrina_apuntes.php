@@ -53,30 +53,30 @@ $qs_nivel = trim($_GET['nivel'] ?? '');
 $niveles_validos = ['universitario', 'paes', 'escolar'];
 if (!in_array($qs_nivel, $niveles_validos, true)) $qs_nivel = '';
 
-// [NUBIRA] Chips de asignatura — mismo criterio de visibilidad que cargar_apuntes.php.
-// Umbral >=5 para no fragmentar en decenas de chips de 1 solo apunte (ver distribución
-// real: "Química"/"Química General"/"Química PAES" quedan sueltas sin normalizar, a propósito).
-$asignaturas_chips = [];
-$stmtAsig = $conn->prepare("
-    SELECT ap.asignatura, COUNT(*) AS total
+// [NUBIRA] Chips de categoría — taxonomía oficial (post-backfill, deriva de
+// materia_categoria_map). Sin umbral: a diferencia de asignatura (texto libre,
+// 31 valores para 52 apuntes), categoria es cerrada (~12 valores máximo), cada
+// grupo que aparece es real, no ruido de 1.
+$categorias_chips = [];
+$stmtCat = $conn->prepare("
+    SELECT ap.categoria, COUNT(*) AS total
     FROM apuntes ap
     JOIN alumnos al ON al.id = ap.id_alumno
     WHERE ap.publico = 1 AND ap.visible = 1 AND al.visible = 1
-      AND ap.asignatura IS NOT NULL AND ap.asignatura != ''
-    GROUP BY ap.asignatura
-    HAVING total >= 5
+      AND ap.categoria IS NOT NULL AND ap.categoria != ''
+    GROUP BY ap.categoria
     ORDER BY total DESC
 ");
-if ($stmtAsig) {
-    $stmtAsig->execute();
-    $resAsig = $stmtAsig->get_result();
-    while ($ra = $resAsig->fetch_assoc()) $asignaturas_chips[] = $ra;
-    $stmtAsig->close();
+if ($stmtCat) {
+    $stmtCat->execute();
+    $resCat = $stmtCat->get_result();
+    while ($rc = $resCat->fetch_assoc()) $categorias_chips[] = $rc;
+    $stmtCat->close();
 }
 
-$qs_asignatura = trim($_GET['asignatura'] ?? '');
-$asignaturas_validas = array_column($asignaturas_chips, 'asignatura');
-if (!in_array($qs_asignatura, $asignaturas_validas, true)) $qs_asignatura = '';
+$qs_categoria = trim($_GET['categoria'] ?? '');
+$categorias_validas = array_column($categorias_chips, 'categoria');
+if (!in_array($qs_categoria, $categorias_validas, true)) $qs_categoria = '';
 
 // [SENSOR NUBIRA] REGISTRO DE ACTIVIDAD TOTAL (Visitas y Búsquedas)
 if (file_exists($app_dir . '/logger.php')) {
@@ -112,7 +112,7 @@ $initial_params = ['pagina' => 1];
 if ($qs_orden) $initial_params['orden'] = $qs_orden;
 if ($qs_q) $initial_params['q'] = $qs_q;
 if ($qs_nivel) $initial_params['nivel'] = $qs_nivel;
-if ($qs_asignatura) $initial_params['asignatura'] = $qs_asignatura;
+if ($qs_categoria) $initial_params['categoria'] = $qs_categoria;
 $initial_params['_seed'] = time();
 $initial_src = '/app/cargar_apuntes.php?' . http_build_query($initial_params);
 
@@ -250,26 +250,26 @@ require_once $app_dir . '/componentes/header.php';
         <p class="text-sm text-gray-500 mt-1">Resultados para "<span class="font-medium text-gray-800"><?= htmlspecialchars($qs_q) ?></span>"</p>
     <?php endif; ?>
 
-    <?php if (!empty($asignaturas_chips)): ?>
-    <div class="flex flex-wrap gap-2 mt-4" role="group" aria-label="Filtrar por asignatura">
+    <?php if (!empty($categorias_chips)): ?>
+    <div class="flex flex-wrap gap-2 mt-4" role="group" aria-label="Filtrar por categoría">
       <?php
-        $qs_sin_asignatura = $_GET; unset($qs_sin_asignatura['asignatura']);
-        $href_todos = '?' . http_build_query($qs_sin_asignatura);
-        $todos_activo = ($qs_asignatura === '');
+        $qs_sin_categoria = $_GET; unset($qs_sin_categoria['categoria']);
+        $href_todos = '?' . http_build_query($qs_sin_categoria);
+        $todos_activo = ($qs_categoria === '');
       ?>
       <a href="<?= htmlspecialchars($href_todos) ?>"
          class="px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $todos_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
         Todos
       </a>
-      <?php foreach ($asignaturas_chips as $ac):
-        $chip_activo = ($qs_asignatura === $ac['asignatura']);
-        $qs_chip = $qs_sin_asignatura;
-        if (!$chip_activo) $qs_chip['asignatura'] = $ac['asignatura'];
+      <?php foreach ($categorias_chips as $cc):
+        $chip_activo = ($qs_categoria === $cc['categoria']);
+        $qs_chip = $qs_sin_categoria;
+        if (!$chip_activo) $qs_chip['categoria'] = $cc['categoria'];
         $href_chip = '?' . http_build_query($qs_chip);
       ?>
       <a href="<?= htmlspecialchars($href_chip) ?>"
          class="px-3.5 py-1.5 text-xs md:text-sm font-bold rounded-full border transition-colors duration-150 ease-out <?= $chip_activo ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400' ?>">
-        <?= htmlspecialchars($ac['asignatura']) ?> (<?= (int)$ac['total'] ?>)
+        <?= htmlspecialchars($cc['categoria']) ?> (<?= (int)$cc['total'] ?>)
       </a>
       <?php endforeach; ?>
     </div>
