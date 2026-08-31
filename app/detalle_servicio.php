@@ -284,13 +284,29 @@ $seo_title = htmlspecialchars(mb_strlen($_seo_titulo_raw) > 65
     : $_seo_titulo_raw);
 $_nombre_tutor = explode(' ', trim($servicio['nombre_alumno'] ?? ''))[0];
 $_nombre_tutor = !empty($_nombre_tutor) ? $_nombre_tutor : 'tu tutor';
-$_desc_corta = mb_strimwidth(strip_tags($servicio['descripcion'] ?? ''), 0, 100, '');
+
+// Corte por palabra (nunca a mitad de palabra): recorta a $max y, si el corte cae
+// dentro de una palabra, retrocede hasta el último espacio. Resuelto inline acá —
+// sin mover ni reusar nb_truncar_en_limite() (vive en ajax_generar_borrador_guia.php).
+$_cortar_en_espacio = function (string $texto, int $max): string {
+    if (mb_strlen($texto) <= $max) return $texto;
+    $recorte = rtrim(mb_substr($texto, 0, $max));
+    $ultimo_espacio = mb_strrpos($recorte, ' ');
+    return $ultimo_espacio !== false ? rtrim(mb_substr($recorte, 0, $ultimo_espacio)) : $recorte;
+};
+
+$_desc_corta = $_cortar_en_espacio(strip_tags($servicio['descripcion'] ?? ''), 100);
 $_paes_sufijo_desc = !empty($servicio['es_paes']) ? ' (Preparación PAES)' : '';
-$_meta_desc_raw = ucfirst($servicio['modalidad'] ?? '') . ' de ' . ($servicio['categoria'] ?? '')
-    . ' con ' . $_nombre_tutor . '. ' . $_desc_corta . '. Contrata en Nubira.' . $_paes_sufijo_desc;
-$og_desc = htmlspecialchars(mb_strlen($_meta_desc_raw) > 155
-    ? mb_substr($_meta_desc_raw, 0, 152) . '...'
-    : $_meta_desc_raw);
+$_meta_desc_base = ucfirst($servicio['modalidad'] ?? '') . ' de ' . ($servicio['categoria'] ?? '')
+    . ' con ' . $_nombre_tutor . '. ' . $_desc_corta . '. Contrata en Nubira.';
+
+// Reserva el espacio del sufijo PAES ANTES de truncar, para que nunca se pierda ni se corte.
+$_limite_base = 155 - mb_strlen($_paes_sufijo_desc);
+$_meta_desc_raw = mb_strlen($_meta_desc_base) > $_limite_base
+    ? $_cortar_en_espacio($_meta_desc_base, $_limite_base - 3) . '...'
+    : $_meta_desc_base;
+$_meta_desc_raw .= $_paes_sufijo_desc;
+$og_desc = htmlspecialchars($_meta_desc_raw);
 $token_seguro = nubira_encriptar_id($id);
 $url_servicio_masked = $base_url . "/detalle-servicio/" . $token_seguro;
 $url_canonical = $base_url . url_servicio($id, $servicio['slug'] ?? null);
@@ -523,16 +539,26 @@ session_write_close();
     ];
     $c = $clases_tono[$tono_valor] ?? $clases_tono['gris'];
     ?>
+    <?php
+    // [NUBIRA 2.0] Cuando el tutor no tiene historial de respuesta NI reseñas, "Tutor
+    // nuevo" (texto_valor del helper) ya comunica "sin datos" — mostrar además "· Nuevo"
+    // del rating sería redundante ("Tutor nuevo · Nuevo"). $promedio <= 0 implica
+    // $tot_votos === 0 (se calcula a partir de él), así que ocultar el cluster de
+    // estrella acá nunca deja sin destino al JS de borrar reseña (no hay reseñas que borrar).
+    $sin_historial_ni_rating = ($tono_valor === 'gris' && $promedio <= 0);
+    ?>
     <p class="text-[11px] text-gray-500 font-medium flex items-center gap-1.5">
         <i class="fa-regular fa-clock <?= $c['icono'] ?>"></i>
         <?php if ($tono_valor === 'gris'): ?>
-            <span class="<?= $c['texto'] ?> font-bold">Sin historial de respuesta</span>
+            <span class="<?= $c['texto'] ?> font-bold"><?= htmlspecialchars($texto_valor) ?></span>
         <?php else: ?>
             Responde <span class="<?= $c['texto'] ?> font-bold"><?= htmlspecialchars($texto_valor) ?></span>
         <?php endif; ?>
+        <?php if (!$sin_historial_ni_rating): ?>
         <span class="text-gray-300">·</span>
         <i class="fa-solid fa-star text-gray-700 text-[10px]"></i>
         <span id="val-promedio" class="font-bold text-gray-900"><?= $promedio > 0 ? $promedio : 'Nuevo' ?></span>
+        <?php endif; ?>
         <?php if($tot_votos > 0): ?>
             <span id="val-bullet" class="text-gray-300">·</span>
             <span id="val-votos-txt" class="text-gray-500"><?= $tot_votos ?> reseña<?= $tot_votos != 1 ? 's' : '' ?></span>
