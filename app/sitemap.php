@@ -98,7 +98,19 @@ foreach (nubira_categorias_seo() as $slug => $nombre) {
     if (!$cfg || !$cfg['indexable']) continue;
 
     $filtro_like = $cfg['filtro_titulo'] ?: null;
-    if ($filtro_like) {
+    if ($nombre === 'PAES') {
+        // [PAES] Mismo criterio amplio que landing_categoria.php:101-109 — sin esto,
+        // el conteo cae en la rama "categoria exacta" de abajo, que siempre da 0
+        // porque ningún servicio real tiene categoria='PAES' literal (están repartidos
+        // en Matemáticas/Física/Química/etc.), y la landing nunca entra al sitemap
+        // pese a indexable=1.
+        $like_paes = '%PAES%';
+        $st = $conn->prepare("SELECT COUNT(*) n FROM servicios s
+                              JOIN alumnos a ON a.id = s.alumno_id
+                              WHERE $where_base AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1)");
+        if (!$st) continue;
+        $st->bind_param("ssssss", $like_paes, $like_paes, $like_paes, $like_paes, $like_paes, $like_paes);
+    } elseif ($filtro_like) {
         $st = $conn->prepare("SELECT COUNT(*) n FROM servicios s
                               JOIN alumnos a ON a.id = s.alumno_id
                               WHERE $where_base AND s.titulo LIKE ?");
