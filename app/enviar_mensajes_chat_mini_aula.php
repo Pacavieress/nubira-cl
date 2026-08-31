@@ -65,33 +65,13 @@ if (!empty($fila_susp['bloqueado'])) {
 // en dlp_intentos (conversacion_id de esa tabla se reutiliza para guardar el id_contrato,
 // igual que ya hace enviar_mensaje.php en su propio path contexto=aula).
 // =========================================================================================
+require_once __DIR__ . '/helpers/dlp.php';
+
 $mensaje_lower = mb_strtolower($mensaje, 'UTF-8');
 
-// Núcleo reutilizado del patrón 'telefono': 7+ dígitos consecutivos con separadores opcionales
-$nucleo_digitos_tel = '(?:\d[\s\-\.]*){7,}';
-
-$patrones_bloqueo = [
-    // 1. CORREOS ELECTRÓNICOS (Normales y Ofuscados)
-    'email'              => '/[a-z0-9._%+-]+(?:@|\s+arroba\s+|\[arroba\]|\(arroba\))[a-z0-9.-]+(?:\.|\s+punto\s+|\[punto\])[a-z]{2,}/i',
-
-    // 2. TELÉFONOS (Atrapa +569, 9, espacios, guiones y puntos)
-    'telefono'           => '/(?:\+?56\s*9|9)?[\s\-\.]*' . $nucleo_digitos_tel . '/',
-
-    // 3. REDES SOCIALES (Nombres, siglas y variaciones fonéticas)
-    'redes'              => '/\b(wh?a[ts]+s?[aá]pp?|wasap|watsap|whsatap|guatsap|wsp|wa\.me|instagram|insta|ig|face|fb|tiktok|tk|telegram|tg|t\.me|discord|dc|linktree|x\.com|twitter|tw|linkedin|in)\b/i',
-
-    // 4. MÉTODOS DE PAGO Y BANCOS (Evita transferencias directas)
-    'banco'              => '/\b(transferencia|transferir|cuenta rut|cta rut|banco|santander|bci|estado|scotiabank|itau|tenpo|mach|mercadopago|mp|pago rut|datos de mi cuenta|mi rut|rut:)\b/i',
-
-    // 5. INTENCIÓN DE CONTACTO Y UBICACIÓN
-    'intencion_contacto' => '/\b(contacto|fono|tel[eé]fono|ll[aá]mame|llamada|mi n[uú]mero|direcci[oó]n|calle|pasaje|vives en|vivo en|mi casa|zoom|meet|teams|skype)\b/i',
-
-    // 6. IDENTIDAD Y BÚSQUEDA (Evita que se busquen por fuera)
-    'identidad'          => '/\b(mi nombre es|me llamo|mi apellido|me dicen|puedes decirme|b[úu]scame|encontrarme|encontrame|soy el de|mi perfil|mi cuenta)\b/i',
-
-    // 7. ENLACES EXTERNOS
-    'urls'               => '/(http|https|www\.)/i'
-];
+// Núcleo reutilizado del patrón 'telefono' (check 5b más abajo) — vive en helpers/dlp.php.
+$nucleo_digitos_tel = nb_dlp_nucleo_digitos_tel();
+$patrones_bloqueo   = nb_dlp_patrones();
 
 // Bloquea el mensaje y registra el intento en dlp_intentos (no debe romper el flujo si falla)
 function nb_dlp_bloquear_aula($conn, $id_contrato, $usuario_id, $mensaje, $categoria, $pattern_desc) {
@@ -127,10 +107,9 @@ function nb_dlp_bloquear_aula($conn, $id_contrato, $usuario_id, $mensaje, $categ
     exit;
 }
 
-foreach ($patrones_bloqueo as $categoria => $pattern) {
-    if (preg_match($pattern, $mensaje_lower)) {
-        nb_dlp_bloquear_aula($conn, $id_contrato, $usuario_id, $mensaje, $categoria, $pattern);
-    }
+$categoria_bloqueada = nb_dlp_evaluar_patrones($mensaje_lower);
+if ($categoria_bloqueada !== null) {
+    nb_dlp_bloquear_aula($conn, $id_contrato, $usuario_id, $mensaje, $categoria_bloqueada, $patrones_bloqueo[$categoria_bloqueada]);
 }
 
 // 5b. "celular" con contexto: solo bloquea si aparece junto a una frase explícita de compartir número
