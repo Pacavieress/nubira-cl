@@ -227,7 +227,7 @@ function nb_generar_email_cupon_promocional(string $primer_nombre, string $codig
 <p>{$intro}</p>
 {$bloqueCupon}
 <p style=\"text-align:center; margin:32px 0;\">
-  <a href=\"https://nubira.cl/explorar\"
+  <a href=\"https://nubira.cl/explorar?utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=despertar_dormidos_cupon\"
      style=\"background:#54A6D8;color:white;padding:13px 28px;
             text-decoration:none;border-radius:8px;font-weight:bold;
             font-size:16px;display:inline-block;\">
