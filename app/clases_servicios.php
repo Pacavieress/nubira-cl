@@ -314,7 +314,7 @@ window.addEventListener('pageshow', (event) => {
 
 // [NUBIRA 2.0 PERF] 1. INICIAR FETCH AL INSTANTE (Pre-fetch paralelo)
 // Lanzamos la red antes de que el navegador siquiera termine de leer el HTML.
-const urlServicios = "<?= htmlspecialchars($initial_src, ENT_QUOTES) ?>&_seed_js=" + Date.now();
+const urlServicios = <?= json_encode($initial_src) ?> + "&_seed_js=" + Date.now();
 const preCargaServicios = fetch(urlServicios, { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } })
     .then(r => r.text())
     .catch(() => null);
