@@ -1159,7 +1159,30 @@ $mostrar_barra_movil = (
 <?php if ($mostrar_barra_movil): ?>
 <div id="barra-contratar-movil"
      class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] z-40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-    
+
+    <?php if ($logueado): ?>
+    <!-- [NUBIRA 2.0] Cupón móvil — misma lógica que el desktop (setupCupon('-movil')),
+         ubicado ARRIBA de la fila de precio/botones para expandir hacia arriba sin taparlos. -->
+    <div id="box-cupon-movil" class="hidden mb-2 transition-all duration-300 opacity-0 translate-y-2">
+        <div class="flex gap-2">
+            <div class="relative flex-1 min-w-0">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[9px]"><?= icon('ticket') ?></span>
+                <input type="text" id="input-cupon-movil" placeholder="Código"
+                       class="w-full bg-gray-50 border border-gray-100 text-gray-900 text-[16px] rounded-xl pl-8 pr-3 py-2.5 focus:border-[#54A6D8] focus:bg-white focus:ring-2 focus:ring-[#54A6D8]/20 outline-none uppercase font-bold transition-all placeholder:font-normal placeholder:normal-case placeholder:text-gray-400">
+            </div>
+            <button type="button" id="btn-aplicar-cupon-movil" class="shrink-0 bg-slate-900 text-white text-[10px] uppercase tracking-widest font-extrabold px-4 rounded-xl transition-all shadow-sm hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+                <span id="texto-btn-cupon-movil">Validar</span>
+                <svg id="spinner-cupon-movil" class="animate-spin h-3.5 w-3.5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </button>
+        </div>
+        <div id="msg-cupon-movil" class="hidden mt-2 p-2.5 rounded-xl text-[11px] font-bold flex items-start gap-2 transition-all duration-300"></div>
+    </div>
+
+    <button type="button" id="btn-toggle-cupon-movil" class="mb-2 text-[11px] font-bold text-gray-400 hover:text-[#54A6D8] transition-colors flex items-center gap-1.5 justify-center w-full group">
+        <?= icon('ticket', 'w-3 h-3 group-hover:rotate-12 transition-transform') ?> ¿Tienes un código de beca?
+    </button>
+    <?php endif; ?>
+
     <div class="flex items-center justify-between gap-3">
 
         <div class="flex flex-col min-w-0 flex-1">
@@ -1307,20 +1330,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
    // --- LÓGICA DE BECAS / CUPONES NUBIRA 2.0 ---
-    const btnToggleCupon = document.getElementById('btn-toggle-cupon');
-    const boxCupon = document.getElementById('box-cupon');
-    const btnAplicarCupon = document.getElementById('btn-aplicar-cupon');
-    const inputCupon = document.getElementById('input-cupon');
-    const msgCupon = document.getElementById('msg-cupon');
+    // Elementos compartidos: existen UNA sola vez en el DOM sin importar qué
+    // instancia del cupón (desktop o móvil) los actualiza.
     const hiddenCupon = document.getElementById('codigo_beca_hidden');
     const blockPrecio = document.getElementById('precio-block');
     const txtBtnPago = document.getElementById('txt-btn-pago');
     const txtBtnSub = document.getElementById('txt-btn-sub');
-    const textoBtnCupon = document.getElementById('texto-btn-cupon');
-    const spinnerCupon = document.getElementById('spinner-cupon');
     // [NUBIRA 2.0] Referencias a la barra móvil
-const precioMovilMain = document.getElementById('precio-movil-main');
-const precioMovilOferta = document.getElementById('precio-movil-oferta');
+    const precioMovilMain = document.getElementById('precio-movil-main');
+    const precioMovilOferta = document.getElementById('precio-movil-oferta');
 
     // Variables de precio extraídas de PHP para cálculo JS
     const precioNormal = <?= (int)$servicio['precio'] ?>;
@@ -1329,7 +1347,21 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
 
     const formatCLP = (num) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(num);
 
-    if (btnToggleCupon && boxCupon) {
+    // [NUBIRA 2.0] Setup del bloque de cupón parametrizado por sufijo de IDs —
+    // permite una instancia desktop (sufijo '') y una móvil (sufijo '-movil')
+    // sin duplicar lógica. Ambas escriben a los elementos "compartidos" de
+    // arriba (codigo_beca_hidden, precio-block, etc.), que sí son únicos.
+    function setupCupon(sufijo) {
+        const btnToggleCupon = document.getElementById('btn-toggle-cupon' + sufijo);
+        const boxCupon = document.getElementById('box-cupon' + sufijo);
+        const btnAplicarCupon = document.getElementById('btn-aplicar-cupon' + sufijo);
+        const inputCupon = document.getElementById('input-cupon' + sufijo);
+        const msgCupon = document.getElementById('msg-cupon' + sufijo);
+        const textoBtnCupon = document.getElementById('texto-btn-cupon' + sufijo);
+        const spinnerCupon = document.getElementById('spinner-cupon' + sufijo);
+
+        if (!btnToggleCupon || !boxCupon) return;
+
         // Animación suave del contenedor
         btnToggleCupon.addEventListener('click', () => {
             if (boxCupon.classList.contains('hidden')) {
@@ -1345,7 +1377,7 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
             }
         });
 
-       btnAplicarCupon.addEventListener('click', async () => {
+        btnAplicarCupon.addEventListener('click', async () => {
             const code = inputCupon.value.trim().toUpperCase();
             if (!code) {
                 inputCupon.focus();
@@ -1360,14 +1392,14 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
             msgCupon.classList.add('hidden', 'opacity-0');
 
             try {
-                // [NUBIRA 2.0 FIX] 
+                // [NUBIRA 2.0 FIX]
                 // 1. encodeURIComponent previene caracteres inválidos
                 // 2. Consistencia con el backend
                 const urlFetch = `/app/validar_cupon.php?codigo_beca=${encodeURIComponent(code)}&servicio_id=<?= (int)$id ?>`;
-                
+
                 const res = await fetch(urlFetch);
                 if (!res.ok) throw new Error('Error HTTP: ' + res.status);
-                
+
                 // ESCUDO NUBIRA: Leemos como texto primero para capturar "basura" de PHP
                 const textResponse = await res.text();
                 let data;
@@ -1382,13 +1414,13 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
 
                 if (data.valido) {
                     msgCupon.innerHTML = `<i class="fa-solid fa-circle-check mt-0.5"></i> <span>${data.mensaje}</span>`;
-                    hiddenCupon.value = code; 
-                    
+                    hiddenCupon.value = code;
+
                     // UX: Transformar botón
                     btnAplicarCupon.classList.replace('bg-slate-900', 'bg-emerald-500');
                     btnAplicarCupon.classList.replace('hover:bg-slate-800', 'hover:bg-emerald-600');
                     textoBtnCupon.textContent = 'Beca Activada';
-                    
+
                     // Cálculo matemático blindado
                     const descuentoPorcentaje = parseInt(data.descuento, 10) || 0;
                     const montoDescuento = (precioBaseCalculo * descuentoPorcentaje) / 100;
@@ -1411,14 +1443,14 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
                             </div>
                         </div>
                     `;
-                    
+
                     // Actualizar Botón de Compra
                     if(txtBtnPago) txtBtnPago.innerText = totalPagar <= 0 ? "Canjear Beca 100% Gratis" : `Pagar ${formatCLP(totalPagar)}`;
                     if(txtBtnSub) txtBtnSub.style.display = 'none';
-                    
+
                     const btnSubmitPago = document.getElementById('btn-submit-pago');
                     if(btnSubmitPago) btnSubmitPago.className = "w-full text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:to-emerald-700 font-bold rounded-xl text-sm px-5 py-3.5 text-center shadow-lg transform active:scale-95 transition-all shadow-emerald-500/30 flex flex-col items-center justify-center gap-0.5 animate-pulse";
-                    
+
                     // [NUBIRA 2.0] Sincronizar Barra Móvil Abajo en Tiempo Real
                     if (precioMovilMain) {
                         precioMovilMain.innerText = formatCLP(totalPagar);
@@ -1432,7 +1464,7 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
                 } else {
                     msgCupon.innerHTML = `<i class="fa-solid fa-triangle-exclamation mt-0.5"></i> <span>${data.mensaje}</span>`;
                     hiddenCupon.value = '';
-                    
+
                     // Restaurar UI para permitir reintento
                     btnAplicarCupon.disabled = false;
                     inputCupon.disabled = false;
@@ -1442,7 +1474,7 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
                 console.error("🚨 Error en validación de cupón:", e.message);
                 msgCupon.className = 'mt-3 p-3 rounded-xl text-xs font-bold flex items-start gap-2 bg-rose-50 text-rose-700 border border-rose-100 transition-all duration-300 opacity-100';
                 msgCupon.innerHTML = '<i class="fa-solid fa-triangle-exclamation mt-0.5"></i> <span>Hubo un problema técnico. Abre la consola (F12) para ver el error exacto de PHP.</span>';
-                
+
                 btnAplicarCupon.disabled = false;
                 inputCupon.disabled = false;
                 textoBtnCupon.textContent = 'Validar Beca';
@@ -1460,6 +1492,9 @@ const precioMovilOferta = document.getElementById('precio-movil-oferta');
             }
         });
     }
+
+    setupCupon('');       // Instancia desktop — mismos IDs de siempre
+    setupCupon('-movil'); // Instancia móvil — no-op si el bloque no existe en el DOM
 
     // --- LÓGICA DE MODALES NUBIRA 2.0 ---
     function setupModal(triggerId, modalId, cardId, closeId) {
