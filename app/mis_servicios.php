@@ -101,7 +101,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     }
 
     // Redirección Segura (Evita el choque de headers_sent)
+    // ?open= le dice al JS de abajo qué acordeón reabrir tras el reload — el grupo
+    // depende de qué acción se disparó, no del resultado (éxito o flash_error).
+    $grupo_reabrir = in_array($_POST['accion'], ['eliminar_servicio', 'reactivar_servicio', 'reactivar_visibilidad'], true)
+        ? 'clases'
+        : (($_POST['accion'] === 'eliminar_apunte') ? 'apuntes' : null);
     $ruta_limpia = strtok($_SERVER["REQUEST_URI"], '?');
+    if ($grupo_reabrir !== null) {
+        $ruta_limpia .= '?open=' . $grupo_reabrir;
+    }
     if (!headers_sent()) {
         header("Location: " . $ruta_limpia);
     } else {
@@ -404,6 +412,33 @@ function toggleGrupo(idGrupo, idIcono) {
         icono.classList.remove('rotated'); // Vuelve a su estado original (hacia abajo)
     }
 }
+
+// Reabre el acordeón indicado por ?open=<grupo> tras el redirect PRG de una acción
+// (ver mis_servicios.php, bloque POST más arriba). Genérico a propósito — busca
+// #content-{grupo}/#icon-{grupo}/#seccion-{grupo}, mismos IDs que ya usan las 4
+// páginas hermanas (ventas_clases.php, ventas_apuntes.php, mis_ventas.php,
+// mis_compras.php) para sus propios acordeones — ese mismo patrón de ?open= se
+// puede copiar tal cual a esas 4 páginas en una sesión futura; hoy comparten el
+// mismo defecto (el acordeón se cierra al recargar) y quedan sin tocar.
+(function reabrirAcordeonTrasAccion() {
+    const grupo = new URLSearchParams(window.location.search).get('open');
+    if (!grupo) return; // carga normal: ambos acordeones quedan cerrados, sin cambios
+
+    const contenedor = document.getElementById('content-' + grupo);
+    const icono = document.getElementById('icon-' + grupo);
+    const seccion = document.getElementById('seccion-' + grupo);
+    if (!contenedor || !icono) return;
+
+    // El servidor siempre renderiza el acordeón cerrado por defecto, así que
+    // toggleGrupo() en este punto solo puede abrirlo — reusa la misma lógica de
+    // clases en vez de duplicarla.
+    toggleGrupo('content-' + grupo, 'icon-' + grupo);
+    if (seccion) seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Limpia el ?open= de la barra de direcciones para que un reload o un link
+    // compartido no reabra el acordeón sin que haya pasado ninguna acción real.
+    window.history.replaceState({}, '', window.location.pathname);
+})();
 
 // Lógica de Modales del Nav Inferior
 function setupModalNav(triggerId, modalId, cardId, closeId) {
