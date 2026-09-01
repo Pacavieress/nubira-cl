@@ -156,23 +156,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!password_verify($pwd, $hash_password)) {
             $mensaje = 'Contraseña incorrecta.';
         } else {
-            $nombre_borrado = 'Cuenta eliminada';
-            $correo_borrado = 'deleted+' . $usuario_id . '@nubira.cl';
-            $carrera_null   = null;
-            $hash_random    = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
-            $visible_cero   = 0; // Ocultar del sistema
-            $bloqueado_uno  = 1; // Prevenir futuros accesos
+            // [NUBIRA 2.0] Bloqueo por contrato abierto: IN explícito (no NOT IN) a
+            // propósito — si el ENUM de contratos.estado gana un valor nuevo el día
+            // de mañana, no bloqueará el borrado por accidente hasta que se decida
+            // incluirlo. 'pendiente_pago' queda FUERA a propósito: un checkout sin
+            // pagar no es un compromiso de dinero real, y como no hay cron que limpie
+            // los pendiente_pago abandonados, bloquear por esos atraparía cuentas
+            // legítimas por contratos basura que nadie completó. Sí bloquean
+            // 'en_progreso' (la clase está activa) y 'finalizado_comprador'/
+            // 'finalizado_vendedor' (una parte ya confirmó, la otra todavía no, y el
+            // dinero no se ha liberado). Se mira tanto como vendedor (tutor) como
+            // comprador: si quien se borra es el comprador de una clase en curso,
+            // deja al tutor igual de colgado.
+            $stmt_ctr = $conn->prepare("
+                SELECT COUNT(*) FROM contratos
+                WHERE (comprador_id = ? OR vendedor_id = ?)
+                  AND estado IN ('en_progreso', 'finalizado_comprador', 'finalizado_vendedor')
+            ");
+            $stmt_ctr->bind_param("ii", $usuario_id, $usuario_id);
+            $stmt_ctr->execute();
+            $stmt_ctr->bind_result($contratos_abiertos);
+            $stmt_ctr->fetch();
+            $stmt_ctr->close();
 
-            // Actualizamos la consulta para incluir 'visible' y 'bloqueado'
-            $u = $conn->prepare("UPDATE alumnos SET nombre = ?, correo = ?, carrera = ?, password = ?, visible = ?, bloqueado = ? WHERE id = ?");
-            $u->bind_param("ssssiii", $nombre_borrado, $correo_borrado, $carrera_null, $hash_random, $visible_cero, $bloqueado_uno, $usuario_id);
-            
-            if ($u->execute()) {
-                session_destroy();
-                header('Location: /cuenta-eliminada');
-                exit;
+            if ($contratos_abiertos > 0) {
+                $mensaje = 'No puedes eliminar tu cuenta mientras tienes clases en curso. Espera a que finalicen o contáctanos.';
             } else {
-                $mensaje = 'Error al eliminar cuenta.';
+                $nombre_borrado = 'Cuenta eliminada';
+                $correo_borrado = 'deleted+' . $usuario_id . '@nubira.cl';
+                $carrera_null   = null;
+                $hash_random    = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+                $visible_cero   = 0; // Ocultar del sistema
+                $bloqueado_uno  = 1; // Prevenir futuros accesos
+
+                // Todo-o-nada: si falla ocultar servicios/apuntes, no queremos la
+                // cuenta anonimizada a medias con publicaciones suyas comprables.
+                $conn->begin_transaction();
+                try {
+                    // Actualizamos la consulta para incluir 'visible' y 'bloqueado'
+                    $u = $conn->prepare("UPDATE alumnos SET nombre = ?, correo = ?, carrera = ?, password = ?, visible = ?, bloqueado = ? WHERE id = ?");
+                    $u->bind_param("ssssiii", $nombre_borrado, $correo_borrado, $carrera_null, $hash_random, $visible_cero, $bloqueado_uno, $usuario_id);
+                    if (!$u->execute()) throw new Exception($u->error);
+                    $u->close();
+
+                    // No debe quedar nada suyo comprable en la vitrina bajo la
+                    // identidad ya anonimizada.
+                    $us = $conn->prepare("UPDATE servicios SET visible = 0 WHERE alumno_id = ?");
+                    $us->bind_param("i", $usuario_id);
+                    if (!$us->execute()) throw new Exception($us->error);
+                    $us->close();
+
+                    $ua = $conn->prepare("UPDATE apuntes SET visible = 0 WHERE id_alumno = ?");
+                    $ua->bind_param("i", $usuario_id);
+                    if (!$ua->execute()) throw new Exception($ua->error);
+                    $ua->close();
+
+                    $conn->commit();
+                } catch (Exception $e) {
+                    $conn->rollback();
+                    $mensaje = 'Error al eliminar cuenta.';
+                }
+
+                if (empty($mensaje)) {
+                    session_destroy();
+                    header('Location: /cuenta-eliminada');
+                    exit;
+                }
             }
         }
     }
