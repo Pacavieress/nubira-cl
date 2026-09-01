@@ -428,9 +428,19 @@ $redir_express = urlencode('/app/chat_previo_contrato.php?id=' . $chat_id);
 
         <div class="shrink-0 pl-2">
             <?php if(!$esVendedor): ?>
-                <a href="/app/contratar_servicio.php?servicio_id=<?= (int)$chat['servicio_id'] ?>" class="flex items-center gap-1 bg-gradient-to-r from-[#54A6D8] to-blue-600 hover:to-blue-700 text-white px-3 py-2.5 rounded-full text-xs font-bold shadow-md shadow-blue-200 transition transform active:scale-95">
-                    Contratar
-                </a>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" id="btn-abrir-modal-cupon"
+                            class="w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-[#54A6D8] hover:bg-blue-50 transition-colors shrink-0"
+                            title="¿Tienes un código de beca?">
+                        <?= icon('ticket', 'w-4 h-4') ?>
+                    </button>
+                    <a href="/app/contratar_servicio.php?servicio_id=<?= (int)$chat['servicio_id'] ?>"
+                       id="btn-contratar-chat"
+                       data-href-base="/app/contratar_servicio.php?servicio_id=<?= (int)$chat['servicio_id'] ?>"
+                       class="flex items-center gap-1 bg-gradient-to-r from-[#54A6D8] to-blue-600 hover:to-blue-700 text-white px-3 py-2.5 rounded-full text-xs font-bold shadow-md shadow-blue-200 transition transform active:scale-95">
+                        <span id="txt-btn-contratar-chat">Contratar</span>
+                    </a>
+                </div>
             <?php else: ?>
                 <button type="button" id="btn-generar-reserva" class="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-2.5 rounded-full text-xs font-bold transition active:scale-95">
                     Generar Reserva
@@ -1585,6 +1595,167 @@ form.addEventListener('submit', async (e) => {
         } finally {
             btnEnviar.disabled = false;
             btnEnviar.textContent = 'Generar enlace';
+        }
+    });
+})();
+</script>
+<?php endif; ?>
+
+<?php if (!$esVendedor): ?>
+<!-- MODAL: Cupón de beca -->
+<div id="modal-cupon" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+    <div id="modal-cupon-card" class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform translate-y-4 opacity-0 transition-all duration-200">
+
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-50 text-[#54A6D8] rounded-full flex items-center justify-center shrink-0">
+                    <?= icon('ticket', 'w-4 h-4') ?>
+                </div>
+                <h3 class="font-bold text-gray-900 text-[15px]">¿Tienes un código de beca?</h3>
+            </div>
+            <button type="button" id="btn-cerrar-modal-cupon" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-50 transition-colors">
+                <?= icon('x-mark', 'w-5 h-5') ?>
+            </button>
+        </div>
+
+        <div class="p-5">
+            <div class="flex gap-2">
+                <div class="relative flex-1 min-w-0">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"><?= icon('ticket') ?></span>
+                    <input type="text" id="input-cupon-chat" placeholder="Ingresa tu código"
+                           class="w-full bg-gray-50 border border-gray-100 text-gray-900 text-[16px] rounded-xl pl-9 pr-3 py-3 focus:border-[#54A6D8] focus:bg-white focus:ring-2 focus:ring-[#54A6D8]/20 outline-none uppercase font-bold transition-all placeholder:font-normal placeholder:normal-case placeholder:text-gray-400">
+                </div>
+                <button type="button" id="btn-validar-cupon-chat"
+                        class="shrink-0 bg-slate-900 text-white text-[11px] uppercase tracking-widest font-extrabold px-4 rounded-xl transition-all shadow-sm hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <span id="txt-btn-validar-cupon-chat">Validar</span>
+                    <svg id="spinner-cupon-chat" class="animate-spin h-3.5 w-3.5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </button>
+            </div>
+            <div id="msg-cupon-chat" class="hidden mt-3 p-3 rounded-xl text-xs font-bold flex items-start gap-2 transition-all duration-300"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const btnAbrir        = document.getElementById('btn-abrir-modal-cupon');
+    const modal           = document.getElementById('modal-cupon');
+    const card            = document.getElementById('modal-cupon-card');
+    const btnCerrar       = document.getElementById('btn-cerrar-modal-cupon');
+    const inputCupon      = document.getElementById('input-cupon-chat');
+    const btnValidar      = document.getElementById('btn-validar-cupon-chat');
+    const txtBtnValidar   = document.getElementById('txt-btn-validar-cupon-chat');
+    const spinnerCupon    = document.getElementById('spinner-cupon-chat');
+    const msgCupon        = document.getElementById('msg-cupon-chat');
+    const btnContratar    = document.getElementById('btn-contratar-chat');
+    const txtBtnContratar = document.getElementById('txt-btn-contratar-chat');
+    const hrefBase        = btnContratar ? btnContratar.dataset.hrefBase : null;
+
+    if (!btnAbrir || !modal || !btnContratar || !hrefBase) return;
+
+    function abrirModal() {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        void card.offsetWidth;
+        requestAnimationFrame(() => {
+            card.classList.remove('translate-y-4', 'opacity-0');
+            card.classList.add('translate-y-0', 'opacity-100');
+        });
+        inputCupon.focus();
+    }
+
+    function cerrarModal() {
+        card.classList.add('translate-y-4', 'opacity-0');
+        card.classList.remove('translate-y-0', 'opacity-100');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 200);
+    }
+
+    // [NUBIRA] Reconstruye el href del botón "Contratar" SIEMPRE desde la base
+    // (solo servicio_id) + el código actual — nunca concatena sobre el href
+    // existente, así validar un segundo código distinto no deja el primero pegado.
+    function aplicarCodigoAHref(codigo) {
+        btnContratar.href = codigo
+            ? hrefBase + '&codigo_beca=' + encodeURIComponent(codigo)
+            : hrefBase;
+    }
+
+    btnAbrir.addEventListener('click', abrirModal);
+    btnCerrar.addEventListener('click', cerrarModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModal(); });
+
+    btnValidar.addEventListener('click', async () => {
+        const code = inputCupon.value.trim().toUpperCase();
+        if (!code) { inputCupon.focus(); return; }
+
+        btnValidar.disabled = true;
+        inputCupon.disabled = true;
+        txtBtnValidar.textContent = 'Procesando...';
+        spinnerCupon.classList.remove('hidden');
+        msgCupon.classList.add('hidden', 'opacity-0');
+
+        try {
+            const urlFetch = `/app/validar_cupon.php?codigo_beca=${encodeURIComponent(code)}&servicio_id=<?= (int)$chat['servicio_id'] ?>`;
+            const res = await fetch(urlFetch);
+            if (!res.ok) throw new Error('Error HTTP: ' + res.status);
+
+            const textResponse = await res.text();
+            let data;
+            try {
+                data = JSON.parse(textResponse);
+            } catch (parseError) {
+                console.error("❌ El backend no devolvió JSON válido. Respuesta cruda recibida:\n", textResponse);
+                throw new Error("Respuesta inválida del servidor");
+            }
+
+            msgCupon.className = `mt-3 p-3 rounded-xl text-xs font-bold flex items-start gap-2 transition-all duration-300 transform opacity-100 ${data.valido ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`;
+
+            if (data.valido) {
+                msgCupon.innerHTML = `<i class="fa-solid fa-circle-check mt-0.5"></i> <span>${data.mensaje}</span>`;
+                aplicarCodigoAHref(code);
+
+                btnValidar.classList.remove('bg-slate-900', 'hover:bg-slate-800');
+                btnValidar.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                txtBtnValidar.textContent = 'Beca Activada';
+
+                if (txtBtnContratar) txtBtnContratar.textContent = 'Contratar con beca';
+                btnContratar.classList.add('ring-2', 'ring-emerald-300');
+            } else {
+                msgCupon.innerHTML = `<i class="fa-solid fa-triangle-exclamation mt-0.5"></i> <span>${data.mensaje}</span>`;
+                aplicarCodigoAHref(null);
+
+                btnValidar.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+                btnValidar.classList.add('bg-slate-900', 'hover:bg-slate-800');
+                txtBtnValidar.textContent = 'Reintentar';
+
+                if (txtBtnContratar) txtBtnContratar.textContent = 'Contratar';
+                btnContratar.classList.remove('ring-2', 'ring-emerald-300');
+            }
+        } catch (e) {
+            console.error("🚨 Error en validación de cupón:", e.message);
+            msgCupon.className = 'mt-3 p-3 rounded-xl text-xs font-bold flex items-start gap-2 bg-rose-50 text-rose-700 border border-rose-100 transition-all duration-300 opacity-100';
+            msgCupon.innerHTML = '<i class="fa-solid fa-triangle-exclamation mt-0.5"></i> <span>Hubo un problema técnico. Intenta nuevamente.</span>';
+
+            aplicarCodigoAHref(null);
+            txtBtnValidar.textContent = 'Validar';
+            if (txtBtnContratar) txtBtnContratar.textContent = 'Contratar';
+            btnContratar.classList.remove('ring-2', 'ring-emerald-300');
+        } finally {
+            // Reactivamos siempre (a diferencia del cupón de detalle_servicio.php) para
+            // permitir validar un segundo código distinto sin recargar la página.
+            btnValidar.disabled = false;
+            inputCupon.disabled = false;
+            spinnerCupon.classList.add('hidden');
+            msgCupon.classList.remove('hidden');
+        }
+    });
+
+    inputCupon.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            btnValidar.click();
         }
     });
 })();
