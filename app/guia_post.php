@@ -233,10 +233,16 @@ $stmt->close();
 
 /* ================= METADATA ================= */
 $titulo_completo = $articulo['titulo'] . ' | Guías Nubira';
-$seo_title = mb_strlen($titulo_completo) > 65 ? mb_substr($titulo_completo, 0, 62) . '...' : $titulo_completo;
+$seo_title = $titulo_completo;
 
 $desc_fuente = $articulo['meta_description'] ?: ($articulo['resumen'] ?: strip_tags($articulo['cuerpo']));
-$seo_desc = mb_strlen($desc_fuente) > 155 ? mb_substr($desc_fuente, 0, 152) . '...' : $desc_fuente;
+if (mb_strlen($desc_fuente) > 155) {
+    $desc_corte = mb_substr($desc_fuente, 0, 155);
+    $ultimo_espacio = mb_strrpos($desc_corte, ' ');
+    $seo_desc = $ultimo_espacio !== false ? mb_substr($desc_corte, 0, $ultimo_espacio) : $desc_corte;
+} else {
+    $seo_desc = $desc_fuente;
+}
 
 $url_canonical = "https://nubira.cl/guias/$cat_slug/$art_slug";
 $portada_main = nb_resolver_portada_guia($articulo['imagen_portada'], 'main');
