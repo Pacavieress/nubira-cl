@@ -51,9 +51,9 @@ $onboarding_total = count($onboarding_slides);
             <div class="onboarding-slide <?= $idx === 0 ? 'active' : '' ?> flex-col items-center text-center gap-4 py-6"
                  data-slide="<?= $idx + 1 ?>">
                 <?= icon($slide['icono'], 'w-16 h-16 text-[#54A6D8]') ?>
-                <h2 class="text-2xl font-bold text-gray-900 tracking-tight">
+                <div class="text-2xl font-bold text-gray-900 tracking-tight">
                     <?= htmlspecialchars($slide['titulo']) ?>
-                </h2>
+                </div>
                 <p class="text-base text-gray-600 leading-relaxed max-w-sm mx-auto">
                     <?= htmlspecialchars($slide['texto']) ?>
                 </p>

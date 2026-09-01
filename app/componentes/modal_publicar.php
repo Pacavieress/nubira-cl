@@ -4,7 +4,7 @@
 
         <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4 md:hidden"></div>
 
-        <h3 class="font-medium text-lg mb-4 text-center text-[#222222] tracking-[-0.01em]">¿Qué vas a publicar?</h3>
+        <div class="font-medium text-lg mb-4 text-center text-[#222222] tracking-[-0.01em]">¿Qué vas a publicar?</div>
 
         <div class="grid grid-cols-2 gap-3">
 
