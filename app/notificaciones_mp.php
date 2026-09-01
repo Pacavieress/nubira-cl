@@ -131,6 +131,136 @@ try {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ── Detectar si el pago corresponde a una publicación de servicio (2da+) ───
+    // A diferencia de CREDITOS_IA_/CONTRATO_, este tipo se identifica por
+    // metadata.tipo (igual que pago_exitoso_publicacion_servicio.php) — NUNCA
+    // parseando external_reference, que acá es un string compuesto
+    // "PUBLICACION_SERVICIO_{usuario}_{servicio}_{timestamp}" y no un ID simple.
+    // Es independiente de $es_contrato/$contrato_id — no interfiere con esos bloques.
+    if (($payment->metadata->tipo ?? '') === 'publicacion_servicio') {
+        require_once __DIR__ . '/helpers/publicaciones_pago.php';
+
+        if ($status !== 'approved') {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " PUBLICACION_SERVICIO NO-APROBADO: payment_id=$payment_id status=$status\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+
+        $meta_usuario_id  = (int)($payment->metadata->usuario_id ?? 0);
+        $meta_servicio_id = (int)($payment->metadata->servicio_id ?? 0);
+
+        if ($meta_usuario_id <= 0 || $meta_servicio_id <= 0) {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " PUBLICACION_SERVICIO METADATA INVÁLIDA: payment_id=$payment_id usuario=$meta_usuario_id servicio=$meta_servicio_id\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+
+        // Anti-suplantación: acá no hay sesión de navegador contra la cual
+        // comparar (es server-to-server), así que se valida contra el dueño
+        // real del servicio en BD — mismo espíritu que el chequeo de sesión
+        // que hace pago_exitoso_publicacion_servicio.php:41.
+        $stmtS = $conn->prepare("SELECT alumno_id FROM servicios WHERE id = ? LIMIT 1");
+        $stmtS->bind_param("i", $meta_servicio_id);
+        $stmtS->execute();
+        $stmtS->bind_result($dueno_real_id);
+        $tieneServicio = $stmtS->fetch();
+        $stmtS->close();
+
+        if (!$tieneServicio) {
+            // Fila ausente — probablemente el tutor pagó y luego borró su propio
+            // servicio. No hay qué activar, pero no es una señal de fraude: se
+            // etiqueta distinto de SUPLANTACIÓN para no ensuciar esa métrica.
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " PUBLICACION_SERVICIO SERVICIO_NO_ENCONTRADO: payment_id=$payment_id servicio=$meta_servicio_id metadata_usuario=$meta_usuario_id\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+        if ((int)$dueno_real_id !== $meta_usuario_id) {
+            // Fila existe pero con otro dueño — acá sí es una señal genuina a vigilar.
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " PUBLICACION_SERVICIO SUPLANTACIÓN: payment_id=$payment_id servicio=$meta_servicio_id metadata_usuario=$meta_usuario_id dueño_real=$dueno_real_id\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+
+        // Capa 1: fast-path anti-duplicado
+        $chk = $conn->prepare("SELECT id FROM compras_publicacion_servicio WHERE payment_id = ? LIMIT 1");
+        $chk->bind_param("s", $payment_id);
+        $chk->execute();
+        $chk->store_result();
+        $ya_existe = ($chk->num_rows > 0);
+        $chk->close();
+
+        $insert_ok    = $ya_existe; // ya registrado por el otro camino = conceptualmente OK
+        $insert_errno = 0;
+
+        if (!$ya_existe) {
+            $stmt = $conn->prepare("
+                INSERT INTO compras_publicacion_servicio (alumno_id, servicio_id, monto, payment_id, estado_pago, fecha_pago)
+                VALUES (?, ?, ?, ?, 'pagado', NOW())
+            ");
+            $stmt->bind_param("iiis", $meta_usuario_id, $meta_servicio_id, PRECIO_PUBLICACION_SERVICIO, $payment_id);
+            $insert_ok    = $stmt->execute();
+            $insert_errno = $stmt->errno;
+            $stmt->close();
+        }
+
+        // Capa 2: si el fast-path no detectó la carrera, el UNIQUE(payment_id) sí la
+        // frena acá — mismo patrón que CREDITOS_IA_. errno 1062 = el retorno del
+        // navegador (o este mismo webhook reentregado por MP) ya insertó la compra
+        // primero — no es un error real, seguimos igual al UPDATE de abajo.
+        if ($insert_ok) {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " PUBLICACION_SERVICIO OK: payment_id=$payment_id usuario=$meta_usuario_id servicio=$meta_servicio_id\n",
+                FILE_APPEND
+            );
+        } elseif ($insert_errno === 1062) {
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " PUBLICACION_SERVICIO CARRERA DETECTADA (UNIQUE): payment_id=$payment_id servicio=$meta_servicio_id — insertado por el otro camino entre el SELECT y el INSERT\n",
+                FILE_APPEND
+            );
+        } else {
+            // Error real de BD — no tocamos el servicio para no activarlo sin
+            // registro de compra.
+            file_put_contents(
+                __DIR__ . '/mp_webhook.log',
+                date('c') . " PUBLICACION_SERVICIO ERROR REAL DE BD: payment_id=$payment_id servicio=$meta_servicio_id errno=$insert_errno error=" . $conn->error . "\n",
+                FILE_APPEND
+            );
+            exit;
+        }
+
+        // [IDEMPOTENCIA CRUZADA] Mismo UPDATE, mismo guard, que
+        // pago_exitoso_publicacion_servicio.php:77 — el WHERE estado='pendiente_pago'
+        // hace que sea un no-op silencioso si el otro camino ya transicionó el
+        // servicio primero. Si el retorno del navegador y este webhook llegan casi
+        // simultáneos para el mismo payment_id: el UNIQUE(payment_id) en
+        // compras_publicacion_servicio deja pasar solo un INSERT real (el otro cae
+        // en errno 1062, capturado arriba); y aunque AMBOS caminos igual intenten
+        // este UPDATE (por diseño, ver comentario de Capa 2), el segundo que llegue
+        // no encuentra ninguna fila con estado='pendiente_pago' para actualizar —
+        // 0 filas afectadas, sin error, sin doble aplicación.
+        $up = $conn->prepare("UPDATE servicios SET estado = 'pendiente' WHERE id = ? AND estado = 'pendiente_pago'");
+        $up->bind_param("i", $meta_servicio_id);
+        $up->execute();
+        $up->close();
+
+        exit;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // ── Detectar si el pago corresponde a un apunte ───────────────────────────
     // !$es_contrato evita que un contrato_id que numéricamente coincida con un
     // apunte.id real se procese por error como venta de apunte.
