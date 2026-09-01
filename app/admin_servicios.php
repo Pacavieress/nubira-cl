@@ -78,7 +78,7 @@ $sql = "SELECT s.id, s.slug, s.titulo, s.nombre_oferente, s.categoria, s.imagen,
         LEFT JOIN alumnos a ON s.alumno_id = a.id
         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
         $where
-        ORDER BY s.id DESC $limit_clause";
+        ORDER BY CASE WHEN s.estado = 'pendiente' THEN 0 ELSE 1 END ASC, s.id DESC $limit_clause";
 
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
