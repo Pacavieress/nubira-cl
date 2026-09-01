@@ -23,6 +23,27 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
+// Feedback del resultado de una solicitud de retiro — solicitar_retiro.php redirige
+// acá con estos query params (?retiro=ok o ?error=<código>), pero hasta ahora nadie
+// los leía: la solicitud podía fallar en silencio sin que el usuario se enterara.
+// Mismo patrón visual de banner que ya usan editar_datos.php / reclamos_sugerencias.php.
+$mensaje = '';
+$exito   = false;
+if (isset($_GET['retiro']) && $_GET['retiro'] === 'ok') {
+    $mensaje = 'Tu solicitud de retiro fue enviada correctamente. La procesaremos a la brevedad.';
+    $exito   = true;
+} elseif (isset($_GET['error'])) {
+    $mensajes_error = [
+        'csrf_invalido'       => 'Tu sesión expiró o la solicitud no es válida. Intenta nuevamente.',
+        'sin_datos_bancarios' => 'Debes configurar tu cuenta bancaria antes de solicitar un retiro.',
+        'monto_invalido'      => 'El monto solicitado no es válido.',
+        'monto_minimo'        => 'El monto solicitado es menor al mínimo permitido para retirar.',
+        'saldo_insuficiente'  => 'No tienes saldo suficiente disponible para ese monto.',
+        'db'                  => 'Ocurrió un error al procesar tu solicitud. Intenta nuevamente o contáctanos.',
+    ];
+    $mensaje = $mensajes_error[$_GET['error']] ?? 'Ocurrió un error al procesar tu solicitud.';
+}
+
 // 1. CONFIGURACIÓN Y CÁLCULOS FINANCIEROS
 $minimo_retiro = 10000;
 $comision_actual = 0;
@@ -125,6 +146,16 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
         </div>
     </div>
+
+    <?php if ($mensaje): ?>
+    <div class="px-4 md:px-0 md:mt-4">
+      <div id="toast" class="rounded-xl px-4 py-3 shadow-sm flex items-center gap-3 <?= $exito ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'; ?>">
+         <?= icon($exito ? 'check-circle' : 'exclamation', 'w-5 h-5') ?>
+         <span class="font-medium text-sm flex-1"><?= htmlspecialchars($mensaje) ?></span>
+         <button onclick="document.getElementById('toast').remove()" class="text-sm underline hover:no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Cerrar</button>
+      </div>
+    </div>
+    <?php endif; ?>
 
     <div class="md:px-6 pt-4 space-y-6">
 
