@@ -10,6 +10,7 @@ session_start();
 date_default_timezone_set('America/Santiago');
 
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/helpers/cupones.php';
 
 // ─────────────────────────────────────────────────────────────
 // 1. AUTH GUARD
@@ -57,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         pagina_error('Sesión expirada', 'Tu sesión expiró. Vuelve a abrir el enlace de la reserva.');
     }
 
-    $token = trim($_POST['token'] ?? '');
+    $token       = trim($_POST['token'] ?? '');
+    $codigo_beca = isset($_POST['codigo_beca']) ? strtoupper(trim(htmlspecialchars(strip_tags($_POST['codigo_beca']), ENT_QUOTES, 'UTF-8'))) : '';
 
     // Validación 1: formato token
     if (!preg_match('/^[0-9a-f]{64}$/', $token)) {
@@ -149,6 +151,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $monto_subsidio = 0;
             $monto_aceptado = 0;
             $estado_nuevo   = 'pendiente_pago';
+
+            // [NUBIRA] Cupón de beca — mismo helper y misma transacción (FOR UPDATE +
+            // consumo atómico) que crear_contrato.php. $monto es slots_excepcion.monto,
+            // ya leído de BD con FOR UPDATE más arriba — nunca un valor del cliente.
+            // La comisión de arriba ya quedó calculada sobre el monto SIN descuento,
+            // mismo criterio financiero que crear_contrato.php (Nubira absorbe el
+            // costo del cupón, no el tutor).
+            $resultado_cupon = nb_aplicar_cupon($conn, $codigo_beca, $servicio_id, $monto);
+            if (!$resultado_cupon['valido']) {
+                throw new Exception($resultado_cupon['motivo']);
+            }
+            $monto = $resultado_cupon['monto_final'];
+            $monto_subsidio += $resultado_cupon['descuento'];
 
             // Crear contrato
             $stmtC = $conn->prepare("
@@ -394,9 +409,39 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
                 </div>
             </div>
 
-            <div class="border-t border-gray-100 pt-3 flex items-center justify-between">
+            <div class="border-t border-gray-100 pt-3 flex items-center justify-between" id="precio-block-excepcion">
                 <p class="text-sm text-gray-500">Total a pagar</p>
                 <p class="text-2xl font-bold text-gray-900"><?= $monto_fmt ?> <span class="text-xs font-normal text-gray-400">CLP</span></p>
+            </div>
+
+            <!-- Cupón de beca -->
+            <div class="border-t border-gray-100 pt-3">
+                <button type="button" id="btn-toggle-cupon" class="text-xs font-bold text-gray-400 hover:text-[#54A6D8] transition-colors flex items-center gap-1.5 w-full justify-center group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/>
+                    </svg>
+                    ¿Tienes un código de beca?
+                </button>
+
+                <div id="box-cupon" class="hidden mt-3 transition-all duration-300 opacity-0 -translate-y-2">
+                    <div class="flex gap-2">
+                        <div class="relative flex-1 min-w-0">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/>
+                                </svg>
+                            </span>
+                            <input type="text" id="input-cupon" placeholder="Ingresa tu código"
+                                   class="w-full bg-gray-50 border border-gray-100 text-gray-900 text-[16px] rounded-xl pl-9 pr-3 py-3 focus:border-[#54A6D8] focus:bg-white focus:ring-2 focus:ring-[#54A6D8]/20 outline-none uppercase font-bold transition-all placeholder:font-normal placeholder:normal-case placeholder:text-gray-400">
+                        </div>
+                        <button type="button" id="btn-aplicar-cupon" class="shrink-0 bg-slate-900 text-white text-[11px] uppercase tracking-widest font-extrabold px-4 rounded-xl transition-all shadow-sm hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <span id="texto-btn-cupon">Validar</span>
+                            <svg id="spinner-cupon" class="animate-spin h-3.5 w-3.5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </button>
+                    </div>
+                    <div id="msg-cupon" class="hidden mt-3 p-3 rounded-xl text-xs font-bold flex items-start gap-2 transition-all duration-300"></div>
+                </div>
             </div>
 
         </div>
@@ -426,11 +471,12 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 
         <!-- Formulario de pago -->
         <form method="POST" action="/app/pagar_slot_excepcion.php">
-            <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-            <input type="hidden" name="token"      value="<?= $token_safe ?>">
+            <input type="hidden" name="csrf_token"  value="<?= $csrf ?>">
+            <input type="hidden" name="token"       value="<?= $token_safe ?>">
+            <input type="hidden" name="codigo_beca" id="codigo_beca_hidden" value="">
             <button type="submit"
                     class="w-full bg-[#54A6D8] hover:bg-blue-600 text-white font-bold text-base py-4 rounded-xl transition-all shadow-lg shadow-blue-200 hover:scale-[1.01]">
-                Pagar <?= $monto_fmt ?>
+                <span id="txt-btn-pagar">Pagar <?= $monto_fmt ?></span>
             </button>
         </form>
 
@@ -467,6 +513,132 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
     }());
     </script>
     <?php endif; ?>
+
+    <script>
+    (function () {
+        // [NUBIRA] Cupón de beca — mismo patrón que detalle_servicio.php. El monto
+        // mostrado acá es solo informativo; el descuento real lo valida y aplica
+        // pagar_slot_excepcion.php en el POST vía nb_aplicar_cupon().
+        const montoBase  = <?= (int)$slot['monto'] ?>;
+        const servicioId = <?= (int)$slot['servicio_id'] ?>;
+        const formatCLP  = (num) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(num);
+
+        const btnToggleCupon = document.getElementById('btn-toggle-cupon');
+        const boxCupon       = document.getElementById('box-cupon');
+        const inputCupon     = document.getElementById('input-cupon');
+        const btnAplicarCupon = document.getElementById('btn-aplicar-cupon');
+        const textoBtnCupon  = document.getElementById('texto-btn-cupon');
+        const spinnerCupon   = document.getElementById('spinner-cupon');
+        const msgCupon       = document.getElementById('msg-cupon');
+        const hiddenCupon    = document.getElementById('codigo_beca_hidden');
+        const blockPrecio    = document.getElementById('precio-block-excepcion');
+        const txtBtnPagar    = document.getElementById('txt-btn-pagar');
+
+        if (!btnToggleCupon || !boxCupon) return;
+
+        btnToggleCupon.addEventListener('click', () => {
+            if (boxCupon.classList.contains('hidden')) {
+                boxCupon.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    boxCupon.classList.remove('opacity-0', '-translate-y-2');
+                    inputCupon.focus();
+                });
+            } else {
+                boxCupon.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => boxCupon.classList.add('hidden'), 300);
+            }
+        });
+
+        btnAplicarCupon.addEventListener('click', async () => {
+            const code = inputCupon.value.trim().toUpperCase();
+            if (!code) { inputCupon.focus(); return; }
+
+            btnAplicarCupon.disabled = true;
+            inputCupon.disabled = true;
+            textoBtnCupon.textContent = 'Procesando...';
+            spinnerCupon.classList.remove('hidden');
+            msgCupon.classList.add('hidden', 'opacity-0');
+
+            try {
+                const urlFetch = `/app/validar_cupon.php?codigo_beca=${encodeURIComponent(code)}&servicio_id=${servicioId}`;
+                const res = await fetch(urlFetch);
+                if (!res.ok) throw new Error('Error HTTP: ' + res.status);
+
+                const textResponse = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("❌ El backend no devolvió JSON válido. Respuesta cruda recibida:\n", textResponse);
+                    throw new Error("Respuesta inválida del servidor");
+                }
+
+                msgCupon.className = `mt-3 p-3 rounded-xl text-xs font-bold flex items-start gap-2 transition-all duration-300 transform opacity-100 ${data.valido ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`;
+
+                if (data.valido) {
+                    msgCupon.innerHTML = `<i class="fa-solid fa-circle-check mt-0.5"></i> <span>${data.mensaje}</span>`;
+                    hiddenCupon.value = code;
+
+                    btnAplicarCupon.classList.replace('bg-slate-900', 'bg-emerald-500');
+                    btnAplicarCupon.classList.replace('hover:bg-slate-800', 'hover:bg-emerald-600');
+                    textoBtnCupon.textContent = 'Beca Activada';
+
+                    const descuentoPorcentaje = parseInt(data.descuento, 10) || 0;
+                    const montoDescuento = (montoBase * descuentoPorcentaje) / 100;
+                    const totalPagar = Math.max(0, montoBase - montoDescuento);
+
+                    if (blockPrecio) {
+                        blockPrecio.outerHTML = `
+                            <div id="precio-block-excepcion" class="border-t border-gray-100 pt-3">
+                                <div class="flex justify-between items-center text-sm text-gray-500 mb-1">
+                                    <span>Subtotal</span>
+                                    <span class="font-bold line-through">${formatCLP(montoBase)}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm text-emerald-600 font-bold mb-2">
+                                    <span>Beca Nubira (${descuentoPorcentaje}%)</span>
+                                    <span>-${formatCLP(montoDescuento)}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm text-gray-500">Total a pagar</p>
+                                    <p class="text-2xl font-bold text-emerald-600">${formatCLP(totalPagar)} <span class="text-xs font-normal text-gray-400">CLP</span></p>
+                                </div>
+                            </div>`;
+                    }
+
+                    if (txtBtnPagar) {
+                        txtBtnPagar.textContent = totalPagar <= 0 ? 'Canjear beca 100% gratis' : `Pagar ${formatCLP(totalPagar)}`;
+                    }
+
+                } else {
+                    msgCupon.innerHTML = `<i class="fa-solid fa-triangle-exclamation mt-0.5"></i> <span>${data.mensaje}</span>`;
+                    hiddenCupon.value = '';
+
+                    btnAplicarCupon.disabled = false;
+                    inputCupon.disabled = false;
+                    textoBtnCupon.textContent = 'Reintentar';
+                }
+            } catch (e) {
+                console.error("🚨 Error en validación de cupón:", e.message);
+                msgCupon.className = 'mt-3 p-3 rounded-xl text-xs font-bold flex items-start gap-2 bg-rose-50 text-rose-700 border border-rose-100 transition-all duration-300 opacity-100';
+                msgCupon.innerHTML = '<i class="fa-solid fa-triangle-exclamation mt-0.5"></i> <span>Hubo un problema técnico. Intenta nuevamente.</span>';
+
+                btnAplicarCupon.disabled = false;
+                inputCupon.disabled = false;
+                textoBtnCupon.textContent = 'Validar';
+            } finally {
+                spinnerCupon.classList.add('hidden');
+                msgCupon.classList.remove('hidden');
+            }
+        });
+
+        inputCupon.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnAplicarCupon.click();
+            }
+        });
+    })();
+    </script>
 
 </body>
 </html>
