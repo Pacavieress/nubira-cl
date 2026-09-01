@@ -261,8 +261,8 @@ echo '</div>';
 require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 px-4 md:px-8 w-full">
-  <div class="w-full max-w-3xl mx-auto space-y-8">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 px-4 md:px-8 mx-auto max-w-3xl xl:max-w-[1400px]">
+  <div class="space-y-8">
 
     <div class="mb-4 flex items-center gap-3">
         <button type="button" onclick="navegacionSeguraNubira()"
@@ -365,6 +365,12 @@ require_once $app_dir . '/componentes/sidebar.php';
         </form>
     </div>
 
+    <!-- Ancho escritorio: Seguridad + Eliminar Cuenta en grid de 2 columnas solo en
+         xl. Información Básica arriba queda a ancho completo (es la tarjeta más
+         grande). xl:space-y-0 para que el gap del grid mande, no el space-y-8 del
+         contenedor padre — mismo patrón que en métricas. -->
+    <div class="space-y-8 xl:space-y-0 xl:grid xl:grid-cols-2 xl:gap-8 xl:items-start">
+
     <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 md:p-8">
         <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
             <svg class="w-5 h-5 text-[#54A6D8]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
@@ -441,6 +447,8 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
         </form>
     </div>
+
+    </div><!-- /grid xl -->
 
   </div>
 </main>
