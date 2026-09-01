@@ -19,6 +19,7 @@ error_reporting(E_ALL);
 session_start();
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/correo.php';
+require_once __DIR__ . '/helpers/cupones.php';
 
 // =========================================================
 // HELPER: Redirect con flash error y exit
@@ -127,55 +128,14 @@ try {
     }
 
     // C) APLICAR CUPÓN DE DESCUENTO (BECA) CON BLOQUEO (FIX NUBIRA SHIELD)
-    if (!empty($codigo_beca)) {
-        $stmt_cup = $conn->prepare("SELECT id, porcentaje_descuento, usos_actuales, usos_maximos, fecha_expiracion, servicio_id FROM cupones WHERE codigo = ? LIMIT 1 FOR UPDATE");
-
-        if ($stmt_cup) {
-            $stmt_cup->bind_param("s", $codigo_beca);
-            $stmt_cup->execute();
-            $res_cup = $stmt_cup->get_result();
-
-            if ($res_cup->num_rows > 0) {
-                $c = $res_cup->fetch_assoc();
-
-                // Validaciones estrictas Nubira Shield
-                if ($c['usos_maximos'] > 0 && $c['usos_actuales'] >= $c['usos_maximos']) {
-                    throw new Exception("La beca ingresada ya alcanzó su límite máximo de usos.");
-                }
-                
-                // Fix fecha
-                if (!empty($c['fecha_expiracion'])) {
-                    date_default_timezone_set('America/Santiago');
-                    $hoy = date('Y-m-d');
-                    if ($hoy > $c['fecha_expiracion']) {
-                        throw new Exception("La beca ingresada ha expirado.");
-                    }
-                }
-                
-                // Fix alcance automático
-                $es_global = is_null($c['servicio_id']) || (int)$c['servicio_id'] === 0;
-                if (!$es_global && (int)$c['servicio_id'] !== $servicio_id) {
-                    throw new Exception("La beca no aplica para este servicio.");
-                }
-
-                $cupon_id = $c['id'];
-                $descuento_aplicado = (int)(($monto_final * (int)$c['porcentaje_descuento']) / 100);
-
-                $monto_final = max(0, $monto_final - $descuento_aplicado);
-                $monto_subsidio += $descuento_aplicado;
-
-                $stmt_uso = $conn->prepare("UPDATE cupones SET usos_actuales = usos_actuales + 1 WHERE id = ?");
-                if ($stmt_uso) {
-                    $stmt_uso->bind_param("i", $cupon_id);
-                    $stmt_uso->execute();
-                    $stmt_uso->close();
-                }
-            } else {
-                throw new Exception("Código de beca inválido o inexistente.");
-            }
-            $stmt_cup->close();
-        }
+    // Lógica extraída a helpers/cupones.php — el FOR UPDATE y el consumo
+    // (usos_actuales+1) corren dentro de esta misma transacción, sin cambios.
+    $resultado_cupon = nb_aplicar_cupon($conn, $codigo_beca, $servicio_id, $monto_final);
+    if (!$resultado_cupon['valido']) {
+        throw new Exception($resultado_cupon['motivo']);
     }
+    $monto_final = $resultado_cupon['monto_final'];
+    $monto_subsidio += $resultado_cupon['descuento'];
 
     // D) VALIDACIÓN ANTI-TRAMPA
     if ($precio_esperado_usuario < $monto_final) {
