@@ -39,6 +39,16 @@ try {
 
     $contrato_id = (int)$external_ref;
 
+    // ── Detectar si el pago corresponde a un contrato de servicio ──────────────
+    // external_reference viene como "CONTRATO_{id}" desde iniciar_pago_servicio.php.
+    // Sin este strip, (int)"CONTRATO_123" da 0 (PHP corta en el primer caracter no
+    // numérico) y el bloque de UPDATE contratos de más abajo nunca corre — mismo
+    // patrón que ya usa CREDITOS_IA_ un poco más abajo.
+    $es_contrato = (strpos((string)$external_ref, 'CONTRATO_') === 0);
+    if ($es_contrato) {
+        $contrato_id = (int)substr((string)$external_ref, strlen('CONTRATO_'));
+    }
+
     // ── Detectar si el pago corresponde a una compra de créditos IA ────────────
     // Prefijo único, chequeado ANTES de la detección de apunte/contrato — cero
     // riesgo de colisión con IDs numéricos reales.
@@ -122,7 +132,9 @@ try {
     // ─────────────────────────────────────────────────────────────────────────
 
     // ── Detectar si el pago corresponde a un apunte ───────────────────────────
-    if ($status === 'approved' && $contrato_id > 0) {
+    // !$es_contrato evita que un contrato_id que numéricamente coincida con un
+    // apunte.id real se procese por error como venta de apunte.
+    if (!$es_contrato && $status === 'approved' && $contrato_id > 0) {
         $stmtEs = $conn->prepare("SELECT id FROM apuntes WHERE id = ? LIMIT 1");
         $stmtEs->bind_param("i", $contrato_id);
         $stmtEs->execute();

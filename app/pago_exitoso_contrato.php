@@ -9,6 +9,11 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/correo.php';
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use MercadoPago\MercadoPagoConfig;
+use MercadoPago\Client\Payment\PaymentClient;
 
 // 1. SEGURIDAD Y CAPTURA DE PARÁMETROS
 if (!isset($_SESSION['usuario_id'])) {
@@ -22,35 +27,24 @@ if ($id_contrato <= 0) {
     exit("❌ Contrato inválido o no especificado.");
 }
 
-$mp_status = $_GET['collection_status'] ?? 'approved'; // Por defecto approved si no viene (ej: pago gratis)
-$mp_ref    = $_GET['external_reference'] ?? '';
-$mp_id     = $_GET['collection_id'] ?? '';
-
-// Registrar retorno de Mercado Pago en log
-file_put_contents(__DIR__ . '/../log_envio.txt',
-    date("Y-m-d H:i:s") . " - [MP_RETURN] contrato_id={$id_contrato}, status={$mp_status}, ref={$mp_ref}, id={$mp_id}\n",
-    FILE_APPEND
-);
-
-// Si el pago fue rechazado o está en revisión profunda, detenemos la activación
-if ($mp_status !== 'approved' && $mp_status !== 'in_process') {
-    // CORRECCIÓN: Usar la ruta oficial que definimos en iniciar_pago_servicio.php
-    header("Location: /app/pago_error_contrato.php?contrato_id=" . $id_contrato);
-    exit;
-}
+$mp_payment_id = $_GET['payment_id'] ?? $_GET['collection_id'] ?? '';
+$mp_ref        = $_GET['external_reference'] ?? '';
 
 // 2. BUSCAR DATOS DEL CONTRATO (BLINDADO CONTRA IDOR)
+// Se hace ANTES de la verificación de MP: un contrato gratis (monto=0, cupón
+// 100%) nunca pasa por MercadoPago y no trae payment_id — necesitamos saber
+// esto antes de decidir si exigimos la llamada a la API.
 $usuario_actual = (int)$_SESSION['usuario_id'];
 
 $stmt = $conn->prepare("
-    SELECT c.*, s.titulo AS servicio_titulo, 
+    SELECT c.*, s.titulo AS servicio_titulo,
            a.nombre AS comprador_nombre, a.correo AS comprador_correo,
            b.nombre AS vendedor_nombre, b.correo AS vendedor_correo
     FROM contratos c
     JOIN servicios s ON c.servicio_id = s.id
     JOIN alumnos a ON c.comprador_id = a.id
     JOIN alumnos b ON c.vendedor_id = b.id
-    WHERE c.id = ? AND c.comprador_id = ? 
+    WHERE c.id = ? AND c.comprador_id = ?
 ");
 // Exigimos que el ID coincida Y que el usuario logueado sea el comprador
 $stmt->bind_param("ii", $id_contrato, $usuario_actual);
@@ -62,6 +56,60 @@ if (!$contrato) {
     // UX: Mensaje de error discreto para no dar pistas a posibles atacantes
     exit("❌ No se encontró el contrato o no tienes permisos para visualizar esta transacción.");
 }
+
+// [NUBIRA SHIELD] Verificación REAL contra la API de MercadoPago — nunca confiar
+// en el query string que manda el navegador. Antes: si no venía collection_status
+// se asumía 'approved' por defecto, y aunque viniera, lo controlaba el propio
+// navegador del comprador (bastaba abrir esta URL a mano para "aprobarse solo").
+//
+// Excepción legítima: un contrato con monto=0 (beca/cupón 100%) se resuelve
+// directo en crear_contrato.php / iniciar_pago_servicio.php sin pasar nunca por
+// MercadoPago. Acá solo lo TOLERAMOS por idempotencia (si alguien llega a esta
+// URL para un contrato que ya quedó gratis/activo por ese otro camino, no lo
+// mandamos al error) — nunca es este archivo el que decide que es gratis.
+$es_gratis_o_ya_activo = ((int)round((float)$contrato['monto']) === 0 || $contrato['estado'] === 'en_progreso');
+
+$mp_status = null;
+if ($es_gratis_o_ya_activo) {
+    $mp_status = 'approved';
+} elseif (!empty($mp_payment_id)) {
+    MercadoPagoConfig::setAccessToken(MP_ACCESS_TOKEN);
+    try {
+        $client  = new PaymentClient();
+        $payment = $client->get($mp_payment_id);
+
+        // [NUBIRA SHIELD] Anti-suplantación: el payment_id debe pertenecer a ESTE
+        // contrato. Sin esto, alguien podría reusar el payment_id de OTRO pago
+        // aprobado suyo (ej. un apunte barato) para "aprobarse" un contrato caro.
+        $ref_esperada = 'CONTRATO_' . $id_contrato;
+        $ref_recibida = $payment->external_reference ?? null;
+        if ($ref_recibida !== $ref_esperada) {
+            error_log("Nubira SHIELD | pago_exitoso_contrato.php: external_reference no coincide. contrato_id={$id_contrato} esperado={$ref_esperada} recibido=" . ($ref_recibida ?? 'null') . " payment_id={$mp_payment_id}");
+            $mp_status = null;
+        } elseif ((int)round((float)($payment->transaction_amount ?? -1)) !== (int)round((float)$contrato['monto'])) {
+            error_log("Nubira SHIELD | pago_exitoso_contrato.php: monto no coincide. contrato_id={$id_contrato} esperado={$contrato['monto']} recibido=" . ($payment->transaction_amount ?? 'null') . " payment_id={$mp_payment_id}");
+            $mp_status = null;
+        } else {
+            $mp_status = $payment->status ?? null;
+        }
+    } catch (\Throwable $e) {
+        error_log("Nubira | pago_exitoso_contrato.php: error consultando MP payment_id={$mp_payment_id}: " . $e->getMessage());
+        $mp_status = null;
+    }
+}
+
+// Registrar retorno de Mercado Pago en log
+file_put_contents(__DIR__ . '/../log_envio.txt',
+    date("Y-m-d H:i:s") . " - [MP_RETURN] contrato_id={$id_contrato}, payment_id={$mp_payment_id}, status_api=" . ($mp_status ?? 'null') . ", ref={$mp_ref}\n",
+    FILE_APPEND
+);
+
+// Si la API de MercadoPago no confirma un pago aprobado (o en proceso), no activamos nada.
+if ($mp_status !== 'approved' && $mp_status !== 'in_process') {
+    header("Location: /app/pago_error_contrato.php?contrato_id=" . $id_contrato);
+    exit;
+}
+
 // 3. LÓGICA DE ESTADOS Y CONCILIACIÓN
 $yaProcesado = false;
 
