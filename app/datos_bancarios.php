@@ -130,7 +130,7 @@ echo '</div>';
 require_once $app_dir . '/componentes/sidebar.php';
 ?>
 
-<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px] animate-fade-in-up force-no-shadow">
+<main class="pt-4 md:pt-16 pb-32 md:pb-12 lg:ml-64 mx-auto max-w-[1000px] xl:max-w-[1400px] animate-fade-in-up force-no-shadow">
   <div class="w-full">
     
     <div class="sticky top-0 md:top-16 bg-white/95 backdrop-blur-sm z-30 border-b border-[#f0f0f0] px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -241,7 +241,12 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
         </div>
 
-        <div class="px-4 md:px-0">
+        <!-- Ancho escritorio: cuenta bancaria (corta) + historial (largo) en grid
+             de 3 columnas solo en xl — 1 para la cuenta, 2 para el historial.
+             xl:space-y-0 para que el gap del grid mande, no el space-y del padre. -->
+        <div class="space-y-6 xl:space-y-0 xl:grid xl:grid-cols-3 xl:gap-6 xl:items-start">
+
+        <div class="px-4 md:px-0 xl:col-span-1">
             <a href="/editar-datos-bancarios" class="flex items-center justify-between bg-white p-4 rounded-2xl border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:bg-gray-50 active:bg-gray-100 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 <?= $datosBancarios ? 'bg-gray-50 text-[#54A6D8] border border-[#f0f0f0]' : 'bg-red-50 text-red-500 border border-red-100' ?>">
@@ -262,7 +267,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             </a>
         </div>
 
-        <div class="px-4 md:px-0 pt-4">
+        <div class="px-4 md:px-0 pt-4 xl:pt-0 xl:col-span-2">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-xs font-medium text-gray-400 uppercase tracking-widest">Historial de Retiros</h2>
             </div>
@@ -329,6 +334,8 @@ require_once $app_dir . '/componentes/sidebar.php';
                 </div>
             <?php endif; $stmtH->close(); ?>
         </div>
+
+        </div><!-- /grid xl -->
 
     </div>
   </div>
