@@ -472,7 +472,9 @@ require_once __DIR__ . '/componentes/sidebar.php';
          class="flex items-center gap-3 bg-white border border-gray-100 rounded-xl p-3 hover:shadow-md transition-all min-w-0">
         <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#54A6D8] font-bold text-sm shrink-0 overflow-hidden">
           <?php if (!empty($t['foto_perfil'])): ?>
-            <img src="/app/perfil/fotos/<?= htmlspecialchars($t['foto_perfil']) ?>" class="w-full h-full object-cover">
+            <img src="/app/perfil/fotos/<?= htmlspecialchars($t['foto_perfil']) ?>" class="w-full h-full object-cover"
+                 onerror="this.nextElementSibling.classList.remove('hidden'); this.remove();">
+            <span class="hidden"><?= htmlspecialchars(mb_substr($t['nombre_tutor'] ?? '?', 0, 1)) ?></span>
           <?php else: ?>
             <?= htmlspecialchars(mb_substr($t['nombre_tutor'] ?? '?', 0, 1)) ?>
           <?php endif; ?>

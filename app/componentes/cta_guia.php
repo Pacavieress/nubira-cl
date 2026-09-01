@@ -49,8 +49,10 @@ if (!function_exists('nb_cta_guia')) {
         <i class="fa-solid fa-chalkboard-user text-sm"></i>
       </div>
       <?php else: foreach ($avatares as $foto): ?>
-      <div class="w-10 h-10 rounded-full ring-2 ring-white bg-blue-100 overflow-hidden">
-        <img src="/app/perfil/fotos/<?= htmlspecialchars($foto) ?>" class="w-full h-full object-cover" alt="" />
+      <div class="w-10 h-10 rounded-full ring-2 ring-white bg-blue-100 overflow-hidden flex items-center justify-center text-[#54A6D8]">
+        <img src="/app/perfil/fotos/<?= htmlspecialchars($foto) ?>" class="w-full h-full object-cover" alt=""
+             onerror="this.nextElementSibling.classList.remove('hidden'); this.remove();" />
+        <i class="fa-solid fa-chalkboard-user text-sm hidden"></i>
       </div>
       <?php endforeach; endif; ?>
     </div>
