@@ -255,6 +255,13 @@ if (!empty($articulo['fecha_publicacion'])) {
     $fecha_iso = $dt->format('Y-m-d\TH:i:sP');
 }
 
+$fecha_mod_iso = null;
+if (!empty($articulo['fecha_actualizacion'])) {
+    $dt_mod = new DateTime($articulo['fecha_actualizacion']);
+    $dt_mod->setTimezone(new DateTimeZone('UTC'));
+    $fecha_mod_iso = $dt_mod->format('Y-m-d\TH:i:sP');
+}
+
 $article_ld = [
     '@context' => 'https://schema.org',
     '@type' => 'Article',
@@ -266,6 +273,7 @@ $article_ld = [
 ];
 if ($og_image) { $article_ld['image'] = [$og_image]; } // sin portada: se omite, no se manda un placeholder
 if ($fecha_iso) { $article_ld['datePublished'] = $fecha_iso; }
+if ($fecha_mod_iso) { $article_ld['dateModified'] = $fecha_mod_iso; }
 
 $faqs_para_ld = array_map(fn($f) => ['q' => $f['pregunta'], 'a' => $f['respuesta']], $faqs_articulo);
 ?>
