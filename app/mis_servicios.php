@@ -52,6 +52,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             $_SESSION['flash_error'] = 'No pudimos reactivar la publicación. Intenta de nuevo.';
         }
     }
+    // Reactivar visibilidad (servicio ocultado por el propio tutor vía "Eliminar").
+    // El WHERE exige AMBAS banderas de cron en 0: si el servicio está oculto por
+    // oculto_por_modalidad/oculto_por_falta_horario, este UPDATE afecta 0 filas a
+    // propósito — esos casos requieren resolver la causa real (editar_servicio.php /
+    // editar_horarios.php), no un botón de reactivar genérico.
+    if ($_POST['accion'] === 'reactivar_visibilidad' && !empty($_POST['id'])) {
+        try {
+            $id_react_vis = (int)$_POST['id'];
+            $sqlReacVis = "UPDATE servicios SET visible = 1
+                            WHERE id = ? AND alumno_id = ?
+                              AND oculto_por_modalidad = 0 AND oculto_por_falta_horario = 0";
+            $stmtReacVis = $conn->prepare($sqlReacVis);
+            $stmtReacVis->bind_param("ii", $id_react_vis, $usuario_id);
+            $stmtReacVis->execute();
+            $stmtReacVis->close();
+        } catch (Exception $e) {
+            $_SESSION['flash_error'] = 'No pudimos reactivar la publicación. Intenta de nuevo.';
+        }
+    }
 
     // Eliminar Apunte (Probando ambas columnas de ID posibles — incertidumbre de
     // schema histórica, no se toca acá, fuera de alcance de este fix)
@@ -98,7 +117,9 @@ require_once $app_dir . '/helpers/seo.php';
 // 1. Obtener Servicios (Clases) - Excluyendo los eliminados
 $servicios = [];
 try {
-    $sqlServicios = "SELECT * FROM servicios WHERE alumno_id = ? AND COALESCE(visible, 1) = 1 ORDER BY fecha_publicacion DESC";
+    // Sin filtro de visible: los ocultados por el propio tutor ("Eliminar") también
+    // se listan acá, atenuados, con su propia vía de reactivación — ver render de abajo.
+    $sqlServicios = "SELECT * FROM servicios WHERE alumno_id = ? ORDER BY fecha_publicacion DESC";
     $stmtS = $conn->prepare($sqlServicios);
     if ($stmtS) {
         $stmtS->bind_param("i", $usuario_id);
@@ -200,8 +221,13 @@ require_once $app_dir . '/componentes/sidebar.php';
     'pausado' => 'text-orange-600 bg-orange-100 border border-orange-200', // NUEVO: Feedback visual claro
     default => 'text-gray-500 bg-gray-50 border border-gray-100'
 };
+                                // Ocultado por el propio tutor ("Eliminar") vs. ocultado por un cron de
+                                // política (falta de horario / modalidad híbrida sin resolver) — solo el
+                                // primer caso ofrece auto-reactivación, ver botones más abajo.
+                                $oculto_manual = ((int)($s['visible'] ?? 1) === 0);
+                                $oculto_por_politica = $oculto_manual && ((int)($s['oculto_por_modalidad'] ?? 0) === 1 || (int)($s['oculto_por_falta_horario'] ?? 0) === 1);
                             ?>
-                            <li class="flex items-center justify-between p-4 md:px-4 hover:bg-gray-50 transition-colors gap-3 active:bg-gray-100">
+                            <li class="flex items-center justify-between p-4 md:px-4 hover:bg-gray-50 transition-colors gap-3 active:bg-gray-100 <?= $oculto_manual ? 'opacity-60 bg-gray-50' : '' ?>">
                                 <div class="flex items-center gap-3 flex-1 min-w-0 z-20">
                                     <div class="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-100 relative">
                                         <img src="<?= htmlspecialchars($rutaImg, ENT_QUOTES, 'UTF-8') ?>" class="w-full h-full object-cover">
@@ -231,6 +257,16 @@ require_once $app_dir . '/componentes/sidebar.php';
                 <i class="fa-solid fa-play text-[9px]"></i> Reactivar
             </button>
         </form>
+    <?php elseif ($oculto_manual && !$oculto_por_politica): ?>
+        <form action="" method="POST" class="m-0">
+            <input type="hidden" name="accion" value="reactivar_visibilidad">
+            <input type="hidden" name="id" value="<?= $s['id'] ?>">
+            <button type="submit" class="flex items-center gap-1.5 bg-[#54A6D8] text-white px-3 py-1 rounded-full text-[11px] font-bold shadow-sm hover:bg-blue-600 transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Reactivar publicación">
+                <i class="fa-solid fa-play text-[9px]"></i> Reactivar
+            </button>
+        </form>
+    <?php elseif ($oculto_por_politica): ?>
+        <span class="text-[10px] text-gray-400 px-2 leading-tight" title="Este servicio requiere que completes un dato pendiente (horario u modalidad) desde Editar antes de poder reactivarlo.">Requiere revisión</span>
     <?php else: ?>
         <a href="<?= url_servicio((int)$s['id'], $s['slug'] ?? null) ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Ver publicación">
             <i class="fa-regular fa-eye text-xs"></i>
@@ -238,11 +274,11 @@ require_once $app_dir . '/componentes/sidebar.php';
         <a href="/app/editar_servicio.php?id=<?= $s['id'] ?>" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white hover:text-[#54A6D8] active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Editar">
             <i class="fa-solid fa-pen text-xs"></i>
         </a>
-        <form action="" method="POST" onsubmit="return confirm('¿Eliminar esta clase definitivamente?');" class="m-0">
+        <form action="" method="POST" onsubmit="return confirm('¿Ocultar esta clase? No será visible para nuevos alumnos, pero podrás reactivarla cuando quieras.');" class="m-0">
             <input type="hidden" name="accion" value="eliminar_servicio">
             <input type="hidden" name="id" value="<?= $s['id'] ?>">
-            <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-full text-red-400 hover:bg-white hover:text-red-600 active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Eliminar">
-                <i class="fa-solid fa-trash-can text-xs"></i>
+            <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-white hover:text-[#54A6D8] active:bg-white transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2" title="Ocultar">
+                <i class="fa-solid fa-eye-slash text-xs"></i>
             </button>
         </form>
     <?php endif; ?>
