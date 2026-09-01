@@ -55,6 +55,57 @@ if (!function_exists('nb_insertar_tras_primer_h2')) {
     }
 }
 
+if (!function_exists('nb_slug_titulo_h2')) {
+    function nb_slug_titulo_h2(string $texto): string {
+        $texto = trim(html_entity_decode(strip_tags($texto), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $texto = mb_strtolower($texto, 'UTF-8');
+        $mapa_acentos = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n'];
+        $texto = strtr($texto, $mapa_acentos);
+        $texto = preg_replace('/[^a-z0-9]+/u', '-', $texto);
+        $texto = trim(preg_replace('/-+/', '-', $texto), '-');
+        return $texto !== '' ? $texto : 'seccion';
+    }
+}
+
+if (!function_exists('nb_toc_guia')) {
+    /**
+     * Inyecta id= en cada <h2> del cuerpo de una guía y arma su tabla de contenidos.
+     * Solo toca <h2> (no h3) — regex quirúrgico sobre la etiqueta de apertura, sin
+     * pasar el cuerpo completo por DOMDocument (evita re-serializar/normalizar el
+     * resto del HTML ya sanitizado, que no debe cambiar fuera de las cabeceras).
+     *
+     * @return array{cuerpo: string, toc: array<int, array{id: string, texto: string}>}
+     */
+    function nb_toc_guia(string $cuerpo_html): array {
+        $toc = [];
+        $usados = [];
+
+        $cuerpo_con_ids = preg_replace_callback(
+            '/<h2\b([^>]*)>(.*?)<\/h2>/is',
+            function (array $m) use (&$toc, &$usados) {
+                $attrs = preg_replace('/\s+id="[^"]*"/i', '', $m[1]); // descarta id previo si lo hubiera
+                $texto_plano = trim(html_entity_decode(strip_tags($m[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+                $slug_base = nb_slug_titulo_h2($texto_plano);
+                if (isset($usados[$slug_base])) {
+                    $usados[$slug_base]++;
+                    $slug = $slug_base . '-' . $usados[$slug_base];
+                } else {
+                    $usados[$slug_base] = 1;
+                    $slug = $slug_base;
+                }
+
+                $toc[] = ['id' => $slug, 'texto' => $texto_plano];
+
+                return '<h2' . $attrs . ' id="' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '">' . $m[2] . '</h2>';
+            },
+            $cuerpo_html
+        );
+
+        return ['cuerpo' => $cuerpo_con_ids ?? $cuerpo_html, 'toc' => $toc];
+    }
+}
+
 $cat_slug = strtolower(trim($_GET['cat'] ?? ''));
 $art_slug = strtolower(trim($_GET['slug'] ?? ''));
 
@@ -98,6 +149,10 @@ $stmt->close();
 if (!$articulo) {
     header("HTTP/1.1 404 Not Found"); echo "Página no encontrada."; exit;
 }
+
+$toc_resultado = nb_toc_guia($articulo['cuerpo']);
+$articulo['cuerpo'] = $toc_resultado['cuerpo']; // ahora con id= en cada <h2>
+$toc_guia = $toc_resultado['toc'];
 
 // Tracking de "visto" — solo aplica a contenido gateado de tutores, con sesión
 // de tutor ya validada arriba (punto 3 de Fase 3). No se pre-siembra al publicar,
@@ -308,7 +363,14 @@ $faqs_para_ld = array_map(fn($f) => ['q' => $f['pregunta'], 'a' => $f['respuesta
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
-  <style> body { font-family: 'Inter', sans-serif; } </style>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Offset para que el salto de #ancla no quede tapado por el header sticky:
+       mobile solo tiene la barra local del artículo (~56px, redondeado a 4rem);
+       desktop suma el header global fijo (4rem) + la barra local (~4rem) ≈ 8rem. */
+    article.prose h2 { scroll-margin-top: 4rem; }
+    @media (min-width: 768px) { article.prose h2 { scroll-margin-top: 8rem; } }
+  </style>
 </head>
 <body class="bg-white text-gray-900 antialiased overflow-x-hidden flex flex-col min-h-screen">
 
@@ -354,6 +416,24 @@ require_once __DIR__ . '/componentes/sidebar.php';
       <?php if ($fecha_iso): ?> · <?= htmlspecialchars(date('d/m/Y', strtotime($articulo['fecha_publicacion']))) ?><?php endif; ?>
     </p>
   </header>
+
+  <?php if (count($toc_guia) >= 2): ?>
+  <details class="mb-8 bg-gray-50 border border-gray-100 rounded-2xl group">
+    <summary class="cursor-pointer select-none list-none flex items-center justify-between px-5 py-4 font-medium text-[#222222] tracking-[-0.01em]">
+      <span class="flex items-center gap-2">
+        <i class="fa-solid fa-list-ul text-[#54A6D8] text-sm"></i> Contenido
+      </span>
+      <i class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+    </summary>
+    <nav class="px-5 pb-4 pt-1" aria-label="Tabla de contenidos">
+      <ol class="space-y-1.5 text-sm">
+        <?php foreach ($toc_guia as $item): ?>
+        <li><a href="#<?= htmlspecialchars($item['id'], ENT_QUOTES, 'UTF-8') ?>" class="text-[#54A6D8] hover:underline"><?= htmlspecialchars($item['texto']) ?></a></li>
+        <?php endforeach; ?>
+      </ol>
+    </nav>
+  </details>
+  <?php endif; ?>
 
   <?php if ($portada_main): ?>
   <img src="<?= htmlspecialchars($portada_main) ?>"
