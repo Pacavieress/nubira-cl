@@ -383,7 +383,7 @@ echo '</div>';
 require_once __DIR__ . '/componentes/sidebar.php';
 ?>
 
-<main class="flex flex-col flex-grow w-full pt-4 md:pt-16 pb-28 md:pb-10 lg:ml-64 px-4 md:px-8">
+<main class="flex flex-col flex-grow max-w-full pt-4 md:pt-16 pb-28 md:pb-10 lg:ml-64 px-4 md:px-8">
 
   <?php if ($mostrar_breadcrumb): ?>
   <nav class="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
