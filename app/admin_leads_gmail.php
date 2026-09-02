@@ -43,6 +43,122 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // [NUBIRA] Discriminador de sub-acciones del mismo POST — el JS del envío
+    // selectivo (flujo original) nunca manda 'accion', así que sigue cayendo
+    // en el default de abajo sin ningún cambio de comportamiento.
+    $accion = $_POST['accion'] ?? 'enviar_seleccionados';
+
+    // ── Feature A: enviar prueba — pipeline idéntico al real, pero NUNCA
+    // toca interesados_registro ni correos_admin (no es un envío de campaña). ──
+    if ($accion === 'prueba') {
+        $correo_prueba = strtolower(trim($_POST['email_prueba'] ?? ''));
+        if (!filter_var($correo_prueba, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Correo de prueba inválido.']);
+            exit;
+        }
+
+        $codigo_cupon_pv = strtoupper(trim($_POST['codigo'] ?? ''));
+        $cupon_info_pv   = null;
+        if ($codigo_cupon_pv !== '') {
+            $cupon_info_pv = nb_consultar_cupon_global($conn, $codigo_cupon_pv);
+            if (!$cupon_info_pv['ok']) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => $cupon_info_pv['error']]);
+                exit;
+            }
+        }
+
+        $unsubUrl_test    = generarUnsubUrl($correo_prueba);
+        $bloqueCupon_test = $cupon_info_pv ? nb_bloque_cupon_html($codigo_cupon_pv, $cupon_info_pv['porcentaje'], $cupon_info_pv['fecha_expiracion']) : '';
+        $html_test        = generarHtmlEmailRecuperarGmail($unsubUrl_test, $bloqueCupon_test);
+        $exito_test       = enviarDormidoConUnsubscribe($correo_prueba, $asunto, $html_test, $unsubUrl_test, 'noreply', $titulo_plantilla);
+
+        logCampana('[PRUEBA] ' . ($exito_test ? 'OK' : 'FAIL') . ' ' . $correo_prueba);
+
+        echo json_encode(['ok' => true, 'enviado' => $exito_test]);
+        exit;
+    }
+
+    // ── Feature B: agregar leads nuevos a interesados_registro ──────────
+    if ($accion === 'agregar_leads') {
+        $raw = (string)($_POST['correos_nuevos'] ?? '');
+        $candidatos = array_values(array_unique(array_filter(array_map(
+            fn($c) => strtolower(trim($c)),
+            preg_split('/[\n,;]+/', $raw)
+        ), fn($c) => $c !== '')));
+
+        if (empty($candidatos)) {
+            echo json_encode(['ok' => true, 'agregados' => 0, 'saltados' => []]);
+            exit;
+        }
+
+        // Pre-carga de exclusiones en lote (evita N queries por correo)
+        $placeholders = implode(',', array_fill(0, count($candidatos), '?'));
+        $tipos        = str_repeat('s', count($candidatos));
+
+        $stmtE = $conn->prepare("SELECT LOWER(TRIM(correo)) AS correo FROM interesados_registro WHERE LOWER(TRIM(correo)) IN ($placeholders)");
+        $stmtE->bind_param($tipos, ...$candidatos);
+        $stmtE->execute();
+        $ya_existe = array_flip(array_column($stmtE->get_result()->fetch_all(MYSQLI_ASSOC), 'correo'));
+        $stmtE->close();
+
+        $stmtA = $conn->prepare("SELECT LOWER(TRIM(correo)) AS correo FROM alumnos WHERE visible = 1 AND LOWER(TRIM(correo)) IN ($placeholders)");
+        $stmtA->bind_param($tipos, ...$candidatos);
+        $stmtA->execute();
+        $ya_alumno = array_flip(array_column($stmtA->get_result()->fetch_all(MYSQLI_ASSOC), 'correo'));
+        $stmtA->close();
+
+        $stmtU = $conn->prepare("SELECT LOWER(TRIM(correo)) AS correo FROM unsubscribed WHERE LOWER(TRIM(correo)) IN ($placeholders)");
+        $stmtU->bind_param($tipos, ...$candidatos);
+        $stmtU->execute();
+        $ya_baja = array_flip(array_column($stmtU->get_result()->fetch_all(MYSQLI_ASSOC), 'correo'));
+        $stmtU->close();
+
+        $stmtIns   = $conn->prepare("INSERT INTO interesados_registro (correo) VALUES (?)");
+        $agregados = 0;
+        $saltados  = [];
+
+        foreach ($candidatos as $correo) {
+            if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+                $saltados[] = ['correo' => $correo, 'razon' => 'formato inválido'];
+                continue;
+            }
+            if (!str_ends_with($correo, '@gmail.com')) {
+                $saltados[] = ['correo' => $correo, 'razon' => 'no es @gmail.com, no aparecería en este panel'];
+                continue;
+            }
+            if (isset($ya_baja[$correo])) {
+                $saltados[] = ['correo' => $correo, 'razon' => 'dado de baja, nunca se agrega'];
+                continue;
+            }
+            if (isset($ya_alumno[$correo])) {
+                $saltados[] = ['correo' => $correo, 'razon' => 'ya registrado, no tiene sentido como lead'];
+                continue;
+            }
+            if (isset($ya_existe[$correo])) {
+                $saltados[] = ['correo' => $correo, 'razon' => 'ya existe'];
+                continue;
+            }
+
+            $stmtIns->bind_param('s', $correo);
+            $ok = $stmtIns->execute();
+            if ($ok) {
+                $agregados++;
+            } elseif ($stmtIns->errno === 1062) {
+                // Red de seguridad extra — ya se pre-chequeó arriba, pero cubre carreras.
+                $saltados[] = ['correo' => $correo, 'razon' => 'ya existe'];
+            } else {
+                $saltados[] = ['correo' => $correo, 'razon' => 'error de BD'];
+            }
+        }
+        $stmtIns->close();
+
+        echo json_encode(['ok' => true, 'agregados' => $agregados, 'saltados' => $saltados]);
+        exit;
+    }
+
+    // ── Envío selectivo a leads marcados (flujo original, sin cambios) ──
     $codigo_cupon = strtoupper(trim($_POST['codigo'] ?? ''));
     $cupon_info   = null;
     if ($codigo_cupon !== '') {
@@ -278,7 +394,13 @@ require_once $app_dir . '/componentes/sidebar.php';
         </h1>
         <p class="text-sm text-gray-500 mt-0.5">Seguimiento de los ~93 Gmails históricos invitados a registrarse.</p>
       </div>
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-2 shrink-0 flex-wrap">
+        <input type="email" id="input-email-prueba" placeholder="tu@correo.com"
+               class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm w-44 focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+        <button type="button" id="btn-enviar-prueba"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
+          Enviar prueba
+        </button>
         <button type="button" id="btn-preview-cupon"
                 class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -347,6 +469,27 @@ require_once $app_dir . '/componentes/sidebar.php';
                  class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-mono uppercase text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
         </div>
         <p id="info-cupon" class="text-xs text-gray-400 mt-2 hidden"></p>
+      </div>
+    </div>
+
+    <!-- Agregar leads (colapsable) -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+      <button type="button" id="btn-toggle-agregar-leads" class="w-full flex items-center justify-between p-5 text-left">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">&#9656; Agregar leads</span>
+      </button>
+      <div id="bloque-agregar-leads" class="hidden px-5 pb-5">
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+          Correos nuevos (uno por línea, o separados por coma/;)
+        </label>
+        <textarea id="textarea-leads-nuevos" rows="4" placeholder="correo1@gmail.com&#10;correo2@gmail.com"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-mono text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none"></textarea>
+        <div class="mt-3">
+          <button type="button" id="btn-agregar-leads"
+                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#54A6D8] hover:bg-sky-500 text-white rounded-xl text-sm font-bold shadow-sm transition">
+            Agregar leads
+          </button>
+        </div>
+        <div id="resultado-agregar-leads" class="mt-3 text-xs hidden"></div>
       </div>
     </div>
 
@@ -721,6 +864,99 @@ document.getElementById('btn-preview-cupon')?.addEventListener('click', async ()
     document.getElementById('preview-iframe').src =
         `${window.location.pathname}?preview_cupon=1&codigo=${encodeURIComponent(codigo)}`;
     document.getElementById('modal-preview').classList.remove('hidden');
+});
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Feature A: enviar prueba ─────────────────────────────────
+document.getElementById('btn-enviar-prueba')?.addEventListener('click', async () => {
+  const btn   = document.getElementById('btn-enviar-prueba');
+  const email = document.getElementById('input-email-prueba').value.trim();
+  if (!email) { mostrarToast('Ingresa un correo de prueba', 'error'); return; }
+
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Enviando…';
+
+  const body = new URLSearchParams();
+  body.append('csrf_token', CSRF_TOKEN);
+  body.append('accion', 'prueba');
+  body.append('email_prueba', email);
+  const codigoPrueba = chkIncluirCupon.checked ? document.getElementById('input-codigo').value.trim() : '';
+  if (codigoPrueba) body.append('codigo', codigoPrueba);
+
+  try {
+    const res  = await fetch(window.location.pathname + window.location.search, { method: 'POST', body });
+    const data = await res.json();
+    if (data.ok) {
+      mostrarToast(data.enviado ? 'Prueba enviada' : 'No se pudo enviar (revisa el log SMTP)', data.enviado ? 'ok' : 'error');
+    } else {
+      mostrarToast(data.error || 'Error al enviar la prueba', 'error');
+    }
+  } catch {
+    mostrarToast('Error de conexión', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+});
+
+// ── Feature B: agregar leads ─────────────────────────────────
+document.getElementById('btn-toggle-agregar-leads')?.addEventListener('click', () => {
+  const bloque = document.getElementById('bloque-agregar-leads');
+  const label  = document.querySelector('#btn-toggle-agregar-leads span');
+  const abierto = !bloque.classList.contains('hidden');
+  bloque.classList.toggle('hidden');
+  label.innerHTML = (abierto ? '&#9656;' : '&#9662;') + ' Agregar leads';
+});
+
+document.getElementById('btn-agregar-leads')?.addEventListener('click', async () => {
+  const btn        = document.getElementById('btn-agregar-leads');
+  const textarea    = document.getElementById('textarea-leads-nuevos');
+  const resultadoEl = document.getElementById('resultado-agregar-leads');
+  const valor       = textarea.value.trim();
+  if (!valor) { mostrarToast('Ingresa al menos un correo', 'error'); return; }
+
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Agregando…';
+
+  const body = new URLSearchParams();
+  body.append('csrf_token', CSRF_TOKEN);
+  body.append('accion', 'agregar_leads');
+  body.append('correos_nuevos', valor);
+
+  try {
+    const res  = await fetch(window.location.pathname + window.location.search, { method: 'POST', body });
+    const data = await res.json();
+    if (data.ok) {
+      let html = `<p class="font-bold text-green-700">${data.agregados} agregado${data.agregados !== 1 ? 's' : ''}</p>`;
+      if (data.saltados.length > 0) {
+        html += `<p class="font-bold text-gray-500 mt-2">${data.saltados.length} saltado${data.saltados.length !== 1 ? 's' : ''}:</p>`;
+        html += '<ul class="mt-1 space-y-0.5 text-gray-500">' +
+          data.saltados.map(s => `<li><span class="font-mono">${escHtml(s.correo)}</span> — ${escHtml(s.razon)}</li>`).join('') +
+          '</ul>';
+      }
+      resultadoEl.innerHTML = html;
+      resultadoEl.classList.remove('hidden');
+      mostrarToast(`${data.agregados} lead${data.agregados !== 1 ? 's' : ''} agregado${data.agregados !== 1 ? 's' : ''}`, data.agregados > 0 ? 'ok' : 'error');
+      if (data.agregados > 0) {
+        textarea.value = '';
+        setTimeout(() => location.reload(), 2500);
+      }
+    } else {
+      mostrarToast(data.error || 'Error al agregar leads', 'error');
+    }
+  } catch {
+    mostrarToast('Error de conexión', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
 });
 
 document.getElementById('btn-cerrar-preview')?.addEventListener('click', () => {
