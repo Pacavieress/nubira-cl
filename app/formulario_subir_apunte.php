@@ -342,7 +342,7 @@ $stmt->bind_param("siissisisiissssss", $titulo, $semestre, $anio, $descripcion, 
 // =============================================
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="overflow-x-hidden">
 <head>
     <meta charset="UTF-8">
     <title>Publicar Apunte | Nubira</title>
@@ -535,7 +535,7 @@ if (file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . 
 if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir . '/componentes/nav_bottom.php'; 
 ?>
 
-<main class="pt-16 md:pt-20 pb-20 md:pb-8 lg:ml-64 px-4 max-w-[1100px] w-full mx-auto md:px-8 min-h-[calc(100vh-80px)] flex flex-col transition-all duration-300">
+<main class="pt-16 md:pt-20 pb-20 md:pb-8 lg:ml-64 px-4 max-w-[1280px] w-full mx-auto md:px-8 min-h-[calc(100vh-80px)] flex flex-col transition-all duration-300">
 
     <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
@@ -643,7 +643,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                                     <?= icon('info-circle', 'w-4 h-4') ?>
                                 </button>
                                 <div id="ia-info-tooltip" role="tooltip"
-                                     class="absolute left-0 top-full mt-2 w-64 max-w-[calc(100vw-3rem)] bg-gray-900 text-white text-[11px] leading-snug rounded-lg px-3 py-2 shadow-lg z-20 opacity-0 invisible pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto">
+                                     class="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-3rem)] bg-gray-900 text-white text-[11px] leading-snug rounded-lg px-3 py-2 shadow-lg z-20 hidden group-hover:block">
                                     Sube tu apunte y la IA de Nubira genera automáticamente el título, la materia, el nivel y una descripción atractiva. Tú solo revisas y publicas.
                                 </div>
                             </div>
@@ -1038,23 +1038,14 @@ function analizarArchivo(file) {
 // (vía group-hover en CSS) + toggle por clic/tap en móvil (sin hover real).
 function toggleIaTooltip(event) {
     event.stopPropagation();
-    const tip = document.getElementById('ia-info-tooltip');
-    const abierto = tip.classList.contains('opacity-100');
-    if (abierto) {
-        tip.classList.add('opacity-0', 'invisible', 'pointer-events-none');
-        tip.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
-    } else {
-        tip.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
-        tip.classList.add('opacity-100', 'visible', 'pointer-events-auto');
-    }
+    document.getElementById('ia-info-tooltip').classList.toggle('hidden');
 }
 document.addEventListener('click', (e) => {
     const tip = document.getElementById('ia-info-tooltip');
     const trigger = document.getElementById('ia-info-trigger');
     if (!tip || !trigger) return;
-    if (tip.classList.contains('opacity-100') && !tip.contains(e.target) && !trigger.contains(e.target)) {
-        tip.classList.add('opacity-0', 'invisible', 'pointer-events-none');
-        tip.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
+    if (!tip.classList.contains('hidden') && !tip.contains(e.target) && !trigger.contains(e.target)) {
+        tip.classList.add('hidden');
     }
 });
 
