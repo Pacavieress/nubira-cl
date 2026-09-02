@@ -789,11 +789,8 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                 <?php foreach (planesCreditosIA() as $plan_key => $plan_info): ?>
                     <?php if (empty($plan_info['disponible'])) continue; // los no-disponibles se resumen en 1 card abajo, no uno por plan ?>
                 <a href="/app/iniciar_pago_creditos_ia.php?plan=<?= $plan_key ?>" class="flex items-center justify-between p-4 bg-gray-50 hover:bg-sky-50 border border-gray-200 hover:border-[#54A6D8] rounded-2xl transition-all">
-                    <div>
-                        <p class="text-sm font-bold text-gray-900"><?= $plan_info['creditos'] ?> generacion<?= $plan_info['creditos'] > 1 ? 'es' : '' ?></p>
-                        <p class="text-[10px] text-gray-400">Vigencia 1 mes</p>
-                    </div>
-                    <span class="text-[#54A6D8] font-bold text-sm">$<?= number_format($plan_info['monto'], 0, ',', '.') ?></span>
+                    <p class="text-sm font-bold text-gray-900"><?= $plan_info['creditos'] ?> generacion<?= $plan_info['creditos'] > 1 ? 'es' : '' ?></p>
+                    <span class="text-[#54A6D8] font-bold text-lg">$<?= number_format($plan_info['monto'], 0, ',', '.') ?></span>
                 </a>
                 <?php endforeach; ?>
 
@@ -807,7 +804,9 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                     <span class="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full uppercase tracking-wide">Próximamente</span>
                 </div>
             </div>
+            <button type="button" onclick="cerrarModalComprarCreditos()" class="mt-4 w-full py-3.5 bg-gray-100 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition">Cancelar</button>
             <p class="text-[10px] text-gray-400 text-center mt-4">No se renuevan automáticamente. Serás redirigido a MercadoPago.</p>
+            <p class="text-[10px] text-gray-400 text-center mt-2">¿Tienes algún problema? <a href="/soporte" class="text-[#54A6D8] font-bold hover:underline">Genera un ticket de soporte</a></p>
         </div>
     </div>
 
@@ -1335,9 +1334,6 @@ document.querySelectorAll('.btn-ia-modo').forEach(boton => {
                     textoEscaneoEl.textContent = mensajesEscaneo[indiceMensajeEscaneo];
                 }, 2800);
             }
-
-            // [DEBUG TEMPORAL — quitar después de diagnosticar el timeout]
-            console.log('[IA DEBUG] tamaño imagen (chars):', payload.image ? payload.image.length : 'sin imagen', '| tamaño texto (chars):', payload.text ? payload.text.length : 'sin texto');
 
             const res = await fetch('/app/datos/ia_nubira.php', {
                 method: 'POST',
