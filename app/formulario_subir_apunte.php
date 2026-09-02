@@ -433,6 +433,18 @@ $stmt->bind_param("siissisisiissssss", $titulo, $semestre, $anio, $descripcion, 
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+/* [NUBIRA 2.0] Animación de entrada de los botones de IA al habilitarse (al
+   subir el archivo) — un solo ciclo, fade-in + slide desde abajo con leve
+   rebote (cubic-bezier con overshoot). */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes entrada-ia-botones {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .btn-ia-entrada {
+        animation: entrada-ia-botones 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+}
 /* [NUBIRA 2.0] Borde con gradiente animado en los botones de modo IA — llama la
    atención como función de IA incluso en reposo, no solo mientras generan. */
 .btn-ia-modo {
@@ -619,6 +631,54 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                     <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" id="thumbnails-container"></div>
                     <input type="hidden" name="pagina_portada" id="pagina_portada" value="1">
                 </div>
+
+                <div id="ia-botones-container" class="mt-2">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <div class="flex items-start gap-1">
+                            <label class="text-[11px] md:text-xs font-bold text-gray-900 leading-snug">La IA de Nubira completa tu formulario por ti</label>
+                            <div class="relative group shrink-0">
+                                <button type="button" id="ia-info-trigger" onclick="toggleIaTooltip(event)"
+                                        class="flex items-center justify-center w-5 h-5 rounded-full bg-sky-50 text-[#54A6D8] hover:bg-sky-100 transition-colors -mt-0.5"
+                                        aria-label="Qué hace la IA de Nubira" aria-describedby="ia-info-tooltip">
+                                    <?= icon('info-circle', 'w-4 h-4') ?>
+                                </button>
+                                <div id="ia-info-tooltip" role="tooltip"
+                                     class="absolute left-0 top-full mt-2 w-64 max-w-[calc(100vw-3rem)] bg-gray-900 text-white text-[11px] leading-snug rounded-lg px-3 py-2 shadow-lg z-20 opacity-0 invisible pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto">
+                                    Sube tu apunte y la IA de Nubira genera automáticamente el título, la materia, el nivel y una descripción atractiva. Tú solo revisas y publicas.
+                                </div>
+                            </div>
+                        </div>
+                        <span id="badge-categoria" class="shrink-0 text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-md uppercase hidden">General</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <button type="button" data-modo-ia="marketing" disabled
+                                class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                            Marketing
+                        </button>
+                        <button type="button" data-modo-ia="profesional" disabled
+                                class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                            Profesional
+                        </button>
+                        <button type="button" data-modo-ia="seo" disabled
+                                class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                            SEO
+                        </button>
+                    </div>
+                    <p id="ia-upload-hint" class="text-[10px] text-gray-400 mt-1.5">Sube tu apunte para generar con IA</p>
+                    <p id="ia-contador-restante" class="text-[10px] text-gray-400 mt-1.5 hidden">
+                        <?php if (!$cupo_ia['puede_generar']): ?>
+                            <?php // Sin cupo: sin aviso acá — el clic en "Generar con IA" ya abre el modal de compra directo. ?>
+                        <?php elseif ($cupo_ia['origen'] === 'gratis'): ?>
+                            <?php if (LIMITE_GENERACIONES_IA_GRATIS === 1): ?>
+                                Tu generación gratis está disponible
+                            <?php else: ?>
+                                <?= $generaciones_restantes_gratis ?> de <?= LIMITE_GENERACIONES_IA_GRATIS ?> generaciones gratis disponibles
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <?= $plan_creditos_restantes ?> de <?= $plan_creditos_totales ?> generaciones disponibles (plan activo)
+                        <?php endif; ?>
+                    </p>
+                </div>
             </div>
 
             <div class="flex flex-col gap-5">
@@ -704,42 +764,12 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
            class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl p-3.5 transition-all outline-none font-medium focus:ring-2 focus:ring-[#54A6D8]">
 </div>
                 <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-xs font-bold text-gray-900 uppercase tracking-wide mb-0">Descripción <span class="text-red-400">*</span></label>
-                        <div class="flex items-center gap-1.5">
-                            <button type="button" data-modo-ia="marketing"
-                                    class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                                Marketing
-                            </button>
-                            <button type="button" data-modo-ia="profesional"
-                                    class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                                Profesional
-                            </button>
-                            <button type="button" data-modo-ia="seo"
-                                    class="btn-ia-modo flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border border-sky-100 text-[#54A6D8] hover:bg-sky-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                                SEO
-                            </button>
-                            <span id="badge-categoria" class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-md uppercase hidden">General</span>
-                        </div>
-                    </div>
+                    <label class="block text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Descripción <span class="text-red-400">*</span></label>
 
                     <textarea name="descripcion" id="descripcion"
                               class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-[#54A6D8] focus:border-[#54A6D8] block p-4 resize-none transition-all outline-none h-32 leading-relaxed"
                               maxlength="1500" placeholder="Escribe una descripción de tu apunte..." required></textarea>
                     <p id="descripcion-error" class="text-[10px] text-red-500 font-bold mt-1 hidden"></p>
-                    <p id="ia-contador-restante" class="text-[10px] text-gray-400 mt-1">
-                        <?php if (!$cupo_ia['puede_generar']): ?>
-                            <?php // Sin cupo: sin aviso acá — el clic en "Generar con IA" ya abre el modal de compra directo. ?>
-                        <?php elseif ($cupo_ia['origen'] === 'gratis'): ?>
-                            <?php if (LIMITE_GENERACIONES_IA_GRATIS === 1): ?>
-                                Tu generación gratis está disponible
-                            <?php else: ?>
-                                <?= $generaciones_restantes_gratis ?> de <?= LIMITE_GENERACIONES_IA_GRATIS ?> generaciones gratis disponibles
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <?= $plan_creditos_restantes ?> de <?= $plan_creditos_totales ?> generaciones disponibles (plan activo)
-                        <?php endif; ?>
-                    </p>
                 </div>
 
                 <div class="pt-2">
@@ -998,8 +1028,35 @@ function analizarArchivo(file) {
     document.getElementById('mobile-buttons').classList.add('hidden');
     document.getElementById('preview').classList.remove('hidden');
     document.getElementById('previewContent').innerText = file.name;
+    document.querySelectorAll('.btn-ia-modo').forEach(b => { b.disabled = false; b.classList.add('btn-ia-entrada'); });
+    document.getElementById('ia-upload-hint').classList.add('hidden');
+    document.getElementById('ia-contador-restante').classList.remove('hidden');
     setTimeout(() => validateAll(), 100);
 }
+
+// [NUBIRA 2.0] Tooltip del ícono "i" junto al label de IA — hover en desktop
+// (vía group-hover en CSS) + toggle por clic/tap en móvil (sin hover real).
+function toggleIaTooltip(event) {
+    event.stopPropagation();
+    const tip = document.getElementById('ia-info-tooltip');
+    const abierto = tip.classList.contains('opacity-100');
+    if (abierto) {
+        tip.classList.add('opacity-0', 'invisible', 'pointer-events-none');
+        tip.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
+    } else {
+        tip.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
+        tip.classList.add('opacity-100', 'visible', 'pointer-events-auto');
+    }
+}
+document.addEventListener('click', (e) => {
+    const tip = document.getElementById('ia-info-tooltip');
+    const trigger = document.getElementById('ia-info-trigger');
+    if (!tip || !trigger) return;
+    if (tip.classList.contains('opacity-100') && !tip.contains(e.target) && !trigger.contains(e.target)) {
+        tip.classList.add('opacity-0', 'invisible', 'pointer-events-none');
+        tip.classList.remove('opacity-100', 'visible', 'pointer-events-auto');
+    }
+});
 
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
