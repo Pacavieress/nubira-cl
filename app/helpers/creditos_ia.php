@@ -17,10 +17,10 @@ if (!function_exists('planesCreditosIA')) {
             // puede comprar todavía — ni desde la UI (sin link real) ni desde el backend
             // (iniciar_pago_creditos_ia.php lo rechaza aunque llegue por URL directa).
             // Cambio de modelo 18/08/2026: generación individual pasa a $500 (antes plan
-            // "1 crédito" a $1000); los packs (plan_5/plan_10) quedan "Próximamente".
+            // "1 crédito" a $1000). Packs plan_5/plan_10 activados el 2026-09-02.
             'plan_1'  => ['creditos' => 1,  'monto' => 500,  'disponible' => true],
-            'plan_5'  => ['creditos' => 5,  'monto' => 1495, 'disponible' => false],
-            'plan_10' => ['creditos' => 10, 'monto' => 2990, 'disponible' => false],
+            'plan_5'  => ['creditos' => 5,  'monto' => 1495, 'disponible' => true],
+            'plan_10' => ['creditos' => 10, 'monto' => 2990, 'disponible' => true],
         ];
     }
 }

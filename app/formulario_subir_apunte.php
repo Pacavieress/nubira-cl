@@ -782,7 +782,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
     <!-- Modal Comprar Créditos IA -->
     <div id="modal-comprar-creditos" class="fixed inset-0 z-[100] hidden items-end md:items-center justify-center">
         <div id="modal-comprar-creditos-bg" class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 cursor-pointer"></div>
-        <div id="modal-comprar-creditos-card" class="bg-white w-full md:w-[420px] rounded-t-3xl md:rounded-3xl p-6 relative z-10 transform translate-y-full md:translate-y-10 opacity-0 transition-all duration-300 shadow-2xl flex flex-col">
+        <div id="modal-comprar-creditos-card" class="bg-white w-full md:w-[420px] max-h-[85vh] overflow-y-auto rounded-t-3xl md:rounded-3xl p-6 relative z-10 transform translate-y-full md:translate-y-10 opacity-0 transition-all duration-300 shadow-2xl flex flex-col">
             <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 md:hidden"></div>
             <div class="flex items-center gap-4 mb-6">
                 <div class="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-[#54A6D8] border border-sky-100 shrink-0"><?= icon('sparkles', 'w-6 h-6') ?></div>
@@ -791,24 +791,20 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                     <p class="text-xs text-gray-500">Elige un plan para seguir generando descripciones.</p>
                 </div>
             </div>
+
+            <p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4 flex items-center gap-1.5">
+                <?= icon('clock', 'w-3.5 h-3.5 shrink-0') ?>
+                Los créditos vencen 1 mes después de la compra.
+            </p>
+
             <div class="space-y-3">
                 <?php foreach (planesCreditosIA() as $plan_key => $plan_info): ?>
-                    <?php if (empty($plan_info['disponible'])) continue; // los no-disponibles se resumen en 1 card abajo, no uno por plan ?>
+                    <?php if (empty($plan_info['disponible'])) continue; ?>
                 <a href="/app/iniciar_pago_creditos_ia.php?plan=<?= $plan_key ?>" class="flex items-center justify-between p-4 bg-gray-50 hover:bg-sky-50 border border-gray-200 hover:border-[#54A6D8] rounded-2xl transition-all">
                     <p class="text-sm font-bold text-gray-900"><?= $plan_info['creditos'] ?> generacion<?= $plan_info['creditos'] > 1 ? 'es' : '' ?></p>
                     <span class="text-[#54A6D8] font-bold text-lg">$<?= number_format($plan_info['monto'], 0, ',', '.') ?></span>
                 </a>
                 <?php endforeach; ?>
-
-                <!-- Pack de varias generaciones — visual únicamente, sin <a href> ni link real
-                     todavía (plan_5/plan_10 siguen marcados disponible=false en el backend). -->
-                <div class="flex items-center justify-between p-4 bg-gray-50 border border-dashed border-gray-200 rounded-2xl opacity-70 cursor-not-allowed">
-                    <div>
-                        <p class="text-sm font-bold text-gray-500">Pack de varias generaciones</p>
-                        <p class="text-[10px] text-gray-400">Ahorra comprando varias juntas</p>
-                    </div>
-                    <span class="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full uppercase tracking-wide">Próximamente</span>
-                </div>
             </div>
             <button type="button" onclick="cerrarModalComprarCreditos()" class="mt-4 w-full py-3.5 bg-gray-100 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition">Cancelar</button>
             <p class="text-[10px] text-gray-400 text-center mt-4">No se renuevan automáticamente. Serás redirigido a MercadoPago.</p>
