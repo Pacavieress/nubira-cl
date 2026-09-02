@@ -25,6 +25,25 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
+// [NUBIRA 2.0] CSRF — el token viaja DENTRO del body JSON (payload.csrf desde
+// formulario_subir_apunte.php), no en $_POST: este endpoint lee php://input, y
+// $_POST llega vacío con Content-Type: application/json. Va ANTES de tocar cupo
+// o llamar a Gemini a propósito: un request forjado no debe consumir crédito ni
+// gastar una llamada real a la IA.
+//
+// $input se lee UNA sola vez acá (php://input no es confiable de releer dos
+// veces según SAPI/config) y se reutiliza más abajo — no se vuelve a leer.
+$input = json_decode(file_get_contents('php://input'), true);
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $input['csrf'] ?? '')) {
+    http_response_code(403);
+    echo json_encode([
+        'exito' => false,
+        'error' => 'csrf_invalido',
+        'mensaje' => 'Tu sesión expiró, recarga la página e intenta de nuevo.'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../conexion.php';
 require_once __DIR__ . '/../helpers/sanitizar_html.php';
@@ -61,7 +80,6 @@ if (($ahora - $ultima) < 5) {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
 $filename  = $input['filename'] ?? 'Documento_Nubira';
 $text_data = $input['text'] ?? '';
 $image_b64 = $input['image'] ?? null;

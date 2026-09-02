@@ -23,6 +23,12 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
+// [NUBIRA 2.0] CSRF para el fetch JSON a /app/datos/ia_nubira.php (no hay <form>
+// tradicional ahí — el token viaja dentro del body JSON, ver payload más abajo).
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // [NUBIRA 2.0] Quien eligió "solo comprar" en completar_perfil.php no publica apuntes.
 if (($_SESSION['intencion_uso'] ?? '') === 'comprar') {
     if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
@@ -836,6 +842,10 @@ const NUBIRA_CUPO_IA = {
     totales: <?= $cupo_ia['origen'] === 'gratis' ? LIMITE_GENERACIONES_IA_GRATIS : ($plan_creditos_totales ?? 0) ?>
 };
 
+// [NUBIRA 2.0] Token CSRF para el fetch a ia_nubira.php — viaja dentro del JSON
+// body (payload.csrf), no como $_POST, porque ese endpoint lee php://input.
+const CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token']) ?>;
+
 // --- MODALES NUBIRA ---
 function setupModal(triggerId, modalId, cardId, closeId) {
     const btn = document.getElementById(triggerId), modal = document.getElementById(modalId), card = document.getElementById(cardId), close = document.getElementById(closeId);
@@ -1304,7 +1314,7 @@ document.querySelectorAll('.btn-ia-modo').forEach(boton => {
 
         try {
             const ext = currentFile.name.split('.').pop().toLowerCase();
-            const payload = { filename: currentFile.name, tono: modo };
+            const payload = { filename: currentFile.name, tono: modo, csrf: CSRF_TOKEN };
             if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
                 payload.image = await fileToBase64(currentFile);
             } else if (ext === 'pdf') {
@@ -1356,6 +1366,13 @@ document.querySelectorAll('.btn-ia-modo').forEach(boton => {
 
             if (data.exito === false && data.error === 'rate_limit') {
                 showToast(`Espera ${data.segundos_restantes || 5}s antes de generar otra vez`, false);
+                document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = false);
+                boton.innerHTML = textoOriginal;
+                return;
+            }
+
+            if (data.exito === false && data.error === 'csrf_invalido') {
+                showToast(data.mensaje || 'Tu sesión expiró, recarga la página', false);
                 document.querySelectorAll('.btn-ia-modo').forEach(b => b.disabled = false);
                 boton.innerHTML = textoOriginal;
                 return;
