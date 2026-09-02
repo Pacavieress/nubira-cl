@@ -103,9 +103,9 @@ Detectado el 27/07/2026 al intentar agregar el link de Guías al "menú admin" y
 
 **Regla práctica para el futuro**: si se agrega una sección `/admin/*` nueva, agregarla en **`panel_gestion.php`** (`$accesos_admin`) primero — es el que realmente importa. `admin_panel.php` es secundario/opcional de mantener. `admin_dashboard.php` no se debe tocar ni usar como referencia.
 
-## Pendiente: reactivar app/datos/ia_nubira.php (endpoint de IA para descripción de apuntes)
+## IA de apuntes (ia_nubira.php) — REACTIVADO
 
-`app/datos/ia_nubira.php:23-25` corta con un `exit` temprano ("Servicio de IA temporalmente no disponible... mientras se migra a nuevo proveedor de IA") antes de llegar al código real que arma el prompt y llama a Gemini. Detectado el 27/07/2026 durante el diseño del módulo de IA del Centro de Recursos. Confirmado con el usuario: la migración de proveedor mencionada en el comentario **se descartó** — Gemini sigue siendo el proveedor real, hay que reactivar este endpoint (quitar el corte temprano y confirmar que `GEMINI_API_KEY` sigue siendo válida), no migrar a otro proveedor. Tarea separada, no forma parte del Centro de Recursos — pendiente para una sesión dedicada.
+Reactivado el 2026-09-02 (commit 552efb9). Gemini sigue siendo el proveedor (gemini-2.5-flash); la migración de proveedor mencionada antes se descartó. Validación CSRF agregada en commit 75030e2. Key en .env (GEMINI_API_KEY), cuenta Google en nivel pagado.
 
 ## Tech-debt pendiente: lógica de $categoria_overlay triplicada (7 copias) en vitrina.php/cargar_servicios.php/busqueda.php
 
@@ -477,7 +477,7 @@ Badge via `contar_mensajes_nuevos.php`. Sidebar and bottom nav must show it. Pol
 MercadoPago SDK. Two tokens: `MP_ACCESS_TOKEN` (apuntes/servicios), `MP_ACCESS_TOKEN_OPORTUNIDADES`. Webhook: `app/notificaciones_mp.php` → responds 200 immediately, then processes.
 
 ## AI
-Google Gemini 2.0 Flash via `app/datos/ia_nubira.php`. Cached in `app/cache_ia/` as JSON (MD5 key). Admin panel: `/admin/ia`.
+Google Gemini 2.5 Flash via `app/datos/ia_nubira.php` (genera descripciones de apuntes; sin caché propio). Admin panel: `/admin/ia` (`admin_ia.php`). Nota: `app/cache_ia/` es caché de otra feature de IA (mensajes de bienvenida), no de este endpoint.
 
 ## Email
 `app/correo.php` wraps PHPMailer. SMTP: `no-reply@nubira.cl`, `contacto@nubira.cl`. Logs: `app/log_correos.txt`.
@@ -497,7 +497,6 @@ Google Gemini 2.0 Flash via `app/datos/ia_nubira.php`. Cached in `app/cache_ia/`
 | Profile | `app/perfil.php`, `app/editar_datos.php`, `app/actualizar_foto.php` |
 
 ## Known Technical Debt (explicitly deferred)
-- Hardcoded Gemini API key in source
 - `CURLOPT_SSL_VERIFYPEER = false` in production
 - `$es_admin = true` hardcoded in `contar_alertas_sistema.php`
 - Auto-migrations on every page load in `admin_usuarios.php`

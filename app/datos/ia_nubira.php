@@ -1,7 +1,7 @@
 <?php
 /**
  * NUBIRA 2.0 - IA MOTOR (V5: TONOS + MATERIA + NIVEL + ANTI-CONTACTO + MICROHINTS)
- * Modelo: Gemini 2.0 Flash (Visión + Texto)
+ * Modelo: Gemini 2.5 Flash (Visión + Texto)
  *
  * V5 cambios:
  * - Reglas de seguridad anti-contacto inyectadas en TODOS los prompts
@@ -258,7 +258,7 @@ $instruccion_keywords = match($tono) {
 };
 
 // =========================================================================
-// PROMPT PRINCIPAL (combina seguridad + tono + microhints disponibles)
+// PROMPT PRINCIPAL (combina seguridad + tono)
 // =========================================================================
 $prompt = "
 Actúa como Copywriter Académico de élite para una plataforma educativa.
