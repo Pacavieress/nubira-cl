@@ -571,13 +571,15 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
             <div class="flex flex-col gap-4">
 
                 <div id="mobile-buttons" class="md:hidden grid grid-cols-2 gap-3 mb-2">
-                    <button type="button" onclick="abrirModalEscaner()" class="p-4 bg-sky-50 border border-sky-100 rounded-2xl text-[#54A6D8] hover:bg-sky-100 hover:scale-[1.02] transition-all font-bold text-xs flex flex-col items-center gap-2 shadow-sm">
+                    <button type="button" onclick="document.getElementById('cameraInput').click()" class="p-4 bg-sky-50 border border-sky-100 rounded-2xl text-[#54A6D8] hover:bg-sky-100 hover:scale-[1.02] transition-all font-bold text-xs flex flex-col items-center gap-2 shadow-sm">
                         <?= icon('camera', 'w-6 h-6') ?> Escanear
                     </button>
                     <button type="button" onclick="document.getElementById('archivo').click()" class="p-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-600 font-bold text-xs flex flex-col items-center gap-2">
                         <?= icon('upload', 'w-6 h-6') ?> Subir
                     </button>
                 </div>
+                <p class="md:hidden text-[10px] text-gray-400 -mt-1 mb-1">PDF o imágenes (JPG, PNG)</p>
+                <p class="md:hidden text-[10px] text-gray-400 mb-2">💡 Para mejor calidad, escanea con la app de tu celular y sube el PDF.</p>
 
                <label for="archivo" id="drop-zone" class="relative overflow-hidden transform-gpu border-2 border-dashed border-gray-200 rounded-2xl h-48 md:h-64 flex flex-col justify-center items-center text-center cursor-pointer transition-all duration-300 hidden md:flex bg-gray-50/50 hover:bg-white z-0">
     <div class="scan-layer absolute inset-0 z-10 bg-white/80 backdrop-blur-[2px]">
@@ -643,7 +645,7 @@ if (file_exists($app_dir . '/componentes/nav_bottom.php')) require_once $app_dir
                                     <?= icon('info-circle', 'w-4 h-4') ?>
                                 </button>
                                 <div id="ia-info-tooltip" role="tooltip"
-                                     class="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-3rem)] bg-gray-900 text-white text-[11px] leading-snug rounded-lg px-3 py-2 shadow-lg z-20 hidden group-hover:block">
+                                     class="absolute right-0 bottom-full mb-2 w-64 max-w-[calc(100vw-3rem)] bg-gray-900 text-white text-[11px] leading-snug rounded-lg px-3 py-2 shadow-lg z-20 hidden group-hover:block">
                                     Sube tu apunte y la IA de Nubira genera automáticamente el título, la materia, el nivel y una descripción atractiva. Tú solo revisas y publicas.
                                 </div>
                             </div>
