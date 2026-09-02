@@ -51,33 +51,100 @@ Mientras tanto, nuestros tutores han ayudado a estudiantes en:</p>
 
 function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '') {
     $unsub_safe = htmlspecialchars($unsubUrl, ENT_QUOTES, 'UTF-8');
+    $utm_base   = 'utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=recuperar_gmails';
     return "
-<p>Hola,</p>
+<p>En <strong>Nubira</strong> encuentras tutores para lo que estés estudiando.</p>
 
-<p>Hace un tiempo intentaste registrarte en <strong>Nubira.cl</strong> y no pudimos darte acceso
-porque en ese momento solo permitíamos correos institucionales.</p>
+<p><strong>Elige por dónde partir:</strong></p>
 
-<p><strong>Eso cambió. Ahora cualquier persona puede registrarse en Nubira.</strong></p>
+<!-- Card destacada: PAES -->
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#F0F9FF;border:1px solid #e5e7eb;border-radius:12px;margin:24px 0;overflow:hidden;\">
+  <tr>
+    <td>
+      <img src=\"https://nubira.cl/upload/email/card-paes.png\" alt=\"PAES\" style=\"display:block;width:100%;height:auto;background-color:#DCEBF7;\">
+    </td>
+  </tr>
+  <tr>
+    <td style=\"padding:20px;\">
+      <h3 style=\"margin:0 0 8px 0;font-size:18px;color:#111827;\">¿Estás preparando la PAES?</h3>
+      <p style=\"margin:0 0 16px 0;font-size:14px;color:#374151;line-height:1.5;\">Tutores y material para reforzar la prueba, con clases 100% online.</p>
+      <a href=\"https://nubira.cl/clases/paes?{$utm_base}&amp;utm_content=card_paes\"
+         style=\"background-color:#54A6D8;color:#ffffff;padding:10px 20px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;\">
+        Ver tutores PAES
+      </a>
+    </td>
+  </tr>
+</table>
 
-<p><strong>Lo que hace distinta a Nubira:</strong></p>
+<!-- Cards compactas: Matemáticas / Lenguaje / Biología / Inglés -->
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-matematicas.png\" alt=\"Matemáticas\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Te está costando Matemáticas?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Cálculo, álgebra y más, a tu ritmo con un tutor.</p>
+      <a href=\"https://nubira.cl/clases/matematicas?{$utm_base}&amp;utm_content=card_matematicas\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
 
-<ul style=\"padding-left:20px; line-height:2.2;\">
-  <li>Clases 100% online en la plataforma, sin instalar Meet, Zoom ni Teams.</li>
-  <li>Conversa con el tutor sin compartir tu WhatsApp ni contactos de redes sociales.</li>
-  <li>Ves los horarios publicados por el tutor antes de escribirle.</li>
-  <li>Tu pago queda protegido hasta que confirmes que la clase se realizó.</li>
-</ul>
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-lenguaje.png\" alt=\"Lenguaje\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Necesitas mejorar en Lenguaje?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Comprensión lectora, redacción y ensayos con quien sabe.</p>
+      <a href=\"https://nubira.cl/clases/lenguaje?{$utm_base}&amp;utm_content=card_lenguaje\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
+
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-biologia.png\" alt=\"Biología\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Examen de Biología o Anatomía?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Tutores para reforzar antes de tu prueba.</p>
+      <a href=\"https://nubira.cl/clases/biologia?{$utm_base}&amp;utm_content=card_biologia\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
+
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-ingles.png\" alt=\"Inglés\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Quieres avanzar en Inglés?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Práctica y apoyo para el ramo o para hablarlo mejor.</p>
+      <a href=\"https://nubira.cl/clases/ingles?{$utm_base}&amp;utm_content=card_ingles\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
+
+<p style=\"font-size:13px;color:#6B7280;line-height:1.6;margin:24px 0;\">
+  Clases 100% online, sin instalar Meet, Zoom ni Teams &middot; conversas con el tutor sin dar tu WhatsApp &middot; ves los horarios antes de escribir &middot; tu pago queda protegido hasta que confirmes la clase.
+</p>
 
 <p style=\"text-align:center; margin:32px 0;\">
-  <a href=\"https://nubira.cl/registro?utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=recuperar_gmails\"
+  <a href=\"https://nubira.cl/registro?{$utm_base}\"
      style=\"background:#54A6D8;color:white;padding:13px 28px;
             text-decoration:none;border-radius:8px;font-weight:bold;
             font-size:16px;display:inline-block;\">
-    Regístrate ahora
+    Regístrate gratis
   </a>
 </p>
-
-<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
 
 <p style=\"text-align:center;margin-top:26px;margin-bottom:6px;font-size:13px;color:#555;\">
   Síguenos en redes sociales:
