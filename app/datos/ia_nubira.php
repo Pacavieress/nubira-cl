@@ -211,7 +211,7 @@ TONO REQUERIDO: ACADÉMICO FORMAL
 TONO REQUERIDO: VENDEDOR AGRESIVO CON EMOJIS
 - Lenguaje directo, urgente, con emojis estratégicos (máximo 3-4 en toda la descripción, no satures).
 - Estructura: 4 a 5 oraciones, más largo que los otros modos — el objetivo es vender, no resumir contenido académico.
-- Oración 1: Hook con emoji + pregunta o afirmación de dolor real ('😰 ¿El certamen 1 te tiene con los pelos de punta?').
+- Oración 1: Hook potente — una pregunta o afirmación que conecte con una necesidad o meta real del estudiante. Puedes iniciarlo con un emoji si aporta (elígelo según el tema, variándolo, sin abusar del tono de angustia); o empezar directo con texto si queda más natural.
 - Oración 2-3: Solución concreta con 2-3 conceptos reales del documento, mencionados de forma simple (NO vocabulario técnico complejo — traduce términos académicos a lenguaje cotidiano que cualquier estudiante entienda al toque).
 - Oración 4: Urgencia o escasez genuina relacionada al contexto académico (certamen próximo, pocos días para el examen, cupo de tutoría limitado) — sin inventar falsedades, pero sí crear sentido de apremio real.
 - Oración 5 (cierre): Llamado a la acción claro con emoji ('📚 Descárgalo ahora y llega preparado').
