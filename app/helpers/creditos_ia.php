@@ -30,9 +30,23 @@ if (!function_exists('verificarCupoIA')) {
      * Determina si el alumno puede generar una descripción con IA ahora mismo,
      * y de dónde sale el cupo (gratis, plan pagado, o ninguno).
      *
-     * @return array{puede_generar: bool, origen: 'gratis'|'plan_pagado'|'sin_cupo', compra_id: ?int}
+     * @return array{puede_generar: bool, origen: 'gratis'|'plan_pagado'|'sin_cupo'|'admin', compra_id: ?int}
      */
     function verificarCupoIA(mysqli $conn, int $alumno_id): array {
+        // Bypass admin — verificado SIEMPRE contra BD (alumnos.rol), nunca contra
+        // $_SESSION (podría estar mal seteada). Origen 'admin' es ignorado
+        // explícitamente por incrementarCupoIA(), no consume cupo real.
+        $stmt = $conn->prepare("SELECT rol FROM alumnos WHERE id = ?");
+        $stmt->bind_param("i", $alumno_id);
+        $stmt->execute();
+        $stmt->bind_result($rol);
+        $stmt->fetch();
+        $stmt->close();
+
+        if ($rol === 'admin') {
+            return ['puede_generar' => true, 'origen' => 'admin', 'compra_id' => null];
+        }
+
         // 1. Cupo gratis
         $stmt = $conn->prepare("SELECT generaciones_ia_usadas FROM alumnos WHERE id = ?");
         $stmt->bind_param("i", $alumno_id);
@@ -72,6 +86,10 @@ if (!function_exists('incrementarCupoIA')) {
      * Encapsula la bifurcación para que ia_nubira.php no la repita en sus 2 puntos de consumo.
      */
     function incrementarCupoIA(mysqli $conn, string $origen, ?int $compra_id, int $alumno_id): bool {
+        if ($origen === 'admin') {
+            return true; // bypass admin: no descuenta ni cupo gratis ni plan pagado
+        }
+
         if ($origen === 'plan_pagado') {
             if ($compra_id === null) return false;
             $stmt = $conn->prepare("UPDATE compras_creditos_ia SET creditos_usados = creditos_usados + 1 WHERE id = ?");
