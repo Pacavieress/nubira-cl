@@ -28,25 +28,67 @@ $PLANES_CREDITOS_IA = planesCreditosIA();
 MercadoPagoConfig::setAccessToken(MP_ACCESS_TOKEN);
 $paymentClient = new PaymentClient();
 
-$creditos_totales = 0;
-$fecha_venc_txt   = '';
-$error_msg        = '';
+$creditos_totales   = 0;
+$fecha_venc_txt     = '';
+$error_msg          = '';
+$procesando_todavia = false;
 
 try {
     // Re-verifica SIEMPRE con la API de MP — nunca confía en los parámetros de la URL
     $payment = $paymentClient->get($payment_id);
     $status  = $payment->status ?? '';
+    $meta_tipo       = $payment->metadata->tipo ?? '';
     $meta_usuario_id = (int)($payment->metadata->usuario_id ?? 0);
     $meta_plan       = $payment->metadata->plan ?? '';
-    $meta_tipo       = $payment->metadata->tipo ?? '';
 
-    // Blindaje: el pago debe ser realmente de este usuario logueado
-    if ($meta_tipo !== 'creditos_ia' || $meta_usuario_id !== $usuario_id) {
-        $error_msg = "Este comprobante no corresponde a tu cuenta.";
-    } elseif ($status !== 'approved') {
+    // [NUBIRA 2.0] Retry: la API de MP a veces devuelve metadata vacío justo
+    // después de aprobar (consistencia eventual del lado de MP) — reintentamos
+    // dándole tiempo a que se propague, antes de asumir que no llegó.
+    $intentos = 0;
+    while ($status === 'approved' && $meta_usuario_id <= 0 && $intentos < 3) {
+        sleep($intentos === 0 ? 1 : 2);
+        $payment = $paymentClient->get($payment_id);
+        $status  = $payment->status ?? '';
+        $meta_tipo       = $payment->metadata->tipo ?? '';
+        $meta_usuario_id = (int)($payment->metadata->usuario_id ?? 0);
+        $meta_plan       = $payment->metadata->plan ?? '';
+        $intentos++;
+    }
+
+    // [NUBIRA 2.0] Fallback: si tras los reintentos el metadata sigue vacío, el
+    // external_reference (formato CREDITOS_IA_{usuario_id}_{timestamp}) sí llega
+    // completo e inmediato — lo usamos solo para recuperar el usuario_id. El
+    // plan, si tampoco vino en metadata, se infiere del monto REAL pagado
+    // (nunca del cliente). Si no se puede determinar con seguridad, no se
+    // inserta acá — el webhook lo resuelve con sus propios datos.
+    if ($status === 'approved' && $meta_usuario_id <= 0) {
+        $ext_ref = (string)($payment->external_reference ?? '');
+        if (preg_match('/^CREDITOS_IA_(\d+)_\d+$/', $ext_ref, $m)) {
+            $meta_usuario_id = (int)$m[1];
+            $meta_tipo       = 'creditos_ia'; // el prefijo ya lo confirma
+        }
+        if ($meta_plan === '' || !array_key_exists($meta_plan, $PLANES_CREDITOS_IA)) {
+            $monto_pagado = (int)round((float)($payment->transaction_amount ?? 0));
+            foreach ($PLANES_CREDITOS_IA as $slug => $info) {
+                if ((int)$info['monto'] === $monto_pagado) {
+                    $meta_plan = $slug;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Blindaje: el pago debe ser realmente de este usuario logueado — se aplica
+    // sin importar si el usuario_id salió de metadata o del fallback de arriba.
+    if ($status !== 'approved') {
         $error_msg = "El pago aún no está aprobado (estado: {$status}). Si ya pagaste, espera unos segundos y refresca.";
-    } elseif (!array_key_exists($meta_plan, $PLANES_CREDITOS_IA)) {
-        $error_msg = "Plan no reconocido en el comprobante.";
+    } elseif ($meta_usuario_id > 0 && $meta_usuario_id !== $usuario_id) {
+        $error_msg = "Este comprobante no corresponde a tu cuenta.";
+    } elseif ($meta_tipo !== 'creditos_ia' || $meta_usuario_id <= 0 || !array_key_exists($meta_plan, $PLANES_CREDITOS_IA)) {
+        // Aprobado, pero ni metadata ni el fallback lograron confirmar los datos
+        // todavía — no es un error real, es timing de MP. El webhook activa el
+        // crédito solo apenas le llegue la notificación; no asustamos al usuario.
+        $procesando_todavia = true;
     } else {
         $creditos_totales = $PLANES_CREDITOS_IA[$meta_plan]['creditos'];
         $monto_real       = $PLANES_CREDITOS_IA[$meta_plan]['monto'];
@@ -114,6 +156,12 @@ try {
             </div>
             <h1 class="text-xl font-bold text-gray-900 mb-2">Algo no cuadró</h1>
             <p class="text-sm text-gray-500 mb-6"><?= htmlspecialchars($error_msg) ?></p>
+        <?php elseif ($procesando_todavia): ?>
+            <div class="w-16 h-16 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-circle-check text-2xl text-[#54A6D8]"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 mb-2">Tu pago fue aprobado</h1>
+            <p class="text-sm text-gray-500 mb-6">Estamos activando tu crédito, puede tardar unos segundos — recarga esta página o vuelve a subir tu apunte en un momento.</p>
         <?php else: ?>
             <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="fa-solid fa-circle-check text-2xl text-green-500"></i>
