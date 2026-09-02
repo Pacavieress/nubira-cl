@@ -29,7 +29,8 @@ if (!isset($_SESSION['csrf_recuperar_gmails'])) {
 }
 $csrf_token_recuperar = $_SESSION['csrf_recuperar_gmails'];
 $admin_nombre = 'recuperar_gmails_jun2026';
-$asunto       = 'Ya puedes registrarte en Nubira con cualquier email';
+$asunto            = '¿Necesitas un tutor?';
+$titulo_plantilla  = 'Tutores, apuntes y clases particulares universitarias en Chile';
 
 // ── POST: envío selectivo a leads marcados ─────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -134,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $unsubUrl    = generarUnsubUrl($correo);
         $bloqueCupon = $cupon_info ? nb_bloque_cupon_html($codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion']) : '';
         $html        = generarHtmlEmailRecuperarGmail($unsubUrl, $bloqueCupon);
-        $exito       = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply');
+        $exito       = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply', $titulo_plantilla);
         $exito_int   = $exito ? 1 : 0;
         $forzado_int = $forzado ? 1 : 0;
 
@@ -176,7 +177,7 @@ if (isset($_GET['preview_cupon'])) {
     }
 
     $html_pv = generarHtmlEmailRecuperarGmail($unsubUrl_pv, $bloqueCupon_pv);
-    echo plantillaMaestra($asunto, $html_pv);
+    echo plantillaMaestra($titulo_plantilla, $html_pv);
     exit;
 }
 

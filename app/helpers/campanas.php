@@ -166,7 +166,7 @@ function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '')
 ";
 }
 
-function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsubUrl, $sender = 'contacto') {
+function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsubUrl, $sender = 'contacto', ?string $tituloPlantilla = null) {
     $cfg  = getSmtpConfig($sender);
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
     try {
@@ -191,7 +191,7 @@ function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsu
 
         $mail->isHTML(true);
         $mail->Subject = $asunto;
-        $mail->Body    = plantillaMaestra($asunto, $htmlInterno);
+        $mail->Body    = plantillaMaestra($tituloPlantilla ?? $asunto, $htmlInterno);
         $mail->AltBody = strip_tags($htmlInterno);
 
         $mail->send();
