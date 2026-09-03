@@ -255,6 +255,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // [NUBIRA] Discriminador de sub-acciones — el JS del envío selectivo
+    // (flujo original) nunca manda 'accion', así que sigue cayendo en el
+    // default de abajo sin ningún cambio de comportamiento.
+    $accion = $_POST['accion'] ?? 'enviar_seleccionados';
+
+    // ── Enviar prueba — pipeline idéntico al real (sin cupón), pero NUNCA
+    // escribe en correos_admin ni marca nada como enviado. ──
+    if ($accion === 'prueba') {
+        $correo_prueba = strtolower(trim($_POST['email_prueba'] ?? ''));
+        if (!filter_var($correo_prueba, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Correo de prueba inválido.']);
+            exit;
+        }
+        $nombre_prueba = trim($_POST['nombre_prueba'] ?? '');
+
+        [$asunto_final_test, $titulo_h2_test] = textosDespertarDormidos($nombre_prueba);
+        $html_test         = generarHtmlEmailDespertarDormidos($nombre_prueba, $correo_prueba);
+        $html_full_test    = plantillaMaestra($titulo_h2_test, $html_test, null, null, 'Tus tutores y apuntes siguen a un clic. Pago protegido en cada clase.');
+        $unsubUrl_test     = generarUnsubUrl($correo_prueba);
+        $headersUnsub_test = [
+            'List-Unsubscribe'      => '<mailto:' . getSmtpConfig('noreply')['user'] . '?subject=unsubscribe>, <' . $unsubUrl_test . '>',
+            'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
+        ];
+        $exito_test = _enviarEmailBase($correo_prueba, $asunto_final_test, $html_full_test, '', false, $headersUnsub_test);
+
+        logCampana('[PRUEBA] ' . ($exito_test ? 'OK' : 'FAIL') . ' ' . $correo_prueba);
+
+        echo json_encode(['ok' => true, 'enviado' => $exito_test]);
+        exit;
+    }
+
     $codigo_cupon = strtoupper(trim($_POST['codigo'] ?? ''));
     $cupon_info   = null;
     if ($codigo_cupon !== '') {
@@ -580,6 +612,15 @@ require_once $app_dir . '/componentes/sidebar.php';
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Campaña: Despertar Dormidos</h1>
         <p class="text-sm text-gray-500 mt-0.5">Usuarios confirmados que nunca publicaron ni contrataron.</p>
       </div>
+      <div class="flex items-center gap-2 shrink-0 flex-wrap">
+        <input type="email" id="input-email-prueba" placeholder="tu@correo.com"
+               class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm w-40 focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+        <input type="text" id="input-nombre-prueba" placeholder="Nombre (opcional)"
+               class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm w-36 focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+        <button type="button" id="btn-enviar-prueba"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
+          Enviar prueba
+        </button>
       <button id="btn-preview"
               class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -588,6 +629,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         </svg>
         Ver preview del email
       </button>
+      </div>
     </div>
 
     <!-- Cupón opcional -->
@@ -913,6 +955,40 @@ document.getElementById('btn-preview')?.addEventListener('click', async () => {
     `${window.location.pathname}?preview_cupon=1&codigo=${encodeURIComponent(codigo)}`;
   document.getElementById('modal-preview').classList.remove('hidden');
 });
+
+// ── Enviar prueba ─────────────────────────────────────────────
+document.getElementById('btn-enviar-prueba')?.addEventListener('click', async () => {
+  const btn    = document.getElementById('btn-enviar-prueba');
+  const email  = document.getElementById('input-email-prueba').value.trim();
+  const nombre = document.getElementById('input-nombre-prueba').value.trim();
+  if (!email) { mostrarToast('Ingresa un correo de prueba', 'error'); return; }
+
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Enviando…';
+
+  const body = new URLSearchParams();
+  body.append('csrf_token', CSRF_TOKEN);
+  body.append('accion', 'prueba');
+  body.append('email_prueba', email);
+  body.append('nombre_prueba', nombre);
+
+  try {
+    const res  = await fetch(window.location.pathname, { method: 'POST', body });
+    const data = await res.json();
+    if (data.ok) {
+      mostrarToast(data.enviado ? 'Prueba enviada' : 'No se pudo enviar (revisa el log SMTP)', data.enviado ? 'ok' : 'error');
+    } else {
+      mostrarToast(data.error || 'Error al enviar la prueba', 'error');
+    }
+  } catch {
+    mostrarToast('Error de conexión', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+});
+
 document.getElementById('btn-cerrar-preview')?.addEventListener('click', () => {
   document.getElementById('modal-preview').classList.add('hidden');
 });
