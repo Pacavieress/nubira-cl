@@ -12,15 +12,16 @@
  * NO se integra al brief de Gemini todavía — eso es la Pieza 2C.
  */
 
-if (php_sapi_name() !== 'cli' && !isset($_GET['cron_secret'])) {
+if (php_sapi_name() !== 'cli' && !isset($_GET['token'])) {
     http_response_code(403);
     die('Forbidden');
 }
 
-require_once dirname(__DIR__) . '/env_loader.php';
+// Mismo patrón probado en producción que recalcular_tiempos_tutores.php:
+// token hardcodeado acá (no vía .env) para disparo manual por URL/curl.
+define('CRON_COPILOTO_IG_TOKEN', '9b17c2634ce219eec652bfd434bb6af53e33aa8b59d1ef0b');
 
-$CRON_SECRET = getenv('CRON_COPILOTO_IG_SECRET') ?: '';
-if (php_sapi_name() !== 'cli' && ($_GET['cron_secret'] ?? '') !== $CRON_SECRET) {
+if (php_sapi_name() !== 'cli' && ($_GET['token'] ?? '') !== CRON_COPILOTO_IG_TOKEN) {
     http_response_code(403);
     die('Forbidden');
 }

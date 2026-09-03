@@ -14,17 +14,17 @@
  * igual sin esa sección.
  */
 
-// Solo permitir ejecución por CLI o por Hostinger (no acceso web sin secret)
-if (php_sapi_name() !== 'cli' && !isset($_GET['cron_secret'])) {
+// Solo permitir ejecución por CLI o por Hostinger (no acceso web sin token)
+if (php_sapi_name() !== 'cli' && !isset($_GET['token'])) {
     http_response_code(403);
     die('Forbidden');
 }
 
-require_once dirname(__DIR__) . '/env_loader.php';
+// Mismo patrón probado en producción que recalcular_tiempos_tutores.php:
+// token hardcodeado acá (no vía .env) para disparo manual por URL/curl.
+define('CRON_COPILOTO_TOKEN', 'fbcee290130095d6dec14c23ea6938062f8ce8d2b67075ff');
 
-// Token anti-acceso web no autorizado (para disparo manual vía URL en prod)
-$CRON_SECRET = getenv('CRON_COPILOTO_SECRET') ?: '';
-if (php_sapi_name() !== 'cli' && ($_GET['cron_secret'] ?? '') !== $CRON_SECRET) {
+if (php_sapi_name() !== 'cli' && ($_GET['token'] ?? '') !== CRON_COPILOTO_TOKEN) {
     http_response_code(403);
     die('Forbidden');
 }
