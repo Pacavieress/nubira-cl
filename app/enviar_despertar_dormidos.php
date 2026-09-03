@@ -11,33 +11,103 @@
 function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $correo): string {
     $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     $unsub_safe = htmlspecialchars(generarUnsubUrl($correo), ENT_QUOTES, 'UTF-8');
+    $utm_base   = 'utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=despertar_dormidos';
+    $saludo = $nombre_safe !== ''
+        ? "Hola <strong>{$nombre_safe}</strong>, hace un tiempo no te vemos por Nubira."
+        : "Hola, hace un tiempo no te vemos por Nubira.";
     return "
-<p>Hola <strong>{$nombre_safe}</strong>,</p>
+<p>{$saludo}</p>
 
-<p>Hace un tiempo te registraste en Nubira buscando ayuda académica.</p>
+<p>Tu cuenta sigue activa y hoy hay más tutores que nunca. Estas son las materias con más disponibilidad ahora:</p>
 
-<p>Si este semestre todavía necesitas apoyo con un ramo, preparar una prueba, avanzar en tu tesis o encontrar otro servicio académico, tu cuenta sigue activa.</p>
+<!-- Card destacada: PAES -->
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#F0F9FF;border:1px solid #e5e7eb;border-radius:12px;margin:24px 0;overflow:hidden;\">
+  <tr>
+    <td>
+      <img src=\"https://nubira.cl/upload/email/card-paes.png\" alt=\"PAES\" style=\"display:block;width:100%;height:auto;background-color:#DCEBF7;\">
+    </td>
+  </tr>
+  <tr>
+    <td style=\"padding:20px;\">
+      <h3 style=\"margin:0 0 8px 0;font-size:18px;color:#111827;\">¿Estás preparando la PAES?</h3>
+      <p style=\"margin:0 0 16px 0;font-size:14px;color:#374151;line-height:1.5;\">Tutores y material para reforzar la prueba, con clases 100% online.</p>
+      <a href=\"https://nubira.cl/clases/paes?{$utm_base}&amp;utm_content=card_paes\"
+         style=\"background-color:#54A6D8;color:#ffffff;padding:10px 20px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;\">
+        Ver tutores PAES
+      </a>
+    </td>
+  </tr>
+</table>
 
-<p><strong>Lo que hace distinta a Nubira:</strong></p>
+<!-- Cards compactas: Matemáticas / Lenguaje / Biología / Inglés -->
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-matematicas.png\" alt=\"Matemáticas\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Te está costando Matemáticas?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Cálculo, álgebra y más, a tu ritmo con un tutor.</p>
+      <a href=\"https://nubira.cl/clases/matematicas?{$utm_base}&amp;utm_content=card_matematicas\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
 
-<ul style=\"padding-left:20px; line-height:2.2;\">
-  <li>Tu dinero queda protegido en la plataforma hasta que confirmes que recibiste lo contratado. Si algo sale mal, no lo pierdes.</li>
-  <li>Puedes conversar con los tutores sin compartir tu WhatsApp ni contactos de redes sociales.</li>
-  <li>Las clases se hacen dentro de Nubira, sin instalar Zoom ni Meet.</li>
-</ul>
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-lenguaje.png\" alt=\"Lenguaje\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Necesitas mejorar en Lenguaje?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Comprensión lectora, redacción y ensayos con quien sabe.</p>
+      <a href=\"https://nubira.cl/clases/lenguaje?{$utm_base}&amp;utm_content=card_lenguaje\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
 
-<p>Hoy hay estudiantes y tutores activos en la plataforma resolviendo dudas y agendando clases particulares.</p>
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-biologia.png\" alt=\"Biología\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Examen de Biología o Anatomía?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Tutores para reforzar antes de tu prueba.</p>
+      <a href=\"https://nubira.cl/clases/biologia?{$utm_base}&amp;utm_content=card_biologia\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
+
+<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;overflow:hidden;\">
+  <tr>
+    <td width=\"96\" style=\"padding:0;\">
+      <img src=\"https://nubira.cl/upload/email/card-ingles.png\" alt=\"Inglés\" width=\"96\" height=\"96\" style=\"display:block;width:96px;height:96px;object-fit:cover;background-color:#DCEBF7;\">
+    </td>
+    <td style=\"padding:16px;vertical-align:middle;\">
+      <h4 style=\"margin:0 0 4px 0;font-size:15px;color:#111827;\">¿Quieres avanzar en Inglés?</h4>
+      <p style=\"margin:0 0 8px 0;font-size:13px;color:#6B7280;line-height:1.4;\">Práctica y apoyo para el ramo o para hablarlo mejor.</p>
+      <a href=\"https://nubira.cl/clases/ingles?{$utm_base}&amp;utm_content=card_ingles\"
+         style=\"color:#54A6D8;font-size:13px;font-weight:bold;text-decoration:none;\">Ver tutores &rarr;</a>
+    </td>
+  </tr>
+</table>
+
+<p style=\"font-size:13px;color:#6B7280;line-height:1.6;margin:24px 0;\">
+  Clases 100% online, sin instalar Meet ni Zoom &middot; conversas con el tutor sin dar tu WhatsApp &middot; tu pago queda protegido hasta que confirmes la clase.
+</p>
 
 <p style=\"text-align:center; margin:32px 0;\">
-  <a href=\"https://nubira.cl/explorar?utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=despertar_dormidos\"
+  <a href=\"https://nubira.cl/explorar?{$utm_base}\"
      style=\"background:#54A6D8;color:white;padding:13px 28px;
             text-decoration:none;border-radius:8px;font-weight:bold;
             font-size:16px;display:inline-block;\">
-    Buscar tutor o servicio
+    Volver a Nubira
   </a>
 </p>
-
-<p>Equipo Nubira<br><span style=\"color:#9CA3AF; font-size:14px;\">Nubira.cl</span></p>
 
 <p style=\"text-align:center;margin-top:26px;margin-bottom:6px;font-size:13px;color:#555;\">
   Síguenos en redes sociales:
@@ -57,6 +127,17 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $correo
 ";
 }
 
+// [NUBIRA] Asunto y H2 personalizados con el nombre real, separados entre sí
+// (mismo desacople conceptual que en leads-gmail, pero acá va directo a
+// plantillaMaestra() porque este correo no pasa por enviarDormidoConUnsubscribe()).
+function textosDespertarDormidos(string $primer_nombre): array {
+    $nombre = trim($primer_nombre);
+    if ($nombre === '') {
+        return ['Tus tutores siguen aquí', 'Tus tutores siguen aquí'];
+    }
+    return ["{$nombre}, tus tutores siguen aquí", "Tus tutores siguen aquí, {$nombre}"];
+}
+
 // ── CLI mode ──────────────────────────────────────────────────
 if (php_sapi_name() === 'cli') {
     require_once __DIR__ . '/conexion.php';
@@ -69,7 +150,6 @@ if (php_sapi_name() === 'cli') {
     $LIMITE       = isset($argv[1]) ? (int)$argv[1] : 5;
     $admin_id_cli = 0;
     $admin_nombre = 'despertar_dormidos_jun2026';
-    $asunto       = '¿Todavía necesitas un tutor?';
 
     $sql_cli = "
         SELECT a.id AS alumno_id, a.nombre, LOWER(TRIM(a.correo)) AS correo
@@ -118,16 +198,17 @@ if (php_sapi_name() === 'cli') {
         if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
             logCampana('[DESPERTAR_DORMIDOS SKIP] ' . $correo); continue;
         }
+        [$asunto_final, $titulo_h2] = textosDespertarDormidos($primer_nombre);
         $html      = generarHtmlEmailDespertarDormidos($primer_nombre, $correo);
-        $html_full = plantillaMaestra($asunto, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
+        $html_full = plantillaMaestra($titulo_h2, $html, null, null, 'Tus tutores y apuntes siguen a un clic. Pago protegido en cada clase.');
         $unsubUrl  = generarUnsubUrl($correo);
         $headersUnsub = [
             'List-Unsubscribe'      => '<mailto:' . getSmtpConfig('noreply')['user'] . '?subject=unsubscribe>, <' . $unsubUrl . '>',
             'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
         ];
-        $exito     = _enviarEmailBase($correo, $asunto, $html_full, '', false, $headersUnsub);
+        $exito     = _enviarEmailBase($correo, $asunto_final, $html_full, '', false, $headersUnsub);
         $exito_int = $exito ? 1 : 0;
-        $stmt_log->bind_param('issssi', $admin_id_cli, $admin_nombre, $correo, $asunto, $html, $exito_int);
+        $stmt_log->bind_param('issssi', $admin_id_cli, $admin_nombre, $correo, $asunto_final, $html, $exito_int);
         $stmt_log->execute();
         logCampana('[DESPERTAR_DORMIDOS ' . ($exito ? 'OK' : 'FAIL') . '] ' . $correo . ' (' . $primer_nombre . ')');
         if ($exito) $enviados++; else $fallidos++;
@@ -162,7 +243,6 @@ if (!isset($_SESSION['csrf_despertar_dormidos'])) {
 }
 $csrf_token   = $_SESSION['csrf_despertar_dormidos'];
 $admin_nombre = 'despertar_dormidos_jun2026';
-$asunto       = '¿Todavía necesitas un tutor?';
 
 // ── POST: envío ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -267,17 +347,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             continue;
         }
 
+        [$asunto_reactivacion, $titulo_h2] = textosDespertarDormidos($primer_nombre);
+
         if ($cupon_info) {
+            // El asunto cambia a la promo del cupón, pero el H2 del cuerpo sigue
+            // siendo el de reactivación — plantillaMaestra() recibe $titulo_h2
+            // sin importar si hay cupón o no (desacoplado a propósito).
             $asunto_final = "Un {$cupon_info['porcentaje']}% de descuento para tu próxima clase en Nubira";
             $html         = nb_generar_email_cupon_promocional(
                 $primer_nombre, $codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion'],
                 'Hace un tiempo te registraste en Nubira. Te dejamos un cupón para volver:', $correo
             );
         } else {
-            $asunto_final = $asunto;
+            $asunto_final = $asunto_reactivacion;
             $html         = generarHtmlEmailDespertarDormidos($primer_nombre, $correo);
         }
-        $html_full = plantillaMaestra($asunto_final, $html, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
+        $html_full = plantillaMaestra($titulo_h2, $html, null, null, 'Tus tutores y apuntes siguen a un clic. Pago protegido en cada clase.');
         $unsubUrl  = generarUnsubUrl($correo);
         $headersUnsub = [
             'List-Unsubscribe'      => '<mailto:' . getSmtpConfig('noreply')['user'] . '?subject=unsubscribe>, <' . $unsubUrl . '>',
@@ -311,6 +396,7 @@ if (isset($_GET['consultar_cupon'])) {
 // ── GET: preview del correo, con o sin cupón según el código dado ────
 if (isset($_GET['preview_cupon'])) {
     $codigo_pv = strtoupper(trim((string)($_GET['codigo'] ?? '')));
+    [$asunto_reactivacion_pv, $titulo_pv] = textosDespertarDormidos('Estudiante');
 
     if ($codigo_pv !== '') {
         $cupon_pv = nb_consultar_cupon_global($conn, $codigo_pv);
@@ -324,11 +410,11 @@ if (isset($_GET['preview_cupon'])) {
             'Hace un tiempo te registraste en Nubira. Te dejamos un cupón para volver:', 'estudiante@ejemplo.com'
         );
     } else {
-        $asunto_pv = $asunto;
+        $asunto_pv = $asunto_reactivacion_pv;
         $html_pv   = generarHtmlEmailDespertarDormidos('Estudiante', 'estudiante@ejemplo.com');
     }
 
-    echo plantillaMaestra($asunto_pv, $html_pv, null, null, 'Encuentra al tutor ideal en Chile con pago protegido.');
+    echo plantillaMaestra($titulo_pv, $html_pv, null, null, 'Tus tutores y apuntes siguen a un clic. Pago protegido en cada clase.');
     exit;
 }
 
