@@ -5,10 +5,13 @@
  * Frecuencia recomendada: 1 vez al día (madrugada)
  * Ubicación: /app/cron/copiloto_recolector.php
  *
- * Fase 1, Pieza 1 del Copiloto de Marketing: SOLO calcula señales de negocio
- * y guarda un snapshot diario en copiloto_snapshots (UPSERT por fecha, no
- * duplica si el cron corre 2 veces el mismo día). NO llama a Gemini, NO
- * genera ningún brief — eso es una pieza posterior.
+ * Pieza 1: calcula señales de negocio y guarda un snapshot diario en
+ * copiloto_snapshots (UPSERT por fecha, no duplica si el cron corre 2 veces
+ * el mismo día). Pieza 2: arma un prompt con esas señales y genera el brief
+ * vía Gemini (best-effort). Pieza 2C: si hay un snapshot de Instagram
+ * disponible (copiloto_instagram_snapshots, solo lectura — ver
+ * copiloto_instagram.php), lo suma al prompt; si no hay, el brief sigue
+ * igual sin esa sección.
  */
 
 // Solo permitir ejecución por CLI o por Hostinger (no acceso web sin secret)
@@ -246,7 +249,60 @@ $stmt->execute();
 $stmt->close();
 
 // -----------------------------------------------------------------------
-// 8. GENERACIÓN DEL BRIEF (Gemini) — best-effort, NUNCA rompe el cron.
+// 8. INSTAGRAM (Fase 2, Pieza 2C) — SOLO LECTURA del snapshot más reciente
+//    de copiloto_instagram_snapshots (hoy si copiloto_instagram.php ya
+//    corrió hoy, si no el último disponible). Este cron NUNCA recalcula
+//    nada de Instagram — eso es responsabilidad exclusiva de
+//    copiloto_instagram.php. Best-effort: si la tabla no existe o no hay
+//    ninguna fila, el brief sigue sin Instagram, sin romper nada.
+// -----------------------------------------------------------------------
+$ig_snapshot = null;
+try {
+    $res_ig = $conn->query("SELECT * FROM copiloto_instagram_snapshots ORDER BY fecha DESC LIMIT 1");
+    if ($res_ig) {
+        $ig_snapshot = $res_ig->fetch_assoc() ?: null;
+    }
+} catch (Throwable $e) {
+    $ig_snapshot = null; // tabla todavía no existe — copiloto_instagram.php nunca corrió
+}
+
+$ig_incluido            = false;
+$ig_bloque_senales      = '';
+$ig_bloque_limitacion   = '';
+$ig_bloque_herramientas = '';
+$ig_bloque_tarea        = '';
+
+if ($ig_snapshot) {
+    $ig_incluido      = true;
+    $ig_datos_perfil  = json_decode($ig_snapshot['datos_perfil'] ?? '{}', true) ?: [];
+    $ig_username      = $ig_datos_perfil['username'] ?? 'la cuenta de Instagram';
+    $ig_followers     = (int)$ig_snapshot['followers_count'];
+    $ig_reach_texto   = $ig_snapshot['reach_dia'] !== null ? (int)$ig_snapshot['reach_dia'] : 'sin dato';
+
+    $ig_top_posts = json_decode($ig_snapshot['top_posts'] ?? '[]', true) ?: [];
+    // Top 5 por reach — posts sin reach (insight falló para ese post puntual) quedan al final.
+    usort($ig_top_posts, fn($a, $b) => (int)($b['reach'] ?? -1) <=> (int)($a['reach'] ?? -1));
+    $ig_posts_resumen = array_map(fn($p) => [
+        'caption'  => $p['caption'] ?? '',
+        'likes'    => (int)($p['like_count'] ?? 0),
+        'comments' => (int)($p['comments_count'] ?? 0),
+        'reach'    => $p['reach'] ?? null,
+    ], array_slice($ig_top_posts, 0, 5));
+    $ig_posts_json = json_encode($ig_posts_resumen, JSON_UNESCAPED_UNICODE);
+
+    $ig_bloque_senales = "\n- Instagram (@{$ig_username}): {$ig_followers} seguidores, {$ig_snapshot['media_count']} publicaciones totales, alcance (reach) de hoy: {$ig_reach_texto}.\n- Top publicaciones recientes de Instagram ordenadas por alcance (caption recortado, likes, comments, reach): {$ig_posts_json}";
+
+    $ig_bloque_limitacion = "\n- Instagram está en etapa temprana ({$ig_followers} seguidores) — es un dato real de una cuenta chica, no lo maquilles ni lo compares con cuentas grandes. Si el reach es bajo, dilo con honestidad en vez de sonar optimista sin motivo.";
+
+    $ig_bloque_herramientas = "\n- Publicar contenido nuevo en Instagram (el admin publica manualmente — el Copiloto no publica automático, solo sugiere qué tipo de contenido o categoría priorizar según lo que ya funcionó).";
+
+    $ig_bloque_tarea = "\n\nSi hay datos de Instagram arriba, inclúyelos en tu diagnóstico y en al menos una acción: compara el reach entre las publicaciones recientes para identificar qué tipo de contenido rindió mejor, sugiere qué categoría/tema priorizar en el próximo post, y cruza esta señal con las de la plataforma (ej. si una categoría con alta demanda en Nubira también tuvo buen reach en Instagram, refuérzala explícitamente en la recomendación).";
+} else {
+    log_cron("Instagram: sin snapshot disponible, brief sigue sin esa señal");
+}
+
+// -----------------------------------------------------------------------
+// 9. GENERACIÓN DEL BRIEF (Gemini) — best-effort, NUNCA rompe el cron.
 //    El snapshot de arriba ya quedó guardado pase lo que pase acá abajo.
 //    Solo se pasan señales AGREGADAS (conteos, categorías, términos) —
 //    nunca correos, nombres ni filas de usuarios individuales.
@@ -267,24 +323,24 @@ Estas son las señales de negocio de HOY ({$fecha_hoy}), ya agregadas (NUNCA rec
 - Monto acordado total de esos contratos de 30 días: \${$monto_30d_fmt} CLP
 - Oferta de servicios aprobados y visibles, por categoría: {$oferta_json}
 - Vistas de detalle de los últimos 30 días, por categoría y tipo (servicio/apunte): {$demanda_json}
-- Top términos buscados sin resultados en los últimos 30 días: {$busquedas_json}
+- Top términos buscados sin resultados en los últimos 30 días: {$busquedas_json}{$ig_bloque_senales}
 
 LIMITACIONES DE LOS DATOS QUE DEBES RESPETAR:
 - "Contratos" incluye TODOS los estados, incluido 'cancelado' — son entradas al funnel de conversión, no ventas cerradas confirmadas. No los trates como ingreso garantizado.
 - "Dormidos" es una aproximación: un alumno que solo vendió (nunca compró) puede aparecer acá aunque esté activo. No lo presentes como un número exacto.
-- Si una señal viene vacía o en cero (por ejemplo un objeto vacío {}), NO inventes demanda ni tendencias que los datos no muestran — dilo explícitamente como "sin datos suficientes esta semana" en vez de rellenar con una suposición.
+- Si una señal viene vacía o en cero (por ejemplo un objeto vacío {}), NO inventes demanda ni tendencias que los datos no muestran — dilo explícitamente como "sin datos suficientes esta semana" en vez de rellenar con una suposición.{$ig_bloque_limitacion}
 
 QUÉ HERRAMIENTAS YA TIENE NUBIRA PARA ACTUAR (sugiere acciones ejecutables con esto, no herramientas que no existen):
 - Campaña de correo a alumnos dormidos.
 - Campaña de correo a leads sin contactar.
 - Generador de carrusel de imágenes de servicios para redes sociales (Instagram/Facebook), por categoría.
-- Publicación de novedades/anuncios de plataforma con imagen generada.
+- Publicación de novedades/anuncios de plataforma con imagen generada.{$ig_bloque_herramientas}
 
 TAREA: Escribe un brief ejecutivo breve, en español de Chile neutro (trato de "tú", nunca "vos"), con tono de analista de marketing: directo, sin relleno, sin frases motivacionales genéricas. Sigue este formato EXACTO — se renderiza automáticamente como HTML, así que el formato importa:
 
 1. Un párrafo único de diagnóstico (2 a 3 frases), sin viñetas ni numeración, basado SOLO en las señales de arriba.
 2. Una línea en blanco.
-3. Entre 3 y 5 acciones concretas, priorizadas de más a menos urgente, en una lista numerada (1., 2., 3., ...), UNA acción por línea, cada una con este formato exacto: "N. **Nombre corto de la acción** — Por qué, citando el dato concreto que la justifica". Usa **negrita** en Markdown SOLO alrededor del nombre corto de la acción, en ningún otro lugar del texto.
+3. Entre 3 y 5 acciones concretas, priorizadas de más a menos urgente, en una lista numerada (1., 2., 3., ...), UNA acción por línea, cada una con este formato exacto: "N. **Nombre corto de la acción** — Por qué, citando el dato concreto que la justifica". Usa **negrita** en Markdown SOLO alrededor del nombre corto de la acción, en ningún otro lugar del texto.{$ig_bloque_tarea}
 
 No agregues introducción, títulos, viñetas con guion (-) ni cierre genérico. No uses ningún otro formato Markdown (nada de #, listas con -, backticks, etc.) fuera de la negrita indicada. Empieza directo con el párrafo de diagnóstico.
 PROMPT;
@@ -314,10 +370,10 @@ if ($brief_ok) {
 }
 
 // -----------------------------------------------------------------------
-// 9. RESUMEN
+// 10. RESUMEN
 // -----------------------------------------------------------------------
 $resumen = sprintf(
-    "Snapshot %s | dormidos=%d | leads_sin_contactar=%d | contratos_7d=%d | contratos_30d=%d | monto_30d=%s | categorias_oferta=%d | categorias_demanda_servicio=%d | categorias_demanda_apunte=%d | busquedas_top=%d | brief=%s",
+    "Snapshot %s | dormidos=%d | leads_sin_contactar=%d | contratos_7d=%d | contratos_30d=%d | monto_30d=%s | categorias_oferta=%d | categorias_demanda_servicio=%d | categorias_demanda_apunte=%d | busquedas_top=%d | brief=%s | instagram=%s",
     $fecha_hoy,
     $dormidos_total,
     $leads_sin_contactar,
@@ -328,7 +384,8 @@ $resumen = sprintf(
     count($demanda_vistas_por_categoria['servicio']),
     count($demanda_vistas_por_categoria['apunte']),
     count($busquedas_fallidas_top),
-    $brief_ok ? 'OK' : 'ERROR'
+    $brief_ok ? 'OK' : 'ERROR',
+    $ig_incluido ? 'incluido' : 'sin_datos'
 );
 
 log_cron($resumen);

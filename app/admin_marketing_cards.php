@@ -247,6 +247,47 @@ if ($tab === 'servicios') {
         $texto  = number_format(abs($valor), 0, ',', '.');
         return '<span class="text-[10px] font-bold ' . $color . '">' . $flecha . ' ' . htmlspecialchars($texto, ENT_QUOTES, 'UTF-8') . ' vs. anterior</span>';
     }
+
+    // Instagram (Fase 2, Pieza 2C) — SOLO LECTURA del snapshot más reciente
+    // de copiloto_instagram_snapshots. try/catch por si la tabla no existe
+    // todavía (copiloto_instagram.php nunca corrió) — se resuelve como "sin
+    // datos", mismo criterio que copiloto_snapshots arriba.
+    $ig_historial = [];
+    try {
+        $res_ig = $conn->query("SELECT * FROM copiloto_instagram_snapshots ORDER BY fecha DESC LIMIT 14");
+        if ($res_ig) {
+            while ($row_ig = $res_ig->fetch_assoc()) {
+                $ig_historial[] = $row_ig;
+            }
+        }
+    } catch (Throwable $e) {
+        $ig_historial = [];
+    }
+
+    $ig_snapshot  = $ig_historial[0] ?? null;
+    $ig_anterior  = $ig_historial[1] ?? null;
+    $ig_deltas    = [];
+    $ig_datos_perfil = [];
+    $ig_top_posts = [];
+
+    if ($ig_snapshot) {
+        if ($ig_anterior) {
+            $ig_deltas = [
+                'followers_count' => (int)$ig_snapshot['followers_count'] - (int)$ig_anterior['followers_count'],
+                'media_count'     => (int)$ig_snapshot['media_count']     - (int)$ig_anterior['media_count'],
+                'reach_dia'       => ($ig_snapshot['reach_dia'] !== null && $ig_anterior['reach_dia'] !== null)
+                    ? (int)$ig_snapshot['reach_dia'] - (int)$ig_anterior['reach_dia']
+                    : null,
+            ];
+        }
+
+        $ig_datos_perfil = json_decode($ig_snapshot['datos_perfil'] ?? '{}', true) ?: [];
+
+        $ig_top_posts = json_decode($ig_snapshot['top_posts'] ?? '[]', true) ?: [];
+        // Top 5 por reach — posts sin reach (insight falló para ese post puntual) quedan al final.
+        usort($ig_top_posts, fn($a, $b) => (int)($b['reach'] ?? -1) <=> (int)($a['reach'] ?? -1));
+        $ig_top_posts = array_slice($ig_top_posts, 0, 5);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -640,6 +681,66 @@ require_once $app_dir . '/componentes/sidebar.php';
                     </section>
 
                 </div>
+
+                <!-- Instagram -->
+                <?php if (!$ig_snapshot): ?>
+                    <section class="bg-white border border-dashed border-gray-200 rounded-2xl p-8 text-center text-gray-400 text-sm mb-8">
+                        Aún no hay datos de Instagram. El cron diario (<code class="text-xs">app/cron/copiloto_instagram.php</code>) todavía no ha corrido.
+                    </section>
+                <?php else: ?>
+                    <section class="mb-8">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 flex items-center justify-center shrink-0">
+                                <i class="fa-brands fa-instagram text-white text-xs"></i>
+                            </div>
+                            <h3 class="text-sm font-bold text-gray-900">
+                                Instagram<?= !empty($ig_datos_perfil['username']) ? ' · @' . htmlspecialchars($ig_datos_perfil['username'], ENT_QUOTES, 'UTF-8') : '' ?>
+                            </h3>
+                        </div>
+
+                        <?php
+                        $ig_metricas = [
+                            ['label' => 'Seguidores',    'valor' => (int)$ig_snapshot['followers_count'], 'delta' => $ig_deltas['followers_count'] ?? null],
+                            ['label' => 'Publicaciones', 'valor' => (int)$ig_snapshot['media_count'],     'delta' => $ig_deltas['media_count'] ?? null],
+                            ['label' => 'Reach de hoy',  'valor' => $ig_snapshot['reach_dia'] !== null ? (int)$ig_snapshot['reach_dia'] : 'N/D', 'delta' => $ig_deltas['reach_dia'] ?? null],
+                        ];
+                        ?>
+                        <div class="grid grid-cols-3 gap-3 mb-4">
+                            <?php foreach ($ig_metricas as $m): ?>
+                                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"><?= htmlspecialchars($m['label'], ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-2xl font-bold text-gray-900 mb-1"><?= is_string($m['valor']) ? htmlspecialchars($m['valor'], ENT_QUOTES, 'UTF-8') : number_format($m['valor'], 0, ',', '.') ?></p>
+                                    <?= copiloto_delta_html($m['delta']) ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
+                            <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Top publicaciones por alcance</h4>
+                            <?php if (empty($ig_top_posts)): ?>
+                                <p class="text-xs text-gray-400">Sin datos suficientes.</p>
+                            <?php else: ?>
+                                <ul class="space-y-3">
+                                    <?php foreach ($ig_top_posts as $post): ?>
+                                        <li class="flex items-start justify-between gap-3 pb-3 border-b border-gray-50 last:border-0 last:pb-0">
+                                            <div class="min-w-0">
+                                                <p class="text-xs text-gray-700 line-clamp-2 leading-snug mb-1"><?= htmlspecialchars((string)($post['caption'] ?? '(sin descripción)'), ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-[10px] text-gray-400">
+                                                    <?= (int)($post['like_count'] ?? 0) ?> likes · <?= (int)($post['comments_count'] ?? 0) ?> comments<?= isset($post['reach']) && $post['reach'] !== null ? ' · ' . (int)$post['reach'] . ' reach' : '' ?>
+                                                </p>
+                                            </div>
+                                            <?php if (!empty($post['permalink'])): ?>
+                                                <a href="<?= htmlspecialchars($post['permalink'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" class="shrink-0 text-[#54A6D8] hover:text-blue-600 text-xs font-bold whitespace-nowrap">
+                                                    Ver <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                                </a>
+                                            <?php endif; ?>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </div>
+                    </section>
+                <?php endif; ?>
 
                 <!-- Historial -->
                 <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 mb-6">
