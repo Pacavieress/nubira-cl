@@ -11,6 +11,16 @@ if (file_exists(__DIR__ . '/conexion.php')) require_once __DIR__ . '/conexion.ph
 elseif (file_exists(dirname(__DIR__) . '/app/conexion.php')) require_once dirname(__DIR__) . '/app/conexion.php';
 else require_once $_SERVER['DOCUMENT_ROOT'] . '/app/conexion.php';
 
+// 🛡️ [NUBIRA SHIELD] MIDDLEWARE ANTI-BOT — mismo patrón que vitrina.php,
+// rate limit al doble (público universitario en NAT compartido).
+$antibot_path = __DIR__ . '/middleware/antibot.php';
+if (isset($conn) && file_exists($antibot_path)) {
+    require_once $antibot_path;
+    if (function_exists('check_nubira_shield')) {
+        check_nubira_shield($conn, ['limit_invitado' => 180, 'limit_logueado' => 600]);
+    }
+}
+
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', dirname(__DIR__) . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
 foreach ($rutas_shield as $rs) {
@@ -89,6 +99,7 @@ $no_banners = !empty($_GET['no_banners']);
 
 // Filtros
 $q            = trim($_GET['q'] ?? '');
+$q            = mb_substr($q, 0, 100);
 $asignatura   = trim($_GET['asignatura'] ?? '');
 $materiaFiltro = trim($_GET['materia'] ?? '');
 $categoriaFiltro = trim($_GET['categoria'] ?? '');

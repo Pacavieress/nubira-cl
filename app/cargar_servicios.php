@@ -9,6 +9,17 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
 require_once __DIR__ . '/helpers/usuario_helper.php';
 require_once __DIR__ . '/conexion.php';
+
+// 🛡️ [NUBIRA SHIELD] MIDDLEWARE ANTI-BOT — mismo patrón que vitrina.php,
+// rate limit al doble (público universitario en NAT compartido).
+$antibot_path = __DIR__ . '/middleware/antibot.php';
+if (isset($conn) && file_exists($antibot_path)) {
+    require_once $antibot_path;
+    if (function_exists('check_nubira_shield')) {
+        check_nubira_shield($conn, ['limit_invitado' => 180, 'limit_logueado' => 600]);
+    }
+}
+
 require_once __DIR__ . '/helpers/portada_helper.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 require_once __DIR__ . '/helpers/ofertas.php';
@@ -83,6 +94,7 @@ foreach ($campos as $f) {
 }
 
 $q = trim($_GET['q'] ?? '');
+$q = mb_substr($q, 0, 100);
 if ($q !== '') {
     $filtros[] = "(s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ?)";
     $busqueda = "%$q%";

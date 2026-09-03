@@ -121,6 +121,22 @@ $rutas = [__DIR__.'/conexion.php', __DIR__.'/../conexion.php', $_SERVER['DOCUMEN
 foreach($rutas as $r) if(file_exists($r)){ require_once $r; break; }
 if(!isset($conn)) die("Error de conexión.");
 
+// =========================================================================
+// 🛡️ [NUBIRA SHIELD] MIDDLEWARE ANTI-BOT (Nivel Arquitectura)
+// Mismo patrón que vitrina.php/detalle_servicio.php, con rate limit más
+// holgado (el doble) — público universitario detrás de NAT compartido,
+// no queremos falsos positivos bloqueando aulas enteras. Los checks de
+// UA malo/blocklist/UA vacío se mantienen sin cambios, esos sí cortan
+// siempre. Whitelist de bots buenos (Googlebot/Bingbot/etc) no se toca.
+// =========================================================================
+$antibot_path = __DIR__ . '/middleware/antibot.php';
+if (file_exists($antibot_path)) {
+    require_once $antibot_path;
+    if (function_exists('check_nubira_shield')) {
+        check_nubira_shield($conn, ['limit_invitado' => 180, 'limit_logueado' => 600]);
+    }
+}
+
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/ofertas.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
@@ -140,6 +156,7 @@ $uid = $_SESSION['usuario_id'] ?? 0;
 // LÓGICA DE BÚSQUEDA
 // =============================================================================
 $q = trim($_GET['q'] ?? '');
+$q = mb_substr($q, 0, 100); // Tope defensivo — antes de cualquier query o el INSERT a busquedas_fallidas
 $orden_usuario = trim($_GET['orden'] ?? '');
 $categoria_filtro = trim($_GET['categoria'] ?? '');
 $precio_min = isset($_GET['precio_min']) && $_GET['precio_min'] !== '' ? max(0, (int)$_GET['precio_min']) : null;

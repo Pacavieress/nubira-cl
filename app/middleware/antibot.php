@@ -5,7 +5,7 @@
 
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
-function check_nubira_shield($conn) {
+function check_nubira_shield($conn, array $opts = []) {
     // 1. IPs en lista blanca (No bloquear nunca)
     $whitelist_ips = ['127.0.0.1', '::1']; // Localhost
     $ip_usuario = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
@@ -62,8 +62,12 @@ function check_nubira_shield($conn) {
 // 4. Rate Limiting por IP (BD - resistente a bots sin cookies)
     // Doble umbral: invitados estricto, logueados permisivo
     $esta_logueado = isset($_SESSION['usuario_id']) && $_SESSION['usuario_id'] > 0;
-    
-    $limit_requests   = $esta_logueado ? 300 : 90;  // Logueados 300/min, invitados 90/min
+
+    // [NUBIRA] Límite configurable por llamador (ej. buscador, con público
+    // universitario detrás de NAT compartido). Sin $opts, es IDÉNTICO a antes.
+    $limit_requests   = $esta_logueado
+        ? ($opts['limit_logueado'] ?? 300)
+        : ($opts['limit_invitado'] ?? 90);
     $limit_window     = 60;                          // Ventana de 60 segundos
     $bloqueo_duracion = $esta_logueado ? 300 : 600;  // Logueados 5min, invitados 10min
     $ahora = time();
