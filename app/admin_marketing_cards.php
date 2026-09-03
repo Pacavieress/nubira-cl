@@ -36,7 +36,7 @@ require_once $app_dir . '/seguridad_url.php'; // nubira_encriptar_id()
 require_once $app_dir . '/helpers/imagen_compartir.php'; // nb_version_imagen_servicio()
 
 // 4. TAB ACTIVO
-$tab = (($_GET['tab'] ?? '') === 'novedades') ? 'novedades' : 'servicios';
+$tab = in_array($_GET['tab'] ?? '', ['novedades', 'copiloto']) ? $_GET['tab'] : 'servicios';
 
 if ($tab === 'servicios') {
     // FILTROS (GET, sin AJAX — panel de bajo tráfico, mismo criterio que admin_cuentas.php)
@@ -109,7 +109,7 @@ if ($tab === 'servicios') {
     $instituciones_disponibles = [];
     $resInst = $conn->query("SELECT DISTINCT institucion FROM servicios WHERE estado = 'aprobado' AND institucion IS NOT NULL AND institucion != '' ORDER BY institucion ASC");
     if ($resInst) { while ($r = $resInst->fetch_assoc()) $instituciones_disponibles[] = $r['institucion']; }
-} else {
+} elseif ($tab === 'novedades') {
     // Auto-migración: mismo criterio que admin_guardar_novedad.php / img_novedad.php —
     // nunca asumir que otro archivo ya se ejecutó antes y creó la tabla.
     $conn->query("CREATE TABLE IF NOT EXISTS novedades (
@@ -130,6 +130,122 @@ if ($tab === 'servicios') {
             $n['history_url'] = "/api/img/novedad/{$hash}/history.jpg";
             $novedades[] = $n;
         }
+    }
+} else {
+    // $tab === 'copiloto' — Fase 1 Pieza 3: SOLO lee lo que ya dejó el cron
+    // (app/cron/copiloto_recolector.php). No recalcula ninguna señal ni
+    // llama a Gemini desde acá — eso es responsabilidad exclusiva del cron.
+    $copiloto_historial = [];
+    try {
+        $res = $conn->query("SELECT * FROM copiloto_snapshots ORDER BY fecha DESC LIMIT 14");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $copiloto_historial[] = $row;
+            }
+        }
+    } catch (Throwable $e) {
+        // Tabla copiloto_snapshots todavía no existe (el cron nunca corrió) —
+        // se resuelve como "sin datos", mismo criterio que el resto del panel.
+        $copiloto_historial = [];
+    }
+
+    $copiloto_snapshot  = $copiloto_historial[0] ?? null; // más reciente (hoy, si el cron ya corrió hoy)
+    $copiloto_anterior  = $copiloto_historial[1] ?? null; // snapshot inmediatamente anterior, para los deltas
+    $copiloto_deltas    = [];
+    $copiloto_oferta    = [];
+    $copiloto_demanda   = ['servicio' => [], 'apunte' => []];
+    $copiloto_busquedas = [];
+
+    if ($copiloto_snapshot) {
+        if ($copiloto_anterior) {
+            $copiloto_deltas = [
+                'dormidos_total'      => (int)$copiloto_snapshot['dormidos_total']       - (int)$copiloto_anterior['dormidos_total'],
+                'leads_sin_contactar' => (int)$copiloto_snapshot['leads_sin_contactar']  - (int)$copiloto_anterior['leads_sin_contactar'],
+                'contratos_7d'        => (int)$copiloto_snapshot['contratos_7d']         - (int)$copiloto_anterior['contratos_7d'],
+                'contratos_30d'       => (int)$copiloto_snapshot['contratos_30d']        - (int)$copiloto_anterior['contratos_30d'],
+                'monto_contratos_30d' => (float)$copiloto_snapshot['monto_contratos_30d'] - (float)$copiloto_anterior['monto_contratos_30d'],
+            ];
+        }
+
+        $copiloto_oferta    = json_decode($copiloto_snapshot['oferta_por_categoria'] ?? '{}', true) ?: [];
+        $copiloto_demanda   = json_decode($copiloto_snapshot['demanda_vistas_por_categoria'] ?? '{}', true) ?: ['servicio' => [], 'apunte' => []];
+        $copiloto_busquedas = json_decode($copiloto_snapshot['busquedas_fallidas_top'] ?? '{}', true) ?: [];
+
+        // Orden desc por valor para las listas — defensivo (el cron ya las
+        // guarda ordenadas, esto solo protege contra un futuro cambio ahí).
+        arsort($copiloto_oferta);
+        if (!empty($copiloto_demanda['servicio'])) arsort($copiloto_demanda['servicio']);
+        if (!empty($copiloto_demanda['apunte']))   arsort($copiloto_demanda['apunte']);
+        arsort($copiloto_busquedas);
+    }
+
+    // Convierte el Markdown básico que devuelve Gemini (negrita ** y lista
+    // numerada "N. ") a HTML seguro. CRÍTICO: primero se escapa TODO el texto
+    // crudo con htmlspecialchars — recién sobre ese texto YA escapado se
+    // aplican las transformaciones de Markdown. El brief viene de Gemini,
+    // nunca se confía en él como HTML.
+    function nb_brief_markdown_a_html(string $texto_crudo): string {
+        $escapado = htmlspecialchars($texto_crudo, ENT_QUOTES, 'UTF-8');
+
+        // **negrita** -> <strong>, sobre el texto ya escapado (los ** no son
+        // afectados por htmlspecialchars, así que el regex sigue calzando).
+        $escapado = preg_replace('/\*\*(.+?)\*\*/s', '<strong class="text-gray-900 font-semibold">$1</strong>', $escapado);
+
+        $lineas = preg_split('/\r\n|\r|\n/', $escapado);
+
+        $html         = '';
+        $en_lista     = false;
+        $parrafo_actual = [];
+
+        $cerrar_parrafo = function () use (&$html, &$parrafo_actual) {
+            if (!empty($parrafo_actual)) {
+                $html .= '<p class="text-sm text-gray-700 leading-relaxed mb-4 last:mb-0">' . implode(' ', $parrafo_actual) . '</p>';
+                $parrafo_actual = [];
+            }
+        };
+
+        foreach ($lineas as $linea) {
+            $linea = trim($linea);
+
+            if ($linea === '') {
+                // Una línea en blanco separa párrafos, pero NO corta una lista
+                // en curso (Gemini a veces deja espacio entre ítems numerados).
+                $cerrar_parrafo();
+                continue;
+            }
+
+            if (preg_match('/^\d+\.\s+(.*)$/', $linea, $m)) {
+                $cerrar_parrafo();
+                if (!$en_lista) {
+                    $html .= '<ol class="list-decimal list-outside pl-5 space-y-2 mb-4 text-sm text-gray-700">';
+                    $en_lista = true;
+                }
+                $html .= '<li class="pl-1 leading-relaxed">' . $m[1] . '</li>';
+            } else {
+                if ($en_lista) {
+                    $html .= '</ol>';
+                    $en_lista = false;
+                }
+                $parrafo_actual[] = $linea;
+            }
+        }
+
+        $cerrar_parrafo();
+        if ($en_lista) $html .= '</ol>';
+
+        return $html;
+    }
+
+    // Helper de presentación del delta (↑/↓ + color) — vive acá, no en la
+    // vista, para que el bloque HTML de abajo se quede solo con marcado.
+    function copiloto_delta_html($valor): string {
+        if ($valor === null) return '<span class="text-[10px] text-gray-300">sin dato previo</span>';
+        if ($valor == 0) return '<span class="text-[10px] text-gray-400">sin cambio</span>';
+        $subio  = $valor > 0;
+        $color  = $subio ? 'text-emerald-600' : 'text-red-500';
+        $flecha = $subio ? '↑' : '↓';
+        $texto  = number_format(abs($valor), 0, ',', '.');
+        return '<span class="text-[10px] font-bold ' . $color . '">' . $flecha . ' ' . htmlspecialchars($texto, ENT_QUOTES, 'UTF-8') . ' vs. anterior</span>';
     }
 }
 ?>
@@ -172,6 +288,10 @@ require_once $app_dir . '/componentes/sidebar.php';
         <a href="/admin/marketing-cards?tab=novedades"
            class="px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors <?= $tab === 'novedades' ? 'border-[#54A6D8] text-[#54A6D8]' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
             Novedades
+        </a>
+        <a href="/admin/marketing-cards?tab=copiloto"
+           class="px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors <?= $tab === 'copiloto' ? 'border-[#54A6D8] text-[#54A6D8]' : 'border-transparent text-gray-400 hover:text-gray-600' ?>">
+            Copiloto
         </a>
     </div>
 
@@ -282,7 +402,7 @@ require_once $app_dir . '/componentes/sidebar.php';
             </div>
         <?php endif; ?>
 
-    <?php else: ?>
+    <?php elseif ($tab === 'novedades'): ?>
 
         <div class="max-w-[1100px] mx-auto">
             <p class="text-gray-500 text-sm mt-1 mb-4">Redacta anuncios de plataforma y genera sus imágenes para redes sociales.</p>
@@ -387,6 +507,178 @@ require_once $app_dir . '/componentes/sidebar.php';
             </section>
         </div>
 
+    <?php else: ?>
+
+        <?php if (!$copiloto_snapshot): ?>
+            <div class="bg-white border border-dashed border-gray-200 rounded-2xl p-12 text-center text-gray-400">
+                Aún no se ha generado el primer brief. El cron diario (<code class="text-xs">app/cron/copiloto_recolector.php</code>) todavía no ha corrido.
+            </div>
+        <?php else: ?>
+
+            <div class="max-w-[1100px] mx-auto">
+
+                <!-- Header del brief -->
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">Brief del día</h2>
+                        <p class="text-xs text-gray-400">
+                            <?= date('d/m/Y', strtotime($copiloto_snapshot['fecha'])) ?>
+                            <?php if (!empty($copiloto_snapshot['brief_generado_en'])): ?>
+                                · generado a las <?= date('H:i', strtotime($copiloto_snapshot['brief_generado_en'])) ?>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+
+                <?php if (!empty($copiloto_snapshot['brief_error'])): ?>
+                    <div class="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-xl px-4 py-3 mb-4">
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                        <span>El brief no se pudo generar automáticamente hoy (<?= htmlspecialchars($copiloto_snapshot['brief_error'], ENT_QUOTES, 'UTF-8') ?>). Las señales de abajo sí están al día.</span>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Brief destacado -->
+                <?php if (!empty($copiloto_snapshot['brief_texto'])): ?>
+                    <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-8">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-50 text-[#54A6D8] flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                            </div>
+                            <h3 class="text-sm font-bold text-gray-900">Diagnóstico del analista</h3>
+                        </div>
+                        <div class="leading-relaxed"><?= nb_brief_markdown_a_html($copiloto_snapshot['brief_texto']) ?></div>
+                    </section>
+                <?php elseif (empty($copiloto_snapshot['brief_error'])): ?>
+                    <div class="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-8 text-center text-gray-400 text-sm mb-8">
+                        Sin brief para este snapshot.
+                    </div>
+                <?php endif; ?>
+
+                <!-- Métricas clave -->
+                <?php
+                $copiloto_metricas = [
+                    ['label' => 'Dormidos',            'valor' => (int)$copiloto_snapshot['dormidos_total'],      'delta' => $copiloto_deltas['dormidos_total'] ?? null],
+                    ['label' => 'Leads sin contactar',  'valor' => (int)$copiloto_snapshot['leads_sin_contactar'], 'delta' => $copiloto_deltas['leads_sin_contactar'] ?? null],
+                    ['label' => 'Contratos 7d',         'valor' => (int)$copiloto_snapshot['contratos_7d'],        'delta' => $copiloto_deltas['contratos_7d'] ?? null],
+                    ['label' => 'Contratos 30d',        'valor' => (int)$copiloto_snapshot['contratos_30d'],       'delta' => $copiloto_deltas['contratos_30d'] ?? null],
+                    ['label' => 'Monto 30d (CLP)',      'valor' => '$' . number_format((float)$copiloto_snapshot['monto_contratos_30d'], 0, ',', '.'), 'delta' => $copiloto_deltas['monto_contratos_30d'] ?? null],
+                ];
+                ?>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+                    <?php foreach ($copiloto_metricas as $m): ?>
+                        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"><?= htmlspecialchars($m['label'], ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-2xl font-bold text-gray-900 mb-1"><?= is_string($m['valor']) ? htmlspecialchars($m['valor'], ENT_QUOTES, 'UTF-8') : number_format($m['valor'], 0, ',', '.') ?></p>
+                            <?= copiloto_delta_html($m['delta']) ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Señales detalladas -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+
+                    <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
+                        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Oferta por categoría</h3>
+                        <?php if (empty($copiloto_oferta)): ?>
+                            <p class="text-xs text-gray-400">Sin datos suficientes.</p>
+                        <?php else: ?>
+                            <ul class="space-y-1.5">
+                                <?php foreach ($copiloto_oferta as $cat => $n): ?>
+                                    <li class="flex items-center justify-between text-xs">
+                                        <span class="text-gray-600 truncate pr-2"><?= htmlspecialchars((string)$cat, ENT_QUOTES, 'UTF-8') ?></span>
+                                        <span class="font-bold text-gray-900 shrink-0"><?= (int)$n ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </section>
+
+                    <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
+                        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Demanda (vistas 30d)</h3>
+                        <?php if (empty($copiloto_demanda['servicio']) && empty($copiloto_demanda['apunte'])): ?>
+                            <p class="text-xs text-gray-400">Sin datos suficientes.</p>
+                        <?php else: ?>
+                            <?php if (!empty($copiloto_demanda['servicio'])): ?>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Servicios</p>
+                                <ul class="space-y-1.5 mb-3">
+                                    <?php foreach ($copiloto_demanda['servicio'] as $cat => $n): ?>
+                                        <li class="flex items-center justify-between text-xs">
+                                            <span class="text-gray-600 truncate pr-2"><?= htmlspecialchars((string)$cat, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="font-bold text-gray-900 shrink-0"><?= (int)$n ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                            <?php if (!empty($copiloto_demanda['apunte'])): ?>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Apuntes</p>
+                                <ul class="space-y-1.5">
+                                    <?php foreach ($copiloto_demanda['apunte'] as $cat => $n): ?>
+                                        <li class="flex items-center justify-between text-xs">
+                                            <span class="text-gray-600 truncate pr-2"><?= htmlspecialchars((string)$cat, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="font-bold text-gray-900 shrink-0"><?= (int)$n ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </section>
+
+                    <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
+                        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Búsquedas sin resultado</h3>
+                        <?php if (empty($copiloto_busquedas)): ?>
+                            <p class="text-xs text-gray-400">Sin datos suficientes.</p>
+                        <?php else: ?>
+                            <ul class="space-y-1.5">
+                                <?php foreach ($copiloto_busquedas as $termino => $n): ?>
+                                    <li class="flex items-center justify-between text-xs">
+                                        <span class="text-gray-600 truncate pr-2">"<?= htmlspecialchars((string)$termino, ENT_QUOTES, 'UTF-8') ?>"</span>
+                                        <span class="font-bold text-gray-900 shrink-0"><?= (int)$n ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </section>
+
+                </div>
+
+                <!-- Historial -->
+                <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 mb-6">
+                    <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Historial (últimos <?= count($copiloto_historial) ?> días)</h3>
+                    <?php if (count($copiloto_historial) <= 1): ?>
+                        <p class="text-xs text-gray-400">Todavía no hay suficiente historial para ver una tendencia.</p>
+                    <?php else: ?>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class="text-left text-[10px] text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                                        <th class="py-2 pr-4">Fecha</th>
+                                        <th class="py-2 pr-4 text-right">Dormidos</th>
+                                        <th class="py-2 pr-4 text-right">Leads</th>
+                                        <th class="py-2 pr-4 text-right">Contratos 7d</th>
+                                        <th class="py-2 text-right">Contratos 30d</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    <?php foreach ($copiloto_historial as $h): ?>
+                                        <tr>
+                                            <td class="py-2 pr-4 text-gray-500"><?= date('d/m', strtotime($h['fecha'])) ?></td>
+                                            <td class="py-2 pr-4 text-right font-bold text-gray-800"><?= (int)$h['dormidos_total'] ?></td>
+                                            <td class="py-2 pr-4 text-right font-bold text-gray-800"><?= (int)$h['leads_sin_contactar'] ?></td>
+                                            <td class="py-2 pr-4 text-right font-bold text-gray-800"><?= (int)$h['contratos_7d'] ?></td>
+                                            <td class="py-2 text-right font-bold text-gray-800"><?= (int)$h['contratos_30d'] ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </section>
+
+                <p class="text-[11px] text-gray-400 text-center">Generado automáticamente por el cron diario. Las cifras son aproximadas y orientativas.</p>
+            </div>
+
+        <?php endif; ?>
+
     <?php endif; ?>
 
 </main>
@@ -465,7 +757,7 @@ if ($tab === 'servicios') require_once $app_dir . '/componentes/modal_carrusel_m
         }
     });
 })();
-<?php else: ?>
+<?php elseif ($tab === 'novedades'): ?>
 const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
 
 (function () {
