@@ -288,6 +288,53 @@ if ($tab === 'servicios') {
         usort($ig_top_posts, fn($a, $b) => (int)($b['reach'] ?? -1) <=> (int)($a['reach'] ?? -1));
         $ig_top_posts = array_slice($ig_top_posts, 0, 5);
     }
+
+    // Calendario semanal de Instagram (Fase 3, Pieza 2) — SOLO LECTURA del
+    // más reciente en copiloto_calendario. Lo genera app/admin_generar_calendario.php
+    // bajo demanda (botón), no un cron — por eso ORDER BY generado_en, no fecha.
+    $calendario_reciente = null;
+    $calendario_semana   = [];
+    try {
+        $res_cal = $conn->query("SELECT * FROM copiloto_calendario ORDER BY generado_en DESC LIMIT 1");
+        if ($res_cal) {
+            $calendario_reciente = $res_cal->fetch_assoc() ?: null;
+        }
+    } catch (Throwable $e) {
+        $calendario_reciente = null; // tabla todavía no existe
+    }
+
+    if ($calendario_reciente) {
+        $calendario_data   = json_decode($calendario_reciente['contenido'] ?? '{}', true) ?: [];
+        $calendario_semana = $calendario_data['semana'] ?? [];
+    }
+
+    // Tutores por promocionar (rotación) — servicios activos ordenados por
+    // "hace más tiempo sin promocionarse" (nunca promocionados primero).
+    // try/catch por si copiloto_promociones todavía no existe (nadie ha
+    // usado "Marcar como publicados" en tab=servicios todavía).
+    $tutores_por_promocionar = [];
+    try {
+        $res_rot = $conn->query("
+            SELECT s.id, s.titulo, s.categoria, a.nombre AS tutor_nombre, p.ultima
+            FROM servicios s
+            JOIN alumnos a ON a.id = s.alumno_id
+            LEFT JOIN (
+                SELECT servicio_id, MAX(fecha_promocionado) AS ultima
+                FROM copiloto_promociones
+                GROUP BY servicio_id
+            ) p ON p.servicio_id = s.id
+            WHERE s.estado = 'aprobado' AND COALESCE(s.visible,1) = 1
+            ORDER BY p.ultima IS NOT NULL, p.ultima ASC
+            LIMIT 10
+        ");
+        if ($res_rot) {
+            while ($row_rot = $res_rot->fetch_assoc()) {
+                $tutores_por_promocionar[] = $row_rot;
+            }
+        }
+    } catch (Throwable $e) {
+        $tutores_por_promocionar = []; // tabla copiloto_promociones todavía no existe
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -742,6 +789,136 @@ require_once $app_dir . '/componentes/sidebar.php';
                     </section>
                 <?php endif; ?>
 
+                <!-- Calendario de Instagram -->
+                <section class="mb-8">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900">Calendario de Instagram</h3>
+                            <?php if ($calendario_reciente): ?>
+                                <p class="text-xs text-gray-400">
+                                    Semana del <?= date('d/m/Y', strtotime($calendario_reciente['semana_inicio'])) ?>
+                                    · generado <?= date('d/m/Y H:i', strtotime($calendario_reciente['generado_en'])) ?>
+                                </p>
+                            <?php else: ?>
+                                <p class="text-xs text-gray-400">Todavía no se ha generado ningún calendario.</p>
+                            <?php endif; ?>
+                        </div>
+                        <button type="button" id="btn-generar-calendario"
+                                class="px-4 py-2.5 rounded-xl bg-[#54A6D8] hover:bg-blue-600 text-white text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-60">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <span id="btn-generar-calendario-texto"><?= $calendario_reciente ? 'Regenerar' : 'Generar calendario semanal' ?></span>
+                        </button>
+                    </div>
+
+                    <?php if (empty($calendario_semana)): ?>
+                        <div class="bg-white border border-dashed border-gray-200 rounded-2xl p-12 text-center text-gray-400">
+                            Aún no hay calendario generado para esta semana. Usa el botón de arriba.
+                        </div>
+                    <?php else: ?>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <?php foreach ($calendario_semana as $dia): ?>
+                                <?php
+                                if (!is_array($dia)) continue;
+                                $dia_nombre    = (string)($dia['dia'] ?? '');
+                                $dia_tema      = (string)($dia['tema'] ?? '');
+                                $dia_formato   = (string)($dia['formato'] ?? '');
+                                $dia_objetivo  = (string)($dia['objetivo'] ?? '');
+                                $dia_copy      = (string)($dia['copy'] ?? '');
+                                $dia_hashtags  = is_array($dia['hashtags'] ?? null) ? $dia['hashtags'] : [];
+                                $dia_horario   = (string)($dia['horario_sugerido'] ?? '');
+                                $dia_categoria = $dia['categoria_nubira'] ?? null;
+                                $dia_seccion   = $dia['seccion_nubira'] ?? null;
+                                $dia_receta_reel = $dia['receta_reel'] ?? null;
+                                $objetivo_es_crecer = strtolower($dia_objetivo) === 'crecer';
+                                ?>
+                                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 flex flex-col" data-dia-copy="<?= htmlspecialchars($dia_copy, ENT_QUOTES, 'UTF-8') ?>">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs font-bold text-gray-900 uppercase tracking-wide"><?= htmlspecialchars($dia_nombre, ENT_QUOTES, 'UTF-8') ?></span>
+                                        <div class="flex items-center gap-1">
+                                            <?php if ($dia_formato !== ''): ?>
+                                                <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"><?= htmlspecialchars($dia_formato, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php endif; ?>
+                                            <?php if ($dia_objetivo !== ''): ?>
+                                                <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full <?= $objetivo_es_crecer ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-[#54A6D8]' ?>"><?= htmlspecialchars($dia_objetivo, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-xs font-semibold text-gray-800 mb-2 leading-snug"><?= htmlspecialchars($dia_tema, ENT_QUOTES, 'UTF-8') ?></p>
+
+                                    <?php if (!empty($dia_receta_reel)): ?>
+                                        <div class="bg-purple-50 border border-purple-100 rounded-xl p-2.5 mb-2 flex items-start gap-2">
+                                            <i class="fa-solid fa-clapperboard text-purple-500 text-xs mt-0.5 shrink-0"></i>
+                                            <p class="text-[11px] text-purple-700 leading-relaxed"><?= htmlspecialchars((string)$dia_receta_reel, ENT_QUOTES, 'UTF-8') ?></p>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-2 flex-1">
+                                        <p class="text-[11px] text-gray-600 leading-relaxed whitespace-pre-line line-clamp-6"><?= htmlspecialchars($dia_copy, ENT_QUOTES, 'UTF-8') ?></p>
+                                    </div>
+
+                                    <button type="button" class="btn-copiar-copy self-start text-[11px] font-bold text-[#54A6D8] hover:text-blue-600 mb-3 flex items-center gap-1">
+                                        <i class="fa-solid fa-copy"></i> <span class="btn-copiar-texto">Copiar</span>
+                                    </button>
+
+                                    <?php if (!empty($dia_hashtags)): ?>
+                                        <div class="flex flex-wrap gap-1 mb-3">
+                                            <?php foreach ($dia_hashtags as $tag): ?>
+                                                <span class="text-[9px] font-medium text-gray-500 bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded-full"><?= htmlspecialchars((string)$tag, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="flex items-center justify-between gap-2 text-[10px] text-gray-400 mt-auto pt-2 border-t border-gray-50">
+                                        <span class="whitespace-nowrap"><i class="fa-regular fa-clock"></i> <?= htmlspecialchars($dia_horario, ENT_QUOTES, 'UTF-8') ?></span>
+                                        <?php if (!empty($dia_categoria)): ?>
+                                            <?php $dia_es_apuntes = strtolower((string)$dia_seccion) === 'apuntes'; ?>
+                                            <a href="/admin/marketing-cards?tab=servicios&categoria=<?= urlencode((string)$dia_categoria) ?>" class="font-bold text-[#54A6D8] hover:text-blue-600 truncate">
+                                                <?= $dia_es_apuntes ? 'Ver apuntes de' : 'Ver tutores de' ?> <?= htmlspecialchars((string)$dia_categoria, ENT_QUOTES, 'UTF-8') ?>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </section>
+
+                <!-- Tutores por promocionar -->
+                <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 mb-8">
+                    <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Tutores por promocionar</h3>
+                    <?php if (empty($tutores_por_promocionar)): ?>
+                        <p class="text-xs text-gray-400">No hay servicios activos en este momento.</p>
+                    <?php else: ?>
+                        <ul class="space-y-2">
+                            <?php foreach ($tutores_por_promocionar as $t): ?>
+                                <?php
+                                $dias_desde = null;
+                                if (!empty($t['ultima'])) {
+                                    $dias_desde = (int)floor((time() - strtotime($t['ultima'])) / 86400);
+                                }
+                                ?>
+                                <li class="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-gray-800 truncate"><?= htmlspecialchars($t['titulo'], ENT_QUOTES, 'UTF-8') ?></p>
+                                        <p class="text-[10px] text-gray-400 truncate"><?= htmlspecialchars($t['tutor_nombre'], ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars($t['categoria'], ENT_QUOTES, 'UTF-8') ?></p>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <?php if ($dias_desde === null): ?>
+                                            <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Nunca promocionado</span>
+                                        <?php else: ?>
+                                            <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Hace <?= $dias_desde ?> <?= $dias_desde === 1 ? 'día' : 'días' ?></span>
+                                        <?php endif; ?>
+                                        <a href="/admin/marketing-cards?tab=servicios&categoria=<?= urlencode((string)$t['categoria']) ?>" class="text-[11px] font-bold text-[#54A6D8] hover:text-blue-600 whitespace-nowrap">
+                                            Armar carrusel
+                                        </a>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </section>
+
                 <!-- Historial -->
                 <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 mb-6">
                     <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Historial (últimos <?= count($copiloto_historial) ?> días)</h3>
@@ -791,10 +968,16 @@ require_once $app_dir . '/componentes/sidebar.php';
         <p class="text-sm font-bold text-gray-700">
             <span id="mkt-bar-count">0</span> <span id="mkt-bar-plural">servicios</span> seleccionados
         </p>
-        <button type="button" id="mkt-btn-carrusel"
-                class="px-5 py-2.5 rounded-xl bg-[#54A6D8] hover:bg-blue-600 text-white text-sm font-bold transition-colors flex items-center gap-2">
-            <i class="fa-solid fa-images"></i> Ver como carrusel
-        </button>
+        <div class="flex items-center gap-2">
+            <button type="button" id="mkt-btn-marcar-publicados"
+                    class="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-60">
+                <i class="fa-solid fa-check"></i> <span class="hidden sm:inline">Marcar como publicados</span>
+            </button>
+            <button type="button" id="mkt-btn-carrusel"
+                    class="px-5 py-2.5 rounded-xl bg-[#54A6D8] hover:bg-blue-600 text-white text-sm font-bold transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-images"></i> Ver como carrusel
+            </button>
+        </div>
     </div>
 </div>
 <?php endif; ?>
@@ -806,6 +989,8 @@ if ($tab === 'servicios') require_once $app_dir . '/componentes/modal_carrusel_m
 
 <script>
 <?php if ($tab === 'servicios'): ?>
+const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
+
 (function () {
     const checkAll   = document.getElementById('check-all');
     const rowChecks  = () => [...document.querySelectorAll('.mkt-check')];
@@ -813,7 +998,16 @@ if ($tab === 'servicios') require_once $app_dir . '/componentes/modal_carrusel_m
     const barCount   = document.getElementById('mkt-bar-count');
     const barPlural  = document.getElementById('mkt-bar-plural');
     const btnCarrusel = document.getElementById('mkt-btn-carrusel');
+    const btnMarcar  = document.getElementById('mkt-btn-marcar-publicados');
     const navBottom  = document.getElementById('nav-bottom');
+
+    function mostrarToast(msg, esError) {
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-3 rounded-xl shadow-lg text-sm font-bold ${esError ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
 
     function syncBar() {
         const marcados = rowChecks().filter(c => c.checked);
@@ -857,6 +1051,45 @@ if ($tab === 'servicios') require_once $app_dir . '/componentes/modal_carrusel_m
             console.warn('abrirCarruselMarketing() no está definida todavía — falta incluir modal_carrusel_marketing.php');
         }
     });
+
+    // "Marcar como publicados" es una acción DELIBERADA y separada de "Ver
+    // como carrusel" — armar/descargar el carrusel no implica que el admin
+    // ya subió el contenido a Instagram de verdad.
+    if (btnMarcar) {
+        btnMarcar.addEventListener('click', async () => {
+            const ids = rowChecks().filter(c => c.checked).map(c => c.value);
+            if (ids.length === 0) return;
+
+            btnMarcar.disabled = true;
+            btnMarcar.classList.add('opacity-60');
+
+            try {
+                const body = new URLSearchParams();
+                body.append('csrf_token', CSRF_TOKEN);
+                ids.forEach(id => body.append('servicio_ids[]', id));
+
+                const r = await fetch('/app/admin_marcar_promocionados.php', { method: 'POST', body });
+                const data = await r.json();
+
+                if (!data.ok) {
+                    mostrarToast(data.error || 'No se pudo registrar la promoción.', true);
+                    return;
+                }
+
+                mostrarToast(`${data.marcados} ${data.marcados === 1 ? 'tutor marcado' : 'tutores marcados'} como publicados`, false);
+
+                // Desmarca todo tras registrar — evita marcar dos veces por error.
+                rowChecks().forEach(c => { c.checked = false; });
+                if (checkAll) checkAll.checked = false;
+                syncBar();
+            } catch (e) {
+                mostrarToast('Error de conexión. Intenta de nuevo.', true);
+            } finally {
+                btnMarcar.disabled = false;
+                btnMarcar.classList.remove('opacity-60');
+            }
+        });
+    }
 })();
 <?php elseif ($tab === 'novedades'): ?>
 const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
@@ -1013,6 +1246,98 @@ const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
             const titulo = li.querySelector('p.font-bold')?.textContent || 'Novedad Nubira';
             compartir(url, `nubira-novedad-${li.dataset.id}-${formato}.jpg`, titulo);
         }
+    });
+})();
+<?php elseif ($tab === 'copiloto'): ?>
+const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
+
+(function () {
+    const btnGenerar = document.getElementById('btn-generar-calendario');
+    const btnGenerarTexto = document.getElementById('btn-generar-calendario-texto');
+
+    function mostrarToast(msg, esError) {
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-3 rounded-xl shadow-lg text-sm font-bold ${esError ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    if (btnGenerar) {
+        btnGenerar.addEventListener('click', async () => {
+            const textoOriginal = btnGenerarTexto.textContent;
+            btnGenerar.disabled = true;
+            btnGenerarTexto.textContent = 'Generando...';
+
+            try {
+                const r = await fetch('/app/admin_generar_calendario.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({ csrf_token: CSRF_TOKEN }),
+                });
+                const data = await r.json();
+
+                if (!data.ok) {
+                    mostrarToast(data.error || 'No se pudo generar el calendario.', true);
+                    btnGenerar.disabled = false;
+                    btnGenerarTexto.textContent = textoOriginal;
+                    return;
+                }
+
+                // Recarga para mostrar el calendario nuevo desde la BD —
+                // mismo criterio "solo lectura" del resto del tab Copiloto.
+                location.reload();
+            } catch (e) {
+                mostrarToast('Error de conexión. Intenta de nuevo.', true);
+                btnGenerar.disabled = false;
+                btnGenerarTexto.textContent = textoOriginal;
+            }
+        });
+    }
+
+    // navigator.clipboard solo existe en contextos seguros (HTTPS o localhost) —
+    // en HTTP plano (ej. nubira.local) es undefined, así que SIEMPRE hay que
+    // caer al fallback clásico de <textarea> + execCommand('copy') ahí. También
+    // se cae al fallback si el clipboard API existe pero falla (ej. permiso
+    // denegado) — "Error" solo se muestra si AMBOS caminos fallan de verdad.
+    async function copiarAlPortapapeles(texto) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+                await navigator.clipboard.writeText(texto);
+                return true;
+            } catch (err) {
+                // Sigue al fallback en vez de fallar acá.
+            }
+        }
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = texto;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            textarea.remove();
+            return ok;
+        } catch (err) {
+            return false;
+        }
+    }
+
+    // Copiar copy: lee el texto crudo desde data-dia-copy (el navegador ya
+    // decodifica las entidades HTML al leer dataset), lo manda al portapapeles.
+    document.addEventListener('click', async (e) => {
+        const btnCopiar = e.target.closest('.btn-copiar-copy');
+        if (!btnCopiar) return;
+
+        const card = btnCopiar.closest('[data-dia-copy]');
+        const textoSpan = btnCopiar.querySelector('.btn-copiar-texto');
+        if (!card || !textoSpan) return;
+
+        const original = textoSpan.textContent;
+        const ok = await copiarAlPortapapeles(card.dataset.diaCopy);
+        textoSpan.textContent = ok ? 'Copiado' : 'Error';
+        setTimeout(() => { textoSpan.textContent = original; }, 2000);
     });
 })();
 <?php endif; ?>
