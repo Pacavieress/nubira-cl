@@ -65,6 +65,13 @@ if (GEMINI_API_KEY === '') { error_log('[Nubira] GEMINI_API_KEY no configurada e
 define('LIMITE_GENERACIONES_IA_GRATIS', 1);
 
 // =========================
+// INSTAGRAM (Fase 2 Copiloto — cuenta oficial Nubira)
+// =========================
+define('IG_ACCESS_TOKEN', $_ENV['IG_ACCESS_TOKEN'] ?? '');
+define('IG_ACCOUNT_ID', $_ENV['IG_ACCOUNT_ID'] ?? '');
+if (IG_ACCESS_TOKEN === '') { error_log('[Nubira] IG_ACCESS_TOKEN no configurada en .env'); }
+
+// =========================
 // DAILY.CO (VIDEO LLAMADAS)
 // =========================
 define('DAILY_API_KEY', $_ENV['DAILY_API_KEY'] ?? '');
