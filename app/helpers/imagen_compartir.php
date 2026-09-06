@@ -1061,7 +1061,7 @@ if (!defined('NB_FONDO_VERSION')) define('NB_FONDO_VERSION', 'v3');
 // color de texto, interlineado, tamaños, posición de la caja de foto,
 // el sello "Nubira.cl", etc. Subirla es GRATIS — reutiliza la foto ya
 // pagada de capa 1, solo vuelve a componer con GD.
-if (!defined('NB_ESTILO_SLIDE_VERSION')) define('NB_ESTILO_SLIDE_VERSION', 'v4');
+if (!defined('NB_ESTILO_SLIDE_VERSION')) define('NB_ESTILO_SLIDE_VERSION', 'v6');
 
 if (!function_exists('nb_wrap_con_autoshrink')) {
     // Prueba nb_wrap_texto() a $sizeInicial y baja de a $paso hasta que el texto completo
@@ -1082,6 +1082,51 @@ if (!function_exists('nb_wrap_con_autoshrink')) {
             }
         }
         return ['size' => $sizeMinimo, 'lineas' => nb_wrap_texto($font, $sizeMinimo, $texto, $maxW, $maxLineas)];
+    }
+}
+
+if (!function_exists('nb_wrap_autofit_ancho')) {
+    // Autofit BIDIRECCIONAL por ANCHO (a diferencia de nb_wrap_con_autoshrink, que solo
+    // encoge desde $sizeMax si no cabe en $maxLineas). Además ESCALA HACIA ARRIBA: busca,
+    // de $sizeMax hacia abajo, el tamaño más grande donde la línea más ancha no supere
+    // $fraccionAncho del ancho disponible Y el texto siga cabiendo en $maxLineas. Así un
+    // título corto de 1 línea deja de quedarse en un tamaño base fijo y crece hasta llenar
+    // visualmente el ancho de la caja, igual que uno largo que ya wrapea a 2-3 líneas.
+    // Usado SOLO por el título de portada — el resto de tipos y el apoyo/subtexto siguen
+    // usando nb_wrap_con_autoshrink() sin ningún cambio.
+    // $altoMaximo: alto real (px) que el bloque de líneas NO puede superar — necesario
+    // porque $maxLineas por sí solo no sabe si hay un "apoyo" debajo que también necesita
+    // espacio en la misma zona de texto (un título de 3 líneas a tamaño grande podía caber
+    // en $maxLineas pero igual invadir la caja de la foto).
+    function nb_wrap_autofit_ancho(string $font, string $texto, int $maxW, int $maxLineas, int $sizeMax, int $sizeMinimo, int $paso, int $altoMaximo, float $fraccionAncho = 0.90): array {
+        $anchoObjetivo = (int)round($maxW * $fraccionAncho);
+        for ($size = $sizeMax; $size >= $sizeMinimo; $size -= $paso) {
+            $lineasNaturales = nb_wrap_texto($font, $size, $texto, $maxW, $maxLineas + 10);
+            if (count($lineasNaturales) > $maxLineas) continue; // no cabe en alto (líneas), seguir bajando
+
+            $altoReal = count($lineasNaturales) * (int)round($size * 1.45);
+            if ($altoReal > $altoMaximo) continue; // no cabe en el alto disponible, seguir bajando
+
+            $anchoLineaMax = 0;
+            foreach ($lineasNaturales as $linea) {
+                $anchoLineaMax = max($anchoLineaMax, nb_ancho_texto($font, $size, $linea));
+            }
+            if ($anchoLineaMax <= $anchoObjetivo) {
+                return ['size' => $size, 'lineas' => $lineasNaturales];
+            }
+            // Se pasa del ancho objetivo a este tamaño -> sigue bajando (mismo shrink de
+            // siempre) hasta encontrar uno que sí calce en ancho.
+        }
+        // Blindaje: ni siquiera a $sizeMinimo caben las $maxLineas dentro de $altoMaximo (con
+        // los tamaños de hoy no debería pasar, pero esto ya no depende de ningún margen
+        // numérico). Se recalcula cuántas líneas caben de verdad a $sizeMinimo dentro de
+        // $altoMaximo y se re-wrappea con ESE tope (nb_wrap_texto trunca con "…" la última
+        // línea si hace falta, mismo mecanismo que ya usa el resto del archivo). Nunca menos
+        // de 1 línea, para que el título nunca desaparezca del todo.
+        $lhMin = (int)round($sizeMinimo * 1.45);
+        $maxLineasSeguras = max(1, (int)floor($altoMaximo / $lhMin));
+        $maxLineasFinal = min($maxLineas, $maxLineasSeguras);
+        return ['size' => $sizeMinimo, 'lineas' => nb_wrap_texto($font, $sizeMinimo, $texto, $maxW, $maxLineasFinal)];
     }
 }
 
@@ -1382,26 +1427,13 @@ if (!function_exists('nb_generar_slide_carrusel')) {
         // nunca cambió de rol (portada) o su fuente/tamaño de título no cambió (cierre).
         $esLegacyContenido = ($tipo === 'contenido') && trim((string)$subtexto) === '' && mb_strlen($texto, 'UTF-8') > 40;
 
-        [$font, $sizeInicial, $sizeMinimo, $paso, $maxLineas] = match (true) {
-            $esLegacyContenido  => [$fSemi, 38, 28, 2, 6],  // estilo antiguo de "contenido"
-            $tipo === 'portada' => [$fBold, 60, 44, 4, 3],
-            $tipo === 'cierre'  => [$fBold, 52, 40, 4, 3],
-            default             => [$fBold, 34, 26, 4, 2], // 'contenido' nuevo (título corto)
-        };
-
-        $ajuste = nb_wrap_con_autoshrink($font, $texto, $maxW, $maxLineas, $sizeInicial, $sizeMinimo, $paso);
-        $size   = $ajuste['size'];
-        $lineas = $ajuste['lineas'];
-        $lh     = (int)round($size * 1.45);
-        $altoTitulo = count($lineas) * $lh;
-
-        // ---- APOYO (subtexto): texto de apoyo bajo el título, más chico y en gris (un
-        // escalón menos de énfasis) — complementa el título, nunca lo repite. Aplica a
-        // los 3 tipos (antes solo portada). Se calcula ANTES de decidir $yTop del título
-        // porque "contenido" centra el bloque COMPLETO (título+apoyo) como una unidad —
-        // hace falta conocer el alto del apoyo de antemano para centrar bien.
-        // Compatibilidad: si $subtexto es null/vacío, o es el caso legacy de arriba, no
-        // se dibuja nada acá — el slide queda idéntico a como se vería sin este campo.
+        // ---- APOYO (subtexto): se mide PRIMERO, antes del título — su tamaño no depende
+        // del título, y en portada el título necesita saber cuánto alto va a ocupar el
+        // apoyo para no invadirlo (ver "altoDisponibleTitulo" más abajo). Texto de apoyo
+        // bajo el título, más chico y en gris (un escalón menos de énfasis) — complementa
+        // el título, nunca lo repite. Aplica a los 3 tipos. Compatibilidad: si $subtexto
+        // es null/vacío, o es el caso legacy de arriba, no se dibuja nada acá — el slide
+        // queda idéntico a como se vería sin este campo.
         $dibujaApoyo = !$esLegacyContenido && trim((string)$subtexto) !== '';
         $lineasSub = []; $sizeSub = 0; $lhSub = 0; $fontSub = $fSemi;
         if ($dibujaApoyo) {
@@ -1409,8 +1441,8 @@ if (!function_exists('nb_generar_slide_carrusel')) {
             $dibujaApoyo = ($subtextoLimpio !== '');
             if ($dibujaApoyo) {
                 [$fontSub, $sizeInicialSub, $sizeMinimoSub, $pasoSub, $maxLineasSub] = match ($tipo) {
-                    'portada' => [$fSemi, 28, 22, 2, 2],
-                    default   => [$fSemi, 24, 18, 2, 4], // 'contenido' y 'cierre'
+                    'portada' => [$fSemi, 30, 22, 2, 2],  // 28->30
+                    default   => [$fSemi, 26, 18, 2, 4], // 24->26, 'contenido' y 'cierre'
                 };
                 $ajusteSub = nb_wrap_con_autoshrink($fontSub, $subtextoLimpio, $maxW, $maxLineasSub, $sizeInicialSub, $sizeMinimoSub, $pasoSub);
                 $sizeSub   = $ajusteSub['size'];
@@ -1423,14 +1455,43 @@ if (!function_exists('nb_generar_slide_carrusel')) {
         // Zona de texto FIJA ($textoTop a $boxYTop, por encima de la caja de imagen).
         // $textoTop suma 20px extra sobre $safeTop: con $safeTop a secas, tildes/acentos
         // (ej. la "í" de "¿Sabías?") quedaban tocando la línea de zona segura — este
-        // colchón les da margen real. Portada/cierre van top-aligned desde $textoTop (su
-        // título grande ya llena bien la zona). "contenido" centra el bloque título+apoyo
-        // dentro de esa misma zona — con top-align fijo, un bloque corto quedaba pegado
-        // arriba con un vacío grande antes de la caja de imagen; centrado se ve
-        // equilibrado sin importar cuántas líneas tenga.
+        // colchón les da margen real.
         $textoTop      = $safeTop + 20;
-        $altoBloque    = $altoTitulo + $altoApoyo;
         $altoZonaTexto = $boxYTop - $textoTop;
+
+        [$font, $sizeInicial, $sizeMinimo, $paso, $maxLineas] = match (true) {
+            $esLegacyContenido  => [$fSemi, 38, 28, 2, 6],  // estilo antiguo de "contenido"
+            $tipo === 'portada' => [$fBold, 80, 44, 4, 3],  // 80 = techo del autofit (antes 60, tope fijo shrink-only)
+            $tipo === 'cierre'  => [$fBold, 80, 40, 4, 3],  // 52->80, mismo techo que portada
+            default             => [$fBold, 80, 26, 4, 2], // 34->80, mismo techo que portada
+        };
+
+        // Portada, contenido (nuevo) y cierre usan autofit bidireccional con guarda de alto
+        // — el título puede crecer hasta llenar el ancho, pero nunca invade la caja de la
+        // foto (ni, en cierre, se acerca al sello) porque respeta $altoDisponibleTitulo.
+        // Solo el caso legacy de "contenido" (párrafo viejo sin subtexto) sigue con el
+        // shrink-only de siempre — su fuente/tamaño no cambiaron, se ve igual que antes.
+        if ($esLegacyContenido) {
+            $ajuste = nb_wrap_con_autoshrink($font, $texto, $maxW, $maxLineas, $sizeInicial, $sizeMinimo, $paso);
+        } else {
+            // El título puede crecer hasta sus $maxLineas líneas a tamaño grande (autofit)
+            // — sin este límite, título+apoyo podían sumar más que $altoZonaTexto (360px)
+            // e invadir la caja de la foto. Se resta el alto que va a ocupar el apoyo
+            // (medido arriba) más 8px de margen de seguridad.
+            $altoDisponibleTitulo = $altoZonaTexto - $altoApoyo - 8;
+            $ajuste = nb_wrap_autofit_ancho($font, $texto, $maxW, $maxLineas, $sizeInicial, $sizeMinimo, $paso, $altoDisponibleTitulo);
+        }
+        $size   = $ajuste['size'];
+        $lineas = $ajuste['lineas'];
+        $lh     = (int)round($size * 1.45);
+        $altoTitulo = count($lineas) * $lh;
+
+        // Portada/cierre van top-aligned desde $textoTop (su título grande ya llena bien
+        // la zona). "contenido" centra el bloque título+apoyo dentro de esa misma zona —
+        // con top-align fijo, un bloque corto quedaba pegado arriba con un vacío grande
+        // antes de la caja de imagen; centrado se ve equilibrado sin importar cuántas
+        // líneas tenga.
+        $altoBloque = $altoTitulo + $altoApoyo;
         $yTop = ($tipo === 'contenido') ? $textoTop + (int)(($altoZonaTexto - $altoBloque) / 2) : $textoTop;
         foreach ($lineas as $i => $linea) {
             $yBase = $yTop + $i * $lh + (int)($size * 0.8);
