@@ -234,6 +234,64 @@ if (!function_exists('nb_recorte_circular')) {
     }
 }
 
+if (!function_exists('nb_recorte_rect_redondeado')) {
+    // Devuelve una imagen $w x $h con la foto recortada (cover-fit, sin deformar) y las
+    // 4 esquinas redondeadas a $radio px (alpha). Mismo criterio que nb_recorte_circular()
+    // de arriba, pero la máscara pixel a pixel solo se evalúa en los 4 cuadrados de
+    // esquina (radio x radio cada uno) en vez de la imagen completa — el resto se copia
+    // directo, sin necesidad de recorrer cada pixel de una caja que puede ser grande
+    // (ej. 860x650).
+    function nb_recorte_rect_redondeado($src, int $w, int $h, int $radio) {
+        $dst = imagecreatetruecolor($w, $h);
+        imagesavealpha($dst, true);
+        imagealphablending($dst, false);
+        $transp = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+        imagefilledrectangle($dst, 0, 0, $w, $h, $transp);
+
+        // Cover-fit: escala al mayor factor necesario y recorta centrado (llena $w x $h
+        // sin deformar, recortando lo que sobre).
+        $sw = imagesx($src); $sh = imagesy($src);
+        $escala   = max($w / $sw, $h / $sh);
+        $anchoEsc = (int)ceil($sw * $escala);
+        $altoEsc  = (int)ceil($sh * $escala);
+        $tmp = imagecreatetruecolor($anchoEsc, $altoEsc);
+        imagecopyresampled($tmp, $src, 0, 0, 0, 0, $anchoEsc, $altoEsc, $sw, $sh);
+        $offX = (int)(($anchoEsc - $w) / 2);
+        $offY = (int)(($altoEsc - $h) / 2);
+        imagecopy($dst, $tmp, 0, 0, $offX, $offY, $w, $h);
+        imagedestroy($tmp);
+
+        // Redondea las 4 esquinas: transparenta cada pixel del cuadrado radio x radio
+        // que quede fuera del arco de esa esquina.
+        $r2 = $radio * $radio;
+        $esquinas = [
+            [0, 0, $radio],                 // superior-izquierda
+            [$w - $radio, 0, $radio],       // superior-derecha (cx se ajusta abajo)
+            [0, $h - $radio, $radio],       // inferior-izquierda
+            [$w - $radio, $h - $radio, $radio], // inferior-derecha
+        ];
+        $centros = [
+            [$radio, $radio],
+            [$w - $radio - 1, $radio],
+            [$radio, $h - $radio - 1],
+            [$w - $radio - 1, $h - $radio - 1],
+        ];
+        foreach ($esquinas as $i => [$x1, $y1]) {
+            [$cx, $cy] = $centros[$i];
+            for ($y = $y1; $y < $y1 + $radio; $y++) {
+                for ($x = $x1; $x < $x1 + $radio; $x++) {
+                    $dx = $x - $cx; $dy = $y - $cy;
+                    if (($dx * $dx + $dy * $dy) > $r2) {
+                        imagesetpixel($dst, $x, $y, $transp);
+                    }
+                }
+            }
+        }
+
+        return $dst;
+    }
+}
+
 if (!function_exists('nb_estrella')) {
     // Dibuja una estrella de 5 puntas rellena, centrada en ($cx,$cy), radio exterior $R.
     function nb_estrella($img, int $cx, int $cy, int $R, int $color): void {
@@ -979,5 +1037,489 @@ if (!function_exists('nb_obtener_imagen_compartir')) {
             : nb_generar_imagen_post($s, $file);
 
         return $ok && is_file($file) ? $file : '';
+    }
+}
+
+/* ============================================================
+   PASO 5 — CARRUSEL DE CALENDARIO (Copiloto de Marketing)
+   Slides "texto sobre fondo" generadas a partir de copiloto_calendario.slides
+   (ver admin_generar_calendario.php). Formato 4:5, mismo canvas que
+   nb_generar_imagen_post() de servicios — NO el 1:1 viejo de novedades.
+   ============================================================ */
+
+// NB_FONDO_VERSION — SOLO capa 1 (la FOTO cruda de Gemini, sin texto).
+// Súbela cuando cambie algo que afecta la FOTO EN SÍ: el prompt
+// (nb_armar_prompt_fondo_slide), los diccionarios de categoría/día
+// (nb_motivo_visual_categoria / nb_estilo_compositivo_dia), o el
+// aspect_ratio pedido a Gemini. Subirla implica GASTO REAL — todas las
+// fotos ya cacheadas se vuelven a pedir a Gemini.
+if (!defined('NB_FONDO_VERSION')) define('NB_FONDO_VERSION', 'v3');
+
+// NB_ESTILO_SLIDE_VERSION — SOLO capa 2 (la imagen FINAL: la foto de
+// capa 1 + el texto/pill/sello que dibuja GD encima, nb_generar_slide_
+// carrusel). Súbela cuando cambies algo puramente visual del lado GD:
+// color de texto, interlineado, tamaños, posición de la caja de foto,
+// el sello "Nubira.cl", etc. Subirla es GRATIS — reutiliza la foto ya
+// pagada de capa 1, solo vuelve a componer con GD.
+if (!defined('NB_ESTILO_SLIDE_VERSION')) define('NB_ESTILO_SLIDE_VERSION', 'v4');
+
+if (!function_exists('nb_wrap_con_autoshrink')) {
+    // Prueba nb_wrap_texto() a $sizeInicial y baja de a $paso hasta que el texto completo
+    // quepa en $maxLineas SIN truncar, o hasta $sizeMinimo. Si ni al mínimo cabe, se acepta
+    // el mínimo con el truncado normal de nb_wrap_texto() (nunca revienta, en el peor caso
+    // la última línea termina en "…").
+    //
+    // "¿Cabe sin truncar?" se prueba con un tope de líneas generoso (+10): si a ese tamaño
+    // el texto necesita naturalmente <= $maxLineas, nb_wrap_texto() con el tope REAL habría
+    // devuelto exactamente esas mismas líneas, sin activar su propio truncado.
+    //
+    // @return array{size:int, lineas:array<string>}
+    function nb_wrap_con_autoshrink(string $font, string $texto, int $maxW, int $maxLineas, int $sizeInicial, int $sizeMinimo, int $paso): array {
+        for ($size = $sizeInicial; $size >= $sizeMinimo; $size -= $paso) {
+            $lineasNaturales = nb_wrap_texto($font, $size, $texto, $maxW, $maxLineas + 10);
+            if (count($lineasNaturales) <= $maxLineas) {
+                return ['size' => $size, 'lineas' => $lineasNaturales];
+            }
+        }
+        return ['size' => $sizeMinimo, 'lineas' => nb_wrap_texto($font, $sizeMinimo, $texto, $maxW, $maxLineas)];
+    }
+}
+
+if (!function_exists('nb_motivo_visual_categoria')) {
+    // Diccionario categoría -> escena real (Bloque B del prompt de foto). Cubre los
+    // nombres de categoría que existen HOY en producción (servicios aprobados + apuntes
+    // públicos), incluidos los que no son materias reales ('Clases', 'Tutoria') y el
+    // placeholder de IA sin clasificar — todos mapeados a 'Otros' a propósito, sin
+    // inventarles una escena de materia que no tienen. La normalización real de
+    // categorías (unificar Idiomas/Ingles, reclasificar 'Clases'/'Tutoria' a su materia
+    // real, limpiar el placeholder) es un pendiente aparte, NO se resuelve acá.
+    //
+    // Escenas reales de persona/situación de estudio (NO formas abstractas): el Bloque A
+    // del prompt (nb_armar_prompt_fondo_slide) pide una foto realista — describir acá
+    // patrones abstractos contradecía esa instrucción y Gemini terminaba haciendo "una
+    // foto realista DE formas geométricas abstractas", resultado raro y sin personas.
+    function nb_motivo_visual_categoria(?string $categoria): string {
+        static $motivos = null;
+        if ($motivos === null) {
+            $motivos = [
+                'Matematicas'  => 'un estudiante resolviendo ejercicios en un cuaderno, con calculadora y lápiz, ambiente de estudio concentrado',
+                'Matemáticas'  => 'un estudiante resolviendo ejercicios en un cuaderno, con calculadora y lápiz, ambiente de estudio concentrado',
+                'Lenguaje'     => 'una persona leyendo un libro con anotaciones, rodeada de libros y cuadernos',
+                'Idiomas'      => 'una persona estudiando idiomas con audífonos y apuntes, ambiente relajado',
+                'Ingles'       => 'una persona estudiando idiomas con audífonos y apuntes, ambiente relajado',
+                'Inglés'       => 'una persona estudiando idiomas con audífonos y apuntes, ambiente relajado',
+                'Biologia'     => 'un estudiante con material de biología, láminas y cuaderno de apuntes',
+                'Biología'     => 'un estudiante con material de biología, láminas y cuaderno de apuntes',
+                'Quimica'      => 'un estudiante estudiando química con apuntes y libros de texto',
+                'Química'      => 'un estudiante estudiando química con apuntes y libros de texto',
+                'Fisica'       => 'un estudiante resolviendo problemas de física con cuaderno y calculadora',
+                'Física'       => 'un estudiante resolviendo problemas de física con cuaderno y calculadora',
+                'Economia'     => 'una persona estudiando con cuaderno y notebook, ambiente de trabajo',
+                'Economía'     => 'una persona estudiando con cuaderno y notebook, ambiente de trabajo',
+                'Historia'     => 'una persona leyendo libros de historia, ambiente de biblioteca cálido',
+                'Derecho'      => 'una persona estudiando con libros de texto gruesos, ambiente formal de estudio',
+                'Programacion' => 'una persona estudiando frente a un notebook, ambiente moderno de estudio',
+                'Programación' => 'una persona estudiando frente a un notebook, ambiente moderno de estudio',
+                'Musica'       => 'una persona estudiando con partituras o un instrumento cerca, ambiente creativo',
+                'Música'       => 'una persona estudiando con partituras o un instrumento cerca, ambiente creativo',
+                'Diseno'       => 'una persona diseñando en una tablet o notebook, con bocetos y muestras de color cerca, ambiente creativo',
+                'Diseño'       => 'una persona diseñando en una tablet o notebook, con bocetos y muestras de color cerca, ambiente creativo',
+                'Asesoria'     => 'dos personas conversando sobre apuntes, ambiente de tutoría cercano',
+                'Asesoría'     => 'dos personas conversando sobre apuntes, ambiente de tutoría cercano',
+                // No son materias reales — sin escena propia, van directo a 'Otros'.
+                'Clases'       => null,
+                'Tutoria'      => null,
+                'Tutoría'      => null,
+                'Categoria detectada por IA' => null,
+                'Categoría detectada por IA' => null,
+                'Otros'        => 'un estudiante estudiando con libros y cuaderno, ambiente cálido y aspiracional',
+            ];
+        }
+        $cat = trim((string)$categoria);
+        $motivo = $motivos[$cat] ?? null;
+        return $motivo ?? $motivos['Otros'];
+    }
+}
+
+if (!function_exists('nb_estilo_compositivo_dia')) {
+    // Bloque C del prompt de foto: rotación DETERMINÍSTICA por día de la semana (no por
+    // IA) — garantiza que lunes nunca se vea igual a martes aunque promocionen la misma
+    // categoría, sin gastar una llamada extra a Gemini para "inventar" variedad.
+    // Variación de TOMA fotográfica (encuadre/luz), no de composición abstracta — el
+    // Bloque A pide foto realista, así que esto describe cómo está tomada la foto, no
+    // patrones visuales sueltos.
+    function nb_estilo_compositivo_dia(string $dia_nombre): string {
+        static $estilos = [
+            'lunes'     => 'plano medio del estudiante, luz natural suave desde una ventana lateral',
+            'martes'    => 'plano cenital (vista desde arriba) del escritorio y los materiales de estudio',
+            'miercoles' => 'primer plano de las manos y el material de estudio sobre la mesa',
+            'miércoles' => 'primer plano de las manos y el material de estudio sobre la mesa',
+            'jueves'    => 'plano medio en ambiente de biblioteca o sala de estudio, luz cálida',
+            'viernes'   => 'plano amplio del espacio de estudio, luz de tarde',
+            'sabado'    => 'plano cercano y relajado, luz de mañana junto a una ventana',
+            'sábado'    => 'plano cercano y relajado, luz de mañana junto a una ventana',
+            'domingo'   => 'plano medio centrado, fondo simple y luz suave y pareja',
+        ];
+        $clave = mb_strtolower(trim($dia_nombre), 'UTF-8');
+        return $estilos[$clave] ?? $estilos['lunes'];
+    }
+}
+
+if (!function_exists('nb_armar_prompt_fondo_slide')) {
+    // Arma el prompt completo de la foto: Bloque ESCENA (NUEVO — el texto concreto de la
+    // slide, núcleo del prompt) + Bloque A (estilo/técnica, constante) + Bloque B (categoría,
+    // ahora ambientación SECUNDARIA, ya no el sujeto principal) + Bloque C (encuadre según
+    // día de semana) + variación según $tipo de slide. Nunca pide texto/letras/números/logos
+    // — eso lo dibuja GD encima (nb_generar_slide_carrusel), nunca Gemini.
+    function nb_armar_prompt_fondo_slide(string $dia_nombre, ?string $categoria_nubira, string $tipo_slide, string $texto_slide): string {
+        $bloque_escena = "La foto debe ilustrar esta idea concreta: \"{$texto_slide}\". Traduce el "
+            . 'significado de esa frase en una escena real con personas y/o objetos que la '
+            . 'representen (ej. si el texto habla de explicarle la materia a alguien, muestra a '
+            . 'dos personas, una enseñando a la otra; si habla de organizar el tiempo de estudio, '
+            . 'muestra a alguien planificando con una agenda o calendario). No ilustres palabras '
+            . 'sueltas de forma literal, ilustra la situación completa.';
+
+        $bloque_a = 'Foto realista, estilo fotografía editorial limpia, luz natural suave. SIN '
+            . 'texto, sin letras, sin números, sin logos, sin marcas de agua — CRÍTICO: no debe '
+            . 'aparecer ningún texto legible en la imagen (ni en libros, pantallas, carteles o '
+            . 'cuadernos dentro de la escena). Composición centrada, apta para recortar en '
+            . 'cuadrado. Paleta que combine con tonos azules y neutros, ambiente cálido y '
+            . 'aspiracional.';
+
+        $bloque_b = 'Contexto de materia (ambientación secundaria, NO el sujeto principal de la '
+            . 'foto): ' . nb_motivo_visual_categoria($categoria_nubira) . '.';
+        $bloque_c = 'Estilo compositivo de hoy: ' . nb_estilo_compositivo_dia($dia_nombre) . '.';
+
+        $bloque_tipo = match ($tipo_slide) {
+            'portada' => 'Es la foto de portada: dale más protagonismo y detalle.',
+            'cierre'  => 'Es la foto de cierre: usa una variación con más presencia del color acento #54A6D8.',
+            default   => 'Es una foto de apoyo: mantenla simple, no debe competir visualmente con el texto de la slide.',
+        };
+
+        return "{$bloque_escena} {$bloque_a} {$bloque_b} {$bloque_c} {$bloque_tipo}";
+    }
+}
+
+if (!function_exists('nb_carrusel_calendario_fondos_dir')) {
+    function nb_carrusel_calendario_fondos_dir(): string {
+        $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
+        if ($root === '') $root = dirname(__DIR__, 2);
+        return rtrim($root, '/\\') . '/upload/carrusel_calendario/fondos/';
+    }
+}
+
+if (!function_exists('nb_registrar_fondo_generado')) {
+    // Guardrail de gasto (Copiloto): 1 fila por cada vez que se pidió un fondo, sea que
+    // haya salido de caché o de una llamada real a Gemini. cache_hit distingue si costó
+    // dinero; exito distingue si la llamada a Gemini (cuando hubo) funcionó de verdad —
+    // el contador de gasto del panel debe sumar SOLO cache_hit=0 AND exito=1 (llamadas
+    // reales que sí se cobraron), nunca los intentos fallidos.
+    function nb_registrar_fondo_generado(string $semana_inicio, string $dia_nombre, int $numero_slide, int $cache_hit, int $exito = 1): void {
+        global $conn;
+        if (!isset($conn) || !($conn instanceof mysqli)) return;
+
+        static $tabla_lista = false;
+        if (!$tabla_lista) {
+            $conn->query("CREATE TABLE IF NOT EXISTS copiloto_fondos_generados (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                fecha DATE NOT NULL,
+                semana_inicio DATE NOT NULL,
+                dia VARCHAR(20) NOT NULL,
+                numero_slide INT NOT NULL,
+                modelo VARCHAR(60) NOT NULL,
+                cache_hit TINYINT(1) NOT NULL DEFAULT 0,
+                exito TINYINT(1) NOT NULL DEFAULT 1,
+                creado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $tabla_lista = true;
+        }
+
+        $fecha_hoy = date('Y-m-d');
+        $modelo    = defined('GEMINI_IMAGEN_MODEL') ? GEMINI_IMAGEN_MODEL : 'desconocido';
+
+        $stmt = $conn->prepare("INSERT INTO copiloto_fondos_generados (fecha, semana_inicio, dia, numero_slide, modelo, cache_hit, exito) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        if (!$stmt) return;
+        $stmt->bind_param('sssisii', $fecha_hoy, $semana_inicio, $dia_nombre, $numero_slide, $modelo, $cache_hit, $exito);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+if (!function_exists('nb_obtener_fondo_slide_carrusel')) {
+    // Capa 1 de caché (foto cruda de Gemini, SIN texto quemado). Fingerprint AHORA incluye
+    // el texto de la slide — cambio de arquitectura: la foto ya no ilustra solo la
+    // categoría del día, ilustra la idea concreta de ESE texto (ver nb_armar_prompt_fondo_
+    // slide), así que si el texto cambia, la foto tiene que cambiar con él. Esto alinea capa
+    // 1 con capa 2 (nb_obtener_imagen_slide_carrusel, que ya fingerprinteaba por texto) —
+    // regenerar el calendario ahora invalida ambas capas automáticamente, sin borrado manual.
+    function nb_obtener_fondo_slide_carrusel(string $semana_inicio, string $dia_nombre, int $numero_slide, string $tipo_slide, ?string $categoria_nubira, string $texto_slide): array {
+        $fp   = substr(md5('fondo_' . NB_FONDO_VERSION . '|' . $semana_inicio . '|' . $dia_nombre . '|' . $numero_slide . '|' . $tipo_slide . '|' . (string)$categoria_nubira . '|' . $texto_slide), 0, 10);
+        $dir  = nb_carrusel_calendario_fondos_dir();
+        $file = $dir . "{$fp}.jpg";
+
+        // CACHE HIT — se registra igual (para tener visibilidad de uso total), pero
+        // NUNCA se llama a Gemini.
+        if (is_file($file)) {
+            nb_registrar_fondo_generado($semana_inicio, $dia_nombre, $numero_slide, 1, 1);
+            return ['ok' => true, 'path' => $file, 'cache_hit' => true];
+        }
+
+        // CACHE MISS — recién acá se arma el prompt y se llama a Gemini de verdad.
+        require_once __DIR__ . '/gemini_imagen.php';
+        $prompt    = nb_armar_prompt_fondo_slide($dia_nombre, $categoria_nubira, $tipo_slide, $texto_slide);
+        // aspect_ratio 4:3: la foto va en una caja ancha de 860x650 (~4:3, ver
+        // nb_generar_slide_carrusel) — pedir un aspecto parecido reduce cuánto se recorta
+        // la foto real en el cover-fit.
+        $resultado = nb_gemini_generar_imagen($prompt, ['aspect_ratio' => '4:3']);
+
+        // Se registra DESPUÉS de conocer el resultado, nunca antes — así un intento
+        // fallido (que Google no cobra) no infla el contador de gasto del panel.
+        nb_registrar_fondo_generado($semana_inicio, $dia_nombre, $numero_slide, 0, $resultado['ok'] ? 1 : 0);
+
+        if (!$resultado['ok']) {
+            return ['ok' => false, 'error' => $resultado['error'] ?? 'Fallo desconocido generando el fondo', 'cache_hit' => false];
+        }
+
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        if (@file_put_contents($file, $resultado['bytes']) === false) {
+            return ['ok' => false, 'error' => 'No se pudo guardar el fondo generado en disco', 'cache_hit' => false];
+        }
+
+        return ['ok' => true, 'path' => $file, 'cache_hit' => false];
+    }
+}
+
+if (!function_exists('nb_limpiar_texto_slide')) {
+    // Quita emojis/pictogramas/símbolos que la fuente Inter no tiene glyph (se veían
+    // como .notdef, ej. "ð[NO GLYPH]¤" cuando Gemini metía un 🧠 en el texto de una
+    // slide). Deja intactas tildes, ñ/Ñ, ¿¡ y puntuación normal — Latin-1 Supplement
+    // (U+00A0-00FF) y puntuación general (comillas, guiones, elipsis) NO se tocan.
+    function nb_limpiar_texto_slide(string $texto): string {
+        $limpio = preg_replace(
+            '/[\x{1F000}-\x{1FFFF}\x{2300}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE00}-\x{FE0F}\x{200D}]/u',
+            '',
+            $texto
+        );
+        $limpio = $limpio ?? $texto; // preg_replace puede devolver null ante un error interno raro
+        // Colapsa espacios dobles que deja un emoji removido a mitad de frase.
+        $limpio = preg_replace('/\s+/u', ' ', $limpio) ?? $limpio;
+        return trim($limpio);
+    }
+}
+
+if (!function_exists('nb_generar_slide_carrusel')) {
+    // Genera 1 imagen de 1 slide de carrusel. Diseño "imagen protagonista": fondo sólido
+    // claro SIEMPRE (#F4F9FC, los 3 tipos), texto arranca directo desde arriba (sin pill),
+    // foto temática de Gemini (opcional) en una caja ancha con esquinas redondeadas en la
+    // zona media-baja, cover-fit (llena toda la caja, recorta lo que sobre), y un sello de
+    // marca "Nubira.cl" fijo abajo a la derecha en las 3 variantes.
+    // $fondo_path es OPCIONAL (compatibilidad hacia atrás): si es null, o si no se puede
+    // leer/decodificar, esa caja simplemente queda en blanco/celeste liso — el texto
+    // SIEMPRE sale bien, con o sin foto.
+    function nb_generar_slide_carrusel(string $texto, string $tipo, int $numero, int $total, string $output_path, ?string $fondo_path = null, ?string $subtexto = null): bool {
+        $W = 1080; $H = 1350;
+        $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
+        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
+        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
+        foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
+
+        $texto = nb_limpiar_texto_slide($texto);
+
+        $img = imagecreatetruecolor($W, $H);
+        $M = 110; // mismo margen lateral que nb_generar_imagen_post() (servicios)
+        $maxW = $W - ($M * 2);
+
+        $esCierre = ($tipo === 'cierre');
+
+        // ---- ZONA SEGURA de Instagram: 140px arriba y abajo donde la propia interfaz de
+        // IG (menú de cuenta, iconos, indicador de carrusel) puede tapar o recortar el
+        // contenido. Nada crítico (texto, imagen, sello) debe entrar en esas franjas —
+        // todo el layout de abajo se calcula dentro de [$safeTop, $H - $safeBottom].
+        $safeTop    = 140;
+        $safeBottom = 140;
+        $safeYFin   = $H - $safeBottom; // 1210
+
+        // ---- FONDO: sólido #F4F9FC SIEMPRE para los 3 tipos.
+        $cFondo      = imagecolorallocate($img, 244, 249, 252); // #F4F9FC
+        $cAzulMarca  = imagecolorallocate($img, 0, 74, 173);    // #004AAD
+        $cSubtitulo  = imagecolorallocate($img, 51, 51, 51);    // #333333, un escalón menos de énfasis que el gancho
+        $cSello      = imagecolorallocate($img, 139, 184, 216); // #8BB8D8, celeste apagado
+        imagefilledrectangle($img, 0, 0, $W, $H, $cFondo);
+
+        // ---- IMAGEN PROTAGONISTA (opcional): caja ancha 860x600 (antes 860x650 — se
+        // achicó 50px de alto para dejarle aire al pie dentro de la zona segura), esquinas
+        // redondeadas 24px, en la zona media (y 520-1120), debajo del bloque de texto y con
+        // margen real antes del límite inferior seguro (1210). Cover-fit (llena toda la
+        // caja, recorta lo que sobre). Se dibuja en los 3 tipos — "cierre" no queda sin foto.
+        $boxW = 860; $boxH = 600; $boxX = $M; $boxYTop = 520; $radio = 24;
+        if ($fondo_path !== null && is_file($fondo_path)) {
+            $bytesFoto = @file_get_contents($fondo_path);
+            $srcFoto   = $bytesFoto !== false ? @imagecreatefromstring($bytesFoto) : false;
+            if ($srcFoto !== false) {
+                $recorte = nb_recorte_rect_redondeado($srcFoto, $boxW, $boxH, $radio);
+                imagealphablending($img, true);
+                imagecopy($img, $recorte, $boxX, $boxYTop, 0, 0, $boxW, $boxH);
+                imagedestroy($recorte);
+                imagedestroy($srcFoto);
+            }
+        }
+        // Si no hay foto (null o archivo ilegible), esa caja queda con el fondo #F4F9FC
+        // liso — no hace falta dibujar nada más ahí.
+
+        // ---- TÍTULO: arranca en $safeTop (antes y=110, muy pegado al borde real),
+        // alineado a la izquierda. Azul marca #004AAD en los 3 tipos.
+        $cTexto = $cAzulMarca;
+
+        // Compatibilidad hacia atrás SOLO para "contenido": antes de este cambio, "texto"
+        // de contenido era el párrafo completo (hasta 120 caracteres, fuente fSemi
+        // 38→28, 6 líneas). Ahora "texto" pasa a ser un título corto (máx. 40) y el
+        // párrafo se movió a "subtexto" — pero un calendario generado ANTES de este
+        // cambio tiene el párrafo largo en "texto" y ningún "subtexto". Si se dibujara
+        // ese párrafo largo con la config nueva (título corto, máx. 2 líneas) se vería
+        // cortado y mal. Detectamos ese caso (sin subtexto Y más largo que el límite
+        // nuevo de título) y usamos la config ANTIGUA tal cual — cero cambio visual para
+        // lo ya generado. "portada" y "cierre" no necesitan este fallback: su "texto"
+        // nunca cambió de rol (portada) o su fuente/tamaño de título no cambió (cierre).
+        $esLegacyContenido = ($tipo === 'contenido') && trim((string)$subtexto) === '' && mb_strlen($texto, 'UTF-8') > 40;
+
+        [$font, $sizeInicial, $sizeMinimo, $paso, $maxLineas] = match (true) {
+            $esLegacyContenido  => [$fSemi, 38, 28, 2, 6],  // estilo antiguo de "contenido"
+            $tipo === 'portada' => [$fBold, 60, 44, 4, 3],
+            $tipo === 'cierre'  => [$fBold, 52, 40, 4, 3],
+            default             => [$fBold, 34, 26, 4, 2], // 'contenido' nuevo (título corto)
+        };
+
+        $ajuste = nb_wrap_con_autoshrink($font, $texto, $maxW, $maxLineas, $sizeInicial, $sizeMinimo, $paso);
+        $size   = $ajuste['size'];
+        $lineas = $ajuste['lineas'];
+        $lh     = (int)round($size * 1.45);
+        $altoTitulo = count($lineas) * $lh;
+
+        // ---- APOYO (subtexto): texto de apoyo bajo el título, más chico y en gris (un
+        // escalón menos de énfasis) — complementa el título, nunca lo repite. Aplica a
+        // los 3 tipos (antes solo portada). Se calcula ANTES de decidir $yTop del título
+        // porque "contenido" centra el bloque COMPLETO (título+apoyo) como una unidad —
+        // hace falta conocer el alto del apoyo de antemano para centrar bien.
+        // Compatibilidad: si $subtexto es null/vacío, o es el caso legacy de arriba, no
+        // se dibuja nada acá — el slide queda idéntico a como se vería sin este campo.
+        $dibujaApoyo = !$esLegacyContenido && trim((string)$subtexto) !== '';
+        $lineasSub = []; $sizeSub = 0; $lhSub = 0; $fontSub = $fSemi;
+        if ($dibujaApoyo) {
+            $subtextoLimpio = nb_limpiar_texto_slide((string)$subtexto);
+            $dibujaApoyo = ($subtextoLimpio !== '');
+            if ($dibujaApoyo) {
+                [$fontSub, $sizeInicialSub, $sizeMinimoSub, $pasoSub, $maxLineasSub] = match ($tipo) {
+                    'portada' => [$fSemi, 28, 22, 2, 2],
+                    default   => [$fSemi, 24, 18, 2, 4], // 'contenido' y 'cierre'
+                };
+                $ajusteSub = nb_wrap_con_autoshrink($fontSub, $subtextoLimpio, $maxW, $maxLineasSub, $sizeInicialSub, $sizeMinimoSub, $pasoSub);
+                $sizeSub   = $ajusteSub['size'];
+                $lineasSub = $ajusteSub['lineas'];
+                $lhSub     = (int)round($sizeSub * 1.45);
+            }
+        }
+        $altoApoyo = $dibujaApoyo ? (24 + count($lineasSub) * $lhSub) : 0; // 24 = gap título-apoyo
+
+        // Zona de texto FIJA ($textoTop a $boxYTop, por encima de la caja de imagen).
+        // $textoTop suma 20px extra sobre $safeTop: con $safeTop a secas, tildes/acentos
+        // (ej. la "í" de "¿Sabías?") quedaban tocando la línea de zona segura — este
+        // colchón les da margen real. Portada/cierre van top-aligned desde $textoTop (su
+        // título grande ya llena bien la zona). "contenido" centra el bloque título+apoyo
+        // dentro de esa misma zona — con top-align fijo, un bloque corto quedaba pegado
+        // arriba con un vacío grande antes de la caja de imagen; centrado se ve
+        // equilibrado sin importar cuántas líneas tenga.
+        $textoTop      = $safeTop + 20;
+        $altoBloque    = $altoTitulo + $altoApoyo;
+        $altoZonaTexto = $boxYTop - $textoTop;
+        $yTop = ($tipo === 'contenido') ? $textoTop + (int)(($altoZonaTexto - $altoBloque) / 2) : $textoTop;
+        foreach ($lineas as $i => $linea) {
+            $yBase = $yTop + $i * $lh + (int)($size * 0.8);
+            nb_texto_izquierda($img, $font, $size, $cTexto, $linea, $M, $yBase);
+        }
+
+        // La posición Y del apoyo es DINÁMICA (arranca justo debajo de donde terminó el
+        // título, que puede rendir 1 a 3 líneas) — nunca una Y fija, para no superponerse
+        // nunca con el título.
+        if ($dibujaApoyo) {
+            $ySub = $yTop + $altoTitulo + 24;
+            foreach ($lineasSub as $i => $linea) {
+                $yBaseSub = $ySub + $i * $lhSub + (int)($sizeSub * 0.8);
+                nb_texto_izquierda($img, $fontSub, $sizeSub, $cSubtitulo, $linea, $M, $yBaseSub);
+            }
+        }
+
+        // ---- PIE: "Desliza >>" (solo portada) y el sello "Nubira.cl" (las 3 variantes),
+        // en la franja entre el fondo de la caja de imagen ($boxYTop + $boxH = 1120) y el
+        // límite inferior seguro ($safeYFin = 1210) — antes vivían en H-90/H-50 (1260/1300),
+        // fuera de la zona segura, donde IG los tapaba o recortaba.
+        $yPie = $boxYTop + $boxH + 50; // 1170 — 50px de aire bajo la caja, 40px sobre $safeYFin
+        if ($tipo === 'portada') {
+            // "Desliza >>" en vez de "Desliza →": la flecha U+2192 no está en el subset de
+            // Inter que usa este proyecto — se renderiza como glyph .notdef (recuadro vacío),
+            // mismo problema ya documentado acá para emojis. Solo ASCII básico, sin excepción.
+            nb_texto_centrado($img, $fSemi, 22, $cAzulMarca, 'Desliza >>', $W, $yPie);
+        }
+
+        // Sello de marca fijo abajo a la derecha, en las 3 variantes — reemplaza tanto la
+        // paginación "N/Total" como el viejo "Nubira.cl" centrado exclusivo de cierre.
+        // Mismo $yPie que "Desliza >>" (misma fila, alineaciones distintas no se cruzan).
+        nb_texto_derecha($img, $fBold, 30, $cSello, 'Nubira.cl', $W - $M, $yPie);
+
+        $ok = imagejpeg($img, $output_path, 90);
+        imagedestroy($img);
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('nb_carrusel_calendario_dir')) {
+    function nb_carrusel_calendario_dir(): string {
+        $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
+        if ($root === '') $root = dirname(__DIR__, 2);
+        return rtrim($root, '/\\') . '/upload/carrusel_calendario/';
+    }
+}
+
+if (!function_exists('nb_obtener_imagen_slide_carrusel')) {
+    // Capa 2 de caché (imagen FINAL: fondo de Gemini/color sólido + texto de GD encima).
+    // Fingerprint con el texto Y el subtexto (solo relevante para portada; null/vacío en
+    // contenido/cierre) MÁS NB_ESTILO_SLIDE_VERSION — NO
+    // NB_FONDO_VERSION (esa es solo de capa 1, ver su comentario arriba). Antes esta capa
+    // solo dependía del texto, así que un cambio de estilo GD (color, interlineado, layout)
+    // sin cambiar texto dejaba esta capa sirviendo la imagen vieja para siempre (había que
+    // borrar archivos a mano). Con NB_ESTILO_SLIDE_VERSION acá, subir ESA constante (no
+    // NB_FONDO_VERSION) invalida SOLO capa 2 — recompone gratis con GD reusando la foto ya
+    // pagada de capa 1, sin llamar a Gemini de nuevo.
+    // Devuelve ['ok'=>bool, 'path'=>string|null, 'origen'=>'cache'|'generado'|'error'].
+    // 'origen' distingue si esta llamada implicó gasto real en Gemini ('generado') o no
+    // ('cache' — ya sea porque la imagen final de capa 2 ya existía, o porque el fondo de
+    // capa 1 ya estaba en caché y solo se recompuso el texto con GD, que es gratis).
+    function nb_obtener_imagen_slide_carrusel(string $semana_inicio, string $dia_nombre, int $numero, int $total, string $tipo, string $texto, ?string $categoria_nubira, ?string $subtexto = null): array {
+        $fp   = substr(md5(NB_IMG_VERSION . '|' . NB_ESTILO_SLIDE_VERSION . "|{$semana_inicio}|{$dia_nombre}|{$numero}|{$texto}|" . (string)$subtexto), 0, 10);
+        $dir  = nb_carrusel_calendario_dir();
+        $file = $dir . "{$semana_inicio}_" . strtolower($dia_nombre) . "_{$numero}_{$fp}.jpg";
+
+        if (is_file($file)) return ['ok' => true, 'path' => $file, 'origen' => 'cache']; // ni el fondo ni el texto se recomponen
+
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+
+        // Capa 1: intenta traer/generar la foto. Si falla por lo que sea (Gemini caído,
+        // guardarraíl, etc.), $fondo queda null y nb_generar_slide_carrusel() cae de vuelta
+        // al fondo liso — el texto sale igual, nunca se corta acá.
+        // Los 3 tipos piden foto ahora (diseño "imagen protagonista") — a diferencia de la
+        // versión anterior, "cierre" ya no se salta esta llamada: también muestra foto.
+        $fondo       = null;
+        $origenFondo = 'cache'; // sin fondo real generado ahora = sin gasto nuevo
+        $resFondo = nb_obtener_fondo_slide_carrusel($semana_inicio, $dia_nombre, $numero, $tipo, $categoria_nubira, $texto);
+        if ($resFondo['ok']) {
+            $fondo       = $resFondo['path'];
+            $origenFondo = empty($resFondo['cache_hit']) ? 'generado' : 'cache';
+        }
+
+        $ok = nb_generar_slide_carrusel($texto, $tipo, $numero, $total, $file, $fondo, $subtexto);
+        if (!$ok || !is_file($file)) {
+            return ['ok' => false, 'path' => null, 'origen' => 'error'];
+        }
+
+        return ['ok' => true, 'path' => $file, 'origen' => $origenFondo];
     }
 }

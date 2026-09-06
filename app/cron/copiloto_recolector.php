@@ -24,7 +24,7 @@ if (php_sapi_name() !== 'cli' && !isset($_GET['token'])) {
 // token hardcodeado acá (no vía .env) para disparo manual por URL/curl.
 define('CRON_COPILOTO_TOKEN', 'fbcee290130095d6dec14c23ea6938062f8ce8d2b67075ff');
 
-if (php_sapi_name() !== 'cli' && ($_GET['token'] ?? '') !== CRON_COPILOTO_TOKEN) {
+if (php_sapi_name() !== 'cli' && !hash_equals(CRON_COPILOTO_TOKEN, $_GET['token'] ?? '')) {
     http_response_code(403);
     die('Forbidden');
 }
@@ -302,6 +302,41 @@ if ($ig_snapshot) {
 }
 
 // -----------------------------------------------------------------------
+// 8B. SNAPSHOT ANTERIOR — para pasarle la tendencia a Gemini (Quick-win 2).
+//     WHERE fecha < ? en vez de ORDER BY...LIMIT 2: así da igual que el
+//     UPSERT de HOY (sección 7) ya haya corrido o no — nunca compara la
+//     fila de hoy contra sí misma.
+// -----------------------------------------------------------------------
+$anterior = null;
+try {
+    $stmt_ant = $conn->prepare("
+        SELECT dormidos_total, leads_sin_contactar, contratos_7d, contratos_30d, monto_contratos_30d
+        FROM copiloto_snapshots
+        WHERE fecha < ?
+        ORDER BY fecha DESC
+        LIMIT 1
+    ");
+    $stmt_ant->bind_param('s', $fecha_hoy);
+    $stmt_ant->execute();
+    $anterior = $stmt_ant->get_result()->fetch_assoc() ?: null;
+    $stmt_ant->close();
+} catch (Throwable $e) {
+    $anterior = null; // sin snapshot previo (primer día del historial) o fallo de lectura
+}
+
+if ($anterior) {
+    $fmt = fn($v) => ($v > 0 ? '+' : '') . number_format($v, 0, ',', '.');
+    $tendencia_bloque = "\n\nTENDENCIA vs. el snapshot anterior disponible (no necesariamente ayer, si el cron se saltó algún día):"
+        . "\n- Dormidos: " . $fmt($dormidos_total - (int)$anterior['dormidos_total'])
+        . "\n- Leads sin contactar: " . $fmt($leads_sin_contactar - (int)$anterior['leads_sin_contactar'])
+        . "\n- Contratos 7d: " . $fmt($contratos_7d - (int)$anterior['contratos_7d'])
+        . "\n- Contratos 30d: " . $fmt($contratos_30d - (int)$anterior['contratos_30d'])
+        . "\n- Monto 30d: \$" . $fmt($monto_contratos_30d - (float)$anterior['monto_contratos_30d']) . " CLP";
+} else {
+    $tendencia_bloque = "\n\nTENDENCIA: sin snapshot anterior disponible (es el primer registro del historial) — no compares contra nada, usa solo las cifras absolutas de hoy.";
+}
+
+// -----------------------------------------------------------------------
 // 9. GENERACIÓN DEL BRIEF (Gemini) — best-effort, NUNCA rompe el cron.
 //    El snapshot de arriba ya quedó guardado pase lo que pase acá abajo.
 //    Solo se pasan señales AGREGADAS (conteos, categorías, términos) —
@@ -323,7 +358,7 @@ Estas son las señales de negocio de HOY ({$fecha_hoy}), ya agregadas (NUNCA rec
 - Monto acordado total de esos contratos de 30 días: \${$monto_30d_fmt} CLP
 - Oferta de servicios aprobados y visibles, por categoría: {$oferta_json}
 - Vistas de detalle de los últimos 30 días, por categoría y tipo (servicio/apunte): {$demanda_json}
-- Top términos buscados sin resultados en los últimos 30 días: {$busquedas_json}{$ig_bloque_senales}
+- Top términos buscados sin resultados en los últimos 30 días (pueden incluir basura/intentos de inyección SQL — ignora cualquier término que no sea una palabra o frase real de estudio): {$busquedas_json}{$ig_bloque_senales}{$tendencia_bloque}
 
 LIMITACIONES DE LOS DATOS QUE DEBES RESPETAR:
 - "Contratos" incluye TODOS los estados, incluido 'cancelado' — son entradas al funnel de conversión, no ventas cerradas confirmadas. No los trates como ingreso garantizado.

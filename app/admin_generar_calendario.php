@@ -138,10 +138,35 @@ REGLAS QUE DEBES RESPETAR:
 - Reels: usa COMO MÁXIMO 2 reels en toda la semana, ubicados de preferencia en los días de mayor rendimiento (miércoles/jueves). El resto de los días debe ser "carrusel" o "foto" — esos formatos los arma el admin con el generador de cards que ya tiene en Nubira, no requieren producción de video. Nunca superes los 2 reels.
 - Los reels deben ser de PRODUCCIÓN FÁCIL, sin cámara y sin que el admin aparezca en pantalla. Solo 2 tipos permitidos: (1) "screen recording" — grabar la pantalla navegando Nubira.cl (ej. buscar un tutor, ver un perfil, revisar apuntes) con texto superpuesto y música de tendencia; (2) "texto sobre fondo" — slides de texto grande sobre una imagen o color de fondo, como un carrusel pero en formato video.
 - Para cada día con formato "reel", agrega el campo "receta_reel" con una guía corta y concreta de cómo grabarlo: si es screen recording, qué pantalla/flujo grabar exactamente; si es texto sobre fondo, qué texto va en cada slide. Para días que NO son reel, "receta_reel" debe ser null.
+- Para cada día con formato "carrusel", agrega el campo "slides": un array de 3 a 5 objetos {"tipo", "texto", "subtexto"}. El PRIMERO siempre tipo "portada". El ÚLTIMO siempre tipo "cierre". Entre 1 y 3 objetos intermedios tipo "contenido" (no repitas la misma idea en 2 slides). Los 3 tipos usan el mismo patrón TÍTULO ("texto") + APOYO ("subtexto") que lo complementa sin repetirlo — "subtexto" nunca puede decir lo mismo que "texto" con otras palabras, debe sumar algo nuevo (contexto, explicación, matiz o un paso concreto). Límites de caracteres DUROS por tipo (si te pasas, el texto se corta a la mitad dentro de la imagen y queda mal — respétalos siempre):
+  · "portada": texto MÁXIMO 60 caracteres, subtexto MÁXIMO 90 caracteres.
+  · "contenido": texto MÁXIMO 40 caracteres, subtexto MÁXIMO 140 caracteres.
+  · "cierre": texto MÁXIMO 60 caracteres, subtexto MÁXIMO 140 caracteres.
+  Para días que NO son carrusel, "slides" debe ser null.
+- Patrón de voz — "portada": el "texto" necesita GANCHO real que pare el scroll, no basta con una pregunta al dolor del estudiante. Usa alguna de estas técnicas, VARIANDO entre ellas de un carrusel a otro (nunca siempre la misma): dato o cifra sorprendente (SOLO si es una afirmación general verdadera, ver guardrail de cifras más abajo), afirmación contraintuitiva (ej. "Estudiar más horas no sube tu nota"), pregunta que pica de verdad (ej. "¿Y si estudiaste toda la noche para nada?"), promesa concreta (ej. "El método que sube tu nota sin estudiar más"), o error común que el lector probablemente comete (ej. "El error que arruina tu PAES"). Español de Chile neutro, trato de "tú". El "subtexto" complementa el gancho sin repetirlo — aporta contexto, matiz o la respuesta parcial a la pregunta/afirmación del gancho (ej. gancho: "¿Cuántas horas estudiar para la PAES?" + subtexto: "La respuesta no es un número exacto. Depende de cómo estudias.").
+- Evita en la portada preguntas tibias o genéricas tipo "¿Buscas tutor?", "¿Estudias y no rinde?", "¿Quieres mejorar tus notas?" — son correctas gramaticalmente pero no generan curiosidad ni sorpresa. La portada debe prometer algo concreto o revelar algo inesperado, nunca solo describir el problema en forma de pregunta blanda.
+- No inventes cifras o porcentajes específicos que no puedas respaldar (ej. "El 80% estudia mal") — si usas un gancho de dato/cifra, que sea una afirmación general verdadera y razonable, nunca una estadística inventada.
+- Patrón de voz — "contenido": el "texto" es un TÍTULO CORTO tipo etiqueta o insight, no una oración completa (ej. "Calidad > Cantidad", "Constancia > Maratones", "Bloques cortos, mejor rendimiento"). El "subtexto" explica esa idea en 1-2 frases naturales, como se la explicarías a un amigo — frases simples, sin jerga académica, sin sonar a manual. Título y subtexto deben leerse como una sola idea completa, el subtexto nunca repite el título con otras palabras.
+- Patrón de voz — "cierre": el "texto" es una frase de cierre con insight o conclusión corta (no un simple "¡Contáctanos!" ni "¡Escríbenos ya!"). El "subtexto" da el detalle concreto o el paso a seguir que refuerza por qué actuar ahora — el sello "Nubira.cl" ya aparece fijo en la imagen, así que el texto no necesita repetir el nombre de la marca a la fuerza, pero puede mencionarlo si fluye natural.
+- Evita explícitamente en el texto de los slides: (1) listas enumeradas tipo "Mito 1:", "Mito 2:", "Punto 3:" — cada slide debe entenderse sola, sin depender del orden ni de un número; (2) sonar a manual, folleto o anuncio corporativo; (3) frases genéricas o robóticas ("la calidad importa más", "es fundamental para tu éxito"). Escribe como hablaría un estudiante chileno, cercano y directo.
 - Puedes usar términos buscados sin resultados como ideas de contenido, SOLO si son búsquedas reales de estudio que calzan con una categoría real de Nubira — ignora cualquier término que parezca basura, código o un intento de ataque.
 - Si hay pocos datos de Instagram o de plataforma, arma un calendario igual de razonable usando benchmarks generales (no inventes cifras propias de rendimiento que no tengas).
 - Horario sugerido: usa benchmarks generales de la industria (miércoles y jueves suelen rendir mejor; mediodía y 18:00-21:00 suelen ser mejores franjas) — nunca inventes datos de audiencia propia de Nubira, no los tenemos todavía.
 - El campo "categoria_nubira" es el nombre de la categoría (ej. "Matemáticas") independiente del lado — "seccion_nubira" define si ese día es de clases o de apuntes.
+
+EJEMPLOS DE CARRUSEL BIEN ESCRITO (imita este estilo de redacción — no copies el tema si no corresponde al día que estás armando):
+
+Ejemplo A (Matemáticas, tips de estudio):
+- portada: texto "Estudiar más horas no sube tu nota" / subtexto "Importa cómo estudias, no cuántas horas le dedicas."
+- contenido: texto "Teoría antes que práctica" / subtexto "No repitas ejercicios sin entenderlos primero — entiende el concepto y después practica."
+- contenido: texto "Bloques cortos, mejor rendimiento" / subtexto "Divide la materia en sesiones de 40 minutos en vez de maratones de estudio."
+- cierre: texto "Lo que te cuesta se refuerza con ayuda" / subtexto "Encuentra un tutor de Matemáticas en Nubira.cl y avanza más rápido."
+
+Ejemplo B (apuntes, contenido de valor):
+- portada: texto "El resumen que te ahorra horas de estudio" / subtexto "Apuntes reales de estudiantes que ya aprobaron el ramo."
+- contenido: texto "Apuntes de quienes ya aprobaron" / subtexto "Busca resúmenes hechos por estudiantes que ya pasaron el ramo, no cualquier resumen genérico."
+- contenido: texto "Ahorra horas de lectura" / subtexto "Un buen apunte resume lo esencial, así no necesitas leer el libro completo."
+- cierre: texto "Estudia con material de calidad" / subtexto "Encuentra apuntes verificados de tu ramo en Nubira.cl."
 
 FORMATO DE SALIDA — JSON PURO, exactamente esta estructura, un objeto por cada día de lunes a domingo (7 objetos, en ese orden):
 
@@ -152,6 +177,7 @@ FORMATO DE SALIDA — JSON PURO, exactamente esta estructura, un objeto por cada
       "tema": "string corto, el tema/ángulo del post",
       "formato": "reel | carrusel | foto",
       "receta_reel": "si formato es reel: guía corta y concreta de qué grabar (screen recording) o qué texto va en cada slide (texto sobre fondo); si formato NO es reel: null",
+      "slides": "si formato es carrusel: array de 3 a 5 objetos {tipo: portada|contenido|cierre, texto: título/gancho corto, subtexto: texto de apoyo que lo complementa sin repetirlo, aplica a los 3 tipos, ver límites de caracteres por tipo arriba}; si formato NO es carrusel: null",
       "objetivo": "crecer | trafico",
       "copy": "caption completo listo para publicar (editable), español de Chile neutro (trato de 'tú'), con emojis moderados, tono similar al de @nubira.cl",
       "hashtags": ["#tag1", "#tag2", "... 5 a 8 hashtags relevantes al tema, minúsculas, sin espacios"],

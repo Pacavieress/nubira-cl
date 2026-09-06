@@ -58,7 +58,8 @@ try {
         'admin_perfil_incompleto' => 0,
         'admin_videos' => 0,
         'admin_anuncio_video' => 0,
-        'admin_despertar_dormidos' => 0
+        'admin_despertar_dormidos' => 0,
+        'admin_ig_token' => 0
     ];
 
     if ($uid > 0) {
@@ -302,6 +303,22 @@ try {
                       )
                 ");
                 if ($res) { $alertas['admin_despertar_dormidos'] = (int)$res->fetch_assoc()['total']; }
+            } catch (Exception $e) {}
+
+            // 16. Token de Instagram del Copiloto con error de refresh o por
+            // vencer pronto (umbral: 10 días de margen real). Mismo criterio
+            // "silencioso" que el resto de este archivo: si la tabla todavía
+            // no existe (ningún cron de Instagram corrió nunca), el catch la
+            // resuelve como 0, sin alertar de más por algo que ni siquiera
+            // se ha configurado todavía.
+            try {
+                $res = $conn->query("
+                    SELECT COUNT(*) AS total
+                    FROM copiloto_ig_token
+                    WHERE id = 1
+                      AND (ultimo_error IS NOT NULL OR expira_estimado_en <= NOW() + INTERVAL 10 DAY)
+                ");
+                if ($res) { $alertas['admin_ig_token'] = (int)$res->fetch_assoc()['total']; }
             } catch (Exception $e) {}
         }
     }

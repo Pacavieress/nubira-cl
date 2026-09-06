@@ -21,7 +21,7 @@ if (php_sapi_name() !== 'cli' && !isset($_GET['token'])) {
 // token hardcodeado acá (no vía .env) para disparo manual por URL/curl.
 define('CRON_COPILOTO_IG_TOKEN', '9b17c2634ce219eec652bfd434bb6af53e33aa8b59d1ef0b');
 
-if (php_sapi_name() !== 'cli' && ($_GET['token'] ?? '') !== CRON_COPILOTO_IG_TOKEN) {
+if (php_sapi_name() !== 'cli' && !hash_equals(CRON_COPILOTO_IG_TOKEN, $_GET['token'] ?? '')) {
     http_response_code(403);
     die('Forbidden');
 }
@@ -61,6 +61,13 @@ $conn->query("CREATE TABLE IF NOT EXISTS copiloto_instagram_snapshots (
     UNIQUE KEY uniq_fecha (fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// Columnas de clics de perfil (Quick-win 1) — ALTER separado del CREATE
+// porque la tabla ya existe desde antes en instalaciones que corrieron
+// este cron previamente. Mismo patrón idempotente que copiloto_recolector.php
+// usa para brief_texto/brief_generado_en/brief_error.
+try { $conn->query("ALTER TABLE copiloto_instagram_snapshots ADD COLUMN profile_views INT NULL DEFAULT NULL"); } catch (Throwable $e) {}
+try { $conn->query("ALTER TABLE copiloto_instagram_snapshots ADD COLUMN website_clicks INT NULL DEFAULT NULL"); } catch (Throwable $e) {}
+
 // -----------------------------------------------------------------------
 // 1. PERFIL — followers_count, media_count, username, name, biography
 // -----------------------------------------------------------------------
@@ -99,6 +106,22 @@ if ($insights['ok']) {
     }
 } else {
     log_cron("INSIGHTS DE CUENTA fallaron: " . $insights['error']);
+}
+
+// -----------------------------------------------------------------------
+// 2B. INSIGHTS DE CUENTA — profile_views y website_clicks (metric_type=
+//     total_value, llamada aparte de reach por ser un tipo de métrica
+//     distinto — ver helpers/instagram.php).
+// -----------------------------------------------------------------------
+$profile_views  = null;
+$website_clicks = null;
+
+$clicks = nb_ig_insights_clicks_perfil();
+if ($clicks['ok']) {
+    $profile_views  = $clicks['profile_views'];
+    $website_clicks = $clicks['website_clicks'];
+} else {
+    log_cron("INSIGHTS DE CLICS DE PERFIL fallaron: " . $clicks['error']);
 }
 
 // -----------------------------------------------------------------------
@@ -154,21 +177,25 @@ $datos_perfil_json = json_encode($datos_perfil, JSON_UNESCAPED_UNICODE);
 
 $stmt = $conn->prepare("
     INSERT INTO copiloto_instagram_snapshots
-        (fecha, followers_count, media_count, reach_dia, top_posts, datos_perfil)
-    VALUES (?, ?, ?, ?, ?, ?)
+        (fecha, followers_count, media_count, reach_dia, profile_views, website_clicks, top_posts, datos_perfil)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
         followers_count = VALUES(followers_count),
         media_count = VALUES(media_count),
         reach_dia = VALUES(reach_dia),
+        profile_views = VALUES(profile_views),
+        website_clicks = VALUES(website_clicks),
         top_posts = VALUES(top_posts),
         datos_perfil = VALUES(datos_perfil)
 ");
 $stmt->bind_param(
-    'siiiss',
+    'siiiiiss',
     $fecha_hoy,
     $followers_count,
     $media_count,
     $reach_dia,
+    $profile_views,
+    $website_clicks,
     $top_posts_json,
     $datos_perfil_json
 );
@@ -179,11 +206,13 @@ $stmt->close();
 // 5. RESUMEN
 // -----------------------------------------------------------------------
 $resumen = sprintf(
-    "Instagram snapshot %s | followers=%d | media_count=%d | reach_dia=%s | posts_recolectados=%d | posts_con_reach=%d",
+    "Instagram snapshot %s | followers=%d | media_count=%d | reach_dia=%s | profile_views=%s | website_clicks=%s | posts_recolectados=%d | posts_con_reach=%d",
     $fecha_hoy,
     $followers_count,
     $media_count,
     $reach_dia === null ? 'N/D' : $reach_dia,
+    $profile_views === null ? 'N/D' : $profile_views,
+    $website_clicks === null ? 'N/D' : $website_clicks,
     count($top_posts),
     $posts_con_reach
 );

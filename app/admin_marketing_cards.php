@@ -46,6 +46,10 @@ if ($tab === 'servicios') {
     $filtro_fecha_desde = trim($_GET['fecha_desde'] ?? '');
     $filtro_fecha_hasta = trim($_GET['fecha_hasta'] ?? '');
 
+    // Preselección al llegar desde "Armar carrusel" (tab Copiloto, sección Tutores por
+    // promocionar) — no es un filtro de la grilla, solo indica qué checkbox marcar.
+    $preseleccionar_id = (int)($_GET['servicio_id'] ?? 0);
+
     $condicion    = ["s.estado = 'aprobado'", "COALESCE(s.visible,1) = 1"];
     $param_types  = '';
     $param_values = [];
@@ -335,6 +339,56 @@ if ($tab === 'servicios') {
     } catch (Throwable $e) {
         $tutores_por_promocionar = []; // tabla copiloto_promociones todavía no existe
     }
+
+    // Alerta del token de Instagram (auto-refresh) — mismo umbral que
+    // contar_alertas_sistema.php: error registrado O menos de 10 días reales
+    // de margen antes de expirar. try/catch por si la tabla todavía no existe
+    // (cron/copiloto_ig_refresh.php nunca corrió).
+    $ig_token_alerta_msg = null;
+    try {
+        $res_igt = $conn->query("SELECT ultimo_error, intentos_fallidos, expira_estimado_en FROM copiloto_ig_token WHERE id = 1 LIMIT 1");
+        $row_igt = $res_igt ? $res_igt->fetch_assoc() : null;
+        if ($row_igt) {
+            $dias_restantes_igt = (strtotime($row_igt['expira_estimado_en']) - time()) / 86400;
+            $tiene_error_igt    = !empty($row_igt['ultimo_error']);
+            $por_vencer_igt     = $dias_restantes_igt <= 10;
+
+            if ($tiene_error_igt || $por_vencer_igt) {
+                $partes = [];
+                if ($tiene_error_igt) {
+                    $intentos = (int)$row_igt['intentos_fallidos'];
+                    $partes[] = "último error: \"{$row_igt['ultimo_error']}\" ({$intentos} intento" . ($intentos === 1 ? '' : 's') . " fallido" . ($intentos === 1 ? '' : 's') . " seguido" . ($intentos === 1 ? '' : 's') . ")";
+                }
+                if ($por_vencer_igt) {
+                    $dias_txt = max(0, round($dias_restantes_igt));
+                    $partes[] = "vence en aprox. {$dias_txt} día" . ($dias_txt == 1 ? '' : 's');
+                }
+                $ig_token_alerta_msg = 'Token de Instagram con problemas — ' . implode('; ', $partes) . '. Revisa cron/copiloto_ig_refresh.php.';
+            }
+        }
+    } catch (Throwable $e) {
+        $ig_token_alerta_msg = null; // tabla todavía no existe — el cron de refresh nunca corrió
+    }
+
+    // Contador de gasto de fondos IA del mes actual — SOLO cuenta llamadas que
+    // realmente le costaron plata a Google: cache_hit=0 (fue a Gemini, no sirvió de
+    // caché) Y exito=1 (Google no cobra las llamadas fallidas). Precio como constante
+    // para poder ajustarlo el día que cambie el pricing del modelo.
+    if (!defined('NB_PRECIO_FONDO_IA_USD')) define('NB_PRECIO_FONDO_IA_USD', 0.0336);
+    $fondos_generados_mes = 0;
+    try {
+        $res_gasto = $conn->query("
+            SELECT COUNT(*) AS n FROM copiloto_fondos_generados
+            WHERE cache_hit = 0 AND exito = 1
+              AND fecha >= DATE_FORMAT(NOW(), '%Y-%m-01')
+        ");
+        if ($res_gasto) {
+            $fondos_generados_mes = (int)($res_gasto->fetch_assoc()['n'] ?? 0);
+        }
+    } catch (Throwable $e) {
+        $fondos_generados_mes = 0; // tabla todavía no existe — nunca se generó un fondo
+    }
+    $gasto_estimado_mes_usd = $fondos_generados_mes * NB_PRECIO_FONDO_IA_USD;
 }
 ?>
 <!DOCTYPE html>
@@ -597,13 +651,29 @@ require_once $app_dir . '/componentes/sidebar.php';
 
     <?php else: ?>
 
+        <?php if ($ig_token_alerta_msg): ?>
+            <div class="max-w-[1600px] mx-auto mb-4">
+                <div class="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-4 py-3">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                    <span><?= htmlspecialchars($ig_token_alerta_msg, ENT_QUOTES, 'UTF-8') ?></span>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <div class="max-w-[1600px] mx-auto mb-4">
+            <p class="text-[11px] text-gray-400">
+                Fondos generados este mes: <span class="font-bold text-gray-600"><?= $fondos_generados_mes ?></span> reales
+                (~$<?= number_format($gasto_estimado_mes_usd, 2) ?> USD estimado)
+            </p>
+        </div>
+
         <?php if (!$copiloto_snapshot): ?>
             <div class="bg-white border border-dashed border-gray-200 rounded-2xl p-12 text-center text-gray-400">
                 Aún no se ha generado el primer brief. El cron diario (<code class="text-xs">app/cron/copiloto_recolector.php</code>) todavía no ha corrido.
             </div>
         <?php else: ?>
 
-            <div class="max-w-[1100px] mx-auto">
+            <div class="max-w-[1600px] mx-auto">
 
                 <!-- Header del brief -->
                 <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
@@ -752,7 +822,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                             ['label' => 'Reach de hoy',  'valor' => $ig_snapshot['reach_dia'] !== null ? (int)$ig_snapshot['reach_dia'] : 'N/D', 'delta' => $ig_deltas['reach_dia'] ?? null],
                         ];
                         ?>
-                        <div class="grid grid-cols-3 gap-3 mb-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                             <?php foreach ($ig_metricas as $m): ?>
                                 <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
                                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"><?= htmlspecialchars($m['label'], ENT_QUOTES, 'UTF-8') ?></p>
@@ -829,9 +899,12 @@ require_once $app_dir . '/componentes/sidebar.php';
                                 $dia_categoria = $dia['categoria_nubira'] ?? null;
                                 $dia_seccion   = $dia['seccion_nubira'] ?? null;
                                 $dia_receta_reel = $dia['receta_reel'] ?? null;
+                                $dia_slides    = is_array($dia['slides'] ?? null)
+                                    ? array_values(array_filter($dia['slides'], fn($sl) => is_array($sl) && !empty(trim((string)($sl['texto'] ?? '')))))
+                                    : [];
                                 $objetivo_es_crecer = strtolower($dia_objetivo) === 'crecer';
                                 ?>
-                                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 flex flex-col" data-dia-copy="<?= htmlspecialchars($dia_copy, ENT_QUOTES, 'UTF-8') ?>">
+                                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 flex flex-col" data-dia-copy="<?= htmlspecialchars($dia_copy, ENT_QUOTES, 'UTF-8') ?>" data-calendario-id="<?= (int)$calendario_reciente['id'] ?>" data-dia="<?= htmlspecialchars($dia_nombre, ENT_QUOTES, 'UTF-8') ?>">
                                     <div class="flex items-center justify-between mb-2">
                                         <span class="text-xs font-bold text-gray-900 uppercase tracking-wide"><?= htmlspecialchars($dia_nombre, ENT_QUOTES, 'UTF-8') ?></span>
                                         <div class="flex items-center gap-1">
@@ -869,6 +942,54 @@ require_once $app_dir . '/componentes/sidebar.php';
                                         </div>
                                     <?php endif; ?>
 
+                                    <?php if ($dia_formato === 'carrusel' && !empty($dia_slides)): ?>
+                                        <div class="mb-3 pt-2 border-t border-gray-50 space-y-2">
+                                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Slides del carrusel</p>
+                                            <?php foreach ($dia_slides as $i => $slide): ?>
+                                                <?php
+                                                $numSlide   = $i + 1;
+                                                $tipoSlide  = in_array($slide['tipo'] ?? '', ['portada', 'contenido', 'cierre'], true) ? $slide['tipo'] : 'contenido';
+                                                $etiqueta   = ['portada' => 'Portada', 'contenido' => 'Contenido', 'cierre' => 'Cierre'][$tipoSlide];
+                                                $textoSlide = trim((string)($slide['texto'] ?? ''));
+                                                $limiteSlide = ['portada' => 60, 'contenido' => 40, 'cierre' => 60][$tipoSlide];
+                                                $subtextoSlide = trim((string)($slide['subtexto'] ?? ''));
+                                                $limiteSubtexto = ['portada' => 90, 'contenido' => 140, 'cierre' => 140][$tipoSlide];
+                                                ?>
+                                                <div class="bg-gray-50 border border-gray-100 rounded-xl p-2.5 slide-editable" data-numero-slide="<?= $numSlide ?>">
+                                                    <div class="flex items-center justify-between gap-2 mb-1">
+                                                        <span class="text-[10px] font-bold text-gray-500">Slide <?= $numSlide ?> · <?= htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') ?></span>
+                                                        <div class="flex items-center gap-2 shrink-0">
+                                                            <span class="slide-contador text-[9px] font-medium text-gray-400"><?= mb_strlen($textoSlide, 'UTF-8') ?>/<?= $limiteSlide ?></span>
+                                                            <button type="button" class="btn-guardar-slide text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                                                                <i class="fa-solid fa-floppy-disk"></i> <span class="btn-guardar-slide-texto">Guardar</span>
+                                                            </button>
+                                                            <button type="button" class="btn-copiar-slide text-[10px] font-bold text-[#54A6D8] hover:text-blue-600 flex items-center gap-1">
+                                                                <i class="fa-solid fa-copy"></i> <span class="btn-copiar-slide-texto">Copiar</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <textarea class="input-slide-texto w-full text-[11px] text-gray-700 leading-relaxed bg-white border border-gray-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#54A6D8]" rows="2" maxlength="<?= $limiteSlide ?>" data-limite="<?= $limiteSlide ?>" data-original="<?= htmlspecialchars($textoSlide, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($textoSlide, ENT_QUOTES, 'UTF-8') ?></textarea>
+                                                    <div class="flex items-center justify-between gap-2 mt-1.5 mb-1">
+                                                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Apoyo (opcional)</span>
+                                                        <span class="slide-subtexto-contador text-[9px] font-medium text-gray-400"><?= mb_strlen($subtextoSlide, 'UTF-8') ?>/<?= $limiteSubtexto ?></span>
+                                                    </div>
+                                                    <textarea class="input-slide-subtexto w-full text-[11px] text-gray-500 leading-relaxed bg-white border border-gray-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#54A6D8]" rows="2" maxlength="<?= $limiteSubtexto ?>" data-limite="<?= $limiteSubtexto ?>" data-original="<?= htmlspecialchars($subtextoSlide, ENT_QUOTES, 'UTF-8') ?>" placeholder="Complementa el título, sin repetirlo..."><?= htmlspecialchars($subtextoSlide, ENT_QUOTES, 'UTF-8') ?></textarea>
+                                                    <p class="slide-aviso-editado hidden text-[10px] text-amber-600 font-semibold mt-1 flex items-center gap-1">
+                                                        <i class="fa-solid fa-triangle-exclamation"></i> Texto editado, genera de nuevo para actualizar la imagen
+                                                    </p>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <button type="button" class="btn-generar-fondos w-full text-[11px] font-bold text-white bg-[#54A6D8] hover:bg-blue-600 rounded-xl py-2 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60">
+                                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                                <span class="btn-generar-fondos-texto">Generar imágenes del carrusel</span>
+                                            </button>
+                                            <div class="btn-generar-fondos-resultado hidden grid grid-cols-3 gap-1.5 mt-2"></div>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <div class="flex items-center justify-between gap-2 text-[10px] text-gray-400 mt-auto pt-2 border-t border-gray-50">
                                         <span class="whitespace-nowrap"><i class="fa-regular fa-clock"></i> <?= htmlspecialchars($dia_horario, ENT_QUOTES, 'UTF-8') ?></span>
                                         <?php if (!empty($dia_categoria)): ?>
@@ -886,7 +1007,8 @@ require_once $app_dir . '/componentes/sidebar.php';
 
                 <!-- Tutores por promocionar -->
                 <section class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 mb-8">
-                    <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Tutores por promocionar</h3>
+                    <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-1">Tutores por promocionar</h3>
+                    <p class="text-xs text-gray-400 mb-3">Sugiere a qué tutores destacar en tus próximas publicaciones de Instagram, priorizando a quienes nunca se han promocionado o llevan más tiempo sin aparecer, para repartir la visibilidad de forma pareja.</p>
                     <?php if (empty($tutores_por_promocionar)): ?>
                         <p class="text-xs text-gray-400">No hay servicios activos en este momento.</p>
                     <?php else: ?>
@@ -894,8 +1016,14 @@ require_once $app_dir . '/componentes/sidebar.php';
                             <?php foreach ($tutores_por_promocionar as $t): ?>
                                 <?php
                                 $dias_desde = null;
+                                $fecha_exacta_ultima = '';
                                 if (!empty($t['ultima'])) {
-                                    $dias_desde = (int)floor((time() - strtotime($t['ultima'])) / 86400);
+                                    $ts_ultima = strtotime($t['ultima']);
+                                    $dias_desde = (int)floor((time() - $ts_ultima) / 86400);
+                                    // Formato "12 ago 2026" — mismo arreglo de meses en español ya usado
+                                    // en otras partes del sitio (ej. mis_contratos.php), en minúscula.
+                                    $meses_es = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                                    $fecha_exacta_ultima = (int)date('j', $ts_ultima) . ' ' . $meses_es[(int)date('n', $ts_ultima) - 1] . ' ' . date('Y', $ts_ultima);
                                 }
                                 ?>
                                 <li class="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
@@ -907,9 +1035,9 @@ require_once $app_dir . '/componentes/sidebar.php';
                                         <?php if ($dias_desde === null): ?>
                                             <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-500">Nunca promocionado</span>
                                         <?php else: ?>
-                                            <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Hace <?= $dias_desde ?> <?= $dias_desde === 1 ? 'día' : 'días' ?></span>
+                                            <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-100 text-gray-500" title="<?= htmlspecialchars($fecha_exacta_ultima, ENT_QUOTES, 'UTF-8') ?>">Hace <?= $dias_desde ?> <?= $dias_desde === 1 ? 'día' : 'días' ?></span>
                                         <?php endif; ?>
-                                        <a href="/admin/marketing-cards?tab=servicios&categoria=<?= urlencode((string)$t['categoria']) ?>" class="text-[11px] font-bold text-[#54A6D8] hover:text-blue-600 whitespace-nowrap">
+                                        <a href="/admin/marketing-cards?tab=servicios&categoria=<?= urlencode((string)$t['categoria']) ?>&servicio_id=<?= (int)$t['id'] ?>" class="text-[11px] font-bold text-[#54A6D8] hover:text-blue-600 whitespace-nowrap">
                                             Armar carrusel
                                         </a>
                                     </div>
@@ -990,6 +1118,7 @@ if ($tab === 'servicios') require_once $app_dir . '/componentes/modal_carrusel_m
 <script>
 <?php if ($tab === 'servicios'): ?>
 const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
+const preseleccionarId = <?= $preseleccionar_id ?>;
 
 (function () {
     const checkAll   = document.getElementById('check-all');
@@ -1030,6 +1159,23 @@ const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
 
     document.querySelectorAll('.mkt-check').forEach(c => c.addEventListener('change', syncBar));
 
+    // Preselección al llegar desde "Armar carrusel" (tab Copiloto). Si el servicio_id de
+    // la URL no está en la grilla actual (categoría sin resultados, servicio ya no visible),
+    // querySelector devuelve null y no se hace nada — no rompe la tab, solo no preselecciona.
+    // El ring de resaltado queda puesto mientras la card esté preseleccionada, no se retira.
+    if (preseleccionarId > 0) {
+        const chkPreseleccionado = document.querySelector(`.mkt-check[value="${preseleccionarId}"]`);
+        if (chkPreseleccionado) {
+            chkPreseleccionado.checked = true;
+            syncBar();
+            const cardPreseleccionada = chkPreseleccionado.closest('.mkt-card');
+            if (cardPreseleccionada) {
+                cardPreseleccionada.classList.add('ring-2', 'ring-[#54A6D8]');
+                cardPreseleccionada.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+
     btnCarrusel.addEventListener('click', () => {
         const items = rowChecks()
             .filter(c => c.checked)
@@ -1045,7 +1191,7 @@ const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
         if (items.length === 0) return;
 
         if (typeof window.abrirCarruselMarketing === 'function') {
-            window.abrirCarruselMarketing(items);
+            window.abrirCarruselMarketing(items, { permitirMarcarPromocion: true });
         } else {
             // [PENDIENTE] modal_carrusel_marketing.php aún no está incluido
             console.warn('abrirCarruselMarketing() no está definida todavía — falta incluir modal_carrusel_marketing.php');
@@ -1126,7 +1272,7 @@ const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
         li.innerHTML = `
             <img src="${n.post_url}" loading="lazy" decoding="async" alt="" class="w-14 h-14 rounded-lg object-cover border border-gray-200 bg-gray-50 shrink-0">
             <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-gray-800 truncate">${n.titulo}</p>
+                <p class="historial-titulo text-xs font-bold text-gray-800 truncate"></p>
                 <p class="text-[10px] text-gray-400">${n.fecha}</p>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
@@ -1141,6 +1287,7 @@ const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
                 </a>
             </div>
         `;
+        li.querySelector('.historial-titulo').textContent = n.titulo;
         return li;
     }
 
@@ -1338,6 +1485,184 @@ const CSRF_TOKEN = '<?= $_SESSION['csrf_token'] ?>';
         const ok = await copiarAlPortapapeles(card.dataset.diaCopy);
         textoSpan.textContent = ok ? 'Copiado' : 'Error';
         setTimeout(() => { textoSpan.textContent = original; }, 2000);
+    });
+
+    // Copiar 1 slide del carrusel: mismo patrón que "Copiar" del copy, reutilizando
+    // copiarAlPortapapeles() tal cual — acá el texto se lee del VALOR ACTUAL del textarea
+    // (no de un data-attribute fijo), así que si editaste pero no has guardado, copia
+    // exactamente lo que se ve en pantalla.
+    document.addEventListener('click', async (e) => {
+        const btnCopiarSlide = e.target.closest('.btn-copiar-slide');
+        if (!btnCopiarSlide) return;
+
+        const wrapper = btnCopiarSlide.closest('.slide-editable');
+        const textarea = wrapper ? wrapper.querySelector('.input-slide-texto') : null;
+        const textoSpanSlide = btnCopiarSlide.querySelector('.btn-copiar-slide-texto');
+        if (!textarea || !textoSpanSlide) return;
+
+        const originalSlide = textoSpanSlide.textContent;
+        const okSlide = await copiarAlPortapapeles(textarea.value);
+        textoSpanSlide.textContent = okSlide ? 'Copiado' : 'Error';
+        setTimeout(() => { textoSpanSlide.textContent = originalSlide; }, 2000);
+    });
+
+    // Contador de caracteres + aviso de "texto editado" — se actualiza con cada tecla.
+    // El aviso se muestra apenas hay una edición y queda visible incluso después de
+    // guardar (guardar solo persiste el texto, no regenera la imagen) — solo se oculta
+    // cuando "Generar imágenes del carrusel" corre de nuevo para ese día (más abajo).
+    document.addEventListener('input', (e) => {
+        const textarea = e.target.closest('.input-slide-texto');
+        if (!textarea) return;
+
+        const wrapper = textarea.closest('.slide-editable');
+        const contador = wrapper ? wrapper.querySelector('.slide-contador') : null;
+        const aviso = wrapper ? wrapper.querySelector('.slide-aviso-editado') : null;
+        if (contador) contador.textContent = `${textarea.value.length}/${textarea.dataset.limite}`;
+        if (aviso) aviso.classList.remove('hidden');
+    });
+
+    // Mismo patrón para el subtítulo de portada (contador propio, mismo aviso compartido
+    // de la tarjeta de la slide).
+    document.addEventListener('input', (e) => {
+        const textarea = e.target.closest('.input-slide-subtexto');
+        if (!textarea) return;
+
+        const wrapper = textarea.closest('.slide-editable');
+        const contador = wrapper ? wrapper.querySelector('.slide-subtexto-contador') : null;
+        const aviso = wrapper ? wrapper.querySelector('.slide-aviso-editado') : null;
+        if (contador) contador.textContent = `${textarea.value.length}/${textarea.dataset.limite}`;
+        if (aviso) aviso.classList.remove('hidden');
+    });
+
+    // Guardar el texto editado de 1 slide — persiste en copiloto_calendario.contenido,
+    // NUNCA genera imagen (eso es acción exclusiva de "Generar imágenes del carrusel").
+    document.addEventListener('click', async (e) => {
+        const btnGuardarSlide = e.target.closest('.btn-guardar-slide');
+        if (!btnGuardarSlide) return;
+
+        const card = btnGuardarSlide.closest('[data-dia-copy]');
+        const wrapper = btnGuardarSlide.closest('.slide-editable');
+        const textarea = wrapper ? wrapper.querySelector('.input-slide-texto') : null;
+        const contador = wrapper ? wrapper.querySelector('.slide-contador') : null;
+        // Solo existe en slides tipo portada — null en contenido/cierre, manejado abajo.
+        const textareaSub = wrapper ? wrapper.querySelector('.input-slide-subtexto') : null;
+        const contadorSub = wrapper ? wrapper.querySelector('.slide-subtexto-contador') : null;
+        const textoSpanGuardar = btnGuardarSlide.querySelector('.btn-guardar-slide-texto');
+        if (!card || !wrapper || !textarea || !textoSpanGuardar) return;
+
+        const original = textoSpanGuardar.textContent;
+        btnGuardarSlide.disabled = true;
+        textoSpanGuardar.textContent = 'Guardando...';
+
+        try {
+            const body = new URLSearchParams({
+                csrf_token: CSRF_TOKEN,
+                calendario_id: card.dataset.calendarioId,
+                dia: card.dataset.dia,
+                numero_slide: wrapper.dataset.numeroSlide,
+                texto_nuevo: textarea.value,
+                subtexto_nuevo: textareaSub ? textareaSub.value : '',
+            });
+            const r = await fetch('/app/admin_guardar_slide_calendario.php', { method: 'POST', body });
+            const data = await r.json();
+
+            if (!data.ok) {
+                textoSpanGuardar.textContent = 'Error';
+                mostrarToast(data.error || 'No se pudo guardar el texto.', true);
+                setTimeout(() => { textoSpanGuardar.textContent = original; }, 2500);
+                btnGuardarSlide.disabled = false;
+                return;
+            }
+
+            // Si nb_limpiar_texto_slide() cambió algo (ej. quitó un emoji), reflejarlo en
+            // el textarea para que se vea exactamente lo que va a salir en la imagen.
+            textarea.value = data.texto_guardado;
+            textarea.dataset.original = data.texto_guardado;
+            if (contador) contador.textContent = `${data.texto_guardado.length}/${textarea.dataset.limite}`;
+            if (textareaSub && data.subtexto_guardado !== null && data.subtexto_guardado !== undefined) {
+                textareaSub.value = data.subtexto_guardado;
+                textareaSub.dataset.original = data.subtexto_guardado;
+                if (contadorSub) contadorSub.textContent = `${data.subtexto_guardado.length}/${textareaSub.dataset.limite}`;
+            }
+            textoSpanGuardar.textContent = data.limpio_cambio ? 'Guardado (se limpió texto)' : 'Guardado';
+            btnGuardarSlide.disabled = false;
+            setTimeout(() => { textoSpanGuardar.textContent = original; }, 3000);
+        } catch (err) {
+            textoSpanGuardar.textContent = 'Error de conexión';
+            btnGuardarSlide.disabled = false;
+            setTimeout(() => { textoSpanGuardar.textContent = original; }, 2500);
+        }
+    });
+
+    // Generar imágenes del carrusel de UN día — llama al endpoint por-día (nunca los 7
+    // juntos). Deshabilita el botón mientras corre (puede tardar, hasta 5 llamadas a
+    // Gemini en el peor caso), reporta ok/de-caché/generadas/fallidas en el propio botón
+    // y deja las imágenes que sí salieron bien como miniaturas descargables en la tarjeta.
+    document.addEventListener('click', async (e) => {
+        const btnGenFondos = e.target.closest('.btn-generar-fondos');
+        if (!btnGenFondos) return;
+
+        const card = btnGenFondos.closest('[data-dia-copy]');
+        const textoSpanFondos = btnGenFondos.querySelector('.btn-generar-fondos-texto');
+        const resultadoDiv = card ? card.querySelector('.btn-generar-fondos-resultado') : null;
+        if (!card || !textoSpanFondos || !resultadoDiv) return;
+
+        const original = textoSpanFondos.textContent;
+        btnGenFondos.disabled = true;
+        textoSpanFondos.textContent = 'Generando...';
+        resultadoDiv.classList.add('hidden');
+        resultadoDiv.innerHTML = '';
+
+        try {
+            const body = new URLSearchParams({
+                csrf_token: CSRF_TOKEN,
+                calendario_id: card.dataset.calendarioId,
+                dia: card.dataset.dia,
+            });
+            const r = await fetch('/app/admin_generar_fondos_carrusel.php', { method: 'POST', body });
+            const data = await r.json();
+
+            if (!data.ok) {
+                textoSpanFondos.textContent = 'Error';
+                mostrarToast(data.error || 'No se pudieron generar las imágenes.', true);
+                setTimeout(() => { textoSpanFondos.textContent = original; }, 2500);
+                btnGenFondos.disabled = false;
+                return;
+            }
+
+            const partes = [`${data.de_cache} de caché`, `${data.generadas} nuevas`];
+            if (data.fallidas > 0) partes.push(`${data.fallidas} fallidas`);
+            textoSpanFondos.textContent = `Listo: ${data.ok_count}/${data.total} (${partes.join(', ')})`;
+            btnGenFondos.disabled = false;
+
+            // Las imágenes recién generadas ya reflejan el texto actual (guardado) de cada
+            // slide — el aviso de "texto editado, genera de nuevo" ya no aplica.
+            card.querySelectorAll('.slide-aviso-editado').forEach(el => el.classList.add('hidden'));
+
+            const slidesOk = (data.slides || []).filter(sl => sl.ok && sl.url);
+            if (slidesOk.length > 0) {
+                resultadoDiv.classList.remove('hidden');
+                slidesOk.forEach(sl => {
+                    const a = document.createElement('a');
+                    a.href = sl.url;
+                    a.download = `nubira-carrusel-${card.dataset.dia.toLowerCase()}-${sl.numero}.jpg`;
+                    const img = document.createElement('img');
+                    img.src = sl.url;
+                    img.loading = 'lazy';
+                    img.decoding = 'async';
+                    img.alt = '';
+                    img.className = 'w-full aspect-[4/5] object-cover rounded-lg border border-gray-200 bg-gray-50';
+                    a.appendChild(img);
+                    resultadoDiv.appendChild(a);
+                });
+            }
+
+            setTimeout(() => { textoSpanFondos.textContent = original; }, 8000);
+        } catch (err) {
+            textoSpanFondos.textContent = 'Error de conexión';
+            btnGenFondos.disabled = false;
+            setTimeout(() => { textoSpanFondos.textContent = original; }, 2500);
+        }
     });
 })();
 <?php endif; ?>
