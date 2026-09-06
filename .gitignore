@@ -40,6 +40,9 @@ server/dist/
 backup_*/
 backups/
 
+# Scratch local (previews de imágenes generadas en pruebas, nunca deploy)
+/preview_slides/
+
 # Archivos temporales y de sistema
 *.tmp
 Thumbs.db
