@@ -117,17 +117,60 @@ $orden_sql = $orden_map[$orden_param] ?? $orden_map['recientes'];
 
 // 4. OBTENER SERVICIOS
 $servicios = [];
-$res = $conn->query("SELECT s.id, s.titulo, s.categoria, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, a.nombre AS tutor_nombre
+$res = $conn->query("SELECT s.id, s.titulo, s.categoria, s.materia, s.asignatura, s.descripcion, s.es_paes, s.precio, s.precio_oferta, s.cupos_oferta, s.is_subvencionado, s.oferta_termino, a.nombre AS tutor_nombre
                      FROM servicios s
                      JOIN alumnos a ON s.alumno_id = a.id
                      WHERE s.estado = 'aprobado'
-                     ORDER BY {$orden_sql}
-                     LIMIT 50");
+                     ORDER BY {$orden_sql}");
+$hoy_calc = date('Y-m-d');
 if ($res) {
     while ($row = $res->fetch_assoc()) {
+        // Estado computado — mismo criterio que el badge de la columna "Estado Actual"
+        // más abajo (Normal/Subvencionado/Agotado/Expirada), calculado acá también para
+        // poder ofrecer un filtro por estado sin duplicar la lógica de negocio.
+        $vencida_calc = ($row['is_subvencionado'] && !empty($row['oferta_termino']) && $row['oferta_termino'] < $hoy_calc);
+        if ($vencida_calc) {
+            $row['estado_computado'] = 'expirada';
+        } elseif ($row['is_subvencionado'] && $row['cupos_oferta'] > 0) {
+            $row['estado_computado'] = 'subvencionado';
+        } elseif ($row['is_subvencionado'] && $row['cupos_oferta'] <= 0) {
+            $row['estado_computado'] = 'agotado';
+        } else {
+            $row['estado_computado'] = 'normal';
+        }
         $servicios[] = $row;
     }
 }
+
+// Chips de categoría — mismo patrón que clases_servicios.php/vitrina_apuntes.php:
+// categorías reales con conteo, no la taxonomía del banco de imágenes IA (que es un
+// feature aparte y no está enlazada por FK a servicios.categoria).
+$categorias_chips = [];
+$resCat = $conn->query("SELECT s.categoria, COUNT(*) AS total
+                        FROM servicios s
+                        WHERE s.estado = 'aprobado' AND s.categoria IS NOT NULL AND s.categoria != ''
+                        GROUP BY s.categoria
+                        ORDER BY total DESC");
+if ($resCat) {
+    while ($rc = $resCat->fetch_assoc()) $categorias_chips[] = $rc;
+}
+
+// Chips de estado — conteo sobre estado_computado (no existe como columna en BD,
+// se tally-ea acá mismo sobre lo que ya se cargó arriba).
+$ESTADOS_LABELS = [
+    'subvencionado' => 'Subvencionado',
+    'agotado'       => 'Agotado',
+    'expirada'      => 'Expirada',
+    'normal'        => 'Normal',
+];
+$ESTADOS_DOT = [
+    'subvencionado' => 'bg-orange-500',
+    'agotado'       => 'bg-red-500',
+    'expirada'      => 'bg-gray-300',
+    'normal'        => 'bg-gray-400',
+];
+$estados_chips = array_fill_keys(array_keys($ESTADOS_LABELS), 0);
+foreach ($servicios as $s_tally) { $estados_chips[$s_tally['estado_computado']]++; }
 
 $page_title = "Admin: Subsidios";
 ?>
@@ -195,7 +238,43 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
             </form>
         </div>
 
-        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 mb-4 flex flex-col gap-3">
+            <div class="flex flex-col md:flex-row md:items-center gap-3">
+                <div class="relative flex-1 min-w-[220px] max-w-sm">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><?= icon('search', 'w-4 h-4') ?></span>
+                    <input type="text" id="ofertas-buscador" placeholder="Buscar por título, tutor o ramo..."
+                           class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#54A6D8] focus:border-transparent shadow-sm">
+                </div>
+                <p id="ofertas-contador" class="text-xs font-semibold text-gray-500 whitespace-nowrap md:ml-auto">
+                    Mostrando <?= count($servicios) ?> de <?= count($servicios) ?>
+                </p>
+            </div>
+
+            <?php if (!empty($categorias_chips)): ?>
+            <div class="flex flex-nowrap overflow-x-auto no-scrollbar gap-2" role="group" aria-label="Filtrar por categoría">
+                <button type="button" data-chip-categoria="" class="chip-categoria shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-full border transition-colors duration-150 ease-out bg-gray-900 text-white border-gray-900">Todas</button>
+                <?php foreach ($categorias_chips as $cc): ?>
+                <button type="button" data-chip-categoria="<?= htmlspecialchars($cc['categoria']) ?>"
+                        class="chip-categoria shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-full border transition-colors duration-150 ease-out bg-white text-gray-700 border-gray-200 hover:border-gray-400">
+                    <?= htmlspecialchars($cc['categoria']) ?> (<?= (int)$cc['total'] ?>)
+                </button>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
+            <div class="flex flex-nowrap overflow-x-auto no-scrollbar gap-2" role="group" aria-label="Filtrar por estado">
+                <button type="button" data-chip-estado="" class="chip-estado shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-full border transition-colors duration-150 ease-out bg-gray-900 text-white border-gray-900">Todos</button>
+                <?php foreach ($ESTADOS_LABELS as $estado_key => $estado_label): ?>
+                <button type="button" data-chip-estado="<?= $estado_key ?>"
+                        class="chip-estado shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-full border transition-colors duration-150 ease-out bg-white text-gray-700 border-gray-200 hover:border-gray-400">
+                    <span class="w-2 h-2 rounded-full <?= $ESTADOS_DOT[$estado_key] ?>"></span>
+                    <?= $estado_label ?> (<?= $estados_chips[$estado_key] ?>)
+                </button>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <div id="tabla-ofertas" class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm whitespace-nowrap">
                     <thead class="bg-gray-50/80 text-gray-500 text-xs uppercase font-bold tracking-wider border-b border-gray-100">
@@ -216,7 +295,18 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                                        ? (int)round(($s['precio'] - $s['precio_oferta']) / $s['precio'] * 100)
                                        : null;
                         ?>
-                        <tr class="hover:bg-gray-50/50 transition-colors <?= ($s['is_subvencionado'] && !$vencida) ? 'bg-orange-50/10' : '' ?>">
+                        <tr class="hover:bg-gray-50/50 transition-colors <?= ($s['is_subvencionado'] && !$vencida) ? 'bg-orange-50/10' : '' ?>"
+                            data-titulo="<?= htmlspecialchars($s['titulo']) ?>"
+                            data-tutor="<?= htmlspecialchars($s['tutor_nombre']) ?>"
+                            data-tema="<?= htmlspecialchars(trim(
+                                ($s['categoria'] ?? '') . ' ' .
+                                ($s['materia'] ?? '') . ' ' .
+                                ($s['asignatura'] ?? '') . ' ' .
+                                mb_substr($s['descripcion'] ?? '', 0, 200) . ' ' .
+                                ($s['es_paes'] ? 'PAES' : '')
+                            )) ?>"
+                            data-categoria="<?= htmlspecialchars($s['categoria'] ?? '') ?>"
+                            data-estado="<?= htmlspecialchars($s['estado_computado']) ?>">
 
                             <td class="px-6 py-4">
                                 <p class="font-bold text-gray-900 line-clamp-1 max-w-[300px] whitespace-normal leading-tight">
@@ -340,6 +430,11 @@ if(file_exists($app_dir . '/componentes/sidebar.php')) require_once $app_dir . '
                             </td>
                         </tr>
                         <?php endif; ?>
+                        <tr id="fila-ofertas-sin-resultados" class="hidden">
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-400 font-medium">
+                                Ningún servicio coincide con los filtros aplicados.
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -419,6 +514,63 @@ if(file_exists($app_dir . '/componentes/modal_explora.php')) require_once $app_d
         NubiraModales.setup('btn-publicar', 'modal-quick', 'quick-card', 'quick-close');
         NubiraModales.setup('btn-explora', 'modal-explora', 'explora-card', 'explora-close');
     });
+
+    // FILTROS COMBINABLES: búsqueda + chip de categoría + chip de estado (sin recargar).
+    // Solo oculta/muestra filas ya renderizadas por PHP — no toca ninguna query de escritura.
+    (function () {
+        const buscador = document.getElementById('ofertas-buscador');
+        const contador = document.getElementById('ofertas-contador');
+        const filaSinResultados = document.getElementById('fila-ofertas-sin-resultados');
+        const filas = Array.from(document.querySelectorAll('#tabla-ofertas tbody tr[data-estado]'));
+        const chipsCategoria = document.querySelectorAll('.chip-categoria');
+        const chipsEstado = document.querySelectorAll('.chip-estado');
+        if (!buscador || filas.length === 0) return;
+
+        let filtroCategoria = '';
+        let filtroEstado = '';
+
+        function activarChip(grupo, chipActivo) {
+            grupo.forEach(chip => {
+                const activo = (chip === chipActivo);
+                chip.classList.toggle('bg-gray-900', activo);
+                chip.classList.toggle('text-white', activo);
+                chip.classList.toggle('border-gray-900', activo);
+                chip.classList.toggle('bg-white', !activo);
+                chip.classList.toggle('text-gray-700', !activo);
+                chip.classList.toggle('border-gray-200', !activo);
+            });
+        }
+
+        function aplicarFiltrosOfertas() {
+            const q = buscador.value.trim().toLowerCase();
+            let visibles = 0;
+            filas.forEach(fila => {
+                const texto = ((fila.dataset.titulo || '') + ' ' + (fila.dataset.tutor || '') + ' ' + (fila.dataset.tema || '')).toLowerCase();
+                const okTexto = q === '' || texto.includes(q);
+                const okCategoria = filtroCategoria === '' || fila.dataset.categoria === filtroCategoria;
+                const okEstado = filtroEstado === '' || fila.dataset.estado === filtroEstado;
+                const visible = okTexto && okCategoria && okEstado;
+                fila.classList.toggle('hidden', !visible);
+                if (visible) visibles++;
+            });
+            if (contador) contador.textContent = 'Mostrando ' + visibles + ' de ' + filas.length;
+            if (filaSinResultados) filaSinResultados.classList.toggle('hidden', visibles !== 0);
+        }
+
+        buscador.addEventListener('input', aplicarFiltrosOfertas);
+        chipsCategoria.forEach(chip => chip.addEventListener('click', () => {
+            filtroCategoria = chip.dataset.chipCategoria || '';
+            activarChip(chipsCategoria, chip);
+            aplicarFiltrosOfertas();
+        }));
+        chipsEstado.forEach(chip => chip.addEventListener('click', () => {
+            filtroEstado = chip.dataset.chipEstado || '';
+            activarChip(chipsEstado, chip);
+            aplicarFiltrosOfertas();
+        }));
+
+        aplicarFiltrosOfertas();
+    })();
 </script>
 </body>
 </html>
