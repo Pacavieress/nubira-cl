@@ -13,6 +13,72 @@ export function abreviarNombre(nombreCompleto: string | null): string {
   return primero;
 }
 
+// Puerto exacto de app/helpers/institucion.php — mismo diccionario (colapsando las
+// variantes de casing del original, redundantes porque el match acá también es
+// case-insensitive), misma regla de reemplazo total-vs-parcial (un valor de reemplazo de
+// <=6 caracteres sustituye TODA la cadena, uno más largo solo la porción matcheada) y el
+// mismo recorte final (mb_strimwidth: el total, INCLUYENDO "...", nunca supera maxLen).
+// Encontrado auditando /busqueda y /servicios contra el PHP real: institucion_tutor()
+// nunca se había portado, así que toda card de servicio mostraba el nombre completo sin
+// abreviar (p. ej. "UNIVERSIDAD DE SANTIAGO DE CH..." en vez de "USACH").
+const DICCIONARIO_INSTITUCION: Array<[string, string]> = [
+  ["Economía y Negocios", "FEN U. Chile"],
+  ["Servicio Local de Educ", "SLEP"],
+  ["Santísima Concepci", "UCSC"],
+  ["Santisima Concepci", "UCSC"],
+  ["Konrad Lorenz", "Konrad Lorenz"],
+  ["Universidad Andr", "UNAB"],
+  ["Universidad Nac", "UNAB"],
+  ["Católica de Valpara", "PUCV"],
+  ["Catolica de Valpara", "PUCV"],
+  ["Pontificia Universidad Cat", "PUC"],
+  ["Universidad de Santiago", "USACH"],
+  ["Universidad de Concepci", "UdeC"],
+  ["Universidad T", "USM"],
+  ["Federico Santa Mar", "USM"],
+  ["Adolfo Ib", "UAI"],
+  ["Universidad de Chile", "U. de Chile"],
+  ["Universidad del B", "UBB"],
+  ["Bío Bío", "UBB"],
+  ["Bio Bio", "UBB"],
+  ["Instituto Profesional", "IP"],
+  ["Centro de Formación Técnica", "CFT"],
+  ["iacc", "IACC"],
+];
+
+// Puerto de mb_strimwidth($s, 0, $maxLen, '...') — el total devuelto (marcador incluido)
+// nunca supera maxLen, a diferencia de un slice+concat ingenuo.
+function recortarConMarcador(s: string, maxLen: number, marcador = "..."): string {
+  if (s.length <= maxLen) return s;
+  return s.slice(0, Math.max(0, maxLen - marcador.length)) + marcador;
+}
+
+// Puerto exacto de abreviar_institucion() — cadena vacía si no hay institución (a
+// diferencia de institucionTutor(), que cae a "Particular").
+export function abreviarInstitucion(instRaw: string | null | undefined, maxLen = 22): string {
+  if (!instRaw) return "";
+  let inst = instRaw;
+  for (const [clave, valor] of DICCIONARIO_INSTITUCION) {
+    const idx = inst.toLowerCase().indexOf(clave.toLowerCase());
+    if (idx !== -1) {
+      inst = valor.length <= 6 ? valor : inst.slice(0, idx) + valor + inst.slice(idx + clave.length);
+      break;
+    }
+  }
+  if (inst.toLowerCase().startsWith("universidad ")) {
+    inst = `U. ${inst.slice(12)}`;
+  }
+  return recortarConMarcador(inst, maxLen);
+}
+
+// Puerto exacto de institucion_tutor() — usada en las cards de servicios (siempre
+// abreviada, fallback "Particular" si no hay institución real).
+export function institucionTutor(instRaw: string | null | undefined, maxLen = 22): string {
+  const raw = (instRaw ?? "").trim();
+  if (raw === "") return "Particular";
+  return abreviarInstitucion(raw, maxLen);
+}
+
 export function inicial(nombreCompleto: string | null): string {
   const texto = (nombreCompleto ?? "").trim();
   return texto ? texto.charAt(0).toUpperCase() : "U";

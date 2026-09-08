@@ -1,5 +1,6 @@
 import type { ApunteListado } from "@/lib/api";
 import { abreviarConteo, formatoCLP } from "@/lib/formato";
+import { abreviarInstitucion } from "@/lib/texto";
 
 // Puerto del branch NO-compacto de cargar_apuntes.php:330-356 (el único que usa
 // vitrina_apuntes.php — nunca pasa ?compacto=1 en su fetch inicial). El branch
@@ -62,7 +63,7 @@ export function ApunteCard({ apunte }: { apunte: ApunteListado }) {
                 <svg className="w-3 h-3 text-gray-300 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
                 </svg>
-                <span className="truncate">{apunte.institucion}</span>
+                <span className="truncate">{abreviarInstitucion(apunte.institucion)}</span>
               </>
             )}
           </div>

@@ -22,10 +22,19 @@ import { HeaderSearchForm } from "./HeaderSearchForm";
 //     CLAUDE.md sobre su futura migración a tabla editable).
 //   - Modal de avisos oficiales admin->usuario (carrusel/CTA, ~300 líneas propias).
 //   - Tracker de dispositivo silencioso (analítica, sin equivalente en server/).
-//   - redir preciso en el ícono de perfil anónimo: header.php arma
-//     '/login?redir=' . $_SERVER['REQUEST_URI']; un Server Component de Next no expone el
-//     pathname actual sin agregar middleware nuevo solo para esto — desproporcionado. El
-//     ícono anónimo enlaza a `${phpSiteUrl}/login` sin redir.
+//   - redir preciso en el ícono de perfil anónimo y en los botones de publicar de acá
+//     abajo: header.php arma '/login?redir=' . $_SERVER['REQUEST_URI']; un Server
+//     Component de Next no expone el pathname actual sin agregar middleware nuevo solo
+//     para esto — desproporcionado. Ambos enlazan a `${phpSiteUrl}/login` sin redir.
+//
+// [08/09/2026] Botones "Publicar Apunte"/"Publicar Clase": header.php:193-202 los
+// muestra a TODO visitante, con o sin sesión ($mostrar_botones no depende de
+// $es_visitante, solo de intencion_uso !== 'comprar') — apuntan a /login?redir=... para
+// quien no tiene sesión. La versión anterior de este componente los ocultaba por
+// completo sin sesión (`sesion?.mostrarBotonesPublicar` es `undefined` cuando `sesion`
+// es `null`), una divergencia real encontrada auditando /apuntes contra el PHP con
+// screenshots — corregida acá. Regla confirmada con el usuario: el PHP manda siempre,
+// sin criterio propio.
 //
 // `q` es opcional: solo busqueda/page.tsx lo pasa (prefill del input con el término ya
 // buscado, igual que header.php:185 `value="<?= htmlspecialchars($_GET['q'] ?? '') ?>"`).
@@ -70,10 +79,10 @@ export async function Header({
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2 md:gap-4">
-          {!ocultarBotonesPublicar && sesion?.mostrarBotonesPublicar && (
+          {!ocultarBotonesPublicar && (sesion ? sesion.mostrarBotonesPublicar : true) && (
             <div className="hidden lg:flex items-center gap-3">
               <Link
-                href="/formulario-subir-apunte"
+                href={sesion ? "/formulario-subir-apunte" : `${phpSiteUrl}/login`}
                 className="px-4 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-[#54A6D8] text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2"
               >
                 <svg className="w-4 h-4 text-[#54A6D8]" viewBox="0 0 24 24" fill="currentColor">
@@ -87,7 +96,7 @@ export async function Header({
                 <span>Publicar Apunte</span>
               </Link>
               <Link
-                href="/publicar-servicio"
+                href={sesion ? "/publicar-servicio" : `${phpSiteUrl}/login`}
                 className="px-4 py-1.5 bg-[#54A6D8] hover:bg-blue-600 text-white text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2"
               >
                 <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">

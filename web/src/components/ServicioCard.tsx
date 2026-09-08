@@ -1,6 +1,6 @@
 import type { ServicioListado } from "@/lib/api";
 import { formatoCLP } from "@/lib/formato";
-import { abreviarNombre } from "@/lib/texto";
+import { abreviarNombre, institucionTutor } from "@/lib/texto";
 import { OverlayServicio } from "./OverlayServicio";
 import { RatingPill } from "./RatingPill";
 import { TierBadge } from "./TierBadge";
@@ -89,7 +89,7 @@ export function ServicioCard({ servicio }: { servicio: ServicioListado }) {
 
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal uppercase tracking-[0.01em] truncate max-w-[70%]">
-            {servicio.tutor.institucion && <span className="truncate">{servicio.tutor.institucion}</span>}
+            <span className="truncate">{institucionTutor(servicio.tutor.institucion)}</span>
           </div>
           <div className="shrink-0">
             <RatingPill promedio={servicio.rating.promedio} votos={servicio.rating.votos} />
