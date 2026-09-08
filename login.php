@@ -1,7 +1,9 @@
 <?php
 session_start();
 require_once(__DIR__ . '/app/conexion.php');
+require_once(__DIR__ . '/app/config.php');
 require_once(__DIR__ . '/app/helpers/seo.php');
+require_once(__DIR__ . '/app/helpers/redir_seguro.php');
 
 // Auto-migración: sistema de verificación híbrido
 try { $conn->query("ALTER TABLE alumnos ADD COLUMN verificacion_estado VARCHAR(20) DEFAULT NULL"); } catch (Throwable $e) {}
@@ -13,9 +15,9 @@ try { $conn->query("ALTER TABLE alumnos ADD COLUMN intencion_uso ENUM('vender','
 // 0. CAPTURAR REDIRECCIÓN (LAZY REGISTRATION)
 $redir_destino = $_GET['redir'] ?? $_SESSION['redirigir_despues_login'] ?? '';
 
-// Filtro Anti Open-Redirect para la captura inicial
-if (!empty($redir_destino) && (strpos($redir_destino, '/') !== 0 || strpos($redir_destino, '//') === 0)) {
-    $redir_destino = ''; 
+// Filtro Anti Open-Redirect para la captura inicial (ver app/helpers/redir_seguro.php)
+if (!nb_redir_es_seguro($redir_destino)) {
+    $redir_destino = '';
 }
 
 // -------------------------------------------------------------------------
@@ -250,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($est === 'pendiente') {
                             if (!empty($redir_post)) {
                                 $redir_sanitizado = filter_var($redir_post, FILTER_SANITIZE_URL);
-                                if (strpos($redir_sanitizado, '/') === 0 && strpos($redir_sanitizado, '//') !== 0) {
+                                if (nb_redir_es_seguro($redir_sanitizado)) {
                                     $_SESSION['redirigir_despues_login'] = $redir_sanitizado;
                                 }
                             }
@@ -266,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $ruta_final = $_SESSION['redirigir_despues_login'];
                         }
                         unset($_SESSION['redirigir_despues_login']);
-                        if (strpos($ruta_final, '/') !== 0 || strpos($ruta_final, '//') === 0) {
+                        if (!nb_redir_es_seguro($ruta_final)) {
                             $ruta_final = '/vitrina';
                         }
                         if ($ruta_final === '/perfil' || $ruta_final === '/perfil/') {

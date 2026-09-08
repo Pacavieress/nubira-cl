@@ -75,4 +75,20 @@ if (IG_ACCESS_TOKEN === '') { error_log('[Nubira] IG_ACCESS_TOKEN no configurada
 // DAILY.CO (VIDEO LLAMADAS)
 // =========================
 define('DAILY_API_KEY', $_ENV['DAILY_API_KEY'] ?? '');
+
+// =========================
+// MIGRACIÓN NEXT.JS — orígenes confiados para redirección post-login
+// =========================
+// login.php normalmente solo acepta `redir` como ruta relativa al propio dominio (anti
+// open-redirect). Algunas páginas ya viven EXCLUSIVAMENTE en Next.js (sin equivalente en
+// .htaccess) — sin esta lista blanca, un `redir` absoluto hacia esas páginas se descarta
+// igual que uno hacia un dominio malicioso, y el usuario termina en /vitrina o, peor, en un
+// 404 si la ruta ni siquiera existe en PHP (bug real encontrado 26/08/2026: Mi Perfil).
+// Por ahora son solo orígenes de DESARROLLO — no existe todavía un dominio de producción
+// para Next.js (server/ y web/ corren solo local). El día que se despliegue de verdad,
+// agregar ese dominio acá (vía NEXTJS_TRUSTED_ORIGINS en .env) es obligatorio o este mismo
+// bug reaparece en producción.
+define('NEXTJS_TRUSTED_ORIGINS', array_values(array_filter(array_map('trim', explode(',',
+    $_ENV['NEXTJS_TRUSTED_ORIGINS'] ?? 'http://localhost:3000,http://nubira.local:3000'
+)))));
 ?>
