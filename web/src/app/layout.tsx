@@ -27,6 +27,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Header.tsx sigue siendo por-página: necesita el `titulo` de cada vista, que no calza
   // con este layout compartido sin agregar un mecanismo aparte (fuera de alcance acá).
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
+  // Dominio propio de esta app — necesario para armar `redir` ABSOLUTO hacia login.php
+  // (dominio PHP) en páginas 100% exclusivas de Next.js, sin equivalente en .htaccess. Sin
+  // esto, login.php interpretaba la ruta relativa contra SU PROPIO dominio y 404'ba (bug
+  // real en /mi-perfil, corregido 26/08/2026 — ver app/helpers/redir_seguro.php y
+  // NEXTJS_TRUSTED_ORIGINS en app/config.php del lado PHP, que debe incluir este mismo origen).
+  const nextjsSiteUrl = process.env.NEXTJS_SITE_URL ?? "http://nubira.local:3000";
 
   // getSesion() corta antes del fetch a server/ si no hay cookie PHPSESSID (visitante
   // anónimo, el caso común) — sin costo de red extra para ese caso. Para un visitante CON
@@ -41,8 +47,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
-        <Sidebar phpSiteUrl={phpSiteUrl} usuarioId={sesion?.usuarioId ?? null} />
-        <BottomNav phpSiteUrl={phpSiteUrl} usuarioId={sesion?.usuarioId ?? null} />
+        <Sidebar phpSiteUrl={phpSiteUrl} nextjsSiteUrl={nextjsSiteUrl} usuarioId={sesion?.usuarioId ?? null} />
+        <BottomNav phpSiteUrl={phpSiteUrl} nextjsSiteUrl={nextjsSiteUrl} usuarioId={sesion?.usuarioId ?? null} />
       </body>
     </html>
   );
