@@ -30,6 +30,7 @@ import { adminSolicitudesRouter } from "./modules/adminSolicitudes/adminSolicitu
 import { adminVideosRouter } from "./modules/adminVideos/adminVideos.routes.js";
 import { apuntesRouter } from "./modules/apuntes/apuntes.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { busquedaRouter } from "./modules/busqueda/busqueda.routes.js";
 import { categoriasRouter } from "./modules/categorias/categorias.routes.js";
 import { compartirRouter } from "./modules/compartir/compartir.routes.js";
 import { configurarCuentaRouter } from "./modules/configurarCuenta/configurarCuenta.routes.js";
@@ -82,6 +83,7 @@ export function createApp(): Express {
   app.use("/api/vistas", vistasDetalleRouter);
   app.use("/api/apuntes", apuntesRouter);
   app.use("/api/servicios", serviciosRouter);
+  app.use("/api/busqueda", busquedaRouter);
   app.use("/api/tutores", tutoresRouter);
   app.use("/api/me/favoritos", favoritosRouter);
   app.use("/api/me/compras", comprasRouter);

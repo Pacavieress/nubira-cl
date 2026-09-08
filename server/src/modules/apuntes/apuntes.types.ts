@@ -26,8 +26,19 @@ export interface SearchApuntesFilters {
   // filtro `materia` de cargar_apuntes.php:93/149 (WHERE ap.materia = ?, coincidencia
   // exacta contra la columna real, no una búsqueda parcial como `q`).
   materia?: string;
+  // Chips de categoría de vitrina_apuntes.php:77-79 — coincidencia exacta contra
+  // ap.categoria, igual que `materia` arriba.
+  categoria?: string;
   page: number;
   limit: number;
+}
+
+// Puerto exacto de $categorias_chips en vitrina_apuntes.php:60-75 — cuenta total por
+// categoría, siempre sin filtrar por nivel/precio/q/categoria activa (mismo criterio que
+// la página real: los chips muestran el universo completo, no el resultado ya filtrado).
+export interface CategoriaApunteRow {
+  categoria: string;
+  total: number;
 }
 
 export interface SearchApuntesResult {

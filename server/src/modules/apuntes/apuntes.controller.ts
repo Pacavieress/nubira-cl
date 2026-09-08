@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { mapApunteDetalleRow, mapApunteRow } from "./apuntes.mapper.js";
-import { getApunteDetalleById, searchApuntesPublicos } from "./apuntes.repository.js";
+import { getApunteDetalleById, getCategoriasApuntes, searchApuntesPublicos } from "./apuntes.repository.js";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
@@ -34,6 +34,7 @@ export async function getApuntesList(req: Request, res: Response): Promise<void>
     orden: parseStringFilter(req.query.orden),
     q: parseStringFilter(req.query.q),
     materia: parseStringFilter(req.query.materia),
+    categoria: parseStringFilter(req.query.categoria),
     page,
     limit,
   });
@@ -42,6 +43,11 @@ export async function getApuntesList(req: Request, res: Response): Promise<void>
     data: rows.map(mapApunteRow),
     meta: { page, limit, hayMas },
   });
+}
+
+export async function getApuntesCategoriasList(_req: Request, res: Response): Promise<void> {
+  const categorias = await getCategoriasApuntes();
+  res.status(200).json({ data: categorias });
 }
 
 export async function getApunteDetail(req: Request, res: Response): Promise<void> {

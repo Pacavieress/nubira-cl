@@ -4,12 +4,14 @@ import { construirCondicionTexto, esBusquedaPaes } from "../../lib/busquedaTexto
 import type {
   ApunteDetalleRow,
   ApunteRow,
+  CategoriaApunteRow,
   SearchApuntesFilters,
   SearchApuntesResult,
 } from "./apuntes.types.js";
 
 interface ApunteRowPacket extends ApunteRow, RowDataPacket {}
 interface ApunteDetalleRowPacket extends ApunteDetalleRow, RowDataPacket {}
+interface CategoriaApunteRowPacket extends CategoriaApunteRow, RowDataPacket {}
 
 // Puerto exacto de busqueda.php:293 — mismo set de 4 columnas que busca la página de
 // búsqueda real (cargar_apuntes.php, la página de listado, busca un set distinto de 5:
@@ -95,6 +97,10 @@ export async function searchApuntesPublicos(filters: SearchApuntesFilters): Prom
     conditions.push("ap.materia = ?");
     params.push(filters.materia);
   }
+  if (filters.categoria) {
+    conditions.push("ap.categoria = ?");
+    params.push(filters.categoria);
+  }
 
   const whereExtra = conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
   const offset = (filters.page - 1) * filters.limit;
@@ -107,6 +113,21 @@ export async function searchApuntesPublicos(filters: SearchApuntesFilters): Prom
 
   const hayMas = rows.length > filters.limit;
   return { rows: hayMas ? rows.slice(0, filters.limit) : rows, hayMas };
+}
+
+// Puerto exacto de vitrina_apuntes.php:60-75 — a propósito NO reutiliza WHERE_VISIBLE:
+// la query real de los chips no filtra por al.bloqueado, distinto del listado principal.
+export async function getCategoriasApuntes(): Promise<CategoriaApunteRow[]> {
+  const [rows] = await pool.query<CategoriaApunteRowPacket[]>(`
+    SELECT ap.categoria, COUNT(*) AS total
+    FROM apuntes ap
+    JOIN alumnos al ON al.id = ap.id_alumno
+    WHERE ap.publico = 1 AND ap.visible = 1 AND al.visible = 1
+      AND ap.categoria IS NOT NULL AND ap.categoria != ''
+    GROUP BY ap.categoria
+    ORDER BY total DESC
+  `);
+  return rows;
 }
 
 // SELECT separado (mismo patrón que servicios.repository.ts Fase 6): trae columnas de

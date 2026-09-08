@@ -55,12 +55,61 @@ export async function getServicios(filtros: ServiciosFiltros = {}): Promise<Serv
   return res.json();
 }
 
-export async function getCategorias(): Promise<string[]> {
+// Refleja el shape de GET /api/busqueda (server/src/modules/busqueda) — puerto de
+// app/busqueda.php. Reutiliza ServicioListado/ApunteListado: mismo shape público que
+// /api/servicios y /api/apuntes (mapServicioRow/mapApunteRow son las mismas funciones).
+export interface BusquedaFiltros {
+  q: string;
+  orden?: string;
+  categoria?: string;
+  precioMin?: number;
+  precioMax?: number;
+  video?: boolean;
+  tab?: string;
+  pagina?: number;
+}
+
+export interface BusquedaResultado {
+  servicios: ServicioListado[];
+  apuntes: ApunteListado[];
+  totalServicios: number;
+  totalApuntes: number;
+  categoriasConResultados: string[];
+  tab: string;
+  pagina: number;
+  totalPaginas: number;
+}
+
+export async function getBusqueda(filtros: BusquedaFiltros): Promise<BusquedaResultado> {
+  const params = new URLSearchParams();
+  params.set("q", filtros.q);
+  if (filtros.orden) params.set("orden", filtros.orden);
+  if (filtros.categoria) params.set("categoria", filtros.categoria);
+  if (filtros.precioMin !== undefined) params.set("precio_min", String(filtros.precioMin));
+  if (filtros.precioMax !== undefined) params.set("precio_max", String(filtros.precioMax));
+  if (filtros.video) params.set("video", "1");
+  if (filtros.tab && filtros.tab !== "todo") params.set("tipo", filtros.tab);
+  if (filtros.pagina && filtros.pagina > 1) params.set("pagina", String(filtros.pagina));
+
+  const res = await fetch(`${API_URL}/api/busqueda?${params.toString()}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`La API de búsqueda respondió ${res.status}`);
+  }
+  const body = await res.json();
+  return body.data;
+}
+
+export interface CategoriaConteo {
+  categoria: string;
+  total: number;
+}
+
+export async function getCategorias(): Promise<CategoriaConteo[]> {
   const res = await fetch(`${API_URL}/api/categorias`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`La API de categorías respondió ${res.status}`);
   }
-  const body = (await res.json()) as { data: string[] };
+  const body = (await res.json()) as { data: CategoriaConteo[] };
   return body.data;
 }
 
@@ -145,6 +194,8 @@ export interface ApuntesFiltros {
   // Agregado para las recomendaciones de /desafio — ver SearchApuntesFilters.materia en
   // server/src/modules/apuntes/apuntes.types.ts.
   materia?: string;
+  // Chips de categoría de vitrina_apuntes.php — ver SearchApuntesFilters.categoria.
+  categoria?: string;
 }
 
 export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesResponse> {
@@ -154,6 +205,7 @@ export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesR
   if (filtros.orden) params.set("orden", filtros.orden);
   if (filtros.q) params.set("q", filtros.q);
   if (filtros.materia) params.set("materia", filtros.materia);
+  if (filtros.categoria) params.set("categoria", filtros.categoria);
 
   const qs = params.toString();
   const res = await fetch(`${API_URL}/api/apuntes${qs ? `?${qs}` : ""}`, { cache: "no-store" });
@@ -161,6 +213,22 @@ export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesR
     throw new Error(`La API de apuntes respondió ${res.status}`);
   }
   return res.json();
+}
+
+// Puerto de $categorias_chips (vitrina_apuntes.php:60-75) — conteo por categoría,
+// independiente de los filtros activos de la lista (mismo criterio que la página real).
+export interface CategoriaApunteChip {
+  categoria: string;
+  total: number;
+}
+
+export async function getCategoriasApuntes(): Promise<CategoriaApunteChip[]> {
+  const res = await fetch(`${API_URL}/api/apuntes/categorias`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`La API de categorías de apuntes respondió ${res.status}`);
+  }
+  const body = await res.json();
+  return body.data;
 }
 
 // Refleja ApunteDetallePublico (server/src/modules/apuntes/apuntes.types.ts). Mismo
