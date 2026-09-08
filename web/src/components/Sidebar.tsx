@@ -28,8 +28,11 @@ import { usePathname } from "next/navigation";
 // a /explorar como el sitio real — mismo alcance que la decisión de mover la grilla de
 // servicios a /servicios y dejar "/" reservado para un futuro port de vitrina.php.
 //
-// "Recursos"/"Mensajes" (sin ruta propia en web/ todavía) enlazan al sitio PHP real en
-// pestaña nueva (target="_blank") — mismo patrón que el logo/breadcrumb de Header.tsx.
+// [08/09/2026] "Recursos" pasó a ruta interna (/guias) al portarse esa página — mismo
+// criterio que ya se aplicó a "Mensajes" cuando /bandeja-entrada se portó. Encontrado
+// auditando /guias contra el PHP real: el ítem seguía apuntando al sitio PHP en pestaña
+// nueva con activo() hardcodeado a false, así que nunca se resaltaba aunque el usuario
+// estuviera parado en /guias.
 // "Cerrar Sesión" es la ÚNICA excepción deliberada: NO usa target="_blank" porque muta la
 // sesión (logout.php destruye sesiones_api) — abrirlo en pestaña nueva dejaría la pestaña
 // de web/ mostrando un sidebar "logueado" obsoleto hasta la próxima navegación; en la misma
@@ -104,10 +107,9 @@ function construirNavItems(phpSiteUrl: string, nextjsSiteUrl: string, usuarioId:
     ),
   },
   {
-    href: `${phpSiteUrl}/guias`,
+    href: "/guias",
     label: "Recursos",
-    activo: () => false,
-    externo: true,
+    activo: (p) => p.startsWith("/guias"),
     icono: (
       <path
         strokeLinecap="round"

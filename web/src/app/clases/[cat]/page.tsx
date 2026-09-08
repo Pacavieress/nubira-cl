@@ -68,7 +68,9 @@ export default async function LandingClasesPage({ params }: LandingProps) {
       {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
 
       <Header titulo={landing.categoria} />
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:ml-64">
+      {/* lg:pl-72 (no lg:pl-64) en vez de lg:ml-64 — overflow horizontal bajo <body flex
+          flex-col>, ver web/src/app/apuntes/page.tsx para el diagnóstico completo. */}
+      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:pl-72">
         <nav className="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-gray-700">
             Inicio

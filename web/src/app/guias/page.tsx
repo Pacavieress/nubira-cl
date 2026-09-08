@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getGuiasHubGeneral } from "@/lib/api";
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { VolverButton } from "@/components/VolverButton";
 
 // Puerto de app/guias.php MODO 1 (hub general /guias) — solo categorías habilitadas,
 // no-solo_tutores, CON al menos 1 artículo publicado (mismo INNER JOIN real: una
@@ -36,7 +38,9 @@ export default async function GuiasHubPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <Header titulo="Centro de Recursos" />
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:ml-64">
+      {/* lg:pl-72 (no lg:pl-64) en vez de lg:ml-64 — overflow horizontal bajo <body flex
+          flex-col>, ver web/src/app/apuntes/page.tsx para el diagnóstico completo. */}
+      <main className="flex flex-col flex-grow w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:pl-72">
         <nav className="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-gray-700">
             Inicio
@@ -45,8 +49,14 @@ export default async function GuiasHubPage() {
           <span className="text-gray-800 font-medium">Guías</span>
         </nav>
 
+        {/* Puerto exacto de guias.php:147-154 — barra sticky con botón "Volver" (solo
+            mobile) + H1, en vez de un H1 suelto más grande/bold. */}
+        <div className="sticky top-0 md:top-16 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-100 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 flex items-center gap-3">
+          <VolverButton fallbackHref="/explorar" />
+          <h1 className="text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em] truncate min-w-0 flex-1">Centro de Recursos</h1>
+        </div>
+
         <header className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Centro de Recursos</h1>
           <p className="sr-only md:not-sr-only text-sm md:text-base text-gray-600 mt-2 max-w-3xl leading-relaxed">
             Guías y recursos para ayudarte a rendir mejor en la universidad.
           </p>
@@ -80,6 +90,10 @@ export default async function GuiasHubPage() {
             <p className="font-medium">Aún no hay guías publicadas.</p>
           </div>
         )}
+
+        <div className="mt-auto">
+          <Footer />
+        </div>
       </main>
     </>
   );

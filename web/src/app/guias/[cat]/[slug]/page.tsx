@@ -40,11 +40,13 @@ export async function generateMetadata({ params }: ArticuloProps): Promise<Metad
 export default async function GuiaArticuloPage({ params }: ArticuloProps) {
   const { cat, slug } = await params;
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
+  const nextjsSiteUrl = process.env.NEXTJS_SITE_URL ?? "http://nubira.local:3000";
   const data = await getGuiaArticulo(cat, slug);
 
   if (!data.encontrada) {
     if (data.razon === "sin_sesion") {
-      redirect(`${phpSiteUrl}/login?redir=${encodeURIComponent(`/guias/${cat}/${slug}`)}`);
+      // redir ABSOLUTO hacia esta app — ver desafio/page.tsx para el diagnóstico completo.
+      redirect(`${phpSiteUrl}/login?redir=${encodeURIComponent(`${nextjsSiteUrl}/guias/${cat}/${slug}`)}`);
     }
     if (data.razon === "no_tutor") {
       redirect(`${phpSiteUrl}/publicar-servicio`);
@@ -100,7 +102,9 @@ export default async function GuiaArticuloPage({ params }: ArticuloProps) {
       {breadcrumbLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />}
 
       <Header titulo={articulo.titulo} />
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:ml-64">
+      {/* lg:pl-72 (no lg:pl-64) en vez de lg:ml-64 — overflow horizontal bajo <body flex
+          flex-col>, ver web/src/app/apuntes/page.tsx para el diagnóstico completo. */}
+      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:pl-72">
         {mostrarBreadcrumb && (
           <nav className="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-gray-700">
