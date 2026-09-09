@@ -48,7 +48,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <Sidebar phpSiteUrl={phpSiteUrl} nextjsSiteUrl={nextjsSiteUrl} usuarioId={sesion?.usuarioId ?? null} />
-        <BottomNav phpSiteUrl={phpSiteUrl} nextjsSiteUrl={nextjsSiteUrl} usuarioId={sesion?.usuarioId ?? null} />
+        <BottomNav
+          phpSiteUrl={phpSiteUrl}
+          nextjsSiteUrl={nextjsSiteUrl}
+          usuarioId={sesion?.usuarioId ?? null}
+          fotoPerfil={sesion?.fotoPerfil ?? null}
+        />
       </body>
     </html>
   );

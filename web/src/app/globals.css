@@ -38,3 +38,30 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Puerto exacto de app/componentes/nav_bottom.php:128-140 — brillo nativo del botón
+   Publicar del BottomNav + supresión del highlight táctil default del navegador móvil. */
+.nav-native-feel * {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@keyframes shine-move {
+  0% {
+    left: -100%;
+  }
+  20% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+.animate-shine {
+  animation: shine-move 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-shine {
+    animation: none;
+  }
+}
