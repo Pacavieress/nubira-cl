@@ -896,6 +896,23 @@ export async function getMisFavoritos(): Promise<ServicioListado[] | null> {
   return body.data;
 }
 
+// Refleja VistoRecienteItem (server/src/modules/vistosRecientes/vistosRecientes.types.ts)
+// — unión discriminada porque, a diferencia de todo lo demás en este archivo, "Sigue
+// donde lo dejaste" mezcla servicios y apuntes en una sola lista, ordenada por la vista
+// más reciente del usuario (puerto de app/cargar_vistos.php).
+export type VistoRecienteItem =
+  | { tipo: "servicio"; servicio: ServicioListado }
+  | { tipo: "apunte"; apunte: ApunteListado };
+
+// Mismo patrón que getMisFavoritos(): null sin cookie (visitante anónimo, el caso común
+// en web/), sin pagar el roundtrip a server/ para ese caso.
+export async function getVistosRecientes(): Promise<VistoRecienteItem[] | null> {
+  const res = await fetchConSesion("/api/me/vistos-recientes");
+  if (!res || !res.ok) return null;
+  const body = (await res.json()) as { data: VistoRecienteItem[] };
+  return body.data;
+}
+
 export async function getDesafioMaterias(): Promise<DesafioMateria[]> {
   const res = await fetchConSesion("/api/desafio/materias");
   if (!res || !res.ok) return [];

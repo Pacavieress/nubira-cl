@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { getHome } from "@/lib/api";
 import { ApunteCardCarrusel } from "@/components/ApunteCardCarrusel";
 import { Carrusel } from "@/components/Carrusel";
 import { Header } from "@/components/Header";
 import { ServicioCardCarrusel } from "@/components/ServicioCardCarrusel";
+import { SigueDondeLoDejaste, SigueDondeLoDejasteSkeleton } from "@/components/SigueDondeLoDejaste";
 
 // Puerto de app/vitrina.php — SOLO las secciones realmente activas en producción. Ver
 // server/src/modules/home/home.types.ts para el detalle completo de qué se excluyó y
@@ -40,6 +42,10 @@ export default async function Home() {
             Tutores, apuntes y clases particulares universitarias en Chile
           </h1>
         </div>
+
+        <Suspense fallback={<SigueDondeLoDejasteSkeleton />}>
+          <SigueDondeLoDejaste />
+        </Suspense>
 
         {data.serviciosRecomendados.length > 0 && (
           <Seccion titulo="Tutorías recomendadas" verTodoHref="/servicios" align="end" gap>

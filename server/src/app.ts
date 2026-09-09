@@ -16,6 +16,7 @@ import { adminContratosRouter } from "./modules/adminContratos/adminContratos.ro
 import { adminCuentasRouter } from "./modules/adminCuentas/adminCuentas.routes.js";
 import { adminCuponesRouter } from "./modules/adminCupones/adminCupones.routes.js";
 import { adminDominiosRouter } from "./modules/adminDominios/adminDominios.routes.js";
+import { adminGuiasRouter } from "./modules/adminGuias/adminGuias.routes.js";
 import { adminLoginFallosRouter } from "./modules/adminLoginFallos/adminLoginFallos.routes.js";
 import { adminMarketingCardsRouter } from "./modules/adminMarketingCards/adminMarketingCards.routes.js";
 import { adminOfertasRouter } from "./modules/adminOfertas/adminOfertas.routes.js";
@@ -58,6 +59,7 @@ import { landingsRouter } from "./modules/landings/landings.routes.js";
 import { serviciosRouter } from "./modules/servicios/servicios.routes.js";
 import { tutoresRouter } from "./modules/tutores/tutores.routes.js";
 import { vistasDetalleRouter } from "./modules/vistasDetalle/vistasDetalle.routes.js";
+import { vistosRecientesRouter } from "./modules/vistosRecientes/vistosRecientes.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -86,6 +88,7 @@ export function createApp(): Express {
   app.use("/api/busqueda", busquedaRouter);
   app.use("/api/tutores", tutoresRouter);
   app.use("/api/me/favoritos", favoritosRouter);
+  app.use("/api/me/vistos-recientes", vistosRecientesRouter);
   app.use("/api/me/compras", comprasRouter);
   app.use("/api/me/evaluaciones", evaluacionesRouter);
   app.use("/api/me/ventas-clases", ventasClasesRouter);
@@ -104,6 +107,7 @@ export function createApp(): Express {
   app.use("/api/me/soporte", soporteRouter);
   app.use("/api/me/perfil", perfilRouter);
   app.use("/api/admin/dominios", adminDominiosRouter);
+  app.use("/api/admin/guias", adminGuiasRouter);
   app.use("/api/admin/config-precios", adminConfigPreciosRouter);
   app.use("/api/admin/recordatorios", adminRecordatoriosRouter);
   app.use("/api/admin/cuentas", adminCuentasRouter);

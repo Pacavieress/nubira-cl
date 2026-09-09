@@ -19,9 +19,15 @@ function overlayCategoria(categoria: string): { prefijo: string; nombre: string 
 export function ServicioCardCarrusel({
   servicio,
   ancho = "lg",
+  etiquetaTipo,
 }: {
   servicio: ServicioListado;
   ancho?: "lg" | "sm";
+  // Puerto del $tag ("CLASES"/"APUNTE") de app/cargar_vistos.php — solo "Sigue donde lo
+  // dejaste" lo pasa, porque es la única sección que mezcla servicios y apuntes en una
+  // misma lista y necesita distinguirlos. Sin este prop (todos los demás carruseles), la
+  // esquina sigue mostrando la institución del tutor, sin ningún cambio de comportamiento.
+  etiquetaTipo?: string;
 }) {
   const { prefijo, nombre: nombreCategoriaOverlay } = overlayCategoria(servicio.categoria);
   const tutorNombreAbrev = abreviarNombre(servicio.tutor.nombre);
@@ -94,7 +100,11 @@ export function ServicioCardCarrusel({
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
-            {servicio.tutor.institucion && <span className="truncate">{servicio.tutor.institucion}</span>}
+            {etiquetaTipo ? (
+              <span className="truncate">{etiquetaTipo}</span>
+            ) : (
+              servicio.tutor.institucion && <span className="truncate">{servicio.tutor.institucion}</span>
+            )}
           </div>
           <div className="shrink-0 flex items-center gap-1">
             <RatingPillCarrusel promedio={servicio.rating.promedio} votos={servicio.rating.votos} />

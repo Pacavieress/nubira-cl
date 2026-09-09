@@ -7,7 +7,16 @@ import { abreviarConteo, formatoCLP } from "@/lib/formato";
 // vs aspect-[3/2], sin ícono de institución, "¡Gratis!" en gris no celeste, SIN badge de
 // "Nuevo" — vitrina.php calcula $es_nuevo_ap pero nunca lo usa en el render, confirmado
 // con grep: es código muerto en el PHP real, así que tampoco se porta acá).
-export function ApunteCardCarrusel({ apunte }: { apunte: ApunteListado }) {
+// etiquetaTipo — puerto del $tag ("CLASES"/"APUNTE") de app/cargar_vistos.php, mismo
+// criterio que ServicioCardCarrusel.tsx: solo lo pasa "Sigue donde lo dejaste". Sin el
+// prop, esta card se comporta exactamente igual que hoy en /apuntes y el resto de home.
+export function ApunteCardCarrusel({
+  apunte,
+  etiquetaTipo,
+}: {
+  apunte: ApunteListado;
+  etiquetaTipo?: string;
+}) {
   return (
     <a
       href={apunte.url}
@@ -43,7 +52,11 @@ export function ApunteCardCarrusel({ apunte }: { apunte: ApunteListado }) {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-normal tracking-[0.01em] text-gray-500 uppercase truncate max-w-[65%]">
-            {apunte.institucion && <span className="truncate">{apunte.institucion}</span>}
+            {etiquetaTipo ? (
+              <span className="truncate">{etiquetaTipo}</span>
+            ) : (
+              apunte.institucion && <span className="truncate">{apunte.institucion}</span>
+            )}
           </div>
           {apunte.ventasTotales > 0 && (
             <div className="shrink-0 flex items-center">
