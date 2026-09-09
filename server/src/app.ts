@@ -16,7 +16,6 @@ import { adminContratosRouter } from "./modules/adminContratos/adminContratos.ro
 import { adminCuentasRouter } from "./modules/adminCuentas/adminCuentas.routes.js";
 import { adminCuponesRouter } from "./modules/adminCupones/adminCupones.routes.js";
 import { adminDominiosRouter } from "./modules/adminDominios/adminDominios.routes.js";
-import { adminGuiasRouter } from "./modules/adminGuias/adminGuias.routes.js";
 import { adminLoginFallosRouter } from "./modules/adminLoginFallos/adminLoginFallos.routes.js";
 import { adminMarketingCardsRouter } from "./modules/adminMarketingCards/adminMarketingCards.routes.js";
 import { adminOfertasRouter } from "./modules/adminOfertas/adminOfertas.routes.js";
@@ -107,7 +106,6 @@ export function createApp(): Express {
   app.use("/api/me/soporte", soporteRouter);
   app.use("/api/me/perfil", perfilRouter);
   app.use("/api/admin/dominios", adminDominiosRouter);
-  app.use("/api/admin/guias", adminGuiasRouter);
   app.use("/api/admin/config-precios", adminConfigPreciosRouter);
   app.use("/api/admin/recordatorios", adminRecordatoriosRouter);
   app.use("/api/admin/cuentas", adminCuentasRouter);
