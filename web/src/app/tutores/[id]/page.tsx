@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTutorPerfil } from "@/lib/api";
-import { inicial } from "@/lib/texto";
+import { abreviarNombre, inicial } from "@/lib/texto";
 import { Header } from "@/components/Header";
 import { ServicioCard } from "@/components/ServicioCard";
 import { ApunteCard } from "@/components/ApunteCard";
@@ -59,7 +59,7 @@ export default async function PerfilTutor({ params }: PerfilProps) {
       <Header titulo={tutor.nombre ?? "Tutor"} />
       <main className="w-full max-w-[1100px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-16 lg:ml-64 space-y-6">
         {/* Bloque principal — calcado de perfil.php:528-682 (sección de foto/nombre/bio) */}
-        <section className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-10">
+        <section className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-10 relative w-full">
           <div className="flex flex-col gap-6 md:gap-8">
             <div className="flex flex-row gap-3 md:gap-8 items-start w-full">
               <div className="shrink-0 w-[104px] h-[104px] md:w-36 md:h-36 rounded-full border border-gray-200 bg-white overflow-hidden">
@@ -75,7 +75,7 @@ export default async function PerfilTutor({ params }: PerfilProps) {
               <div className="flex-1 min-w-0 w-full pt-1">
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl md:text-3xl font-medium tracking-[-0.01em] text-[#222222] break-words">
-                    {tutor.nombre ?? "Usuario"}
+                    {tutor.nombre ? abreviarNombre(tutor.nombre) : "Usuario"}
                   </h1>
                   {tutor.verificado && (
                     <svg className="w-5 h-5 text-[#54A6D8] shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -87,9 +87,11 @@ export default async function PerfilTutor({ params }: PerfilProps) {
                     </svg>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1.5 uppercase tracking-wider font-medium">
-                  {tutor.subtitulo}
-                </p>
+                {tutor.subtitulo && (
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1.5 uppercase tracking-wider font-medium">
+                    {tutor.subtitulo}
+                  </p>
+                )}
 
                 {tutor.tiempoRespuesta && (
                   <div className="mt-4">
@@ -132,16 +134,17 @@ export default async function PerfilTutor({ params }: PerfilProps) {
             )}
 
             {/* Reseñas/rating — calcado de perfil.php:614-624, solo con las cifras "limpias"
-                de valoraciones (ver nota de alcance arriba) */}
-            <div className="flex items-center gap-6">
+                de valoraciones (ver nota de alcance arriba). Posición/tamaño: flex normal
+                en mobile, absolute top-10 right-10 (alineado con el nombre) desde lg+. */}
+            <div className="flex flex-row justify-start lg:justify-end items-center divide-x divide-gray-200 md:divide-none mt-1 lg:mt-0 lg:absolute lg:top-10 lg:right-10">
               <div>
                 <p className="text-[10px] uppercase font-semibold text-gray-400 mb-0.5 tracking-wider">Reseñas</p>
-                <p className="text-lg font-bold tracking-tight text-gray-900">{tutor.rating.votos}</p>
+                <p className="text-xl md:text-lg font-bold tracking-tight text-gray-900">{tutor.rating.votos}</p>
               </div>
-              <div className="border-l border-gray-100 pl-6">
+              <div className="pl-6">
                 <p className="text-[10px] uppercase font-semibold text-gray-400 mb-0.5 tracking-wider">Rating</p>
-                <p className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1">
-                  {tutor.rating.promedio !== null ? tutor.rating.promedio.toFixed(1) : "—"}
+                <p className="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1">
+                  {tutor.rating.promedio !== null ? tutor.rating.promedio.toFixed(1) : "0.0"}
                   <svg className="w-4 h-4 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>

@@ -10,6 +10,7 @@ import {
   actualizarBioAlumno,
   actualizarScoreServicio,
   contarApuntesAprobadosParaScore,
+  contarResenasComoAlumno,
   contarResenasVendedorParaScore,
   esFotoValida,
   getServiciosPropiosResumen,
@@ -39,6 +40,7 @@ export async function getMiPerfil(req: Request, res: Response): Promise<void> {
     { vistasPerfil, maxScore },
     resenasVendedorParaScore,
     haCompradoAlgo,
+    resenasComoAlumnoTotal,
   ] = await Promise.all([
     getTutorById(usuarioId),
     getResenasPorRol(usuarioId, "vendedor"),
@@ -51,6 +53,7 @@ export async function getMiPerfil(req: Request, res: Response): Promise<void> {
     getVistasYMaxScore(usuarioId),
     contarResenasVendedorParaScore(usuarioId),
     existeAlgunaCompraDeApunte(usuarioId),
+    contarResenasComoAlumno(usuarioId),
   ]);
 
   if (!tutor) {
@@ -71,6 +74,7 @@ export async function getMiPerfil(req: Request, res: Response): Promise<void> {
     maxScore,
     resenasVendedorParaScore,
     haCompradoAlgo,
+    resenasComoAlumnoTotal,
   );
 
   res.status(200).json(perfil);

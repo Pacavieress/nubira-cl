@@ -337,6 +337,11 @@ export interface PerfilPropio extends TutorPerfil {
   completitud: CompletitudPerfil;
   gamificacion: GamificacionPerfil;
   accesos: AccesoPanel[];
+  // Puerto de perfil.php:617 — reseñas recibidas como tutor + como alumno, ambos COUNT(*)
+  // reales (ver server/src/modules/perfil/perfil.mapper.ts). Distinto de rating.votos
+  // (solo tutor), que sigue siendo el número correcto para el título de la sección
+  // "Reseñas como tutor" — no reemplazarlo ahí.
+  resenasRecibidasTotal: number;
 }
 
 export async function getMiPerfil(): Promise<PerfilPropio | null> {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { GamificacionPerfil, PerfilPropio } from "@/lib/api";
-import { inicial } from "@/lib/texto";
+import { abreviarNombre, inicial } from "@/lib/texto";
 
 function IconoSparkles() {
   return (
@@ -12,6 +12,18 @@ function IconoSparkles() {
         strokeLinejoin="round"
         d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
       />
+    </svg>
+  );
+}
+// Mismo SVG que Footer.tsx (única fuente reusable hoy — no hay un componente
+// IconoInstagram compartido en web/, este mismo path/rect/circle ya está duplicado en
+// varios archivos de "compartir"; se copia acá tal cual en vez de inventar un path nuevo).
+function IconoInstagram() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
+      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
     </svg>
   );
 }
@@ -115,27 +127,43 @@ export function PerfilPropioCard({ perfil, phpSiteUrl }: { perfil: PerfilPropio;
         </div>
       )}
 
-      <section className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-10">
+      <section className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-10 relative w-full">
         <div className="flex flex-col gap-6 md:gap-8">
           <div className="flex flex-row gap-3 md:gap-8 items-start w-full">
-            <div className="shrink-0 w-[104px] h-[104px] md:w-36 md:h-36 rounded-full border border-gray-200 bg-white overflow-hidden">
-              {perfil.fotoUrl.startsWith("https://ui-avatars.com") ? (
-                <div className="w-full h-full flex items-center justify-center bg-blue-50 text-[#54A6D8] font-bold text-3xl">
-                  {inicial(perfil.nombre)}
-                </div>
-              ) : (
-                /* eslint-disable-next-line @next/next/no-img-element -- foto de usuario dinámica */
-                <img src={perfil.fotoUrl} alt={perfil.nombre ?? "Tú"} className="w-full h-full object-cover" />
-              )}
+            <div className="shrink-0 relative w-[104px] h-[104px] md:w-36 md:h-36">
+              <div className="w-full h-full rounded-full border border-gray-200 bg-white overflow-hidden">
+                {perfil.fotoUrl.startsWith("https://ui-avatars.com") ? (
+                  <div className="w-full h-full flex items-center justify-center bg-blue-50 text-[#54A6D8] font-bold text-3xl">
+                    {inicial(perfil.nombre)}
+                  </div>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element -- foto de usuario dinámica */
+                  <img src={perfil.fotoUrl} alt={perfil.nombre ?? "Tú"} className="w-full h-full object-cover" />
+                )}
+              </div>
+              {/* Puerto de perfil.php:545-547 — badge en la esquina del wrapper CUADRADO (no
+                  del círculo inscrito), mismo patrón que un badge de estado de Discord/WhatsApp:
+                  no tapa la foto (queda en la esquina, fuera del área facial) aunque
+                  geométricamente roce el borde exterior del círculo. */}
+              <a
+                href="https://instagram.com/nubira.cl"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Síguenos en Instagram"
+                className="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md hover:scale-110 transition-transform text-pink-600 z-10"
+              >
+                <IconoInstagram />
+              </a>
             </div>
 
             <div className="flex-1 min-w-0 w-full pt-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl md:text-3xl font-medium tracking-[-0.01em] text-[#222222] break-words">
-                  {perfil.nombre ?? "Usuario"}
+                  {perfil.nombre ? abreviarNombre(perfil.nombre) : "Usuario"}
                 </h1>
                 {perfil.verificado && (
                   <svg className="w-5 h-5 text-[#54A6D8] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <title>Alumno Verificado</title>
                     <path
                       fillRule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -144,11 +172,16 @@ export function PerfilPropioCard({ perfil, phpSiteUrl }: { perfil: PerfilPropio;
                   </svg>
                 )}
               </div>
-              <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1.5 uppercase tracking-wider font-medium">{perfil.subtitulo}</p>
+              {perfil.subtitulo && (
+                <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1.5 uppercase tracking-wider font-medium">{perfil.subtitulo}</p>
+              )}
 
               {perfil.tiempoRespuesta && (
                 <div className="mt-4">
-                  <p className="text-[11px] md:text-xs text-gray-600 font-medium inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 w-fit">
+                  <p
+                    className="text-[11px] md:text-xs text-gray-600 font-medium inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 w-fit"
+                    title={perfil.tiempoRespuesta.tono === "gris" ? "Tutor nuevo, aún sin métricas de respuesta" : "Tiempo promedio de respuesta"}
+                  >
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -168,21 +201,21 @@ export function PerfilPropioCard({ perfil, phpSiteUrl }: { perfil: PerfilPropio;
           <div className="w-full h-px bg-gray-100" />
 
           {(perfil.statsAcademicas.universidad || (perfil.statsAcademicas.anioEgreso && perfil.statsAcademicas.anioEgreso > 1970) || (perfil.statsAcademicas.aniosExperiencia && perfil.statsAcademicas.aniosExperiencia > 0)) && (
-            <div className="flex flex-wrap gap-x-8 gap-y-3 border-b border-gray-100 pb-4">
+            <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:gap-x-8 md:gap-y-3 border-b border-gray-100 pb-4">
               {perfil.statsAcademicas.universidad && (
-                <div>
+                <div className="text-center md:text-left">
                   <div className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider mb-0.5">Institución</div>
                   <div className="text-base font-bold tracking-tight text-gray-900">{perfil.statsAcademicas.universidad}</div>
                 </div>
               )}
               {perfil.statsAcademicas.anioEgreso && perfil.statsAcademicas.anioEgreso > 1970 && (
-                <div>
+                <div className="text-center md:text-left">
                   <div className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider mb-0.5">Año de egreso</div>
                   <div className="text-base font-bold tracking-tight text-gray-900">{perfil.statsAcademicas.anioEgreso}</div>
                 </div>
               )}
               {perfil.statsAcademicas.aniosExperiencia && perfil.statsAcademicas.aniosExperiencia > 0 && (
-                <div>
+                <div className="text-center md:text-left">
                   <div className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider mb-0.5">Experiencia</div>
                   <div className="text-base font-bold tracking-tight text-gray-900">{perfil.statsAcademicas.aniosExperiencia} años</div>
                 </div>
@@ -190,24 +223,26 @@ export function PerfilPropioCard({ perfil, phpSiteUrl }: { perfil: PerfilPropio;
             </div>
           )}
 
-          {/* Reseñas/rating/visitas — visitas es dato propio, no aparece en /tutores/[id] */}
-          <div className="flex items-center gap-6">
+          {/* Reseñas/rating/visitas — visitas es dato propio, no aparece en /tutores/[id].
+              Puerto exacto de perfil.php:614 — posición/tamaño: flex normal en mobile,
+              absolute top-10 right-10 (alineado con el nombre) desde lg+. */}
+          <div className="flex flex-row justify-start lg:justify-end items-center divide-x divide-gray-200 md:divide-none mt-1 lg:mt-0 lg:absolute lg:top-10 lg:right-10">
             <div>
               <p className="text-[10px] uppercase font-semibold text-gray-400 mb-0.5 tracking-wider">Reseñas</p>
-              <p className="text-lg font-bold tracking-tight text-gray-900">{perfil.rating.votos}</p>
+              <p className="text-xl md:text-lg font-bold tracking-tight text-gray-900">{perfil.resenasRecibidasTotal}</p>
             </div>
-            <div className="border-l border-gray-100 pl-6">
+            <div className="pl-6">
               <p className="text-[10px] uppercase font-semibold text-gray-400 mb-0.5 tracking-wider">Rating</p>
-              <p className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1">
-                {perfil.rating.promedio !== null ? perfil.rating.promedio.toFixed(1) : "—"}
+              <p className="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1">
+                {perfil.rating.promedio !== null ? perfil.rating.promedio.toFixed(1) : "0.0"}
                 <svg className="w-4 h-4 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               </p>
             </div>
-            <div className="border-l border-gray-100 pl-6">
+            <div className="pl-6">
               <p className="text-[10px] uppercase font-semibold text-gray-400 mb-0.5 tracking-wider">Visitas</p>
-              <p className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1.5">
+              <p className="text-xl md:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-1.5">
                 {perfil.vistasPerfil}
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -297,6 +332,31 @@ const TIER_COLOR: Record<GamificacionPerfil["tier"], string> = {
   leyenda: "bg-gradient-to-r from-slate-950 to-slate-900 text-amber-400 border-amber-500/30",
 };
 
+// Puerto de perfil.php:709 (icon($tier_icon)) — 'user' outline para básico, 'star-solid'
+// para el resto. Mismos paths que icon('user')/icon('star-solid') en app/iconos.php.
+function IconoTier({ tier }: { tier: GamificacionPerfil["tier"] }) {
+  if (tier === "basico") {
+    return (
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+      />
+    </svg>
+  );
+}
+
 // Puerto de perfil.php:684-746 ("Tu Nivel de Tutor") — solo se muestra si maxScore > 0
 // (mismo gate que el PHP real). Simplificado: siempre expandido, sin el toggle
 // mostrar/ocultar misiones del original (interacción menor, no aporta al alcance de esta
@@ -320,7 +380,10 @@ function GamificacionWidget({ gamificacion }: { gamificacion: GamificacionPerfil
           <h2 className="text-sm md:text-base font-bold text-gray-900">Tu Nivel de Tutor</h2>
           <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Sube de nivel completando misiones para destacar en búsquedas.</p>
         </div>
-        <span className={`${TIER_COLOR[gamificacion.tier]} text-[10px] md:text-xs font-extrabold uppercase tracking-wider px-3 md:px-4 py-1.5 md:py-2 rounded-full border shadow-sm shrink-0`}>
+        <span
+          className={`${TIER_COLOR[gamificacion.tier]} text-[10px] md:text-xs font-extrabold uppercase tracking-wider px-3 md:px-4 py-1.5 md:py-2 rounded-full border shadow-sm shrink-0 flex items-center gap-1.5`}
+        >
+          <IconoTier tier={gamificacion.tier} />
           {TIER_LABEL[gamificacion.tier]}
         </span>
       </div>

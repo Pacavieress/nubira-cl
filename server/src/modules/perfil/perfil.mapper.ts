@@ -199,6 +199,7 @@ export function mapPerfilPropio(
   maxScore: number,
   resenasVendedorParaScore: number,
   haCompradoAlgo: boolean,
+  resenasComoAlumnoTotal: number,
 ): PerfilPropio {
   const base = mapTutorRow(tutorRow, servicios, apuntes, resenasComoTutor, resenasComoAlumno, minutosRespuesta);
 
@@ -233,5 +234,8 @@ export function mapPerfilPropio(
     completitud,
     gamificacion,
     accesos: construirAccesos(esCreador, haCompradoAlgo),
+    // Puerto de perfil.php:617 — tutorRow.total_votos es el COUNT(*) real del lado
+    // vendedor (tutores.repository.ts), no un array capado.
+    resenasRecibidasTotal: tutorRow.total_votos + resenasComoAlumnoTotal,
   };
 }

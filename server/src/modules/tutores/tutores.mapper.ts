@@ -21,7 +21,7 @@ export function computeSubtitulo(tipo: string | null, institucion: string | null
   if (tipo === "egresado") return inst ? `Egresado · ${inst}` : "Egresado";
   if (tipo === "profesor") return "Profesor";
   if (tipo === "particular") return "Tutor Particular";
-  return inst || "Particular";
+  return inst;
 }
 
 // Puerto exacto de perfil.php:316-324 — a diferencia de formatearTiempoRespuesta() a secas

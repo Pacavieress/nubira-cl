@@ -102,3 +102,18 @@ export async function getTodosServiciosPropiosParaScore(alumnoId: number): Promi
 export async function actualizarScoreServicio(servicioId: number, score: number): Promise<void> {
   await pool.query("UPDATE servicios SET score_nubira = ? WHERE id = ?", [score, servicioId]);
 }
+
+// Puerto del conteo real de reseñas recibidas como alumno (rol_evaluado='comprador') —
+// mismo filtro `calificacion > 0` que ya usa total_votos (tutores.repository.ts) para el
+// lado vendedor, para que ambos números sean comparables al sumarse en
+// mapPerfilPropio (resenasRecibidasTotal). A diferencia de getResenasPorRol()
+// (tutores.repository.ts, LIMIT 20, pensado para pintar cards de reseña), este es un
+// COUNT(*) sin límite — evita subcontar para cualquier usuario con más de 20 reseñas
+// como alumno.
+export async function contarResenasComoAlumno(alumnoId: number): Promise<number> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    "SELECT COUNT(*) AS total FROM valoraciones WHERE id_evaluado = ? AND rol_evaluado = 'comprador' AND calificacion > 0",
+    [alumnoId],
+  );
+  return Number((rows[0] as { total: number } | undefined)?.total ?? 0);
+}

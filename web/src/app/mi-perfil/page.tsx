@@ -54,14 +54,25 @@ export default async function MiPerfilPage() {
   return (
     <>
       <Header titulo="Mi Perfil" />
-      {/* lg:pl-64 en vez de lg:ml-64: bajo <body class="flex flex-col"> (web/src/app/layout.tsx),
-          un margin-left fijo no se resta del ancho estirado del hijo (align-items:stretch),
-          así que el elemento se estira a los 1440px completos del contenedor y el margen lo
-          empuja fuera del viewport — mismo bug ya encontrado y corregido en
-          servicios/[id]/page.tsx y en apuntes/busqueda/servicios/guias (ver ese archivo para
-          el diagnóstico completo). Confirmado con scrollWidth vía CDP: 241px de overflow
-          real con lg:ml-64 en esta página también, antes de este fix. */}
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-16 lg:pl-64">
+      {/* [09/09/2026→10/09/2026] Pasó por 2 fixes de ancho, no solo uno:
+          1) lg:ml-64 → lg:pl-64: bajo <body class="flex flex-col"> (web/src/app/layout.tsx),
+             un `width:100%` (w-full) literal + margin-left fijo se SUMAN en vez de que el
+             margin se reste del ancho — 241px de overflow real medido con scrollWidth vía
+             CDP. padding sí se absorbe dentro del border-box, por eso se cambió a pl-64.
+          2) lg:pl-64 → lg:w-[calc(100%-16rem)] lg:ml-64 (fix actual): pl-64 evitaba el
+             overflow, pero al vivir en la MISMA caja que max-w-[1600px] mx-auto, el padding
+             se resta DESDE ADENTRO del máximo (1600-256=1312px de contenido real), mientras
+             que el PHP real (perfil.php:498, `lg:ml-64 ... max-w-[1600px] mx-auto`) reserva
+             esos 256px AFUERA del máximo — porque ahí `ml-64` le gana a `mx-auto` en la
+             cascada de Tailwind (mismo margin-left, `ml-64` queda después en el CSS
+             compilado), dejando el `mx-auto` original solo con su margin-right activo.
+             Medido con Playwright contra ambas páginas reales (viewport 1920px): PHP
+             x=256/width=1600/contenido≈1536px vs. Next.js con pl-64 x=160/width=1600/
+             contenido≈1312px — 224px más angosto. La fórmula nueva reproduce el cálculo del
+             PHP directamente (width ya excluye el margin antes de aplicarse, así que
+             margin+width nunca suman más del 100% — no reintroduce el overflow del punto 1),
+             en vez de depender de que ml-64 le gane a mx-auto por casualidad como en PHP. */}
+      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-16 lg:w-[calc(100%-16rem)] lg:ml-64">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-6 md:gap-8 items-start">
           <div className="space-y-6 min-w-0">
             <PerfilPropioCard perfil={perfil} phpSiteUrl={phpSiteUrl} />
@@ -70,7 +81,10 @@ export default async function MiPerfilPage() {
                 el <aside> sticky de la derecha (ver más abajo). Mismo patrón de doble
                 render por breakpoint que panel_gestion.php, documentado como deliberado. */}
             {perfil.accesos.length > 0 && (
-              <section className="xl:hidden">
+              <section className="xl:hidden bg-white rounded-3xl border border-gray-200 px-4 py-6 md:p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Panel de Control</h2>
+                </div>
                 <PanelGestion accesos={perfil.accesos} esAdmin={sesion.esAdmin} phpSiteUrl={phpSiteUrl} />
               </section>
             )}
@@ -127,7 +141,10 @@ export default async function MiPerfilPage() {
           {/* Puerto de perfil.php:1093-1104 (<aside class="hidden xl:block">). */}
           {perfil.accesos.length > 0 && (
             <aside className="hidden xl:block">
-              <div className="sticky top-24">
+              <div className="sticky top-24 bg-white rounded-3xl border border-gray-200 p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Panel de Gestión</h2>
+                </div>
                 <PanelGestion accesos={perfil.accesos} esAdmin={sesion.esAdmin} phpSiteUrl={phpSiteUrl} />
               </div>
             </aside>

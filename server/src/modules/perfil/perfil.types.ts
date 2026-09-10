@@ -54,6 +54,12 @@ export interface PerfilPropio extends TutorPublico {
   completitud: CompletitudPerfil;
   gamificacion: GamificacionPerfil;
   accesos: AccesoPanel[];
+  // Puerto de perfil.php:617 ($total_v_qty + $total_a) — reseñas recibidas como tutor
+  // (COUNT(*) real, sin la mezcla con alumnos.cantidad_votos legado que sí hace el PHP,
+  // ver Decisión D en tutores.repository.ts) MÁS reseñas recibidas como alumno (COUNT(*)
+  // real, ver contarResenasComoAlumno en perfil.repository.ts — NO el .length de
+  // resenasComoAlumno, que viene capado a 20 filas).
+  resenasRecibidasTotal: number;
 }
 
 export interface ActualizarBioExito {
