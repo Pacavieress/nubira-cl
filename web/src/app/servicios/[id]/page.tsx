@@ -15,6 +15,7 @@ import { ServicioCardCarrusel } from "@/components/ServicioCardCarrusel";
 import { TiempoRespuestaPill } from "@/components/TiempoRespuestaPill";
 import { VideoTutorPlayer } from "@/components/VideoTutorPlayer";
 import { VistaTracker } from "@/components/VistaTracker";
+import { VolverButton } from "@/components/VolverButton";
 
 interface DetalleProps {
   params: Promise<{ id: string }>;
@@ -240,11 +241,16 @@ export default async function DetalleServicio({ params }: DetalleProps) {
           <div className="lg:col-span-8 space-y-8">
             {/* Card 1: info principal — título, tutor, descripción, video, disponibilidad. */}
             <div className="bg-white border border-[#f0f0f0] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="flex items-start justify-between gap-3">
+              {/* Puerto de detalle_servicio.php:489-499 — 3 items bajo justify-between
+                  (Volver | categoría | Compartir), igual que el PHP. VolverButton ya trae
+                  su propio `lg:hidden`, así que en desktop la fila vuelve a los 2 items
+                  actuales (categoría + Compartir) sin cambios. */}
+              <div className="flex items-center justify-between gap-3">
+                <VolverButton fallbackHref="/explorar" />
                 <span className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-[#f0f0f0] uppercase tracking-wide">
                   {servicio.categoria}
                 </span>
-                <div className="flex items-center gap-2 ml-auto">
+                <div className="flex items-center gap-2">
                   <CompartirServicioBoton servicioId={servicio.id} titulo={servicio.titulo} />
                   {isAuthenticated && <FavoritoToggle servicioId={servicio.id} favoritoInicial={servicio.viewer.esFavorito} />}
                 </div>
@@ -273,19 +279,21 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                       </svg>
                     )}
                   </div>
-                  {servicio.tutor.institucion && (
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
-                        />
-                      </svg>
-                      <p className="text-xs text-gray-500 font-normal tracking-[0.01em]">{servicio.tutor.institucion}</p>
-                    </div>
-                  )}
+                  {/* Puerto de detalle_servicio.php:526-529 (institucion_tutor($inst, false)):
+                      la fila SIEMPRE se muestra, con fallback "Particular" (sin abreviar,
+                      a diferencia de institucionTutor() en lib/texto.ts que sí abrevia —
+                      el PHP llama esta función acá con $abreviar=false). */}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+                      />
+                    </svg>
+                    <p className="text-xs text-gray-500 font-normal tracking-[0.01em]">{servicio.tutor.institucion || "Particular"}</p>
+                  </div>
                   <div className="mt-1.5">
                     <TiempoRespuestaPill tono={servicio.tiempoRespuesta.tono} texto={servicio.tiempoRespuesta.texto} ratingPromedio={servicio.rating.promedio} votos={servicio.rating.votos} />
                   </div>
@@ -360,7 +368,7 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                   </div>
                   <div className="mb-4 flex items-center gap-2">
                     <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                       <span className="text-[11px] font-medium text-emerald-700">
                         Disponible {disponibilidad.dias.length} día{disponibilidad.dias.length > 1 ? "s" : ""} a la semana
                       </span>
@@ -416,28 +424,33 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                 {servicio.rating.votos > 0 && <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{servicio.rating.votos}</span>}
               </h3>
               {servicio.valoraciones.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                // Puerto de detalle_servicio.php:816-848 — carrusel horizontal con
+                // scroll-snap (no el <Carrusel> con flechas usado para recomendados: el PHP
+                // acá es scroll táctil puro, sin botones).
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar">
                   {servicio.valoraciones.map((v) => (
-                    <div key={v.id} className="bg-gray-50 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 rounded-xl">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-white border border-[#f0f0f0] overflow-hidden">
-                          {v.evaluador.fotoUrl.startsWith("https://ui-avatars.com") ? (
-                            <div className="w-full h-full flex items-center justify-center text-[#54A6D8] bg-blue-50 font-bold text-xs">{inicial(v.evaluador.nombre)}</div>
-                          ) : (
-                            <img src={v.evaluador.fotoUrl} alt={v.evaluador.nombre ?? "Usuario"} className="w-full h-full object-cover" />
-                          )}
+                    <div key={v.id} className="min-w-[85%] md:min-w-[45%] snap-start">
+                      <div className="bg-gray-50 border border-[#f0f0f0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 rounded-xl h-full flex flex-col">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-white border border-[#f0f0f0] overflow-hidden">
+                            {v.evaluador.fotoUrl.startsWith("https://ui-avatars.com") ? (
+                              <div className="w-full h-full flex items-center justify-center text-[#54A6D8] bg-blue-50 font-bold text-xs">{inicial(v.evaluador.nombre)}</div>
+                            ) : (
+                              <img src={v.evaluador.fotoUrl} alt={v.evaluador.nombre ?? "Usuario"} className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium tracking-[-0.01em] text-xs text-[#222222]">{abreviarNombre(v.evaluador.nombre)}</p>
+                            <p className="text-[10px] text-gray-400 font-normal">{new Date(v.fecha).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium tracking-[-0.01em] text-xs text-[#222222]">{abreviarNombre(v.evaluador.nombre)}</p>
-                          <p className="text-[10px] text-gray-400 font-normal">{new Date(v.fecha).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                        <div className="flex text-yellow-400 text-[10px] mb-2">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <span key={i}>{i < v.calificacion ? "★" : "☆"}</span>
+                          ))}
                         </div>
+                        {v.comentario && <p className="text-gray-600 text-xs font-normal leading-relaxed">{v.comentario}</p>}
                       </div>
-                      <div className="flex text-yellow-400 text-[10px] mb-2">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <span key={i}>{i < v.calificacion ? "★" : "☆"}</span>
-                        ))}
-                      </div>
-                      {v.comentario && <p className="text-gray-600 text-xs font-normal leading-relaxed">{v.comentario}</p>}
                     </div>
                   ))}
                 </div>

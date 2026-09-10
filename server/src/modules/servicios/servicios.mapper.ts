@@ -121,7 +121,9 @@ export function mapServicioDetalleRow(
     ...base,
     tutor: {
       ...base.tutor,
-      verificado: row.verificacion_estado === "aprobado",
+      // Puerto exacto de detalle_servicio.php:524: aprobado, O sin revisar pero con
+      // institución real (fallback histórico previo al sello por dominio institucional).
+      verificado: row.verificacion_estado === "aprobado" || (row.verificacion_estado === null && !!row.institucion_maestra),
     },
     descripcion: row.descripcion,
     ubicacion: row.ubicacion,
