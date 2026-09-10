@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServicioDetalle } from "@/lib/api";
@@ -17,6 +18,91 @@ import { VistaTracker } from "@/components/VistaTracker";
 
 interface DetalleProps {
   params: Promise<{ id: string }>;
+}
+
+// Corte directo con marcador (mb_strimwidth-like): el total devuelto, marcador incluido,
+// nunca supera max. Mismo comportamiento que la función local `truncar` de
+// guias/[cat]/[slug]/page.tsx (marcador "..." por defecto, usada para el <title>), extendida
+// acá con marcador configurable para poder reusarla también en la descripción del JSON-LD
+// (detalle_servicio.php:393, mb_strimwidth con marcador '…' de 1 char).
+function truncar(texto: string, max: number, marcador = "..."): string {
+  return texto.length > max ? `${texto.slice(0, max - marcador.length)}${marcador}` : texto;
+}
+
+// Puerto exacto de $_cortar_en_espacio (detalle_servicio.php:291-296): corte por palabra
+// completa (nunca a mitad de palabra), a diferencia de truncar() que corta directo. Usada
+// solo para la meta description.
+function cortarEnEspacio(texto: string, max: number): string {
+  if (texto.length <= max) return texto;
+  const recorte = texto.slice(0, max).trimEnd();
+  const ultimoEspacio = recorte.lastIndexOf(" ");
+  return ultimoEspacio !== -1 ? recorte.slice(0, ultimoEspacio).trimEnd() : recorte;
+}
+
+// Puerto acotado de strip_tags() — mismo enfoque que guias/[cat]/[slug]/page.tsx:32
+// (`cuerpoHtml.replace(/<[^>]*>/g, "")`), extraído acá porque se usa en 2 lugares.
+function stripTags(html: string): string {
+  return html.replace(/<[^>]*>/g, "");
+}
+
+// Puerto de detalle_servicio.php:275-415 (METADATOS & OG TAGS) — solo la parte de datos
+// públicos/no-mutación. Decisiones confirmadas para este puerto:
+// - Canonical apunta al formato real de ruta de Next (/servicios/{id}), NO al formato
+//   slug-id del PHP (/servicios/{slug}-{id}), que acá 404earía (esta ruta no parsea slugs).
+// - og:image se incluye sin width/height: el pipeline de Next no expone las dimensiones
+//   reales del archivo (a diferencia del PHP, que las calcula con getimagesize() al vuelo);
+//   og:image:type sí se puede fijar en "image/webp" porque el pipeline SIEMPRE genera ese
+//   formato (resolverPortada() en server/src/lib/media.ts, sufijo .webp fijo).
+// - JSON-LD provider.image se incluye SIEMPRE, aunque sea el avatar generado de
+//   ui-avatars.com (servicio.tutor.fotoUrl ya viene resuelto con ese fallback y no hay forma
+//   de distinguir "foto real" de "generada" con los datos que expone hoy ServicioDetalle) —
+//   a diferencia del PHP, que omite `image` del todo si no hay foto_perfil real.
+export async function generateMetadata({ params }: DetalleProps): Promise<Metadata> {
+  const { id } = await params;
+  const servicioId = Number(id);
+  if (!Number.isInteger(servicioId) || servicioId <= 0) return {};
+
+  const servicio = await getServicioDetalle(servicioId);
+  if (!servicio) return {};
+
+  // Puerto de detalle_servicio.php:276-284 (<title>).
+  const institucion = servicio.tutor.institucion || "Chile";
+  const paesSufijoTitulo = servicio.esPaes ? " (PAES)" : "";
+  const seoTituloRaw = `${servicio.titulo}${paesSufijoTitulo} en ${institucion} | Nubira`;
+  const title = truncar(seoTituloRaw, 65);
+
+  // Puerto de detalle_servicio.php:285-309 (meta description).
+  const primerNombreTutor = servicio.tutor.nombre?.trim().split(/\s+/)[0] || "tu tutor";
+  const descripcionPlana = stripTags(servicio.descripcion ?? "");
+  const paesSufijoDesc = servicio.esPaes ? " (Preparación PAES)" : "";
+  const modalidadCap = servicio.modalidad ? servicio.modalidad.charAt(0).toUpperCase() + servicio.modalidad.slice(1) : "";
+  const metaDescBase = `${modalidadCap} de ${servicio.categoria} con ${primerNombreTutor}. ${cortarEnEspacio(descripcionPlana, 100)}. Contrata en Nubira.`;
+  const limiteBase = 155 - paesSufijoDesc.length;
+  const metaDescRaw =
+    (metaDescBase.length > limiteBase ? `${cortarEnEspacio(metaDescBase, limiteBase - 3)}...` : metaDescBase) + paesSufijoDesc;
+
+  // Puerto de detalle_servicio.php:310-312 (canonical) — ver nota de decisión arriba.
+  const canonical = `https://nubira.cl/servicios/${servicio.id}`;
+  const ogImage = servicio.portada.main;
+
+  return {
+    title,
+    description: metaDescRaw,
+    alternates: { canonical },
+    facebook: { appId: "966242223397117" },
+    openGraph: {
+      type: "website",
+      siteName: "Nubira.cl",
+      title: servicio.titulo,
+      description: metaDescRaw,
+      url: canonical,
+      images: [{ url: ogImage, type: "image/webp" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      images: [ogImage],
+    },
+  };
 }
 
 // Puerto de detalle_servicio.php — REHECHO 2026-08-25: la primera pasada de este puerto
@@ -51,8 +137,42 @@ export default async function DetalleServicio({ params }: DetalleProps) {
   // Puerto exacto de detalle_servicio.php:1126-1130.
   const mostrarBarraMovil = !isOwner && !contratoId && servicio.estado === "aprobado";
 
+  // Puerto de detalle_servicio.php:389-413 (JSON-LD @type Course) — ver generateMetadata
+  // arriba para las notas de decisión (provider.image siempre incluido).
+  const courseLd = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: servicio.titulo,
+    description: truncar(stripTags(servicio.descripcion ?? ""), 300, "…"),
+    url: `https://nubira.cl/servicios/${servicio.id}`,
+    provider: {
+      "@type": "Person",
+      name: servicio.tutor.nombre,
+      image: servicio.tutor.fotoUrl,
+    },
+    areaServed: "Chile",
+    offers: {
+      "@type": "Offer",
+      price: Math.trunc(servicio.precio ?? 0),
+      priceCurrency: "CLP",
+      availability: "https://schema.org/InStock",
+    },
+    ...(servicio.rating.votos > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: servicio.rating.promedio,
+            bestRating: 5,
+            worstRating: 1,
+            reviewCount: servicio.rating.votos,
+          },
+        }
+      : {}),
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(courseLd) }} />
       <Header titulo={servicio.titulo} />
       {!isOwner && <VistaTracker publicacionId={servicio.id} />}
       {/* Puerto de detalle_servicio.php:412-420 — "Modo Task" en móvil: esta página oculta el
