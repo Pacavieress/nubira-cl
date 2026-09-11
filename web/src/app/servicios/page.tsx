@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCategorias, getServicios } from "@/lib/api";
+import { GrillaServiciosInfinita } from "@/components/GrillaServiciosInfinita";
 import { Header } from "@/components/Header";
-import { ServicioCard } from "@/components/ServicioCard";
 
 interface ServiciosPageProps {
   searchParams: Promise<{ categoria?: string; q?: string }>;
@@ -26,9 +26,12 @@ export default async function ServiciosPage({ searchParams }: ServiciosPageProps
   // ningún control de "modalidad" en esta página (solo chips de categoría) — el selector
   // de modalidad era una adición sin equivalente en el PHP, encontrada al comparar
   // screenshots contra nubira.local/servicios.
-  const [categoriasChips, { data: servicios }] = await Promise.all([
+  // page:1/limit:12 — primer lote para el scroll infinito (paridad con
+  // clases_servicios.php:124, `['pagina' => 1, 'limit' => 12]`). Los lotes siguientes los
+  // pide GrillaServiciosInfinita.tsx desde el cliente, mismos filtros.
+  const [categoriasChips, { data: servicios, meta }] = await Promise.all([
     getCategorias(),
-    getServicios({ categoria, q }),
+    getServicios({ categoria, q, page: 1, limit: 12 }),
   ]);
   const categoriasValidas = new Set(categoriasChips.map((c) => c.categoria));
   const categoriaFiltro = categoria && categoriasValidas.has(categoria) ? categoria : undefined;
@@ -81,26 +84,14 @@ export default async function ServiciosPage({ searchParams }: ServiciosPageProps
           )}
         </div>
 
-        {servicios.length === 0 ? (
-          // Calcado de app/cargar_servicios.php:166 (estado vacío en la página real).
-          <div className="flex flex-col items-center justify-center text-center py-12 text-gray-400">
-            <svg className="w-10 h-10 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M4 4h16v10.5a2 2 0 01-2 2H6a2 2 0 01-2-2V4zM4 14.5h4l1.5 2h5l1.5-2h4"
-              />
-            </svg>
-            <p className="text-sm">No encontramos servicios con estos filtros.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full">
-            {servicios.map((servicio) => (
-              <ServicioCard key={servicio.id} servicio={servicio} />
-            ))}
-          </div>
-        )}
+        {/* key fuerza un remount (estado limpio) cada vez que cambia el filtro — sin esto
+            GrillaServiciosInfinita conservaría el array acumulado del filtro anterior. */}
+        <GrillaServiciosInfinita
+          key={`${categoria ?? ""}|${q ?? ""}`}
+          itemsIniciales={servicios}
+          hayMasInicial={meta.hayMas}
+          filtros={{ categoria, q }}
+        />
       </main>
     </>
   );

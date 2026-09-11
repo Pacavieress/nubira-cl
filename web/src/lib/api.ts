@@ -30,7 +30,10 @@ export interface ServicioListado {
   ofertaVigente: boolean;
 }
 
-interface ServiciosResponse {
+// Exportado: GrillaServiciosInfinita.tsx (Client Component) lo necesita para tipar la
+// respuesta de /api/servicios que consume vía fetch relativo (no puede importar getServicios,
+// que corre solo en servidor — ver ese componente para el porqué).
+export interface ServiciosResponse {
   data: ServicioListado[];
   meta: { page: number; limit: number; hayMas: boolean };
 }
@@ -39,6 +42,12 @@ export interface ServiciosFiltros {
   categoria?: string;
   modalidad?: string;
   q?: string;
+  // Agregados para el scroll infinito (GrillaServiciosInfinita.tsx) — antes esta función
+  // nunca los necesitaba porque la página solo pedía la primera tanda implícita
+  // (DEFAULT_LIMIT=20 en servicios.controller.ts). page.tsx los pasa explícitos (1, 12)
+  // para el primer lote SSR, en paridad con clases_servicios.php:124.
+  page?: number;
+  limit?: number;
 }
 
 export async function getServicios(filtros: ServiciosFiltros = {}): Promise<ServiciosResponse> {
@@ -46,6 +55,8 @@ export async function getServicios(filtros: ServiciosFiltros = {}): Promise<Serv
   if (filtros.categoria) params.set("categoria", filtros.categoria);
   if (filtros.modalidad) params.set("modalidad", filtros.modalidad);
   if (filtros.q) params.set("q", filtros.q);
+  if (filtros.page) params.set("page", String(filtros.page));
+  if (filtros.limit) params.set("limit", String(filtros.limit));
 
   const qs = params.toString();
   const res = await fetch(`${API_URL}/api/servicios${qs ? `?${qs}` : ""}`, { cache: "no-store" });
@@ -181,7 +192,9 @@ export interface ApunteListado {
   url: string;
 }
 
-interface ApuntesResponse {
+// Exportado: mismo motivo que ServiciosResponse — GrillaApuntesInfinita.tsx (Client
+// Component) lo necesita para tipar el fetch relativo a /api/apuntes.
+export interface ApuntesResponse {
   data: ApunteListado[];
   meta: { page: number; limit: number; hayMas: boolean };
 }
@@ -196,6 +209,10 @@ export interface ApuntesFiltros {
   materia?: string;
   // Chips de categoría de vitrina_apuntes.php — ver SearchApuntesFilters.categoria.
   categoria?: string;
+  // Agregados para el scroll infinito (GrillaApuntesInfinita.tsx) — ver el mismo comentario
+  // en ServiciosFiltros.page/limit.
+  page?: number;
+  limit?: number;
 }
 
 export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesResponse> {
@@ -206,6 +223,8 @@ export async function getApuntes(filtros: ApuntesFiltros = {}): Promise<ApuntesR
   if (filtros.q) params.set("q", filtros.q);
   if (filtros.materia) params.set("materia", filtros.materia);
   if (filtros.categoria) params.set("categoria", filtros.categoria);
+  if (filtros.page) params.set("page", String(filtros.page));
+  if (filtros.limit) params.set("limit", String(filtros.limit));
 
   const qs = params.toString();
   const res = await fetch(`${API_URL}/api/apuntes${qs ? `?${qs}` : ""}`, { cache: "no-store" });

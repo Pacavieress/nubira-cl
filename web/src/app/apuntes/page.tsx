@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getApuntes, getCategoriasApuntes } from "@/lib/api";
-import { ApunteCard } from "@/components/ApunteCard";
+import { GrillaApuntesInfinita } from "@/components/GrillaApuntesInfinita";
 import { Header } from "@/components/Header";
 
 interface ApuntesPageProps {
@@ -26,12 +26,17 @@ export default async function ApuntesPage({ searchParams }: ApuntesPageProps) {
   const categoriasValidas = new Set(categoriasChips.map((c) => c.categoria));
   const categoriaFiltro = categoria && categoriasValidas.has(categoria) ? categoria : undefined;
 
-  const { data: apuntes } = await getApuntes({
+  // page:1/limit:12 — primer lote para el scroll infinito (paridad con vitrina_apuntes.php,
+  // mismo criterio que servicios/page.tsx). Los lotes siguientes los pide
+  // GrillaApuntesInfinita.tsx desde el cliente, mismos filtros.
+  const { data: apuntes, meta } = await getApuntes({
     nivel: nivelFiltro,
     precio: precioFiltro,
     orden,
     q,
     categoria: categoriaFiltro,
+    page: 1,
+    limit: 12,
   });
 
   // H1/subtítulo dinámico — calcado de vitrina_apuntes.php:207-225
@@ -104,26 +109,14 @@ export default async function ApuntesPage({ searchParams }: ApuntesPageProps) {
           )}
         </div>
 
-        {apuntes.length === 0 ? (
-          // Calcado del estado vacío en cargar_apuntes.php:199
-          <div className="flex flex-col items-center justify-center text-center py-12 text-gray-400">
-            <svg className="w-10 h-10 mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            <p className="text-sm">No hay apuntes disponibles.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8 w-full">
-            {apuntes.map((apunte) => (
-              <ApunteCard key={apunte.id} apunte={apunte} />
-            ))}
-          </div>
-        )}
+        {/* key fuerza un remount (estado limpio) cada vez que cambia algún filtro — sin
+            esto GrillaApuntesInfinita conservaría el array acumulado del filtro anterior. */}
+        <GrillaApuntesInfinita
+          key={`${nivelFiltro ?? ""}|${precioFiltro ?? ""}|${orden ?? ""}|${q ?? ""}|${categoriaFiltro ?? ""}`}
+          itemsIniciales={apuntes}
+          hayMasInicial={meta.hayMas}
+          filtros={{ nivel: nivelFiltro, precio: precioFiltro, orden, q, categoria: categoriaFiltro }}
+        />
       </main>
     </>
   );
