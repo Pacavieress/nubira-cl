@@ -38,9 +38,15 @@ export default async function GuiasHubPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <Header titulo="Centro de Recursos" />
-      {/* lg:pl-72 (no lg:pl-64) en vez de lg:ml-64 — overflow horizontal bajo <body flex
-          flex-col>, ver web/src/app/apuntes/page.tsx para el diagnóstico completo. */}
-      <main className="flex flex-col flex-grow w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:pl-72">
+      {/* [11/09/2026] lg:ml-64 (no lg:pl-72+w-full+mx-auto) — alineado con el fix ya aplicado
+          en servicios/page.tsx y apuntes/page.tsx: pegado al sidebar, sin el aire simétrico
+          que dejaba mx-auto. Decisión reabierta a propósito respecto a la nota de CLAUDE.md
+          ("Pendiente: /guias... ancho sano"): NO se porta el w-full+lg:ml-64 real de
+          guias.php porque esa combinación desborda 256px en producción (bug confirmado,
+          scrollWidth medido) — acá se mantiene SIN w-full (evita el desborde) pero SÍ con
+          ml-64 (en vez del centrado con mx-auto que tenía antes), priorizando consistencia
+          visual con el resto de las vitrinas por sobre paridad con el bug del PHP. */}
+      <main className="flex flex-col flex-grow max-w-[1600px] lg:ml-64 px-4 md:px-8 pt-20 pb-24 lg:pb-10">
         <nav className="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-gray-700">
             Inicio
