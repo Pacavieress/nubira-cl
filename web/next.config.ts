@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
   // hay que visitar web/ por nubira.local (no localhost) para que el navegador reenvíe la
   // cookie PHPSESSID real — sin este allowlist, esa es justamente la forma de uso que rompe.
   allowedDevOrigins: ["nubira.local"],
+  // Badge "N" flotante (esquina inferior izquierda) del Dev Tools Indicator — solo dev,
+  // nunca sale en producción. Apagado porque se prestaba a confusión con el pie del
+  // Sidebar (ver diagnóstico de sesión/paridad de esa sesión).
+  devIndicators: false,
 };
 
 export default nextConfig;
