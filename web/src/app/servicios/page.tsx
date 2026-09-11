@@ -44,9 +44,14 @@ export default async function ServiciosPage({ searchParams }: ServiciosPageProps
   return (
     <>
       <Header titulo="Explorar Clases y Servicios" />
-      {/* lg:pl-72 (no lg:pl-64) en vez de lg:ml-64 — overflow horizontal bajo <body flex
-          flex-col>, ver web/src/app/apuntes/page.tsx para el diagnóstico completo. */}
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-8 lg:pl-72">
+      {/* lg:ml-64 (no lg:pl-72): medido en vivo con Playwright (viewports 1024/1025/1280/
+          1440/1920) contra este mismo <body class="flex flex-col"> — sin max-w-[1600px], un
+          margin-left fijo bajo align-items:stretch desbordaba (~241px, ver historial); CON
+          max-w-[1600px] presente, ml-64 no desborda en ningún viewport y además replica el
+          <main> real del PHP (app/clases_servicios.php:241: `lg:ml-64 ... max-w-[1600px]
+          mx-auto`) — pegado al sidebar, sin el aire simétrico que dejaba w-full+mx-auto+pl-72
+          (mainLeft=160px a 1920 vs. mainLeft=256px, igual al PHP, con este fix). */}
+      <main className="max-w-[1600px] lg:ml-64 px-4 md:px-8 pt-20 pb-24 lg:pb-8">
         <div className="mb-4">
           <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">Explorar Clases y Servicios</h1>
           {q && (

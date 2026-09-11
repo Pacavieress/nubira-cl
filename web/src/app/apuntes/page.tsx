@@ -63,22 +63,17 @@ export default async function ApuntesPage({ searchParams }: ApuntesPageProps) {
   return (
     <>
       <Header titulo="Explorar Apuntes" />
-      {/* lg:pl-72 en vez de lg:ml-64: bajo <body class="flex flex-col"> (web/src/app/layout.tsx),
-          un margin-left fijo no se resta del ancho estirado del hijo (align-items:stretch),
-          así que el elemento se estira a los 1440px completos del contenedor y el margen lo
-          empuja fuera del viewport — confirmado con scrollWidth vía CDP (overflow real de
-          241px). padding sí se absorbe dentro del border-box. Mismo fix aplicado en
-          servicios/[id]/page.tsx; ver ese archivo para el diagnóstico completo.
-          [08/09/2026] pl-72 (18rem=288px), NO pl-64 (16rem=256px): `pl-*` REEMPLAZA
-          padding-left entero, no se suma al `md:px-8` (32px) que ya lo define — a
-          diferencia de `ml-64`, que sí se suma al padding existente porque son cajas CSS
-          distintas (margin vs. padding). Con pl-64 el área de contenido quedaba 32px más
-          ancha que el PHP real (1152px vs. 1120px medido con getComputedStyle), lo que
-          hacía las cards de apuntes visiblemente más grandes/anchas que las reales —
-          encontrado por Pablo comparando ambas vitrinas lado a lado. 288px = 256px del
-          sidebar + 32px del padding real que el PHP sí conserva (`lg:ml-64` + `px-8` no
-          compiten entre sí, se suman). */}
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-8 lg:pl-72">
+      {/* [11/09/2026] Vuelta a lg:ml-64 (revierte el lg:pl-72 de más arriba en el historial de
+          este comentario): medido en vivo con Playwright (viewports 1024/1025/1280/1440/1920)
+          contra este mismo <body class="flex flex-col"> — el overflow de 241px que motivó
+          pl-72 ocurría con ml-64 SIN max-w-[1600px] presente (un margin-left fijo bajo
+          align-items:stretch, sin ningún max-width que tope el ancho estirado). CON
+          max-w-[1600px] ya en la clase (como está acá desde antes), ml-64 no desborda en
+          ningún viewport probado — y sí replica el <main> real del PHP
+          (app/vitrina_apuntes.php: `lg:ml-64 ... max-w-[1600px] mx-auto`), pegado al sidebar
+          en vez del aire simétrico que dejaba w-full+mx-auto+pl-72 (mainLeft=256px, igual al
+          PHP, contra 160px del centrado flexbox anterior). */}
+      <main className="max-w-[1600px] lg:ml-64 px-4 md:px-8 pt-20 pb-24 lg:pb-8">
         <div className="mb-6">
           <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">{h1Titulo}</h1>
           {h1Subtitulo && <p className="text-sm text-gray-500 mt-1">{h1Subtitulo}</p>}
