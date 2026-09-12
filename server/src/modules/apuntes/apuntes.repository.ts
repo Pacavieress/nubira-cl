@@ -167,3 +167,13 @@ export async function getApunteDetalleById(id: number): Promise<ApunteDetalleRow
   );
   return rows[0] ?? null;
 }
+
+// Puerto exacto de la query de ver_apunte.php:298 / descargar_apunte.php:96-100 — mismo
+// texto SQL en ambos lugares del PHP, así que acá también es una única fuente de verdad.
+export async function existeCompraPagada(usuarioId: number, apunteId: number): Promise<boolean> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    "SELECT 1 FROM compras WHERE usuario_id = ? AND id_apunte = ? AND estado_pago = 'pagado' LIMIT 1",
+    [usuarioId, apunteId],
+  );
+  return rows.length > 0;
+}

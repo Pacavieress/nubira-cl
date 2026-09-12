@@ -1,5 +1,5 @@
 import { env } from "../../config/env.js";
-import { resolverFotoTutor, resolverPortadaApunte } from "../../lib/media.js";
+import { resolverFotoTutor, resolverPortadaApunte, resolverPreviewPaginasApunte } from "../../lib/media.js";
 import type {
   ApunteDetalleRow,
   ApunteDetallePublico,
@@ -65,7 +65,21 @@ function mapIaTags(iaUsed: number, iaKeywords: string | null): string[] {
     .slice(0, 6);
 }
 
-export function mapApunteDetalleRow(row: ApunteDetalleRow, viewer: ViewerContext): ApunteDetallePublico {
+// Puerto exacto de ver_apunte.php:315-317. Lista de extensiones de imagen propia (incluye
+// 'svg', a diferencia de EXTS_IMAGEN de media.ts que no lo tiene — esa es para decidir si un
+// archivo sirve de PORTADA, esta es para decidir si el visor lo puede mostrar inline; el PHP
+// real también usa 2 listas ligeramente distintas para esos 2 propósitos, no es un
+// descuido).
+const EXTS_IMAGEN_VISOR = new Set(["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"]);
+
+function extensionDe(archivo: string | null): string {
+  if (!archivo) return "";
+  const idx = archivo.lastIndexOf(".");
+  return idx === -1 ? "" : archivo.slice(idx + 1).toLowerCase();
+}
+
+export function mapApunteDetalleRow(row: ApunteDetalleRow, viewer: ViewerContext, fileUrl: string | null): ApunteDetallePublico {
+  const ext = extensionDe(row.archivo);
   return {
     id: row.id,
     titulo: row.titulo,
@@ -77,6 +91,10 @@ export function mapApunteDetalleRow(row: ApunteDetalleRow, viewer: ViewerContext
     promo: mapPromo(row),
     url: `/apunte/${row.id}`,
     descripcion: row.descripcion,
+    previewPaginasUrls: resolverPreviewPaginasApunte(row.id, env.assetsBaseUrl),
+    esPDF: ext === "pdf",
+    esImagen: EXTS_IMAGEN_VISOR.has(ext),
+    fileUrl,
     asignatura: row.asignatura,
     materia: row.materia,
     nivelAcademico: row.nivel_academico,

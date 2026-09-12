@@ -66,6 +66,22 @@ const EXTS_IMAGEN = new Set(["jpg", "jpeg", "png", "webp", "gif", "bmp"]);
 // la distinción es 100% determinística a partir de los valores ya en la fila, no requiere
 // tocar disco. El parámetro $previewBD de la función real nunca se usa en su cuerpo
 // (columna `preview` vestigial, confirmado leyendo el helper completo) — no se replica acá.
+const NB_PREVIEW_PAGINAS_WEB = "/upload/preview_paginas/";
+
+// Puerto de ver_apunte.php:322-329 ("modo Studocu"): hasta 3 páginas del documento
+// pre-renderizadas a imagen, usadas como vista previa bloqueada para quien no tiene acceso
+// completo. El PHP real solo incluye las que pasan file_exists() (así que puede mostrar 0,
+// 1, 2 o 3 según cuántas existan) — acá se devuelven SIEMPRE las 3 URLs candidatas, sin
+// verificar (mismo tradeoff ya documentado arriba para resolverPortadaApunte: Node no
+// comparte filesystem con PHP por diseño). El caller (VisorApunte.tsx) resuelve cuáles
+// existen realmente con onError client-side, ocultando las que no cargan — mismo patrón que
+// el propio ver_apunte.php:588 ya usa (`onerror="this.src='/img/logo2.webp'"`) como defensa
+// adicional sobre su propio file_exists() server-side. Sin `?v=filemtime` (tampoco
+// disponible sin filesystem compartido) — cache-busting queda fuera de alcance acá.
+export function resolverPreviewPaginasApunte(id: number, assetsBaseUrl: string): string[] {
+  return [1, 2, 3].map((n) => conBase(assetsBaseUrl, `${NB_PREVIEW_PAGINAS_WEB}${id}_${n}.webp`));
+}
+
 export function resolverPortadaApunte(
   id: number,
   portada: string | null,

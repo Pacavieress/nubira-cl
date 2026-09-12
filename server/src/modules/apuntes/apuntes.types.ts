@@ -98,10 +98,27 @@ export interface ApunteDetalleRow {
 export interface ViewerContext {
   isAuthenticated: boolean;
   isOwner: boolean;
+  // Puerto de las 4 ramas de acceso_completo (ver_apunte.php:292-307 /
+  // descargar_apunte.php:88-106): gratis (precio=0) OR admin OR dueño OR compra pagada —
+  // PERO solo si isAuthenticated es true. Un invitado sin sesión SIEMPRE es false, incluso
+  // para un apunte gratis (misma asimetría real del PHP: ver_apunte.php:294 envuelve las 4
+  // ramas dentro de `if ($logueado)`, sin fallback para invitado).
+  accesoCompleto: boolean;
 }
 
 export interface ApunteDetallePublico extends Omit<ApuntePublico, "descripcionCorta"> {
   descripcion: string | null;
+  // Puerto de ver_apunte.php:322-329 — ver resolverPreviewPaginasApunte() en
+  // server/src/lib/media.ts para la nota completa sobre por qué son siempre 3 candidatas
+  // (nunca menos), sin verificar existencia real en disco.
+  previewPaginasUrls: string[];
+  // Puerto de ver_apunte.php:315-317 ($isPDF/$isImage) — siempre poblados, sin depender de
+  // accesoCompleto (describen el tipo de archivo, no el permiso).
+  esPDF: boolean;
+  esImagen: boolean;
+  // Puerto de ver_apunte.php:311 (enlaceDescargaApunte()) — null si !viewer.accesoCompleto
+  // (ver apuntes.controller.ts: solo se firma el link cuando hay acceso real).
+  fileUrl: string | null;
   asignatura: string | null;
   materia: string | null;
   nivelAcademico: string | null;
