@@ -131,4 +131,71 @@ foreach (nubira_categorias_seo() as $slug => $nombre) {
     }
 }
 
+// F. Landings de categoría (apuntes) — mismo criterio que el bloque E (clases):
+// solo las marcadas indexable=1 en seo_categorias_contenido Y con >=3 apuntes
+// públicos. Respeta filtro_titulo (LIKE) cuando está definido, igual que
+// landing_categoria.php.
+$where_base_ap = "ap.publico = 1
+                    AND ap.visible = 1
+                    AND al.visible = 1
+                    AND al.bloqueado = 0";
+foreach (nubira_categorias_seo() as $slug => $nombre) {
+    $stc = $conn->prepare("SELECT filtro_titulo, indexable FROM seo_categorias_contenido
+                           WHERE categoria = ? AND tipo IN ('apuntes', 'ambos')
+                           ORDER BY (tipo = 'ambos') ASC
+                           LIMIT 1");
+    if (!$stc) continue;
+    $stc->bind_param("s", $nombre);
+    $stc->execute();
+    $cfg = $stc->get_result()->fetch_assoc();
+    $stc->close();
+    if (!$cfg || !$cfg['indexable']) continue;
+
+    $filtro_like = $cfg['filtro_titulo'] ?: null;
+    if ($nombre === 'PAES') {
+        // [PAES] Mismo criterio que landing_categoria.php:127-135 para apuntes:
+        // apuntes no tiene columna 'area' ni 'es_paes', así que el LIKE amplio
+        // solo cubre titulo/descripcion/asignatura/materia + nivel_academico='paes'.
+        $like_paes_ap = '%PAES%';
+        $st = $conn->prepare("SELECT COUNT(*) n FROM apuntes ap
+                              JOIN alumnos al ON al.id = ap.id_alumno
+                              WHERE $where_base_ap AND (ap.titulo LIKE ? OR ap.descripcion LIKE ? OR ap.asignatura LIKE ? OR ap.materia LIKE ? OR ap.nivel_academico = 'paes')");
+        if (!$st) continue;
+        $st->bind_param("ssss", $like_paes_ap, $like_paes_ap, $like_paes_ap, $like_paes_ap);
+    } elseif ($filtro_like) {
+        $st = $conn->prepare("SELECT COUNT(*) n FROM apuntes ap
+                              JOIN alumnos al ON al.id = ap.id_alumno
+                              WHERE $where_base_ap AND ap.titulo LIKE ?");
+        if (!$st) continue;
+        $st->bind_param("s", $filtro_like);
+    } else {
+        $st = $conn->prepare("SELECT COUNT(*) n FROM apuntes ap
+                              JOIN alumnos al ON al.id = ap.id_alumno
+                              WHERE $where_base_ap AND ap.categoria = ?");
+        if (!$st) continue;
+        $st->bind_param("s", $nombre);
+    }
+    $st->execute();
+    $n = (int)($st->get_result()->fetch_assoc()['n']);
+    $st->close();
+    if ($n >= 3) {
+        echo url_xml($BASE . '/apuntes/' . $slug, w3c(null), 'weekly', '0.8');
+    }
+}
+
+// G. Landings de categoría (guías) — mismo criterio que guias.php:64-76:
+// >=3 artículos publicados en la categoría. No incluye el hub general /guias
+// (ya está en la sección A como estática).
+$res_cat_guias = $conn->query("SELECT id, slug FROM guias_categorias WHERE habilitada = 1");
+while ($res_cat_guias && $cat_guia = $res_cat_guias->fetch_assoc()) {
+    $st = $conn->prepare("SELECT COUNT(*) n FROM guias_articulos WHERE categoria_id = ? AND estado = 'publicado'");
+    $st->bind_param("i", $cat_guia['id']);
+    $st->execute();
+    $n = (int)($st->get_result()->fetch_assoc()['n']);
+    $st->close();
+    if ($n >= 3) {
+        echo url_xml($BASE . '/guias/' . $cat_guia['slug'], w3c(null), 'weekly', '0.8');
+    }
+}
+
 echo '</urlset>' . "\n";
