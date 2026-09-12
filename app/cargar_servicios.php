@@ -25,6 +25,7 @@ require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unifi
 require_once __DIR__ . '/helpers/ofertas.php';
 require_once __DIR__ . '/helpers/institucion.php'; // abreviar_institucion() / institucion_tutor()
 require_once __DIR__ . '/helpers/seo.php';
+require_once __DIR__ . '/helpers/demo_visibility.php';
 
 // [NUBIRA 2.0] Cargar iconos oficiales de la plataforma
 $rutas_iconos = [__DIR__.'/iconos.php', __DIR__.'/../iconos.php', $_SERVER['DOCUMENT_ROOT'].'/app/iconos.php', $_SERVER['DOCUMENT_ROOT'].'/iconos.php'];
@@ -69,6 +70,13 @@ $filtros = [
 $params  = [];
 $tipos   = "";
 
+// [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica.
+if (!nb_viewer_ve_demo($conn)) {
+    $filtros[] = "s.alumno_id != ?";
+    $params[]  = DEMO_TUTOR_USER_ID;
+    $tipos     .= "i";
+}
+
 $institucion_param = trim($_GET['institucion'] ?? '');
 $ver_todas         = !empty($_GET['ver_todas']);
 
@@ -104,9 +112,6 @@ if ($q !== '') {
 
 // === CONSULTA MAESTRA (GAMIFICACIÓN ENTERPRISE) ===
 $modo = $_GET['modo'] ?? 'default';
-$hour = (int)date('G');
-$bucket = (int)floor($hour / 4);
-$seed = date('Y-m-d') . "|$bucket";
 
 // [NUBIRA 2.0] Mismo criterio de priorización que Recomendados/PAES en vitrina.php:
 // foto real > video aprobado > horario configurado > criterio original de esta página.
@@ -152,11 +157,14 @@ switch ($modo) {
         break;
         
     default:
-        // Mezcla inteligente sembrada cada 4 horas
-        $sql = "$select_sql $where_sql 
-                ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, s.score_nubira DESC, total_votos DESC, rating_promedio DESC, SHA2(CONCAT(CAST(s.id AS CHAR), '|', ?), 256) ASC
+        // Mezcla inteligente — antes SHA2(id+seed) sembrado cada 4h, ahora RAND() sembrado
+        // cada 30 min (mismo mecanismo que busqueda.php/cargar_apuntes.php para la rotación
+        // del Copiloto de Marketing). total_votos/rating_promedio se mantienen COMO
+        // desempate real antes del RAND (a diferencia de busqueda.php, donde quedan después).
+        $sql = "$select_sql $where_sql
+                ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, s.score_nubira DESC, total_votos DESC, rating_promedio DESC, RAND(FLOOR(UNIX_TIMESTAMP()/1800))
                 LIMIT ? OFFSET ?";
-        $params[] = $seed; $params[] = $limite; $params[] = $offset; $tipos .= "sii";
+        $params[] = $limite; $params[] = $offset; $tipos .= "ii";
         break;
 }
 

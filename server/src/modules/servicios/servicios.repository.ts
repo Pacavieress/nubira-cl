@@ -1,6 +1,7 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
 import { construirCondicionTexto, esBusquedaPaes } from "../../lib/busquedaTexto.js";
+import { demoExclusionParam } from "../../lib/demoTutorVisibility.js";
 import type {
   SearchServiciosFilters,
   SearchServiciosResult,
@@ -52,9 +53,10 @@ const ORDER_DETERMINISTICO = `ORDER BY s.score_nubira DESC, total_votos DESC, ra
 
 export async function searchServiciosAprobados(
   filters: SearchServiciosFilters,
+  viewerCalifica: boolean,
 ): Promise<SearchServiciosResult> {
-  const conditions: string[] = [];
-  const params: Array<string | number> = [];
+  const conditions: string[] = ["s.alumno_id != ?"];
+  const params: Array<string | number> = [demoExclusionParam(viewerCalifica)];
 
   if (filters.categoria) {
     conditions.push("s.categoria = ?");
@@ -180,12 +182,12 @@ export async function tutorEstaEnClase(tutorAlumnoId: number): Promise<boolean> 
 // nota de alcance completa en ServicioDetallePublico.recomendaciones (servicios.types.ts):
 // sin personalización por afinidad (tracker_intereses), usa directamente la categoría del
 // servicio actual. Mismo WHERE/LIMIT/orden de columnas que el SELECT real.
-export async function getRecomendaciones(servicioId: number, categoria: string): Promise<ServicioRow[]> {
+export async function getRecomendaciones(servicioId: number, categoria: string, viewerCalifica: boolean): Promise<ServicioRow[]> {
   const [rows] = await pool.query<ServicioRowPacket[]>(
-    `${SELECT_SERVICIO} WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 AND a.bloqueado = 0 AND s.id != ?
+    `${SELECT_SERVICIO} WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 AND a.bloqueado = 0 AND s.id != ? AND s.alumno_id != ?
      ORDER BY CASE WHEN s.categoria = ? THEN 1 ELSE 2 END, s.id DESC
      LIMIT 7`,
-    [servicioId, categoria],
+    [servicioId, demoExclusionParam(viewerCalifica), categoria],
   );
   return rows;
 }

@@ -30,6 +30,7 @@ if (!file_exists($base_path . '/conexion.php')) {
 require_once $base_path . '/conexion.php';
 require_once $base_path . '/iconos.php';
 require_once $base_path . '/helpers/comprador_invitado.php';
+require_once $base_path . '/helpers/demo_visibility.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [$base_path . '/seguridad_url.php', dirname($base_path) . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -168,6 +169,12 @@ if (!$apunte) mostrarError("El apunte no existe.");
 // [NUBIRA SHIELD] Bloqueo de visibilidad por estado
 $es_propietario_shield = ($logueado && $usuario_id === (int)$apunte['id_alumno']);
 $es_admin_shield = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
+
+// [DEMO] Cuenta demo (contacto@nubira.cl) — contenido invisible a quien no califica.
+if ((int)$apunte['id_alumno'] === DEMO_TUTOR_USER_ID && !$es_propietario_shield && !$es_admin_shield && !nb_viewer_ve_demo($conn)) {
+    http_response_code(404);
+    mostrarError("El apunte no existe.");
+}
 
 if (isset($apunte['estado']) && $apunte['estado'] !== 'aprobado' && !$es_propietario_shield && !$es_admin_shield) {
     http_response_code(403);

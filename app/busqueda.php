@@ -140,6 +140,7 @@ if (file_exists($antibot_path)) {
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/helpers/ofertas.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de servicios
+require_once __DIR__ . '/helpers/demo_visibility.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/../seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -220,11 +221,17 @@ $categorias_con_resultados = [];
 if (strlen($q) > 1 || $hay_filtros_activos) {
     $titulo_pag = "Resultados para: " . htmlspecialchars($q);
     
+    // RAND(FLOOR(UNIX_TIMESTAMP()/1800)) como segundo criterio, solo en los 2 órdenes que
+    // lideran por prioridad de badge (score_nubira DESC): randomiza el orden DENTRO de cada
+    // empate de score (mismo tier/badge visual), sin tocar la prioridad de badge en sí — la
+    // semilla es estable durante 30 minutos (mismo bucket de tiempo = mismo orden), y rota
+    // sola al cambiar de bucket. precio_asc/precio_desc no llevan badge como criterio, así
+    // que no se tocan.
     $mapa_ordenes = [
-        ''             => "s.score_nubira DESC, rating_promedio DESC, s.precio DESC, s.id DESC",
+        ''             => "s.score_nubira DESC, RAND(FLOOR(UNIX_TIMESTAMP()/1800)), rating_promedio DESC, s.precio DESC, s.id DESC",
         'precio_asc'   => "s.precio ASC",
         'precio_desc'  => "s.precio DESC",
-        'calificacion' => "s.score_nubira DESC, rating_promedio DESC, total_votos DESC",
+        'calificacion' => "s.score_nubira DESC, RAND(FLOOR(UNIX_TIMESTAMP()/1800)), rating_promedio DESC, total_votos DESC",
     ];
     $order_sql_servicios = $mapa_ordenes[$orden_usuario] ?? $mapa_ordenes[''];
     // [NUBIRA 2.0] El mismo criterio elegido ahora también reordena apuntes.
@@ -262,6 +269,13 @@ if (strlen($q) > 1 || $hay_filtros_activos) {
     if ($con_video) {
         $sql_extra_s .= " AND s.video_estado = 'aprobado'";
         $sql_extra_s_facet .= " AND s.video_estado = 'aprobado'";
+    }
+
+    // [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica.
+    if (!nb_viewer_ve_demo($conn)) {
+        $sql_extra_s .= " AND s.alumno_id != ?"; $params_extra_s[] = DEMO_TUTOR_USER_ID; $tipos_extra_s .= "i";
+        $sql_extra_s_facet .= " AND s.alumno_id != ?"; $params_extra_s_facet[] = DEMO_TUTOR_USER_ID; $tipos_extra_s_facet .= "i";
+        $sql_extra_a .= " AND ap.id_alumno != ?"; $params_extra_a[] = DEMO_TUTOR_USER_ID; $tipos_extra_a .= "i";
     }
 
     // [NUBIRA 2.0 - FIX] El OR de PAES ya NO es incondicional: solo se activa
@@ -518,11 +532,13 @@ if(file_exists($ruta_comp.'/sidebar.php')) require_once $ruta_comp.'/sidebar.php
                 <?php 
                 $trending = [];
                 try {
+                    $demo_excl_trend_s  = nb_viewer_ve_demo($conn) ? "" : " AND alumno_id != " . DEMO_TUTOR_USER_ID . " ";
+                    $demo_excl_trend_ap = nb_viewer_ve_demo($conn) ? "" : " AND id_alumno != " . DEMO_TUTOR_USER_ID . " ";
                     $sql_trend = "
                         SELECT termino FROM (
-                            SELECT categoria AS termino, COUNT(*) AS total FROM servicios WHERE estado = 'aprobado' AND categoria != '' AND categoria IS NOT NULL GROUP BY categoria
+                            SELECT categoria AS termino, COUNT(*) AS total FROM servicios WHERE estado = 'aprobado' AND categoria != '' AND categoria IS NOT NULL {$demo_excl_trend_s} GROUP BY categoria
                             UNION ALL
-                            SELECT asignatura AS termino, COUNT(*) AS total FROM apuntes WHERE publico = 1 AND asignatura != '' AND asignatura IS NOT NULL GROUP BY asignatura
+                            SELECT asignatura AS termino, COUNT(*) AS total FROM apuntes WHERE publico = 1 AND asignatura != '' AND asignatura IS NOT NULL {$demo_excl_trend_ap} GROUP BY asignatura
                         ) AS combinados
                         GROUP BY termino
                         ORDER BY SUM(total) DESC

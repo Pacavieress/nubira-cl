@@ -7,6 +7,7 @@
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/seguridad_url.php';
 require_once __DIR__ . '/helpers/seo.php';   // nubira_categorias_seo() para sección E
+require_once __DIR__ . '/helpers/demo_visibility.php';
 header('Content-Type: application/xml; charset=utf-8');
 
 $BASE = 'https://nubira.cl';
@@ -48,13 +49,16 @@ foreach ($estaticas as [$p, $prio, $freq]) {
 }
 
 // B. Servicios públicos (mismo filtro que app/cargar_servicios.php)
+// [DEMO] Cuenta demo (contacto@nubira.cl) nunca se indexa — el sitemap no tiene
+// viewer real (crawler/anónimo), así que la exclusión acá es siempre incondicional.
 $sql = "SELECT s.id, s.slug, s.fecha_publicacion
         FROM servicios s
         JOIN alumnos a ON a.id = s.alumno_id
         WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
           AND s.visible = 1
           AND COALESCE(a.visible, 1) = 1
-          AND a.bloqueado = 0";
+          AND a.bloqueado = 0
+          AND s.alumno_id != " . DEMO_TUTOR_USER_ID . "";
 $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
     echo url_xml($BASE . url_servicio((int)$row['id'], $row['slug'] ?? null),
@@ -68,7 +72,8 @@ $sql = "SELECT ap.id, ap.fecha_subida
         WHERE ap.publico = 1
           AND ap.visible = 1
           AND al.visible = 1
-          AND al.bloqueado = 0";
+          AND al.bloqueado = 0
+          AND ap.id_alumno != " . DEMO_TUTOR_USER_ID . "";
 $r = $conn->query($sql);
 while ($r && $row = $r->fetch_assoc()) {
     echo url_xml($BASE . '/apunte/' . nubira_encriptar_id($row['id']),
@@ -84,7 +89,8 @@ while ($r && $row = $r->fetch_assoc()) {
 $where_base = "TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
                  AND s.visible = 1
                  AND COALESCE(a.visible, 1) = 1
-                 AND a.bloqueado = 0";
+                 AND a.bloqueado = 0
+                 AND s.alumno_id != " . DEMO_TUTOR_USER_ID;
 foreach (nubira_categorias_seo() as $slug => $nombre) {
     $stc = $conn->prepare("SELECT filtro_titulo, indexable FROM seo_categorias_contenido
                            WHERE categoria = ? AND tipo IN ('clases', 'ambos')
@@ -138,7 +144,8 @@ foreach (nubira_categorias_seo() as $slug => $nombre) {
 $where_base_ap = "ap.publico = 1
                     AND ap.visible = 1
                     AND al.visible = 1
-                    AND al.bloqueado = 0";
+                    AND al.bloqueado = 0
+                    AND ap.id_alumno != " . DEMO_TUTOR_USER_ID;
 foreach (nubira_categorias_seo() as $slug => $nombre) {
     $stc = $conn->prepare("SELECT filtro_titulo, indexable FROM seo_categorias_contenido
                            WHERE categoria = ? AND tipo IN ('apuntes', 'ambos')

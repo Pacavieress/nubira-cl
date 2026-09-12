@@ -23,6 +23,10 @@ foreach($rutas_img as $rim) if(file_exists($rim)){ require_once $rim; break; }
 $rutas_seo = [__DIR__.'/helpers/seo.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/seo.php'];
 foreach($rutas_seo as $rseo) if(file_exists($rseo)){ require_once $rseo; break; }
 
+$rutas_demo = [__DIR__.'/helpers/demo_visibility.php', $_SERVER['DOCUMENT_ROOT'].'/app/helpers/demo_visibility.php'];
+foreach($rutas_demo as $rdv) if(file_exists($rdv)){ require_once $rdv; break; }
+$demo_excl_s = nb_viewer_ve_demo($conn) ? "" : " AND s.alumno_id != " . DEMO_TUTOR_USER_ID . " ";
+
 // 1. CONFIGURACIÓN DE SECCIÓN
 $titulo = "Selección Premium";
 $default_img = 'https://nubira.cl/upload/servicios/default_clases.webp';
@@ -43,8 +47,8 @@ $sql = "SELECT s.*,
             SELECT servicio_id, AVG(calificacion) as rating_promedio, COUNT(*) as total_votos
             FROM valoraciones WHERE calificacion > 0 AND rol_evaluado = 'vendedor' GROUP BY servicio_id
         ) stats ON stats.servicio_id = s.id
-        WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1
-        ORDER BY s.precio DESC, s.score_nubira DESC, rating_promedio DESC 
+        WHERE s.estado = 'aprobado' AND COALESCE(s.visible, 1) = 1 {$demo_excl_s}
+        ORDER BY s.precio DESC, s.score_nubira DESC, rating_promedio DESC
         LIMIT 8";
 
 $items = [];

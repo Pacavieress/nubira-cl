@@ -29,6 +29,7 @@ if (isset($conn)) {
 require_once $app_dir . '/iconos.php';
 require_once __DIR__ . '/helpers/ofertas.php';
 require_once __DIR__ . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
+require_once __DIR__ . '/helpers/demo_visibility.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [$app_dir . '/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -205,6 +206,13 @@ if ($is_guest && $device_id_cookie && isset($conn)) {
 // C. CONSULTAS OPTIMIZADAS (AHORA IMPULSADAS POR AFINIDAD)
 $seed = (int)floor(time() / 1800); // Cambia cada 30 min — rota orden de carruseles
 
+// [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica — calculado una
+// sola vez, reutilizado en todos los carruseles de esta página.
+$viewer_ve_demo = nb_viewer_ve_demo($conn);
+$demo_excl_s  = $viewer_ve_demo ? "" : " AND s.alumno_id != " . DEMO_TUTOR_USER_ID . " ";
+$demo_excl_a  = $viewer_ve_demo ? "" : " AND a.id != " . DEMO_TUTOR_USER_ID . " ";
+$demo_excl_ap = $viewer_ve_demo ? "" : " AND ap.id_alumno != " . DEMO_TUTOR_USER_ID . " ";
+
 // [NUBIRA 2.0] Prioridad de perfil completo: foto real > horario configurado > criterio propio de cada sección.
 require_once __DIR__ . '/helpers/usuario_helper.php';
 $sql_tiene_foto_real = nb_condicion_foto_real($conn);
@@ -228,7 +236,7 @@ try {
                INNER JOIN alumnos a ON s.alumno_id = a.id
                LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-               WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0 ";
+               WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0 {$demo_excl_s} ";
 
  // [NUBIRA 2.0] Título fijo. La afinidad sigue activa en el ORDER BY (sin frases variables en UI).
 $titulo_servicios = "Tutorías recomendadas";
@@ -271,7 +279,7 @@ try {
                    INNER JOIN alumnos a ON s.alumno_id = a.id
                    LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                    LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
+WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0 {$demo_excl_s}
                    AND s.id NOT IN ($placeholders_nuevos)
                    ORDER BY tiene_foto_real DESC, tiene_horario DESC, {$orden_institucion_sql} s.id DESC LIMIT 8";
     $stmt_nuevos = $conn->prepare($sql_nuevos);
@@ -300,6 +308,7 @@ try {
                         WHERE EXISTS (SELECT 1 FROM servicios s
                                       WHERE s.alumno_id = a.id AND s.estado = 'aprobado' AND s.visible = 1)
                           AND a.bloqueado = 0
+                          {$demo_excl_a}
                           AND (SELECT AVG(rt.minutos_respuesta)
                                FROM respuestas_tutor rt
                                WHERE rt.tutor_id = a.id
@@ -327,7 +336,7 @@ try {
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                        WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0
+                        WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0 {$demo_excl_s}
                           AND s.id NOT IN ($placeholders_rapidos)
                         HAVING tiempo_resp_calculado IS NOT NULL AND tiempo_resp_calculado < 60
                         ORDER BY tiene_foto_real DESC, tiene_horario DESC, tiempo_resp_calculado ASC, RAND($seed)
@@ -367,7 +376,7 @@ try {
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                        WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
+                        WHERE s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0 {$demo_excl_s}
                           AND (s.titulo LIKE ? OR s.descripcion LIKE ? OR s.categoria LIKE ? OR s.materia LIKE ? OR s.asignatura LIKE ? OR s.area LIKE ? OR s.es_paes = 1)
                           AND s.id NOT IN ($placeholders_paes_cl)
                         ORDER BY tiene_foto_real DESC, tiene_video DESC, tiene_horario DESC, {$orden_institucion_sql} RAND($seed) LIMIT 12";
@@ -406,7 +415,7 @@ try {
                     FROM apuntes ap
                     INNER JOIN alumnos a ON ap.id_alumno = a.id
                     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-                   WHERE ap.estado = 'aprobado' AND ap.nivel_academico != 'paes' ";
+                   WHERE ap.estado = 'aprobado' AND ap.nivel_academico != 'paes' {$demo_excl_ap} ";
 
     if ($cat_favorita) {
         $sql_apuntes .= "ORDER BY tiene_foto_real DESC, CASE WHEN ap.categoria = ? THEN 1 ELSE 2 END, RAND($seed) LIMIT 10";
@@ -437,7 +446,7 @@ try {
                            FROM apuntes ap
                            INNER JOIN alumnos a ON ap.id_alumno = a.id
                            LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
-                           WHERE ap.estado = 'aprobado'
+                           WHERE ap.estado = 'aprobado' {$demo_excl_ap}
                            ORDER BY tiene_foto_real DESC, {$orden_institucion_sql} ap.id DESC LIMIT 8";
     $res_apuntes_nuevos = $conn->query($sql_apuntes_nuevos);
 } catch (Exception $e) {
@@ -486,7 +495,7 @@ try {
                     INNER JOIN alumnos a ON s.alumno_id = a.id
                     LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                     LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                    WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1 AND a.bloqueado = 0
+                    WHERE s.estado = 'aprobado' AND s.is_subvencionado = 1 AND a.bloqueado = 0 {$demo_excl_s}
                       AND (s.oferta_termino IS NULL OR s.oferta_termino >= CURDATE())
                     ORDER BY tiene_foto_real DESC, tiene_horario DESC, (s.cupos_oferta > 0) DESC, RAND($seed) LIMIT 12";
     $res_ofertas = $conn->query($sql_ofertas);
@@ -515,7 +524,7 @@ try {
                         INNER JOIN alumnos a ON s.alumno_id = a.id
                         LEFT JOIN dominios_permitidos dp ON a.dominio = dp.dominio
                         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-                        WHERE s.estado = 'aprobado' AND a.bloqueado = 0 AND s.id NOT IN ($placeholders)
+                        WHERE s.estado = 'aprobado' AND a.bloqueado = 0 {$demo_excl_s} AND s.id NOT IN ($placeholders)
                         ORDER BY tiene_foto_real DESC, tiene_horario DESC, s.id ASC LIMIT ?";
         $stmt_relleno = $conn->prepare($sql_relleno);
         if ($stmt_relleno) {
@@ -825,7 +834,7 @@ require_once __DIR__ . '/componentes/header.php';
 
 <main data-track-id="home" data-track-type="vitrina"
       class="pt-16 md:pt-20 pb-36 md:pb-0 lg:ml-56 max-w-full mx-auto block">
-    <div class="px-4 md:px-10 md:pl-12 pt-0 pb-0 md:pt-1 md:pb-2">
+    <div class="px-4 md:px-10 md:pl-11 pt-0 pb-0 md:pt-1 md:pb-2">
       <h1 class="sr-only md:not-sr-only text-xl md:text-2xl font-medium text-[#222222] tracking-[-0.01em]">Tutores, apuntes y clases particulares universitarias en Chile</h1>
     </div>
 

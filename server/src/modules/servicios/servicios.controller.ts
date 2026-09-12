@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { getUsuarioConRol } from "../auth/auth.repository.js";
+import { DEMO_TUTOR_USER_ID, viewerCalificaDemo } from "../../lib/demoTutorVisibility.js";
 import { existeFavorito } from "../favoritos/favoritos.repository.js";
 import { mapServicioDetalleRow, mapServicioRow } from "./servicios.mapper.js";
 import {
@@ -33,15 +34,19 @@ function parseStringFilter(value: unknown): string | undefined {
 export async function getServiciosList(req: Request, res: Response): Promise<void> {
   const page = parsePage(req.query.page);
   const limit = parseLimit(req.query.limit);
+  const viewerCalifica = await viewerCalificaDemo(req.usuarioId);
 
-  const { rows, hayMas } = await searchServiciosAprobados({
-    categoria: parseStringFilter(req.query.categoria),
-    modalidad: parseStringFilter(req.query.modalidad),
-    institucion: parseStringFilter(req.query.institucion),
-    q: parseStringFilter(req.query.q),
-    page,
-    limit,
-  });
+  const { rows, hayMas } = await searchServiciosAprobados(
+    {
+      categoria: parseStringFilter(req.query.categoria),
+      modalidad: parseStringFilter(req.query.modalidad),
+      institucion: parseStringFilter(req.query.institucion),
+      q: parseStringFilter(req.query.q),
+      page,
+      limit,
+    },
+    viewerCalifica,
+  );
 
   res.status(200).json({
     data: rows.map(mapServicioRow),
@@ -69,6 +74,13 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
 
   const isOwner = req.usuarioId === row.alumno_id;
   const isAuthenticated = req.usuarioId !== undefined;
+  const viewerCalifica = await viewerCalificaDemo(req.usuarioId);
+
+  // [DEMO] Cuenta demo (contacto@nubira.cl) — contenido invisible a quien no califica.
+  if (row.alumno_id === DEMO_TUTOR_USER_ID && !isOwner && !viewerCalifica) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
 
   let isAdmin = false;
   if (isAuthenticated && !isOwner && row.estado !== "aprobado") {
@@ -86,7 +98,7 @@ export async function getServicioDetail(req: Request, res: Response): Promise<vo
     getMinutosRespuestaTutor(row.alumno_id),
     isAuthenticated ? existeFavorito(req.usuarioId!, id) : Promise.resolve(false),
     isAuthenticated ? getContratoActivo(id, req.usuarioId!) : Promise.resolve(null),
-    getRecomendaciones(id, row.categoria),
+    getRecomendaciones(id, row.categoria, viewerCalifica),
     tutorEstaEnClase(row.alumno_id),
   ]);
 

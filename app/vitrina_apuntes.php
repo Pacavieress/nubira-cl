@@ -37,7 +37,9 @@ if (isset($conn)) {
 }
 // =========================================================================
 
-require_once $app_dir . '/iconos.php'; 
+require_once $app_dir . '/iconos.php';
+require_once __DIR__ . '/helpers/demo_visibility.php';
+$demo_excl_al = nb_viewer_ve_demo($conn) ? "" : " AND al.id != " . DEMO_TUTOR_USER_ID . " ";
 
 // 2. DATOS USUARIO
 $rol             = $_SESSION['rol'] ?? 'alumno';
@@ -64,6 +66,7 @@ $stmtCat = $conn->prepare("
     JOIN alumnos al ON al.id = ap.id_alumno
     WHERE ap.publico = 1 AND ap.visible = 1 AND al.visible = 1
       AND ap.categoria IS NOT NULL AND ap.categoria != ''
+      {$demo_excl_al}
     GROUP BY ap.categoria
     ORDER BY total DESC
 ");

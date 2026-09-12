@@ -50,6 +50,7 @@ else { if (!function_exists('icon')) { function icon($n, $c=''){ return "<i clas
 require_once $ruta_raiz . '/helpers/ofertas.php';
 require_once $ruta_raiz . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado de portada
 require_once $ruta_raiz . '/helpers/institucion.php';     // institucion_tutor()
+require_once $ruta_raiz . '/helpers/demo_visibility.php';
 
 // 3. Configuración Base & Lazy Registration
 $base_url = "https://nubira.cl"; 
@@ -114,6 +115,12 @@ if (!$viene_url_nueva) {
 // [NUBIRA SHIELD] Bloqueo de visibilidad por estado
 $es_propietario = ($logueado && $uid == $servicio['alumno_id']);
 $es_admin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
+
+// [DEMO] Cuenta demo (contacto@nubira.cl) — contenido invisible a quien no califica.
+if ((int)$servicio['alumno_id'] === DEMO_TUTOR_USER_ID && !$es_propietario && !$es_admin && !nb_viewer_ve_demo($conn)) {
+    http_response_code(404);
+    die("Servicio no encontrado.");
+}
 
 if ($servicio['estado'] !== 'aprobado' && !$es_propietario && !$es_admin) {
     http_response_code(403);

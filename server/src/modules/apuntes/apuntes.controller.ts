@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { getUsuarioConRol } from "../auth/auth.repository.js";
+import { DEMO_TUTOR_USER_ID, viewerCalificaDemo } from "../../lib/demoTutorVisibility.js";
 import { enlaceDescargaApunte } from "../../lib/enlaceDescargaApunte.js";
 import { mapApunteDetalleRow, mapApunteRow } from "./apuntes.mapper.js";
 import { existeCompraPagada, getApunteDetalleById, getCategoriasApuntes, searchApuntesPublicos } from "./apuntes.repository.js";
@@ -29,17 +30,21 @@ function parsePrecioFilter(value: unknown): "gratis" | "pagado" | undefined {
 export async function getApuntesList(req: Request, res: Response): Promise<void> {
   const page = parsePage(req.query.page);
   const limit = parseLimit(req.query.limit);
+  const viewerCalifica = await viewerCalificaDemo(req.usuarioId);
 
-  const { rows, hayMas } = await searchApuntesPublicos({
-    nivel: parseStringFilter(req.query.nivel),
-    precio: parsePrecioFilter(req.query.precio),
-    orden: parseStringFilter(req.query.orden),
-    q: parseStringFilter(req.query.q),
-    materia: parseStringFilter(req.query.materia),
-    categoria: parseStringFilter(req.query.categoria),
-    page,
-    limit,
-  });
+  const { rows, hayMas } = await searchApuntesPublicos(
+    {
+      nivel: parseStringFilter(req.query.nivel),
+      precio: parsePrecioFilter(req.query.precio),
+      orden: parseStringFilter(req.query.orden),
+      q: parseStringFilter(req.query.q),
+      materia: parseStringFilter(req.query.materia),
+      categoria: parseStringFilter(req.query.categoria),
+      page,
+      limit,
+    },
+    viewerCalifica,
+  );
 
   res.status(200).json({
     data: rows.map(mapApunteRow),
@@ -47,8 +52,9 @@ export async function getApuntesList(req: Request, res: Response): Promise<void>
   });
 }
 
-export async function getApuntesCategoriasList(_req: Request, res: Response): Promise<void> {
-  const categorias = await getCategoriasApuntes();
+export async function getApuntesCategoriasList(req: Request, res: Response): Promise<void> {
+  const viewerCalifica = await viewerCalificaDemo(req.usuarioId);
+  const categorias = await getCategoriasApuntes(viewerCalifica);
   res.status(200).json({ data: categorias });
 }
 
@@ -63,6 +69,15 @@ export async function getApunteDetail(req: Request, res: Response): Promise<void
   if (!row) {
     res.status(404).json({ error: "not_found" });
     return;
+  }
+
+  // [DEMO] Cuenta demo (contacto@nubira.cl) — contenido invisible a quien no califica.
+  if (row.id_alumno === DEMO_TUTOR_USER_ID && req.usuarioId !== row.id_alumno) {
+    const viewerCalifica = await viewerCalificaDemo(req.usuarioId);
+    if (!viewerCalifica) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
   }
 
   // req.usuarioId lo pone optionalAuth (apuntes.routes.ts) SOLO si había una sesión

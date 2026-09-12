@@ -45,8 +45,11 @@ export async function getMiPerfil(req: Request, res: Response): Promise<void> {
     getTutorById(usuarioId),
     getResenasPorRol(usuarioId, "vendedor"),
     getResenasPorRol(usuarioId, "comprador"),
-    searchServiciosAprobados({ alumnoId: usuarioId, page: 1, limit: 30 }),
-    searchApuntesPublicos({ alumnoId: usuarioId, page: 1, limit: 30 }),
+    // viewerCalifica=true: este endpoint SIEMPRE es el dueño viendo su propio perfil
+    // (requireAuth + usuarioId propio, ver comentario de arriba) — el gate de la cuenta
+    // demo (contacto@nubira.cl) no aplica nunca acá, igual que isOwner en /api/tutores/:id.
+    searchServiciosAprobados({ alumnoId: usuarioId, page: 1, limit: 30 }, true),
+    searchApuntesPublicos({ alumnoId: usuarioId, page: 1, limit: 30 }, true),
     getMinutosRespuestaTutor(usuarioId),
     getDatosBancarios(usuarioId),
     getServiciosPropiosResumen(usuarioId),

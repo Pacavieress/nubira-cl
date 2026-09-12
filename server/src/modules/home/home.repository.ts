@@ -1,5 +1,6 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
+import { demoExclusionParam } from "../../lib/demoTutorVisibility.js";
 import { SELECT_APUNTE, WHERE_VISIBLE as WHERE_VISIBLE_APUNTE } from "../apuntes/apuntes.repository.js";
 import type { ApunteRow } from "../apuntes/apuntes.types.js";
 import { SELECT_SERVICIO, WHERE_VISIBLE as WHERE_VISIBLE_SERVICIO } from "../servicios/servicios.repository.js";
@@ -37,11 +38,12 @@ async function fetchServiciosDedup(
   orderBy: string,
   limit: number,
   excluidos: number[],
+  viewerCalifica: boolean,
 ): Promise<ServicioRow[]> {
   const exclusion = excluidos.length > 0 ? `AND s.id NOT IN (${excluidos.map(() => "?").join(",")})` : "";
   const [rows] = await pool.query<ServicioRowPacket[]>(
-    `${SELECT_SERVICIO} ${WHERE_VISIBLE_SERVICIO} ${extraWhere} ${exclusion} ORDER BY ${orderBy} LIMIT ?`,
-    [...extraParams, ...excluidos, limit],
+    `${SELECT_SERVICIO} ${WHERE_VISIBLE_SERVICIO} AND s.alumno_id != ? ${extraWhere} ${exclusion} ORDER BY ${orderBy} LIMIT ?`,
+    [demoExclusionParam(viewerCalifica), ...extraParams, ...excluidos, limit],
   );
   return rows;
 }
@@ -50,16 +52,17 @@ async function fetchServiciosDedup(
 // fallback sin afinidad, la única alcanzable sin sesión). Usa el WHERE_VISIBLE ya
 // establecido de apuntes.repository.ts en vez del WHERE distinto (más laxo) que
 // vitrina.php usa acá — mismo criterio de reutilización ya aplicado en tutores.
-async function fetchApuntesRecomendados(): Promise<ApunteRow[]> {
+async function fetchApuntesRecomendados(viewerCalifica: boolean): Promise<ApunteRow[]> {
   const [rows] = await pool.query<ApunteRowPacket[]>(
-    `${SELECT_APUNTE} ${WHERE_VISIBLE_APUNTE} AND ap.nivel_academico != 'paes'
+    `${SELECT_APUNTE} ${WHERE_VISIBLE_APUNTE} AND ap.nivel_academico != 'paes' AND ap.id_alumno != ?
      ORDER BY ${TIENE_FOTO_REAL_APUNTE} DESC, ap.id DESC
      LIMIT 10`,
+    [demoExclusionParam(viewerCalifica)],
   );
   return rows;
 }
 
-export async function getHomeDataRaw(): Promise<HomeDataRaw> {
+export async function getHomeDataRaw(viewerCalifica: boolean): Promise<HomeDataRaw> {
   const excluidos: number[] = [];
 
   // 1. Tutorías recomendadas (vitrina.php:217-246, rama sin afinidad)
@@ -69,6 +72,7 @@ export async function getHomeDataRaw(): Promise<HomeDataRaw> {
     `${TIENE_FOTO_REAL_SERVICIO} DESC, ${TIENE_VIDEO} DESC, ${TIENE_HORARIO} DESC, s.id DESC`,
     8,
     excluidos,
+    viewerCalifica,
   );
   excluidos.push(...serviciosRecomendados.map((r) => r.id));
 
@@ -79,6 +83,7 @@ export async function getHomeDataRaw(): Promise<HomeDataRaw> {
     `${TIENE_FOTO_REAL_SERVICIO} DESC, ${TIENE_HORARIO} DESC, s.id DESC`,
     8,
     excluidos,
+    viewerCalifica,
   );
   excluidos.push(...serviciosNuevos.map((r) => r.id));
 
@@ -91,6 +96,7 @@ export async function getHomeDataRaw(): Promise<HomeDataRaw> {
     `${TIENE_FOTO_REAL_SERVICIO} DESC, ${TIENE_VIDEO} DESC, ${TIENE_HORARIO} DESC, s.id DESC`,
     12,
     excluidos,
+    viewerCalifica,
   );
   const clasesPaes = paesCandidatos.length >= 4 ? paesCandidatos : [];
   if (clasesPaes.length > 0) excluidos.push(...clasesPaes.map((r) => r.id));
@@ -104,6 +110,7 @@ export async function getHomeDataRaw(): Promise<HomeDataRaw> {
     `${TIENE_FOTO_REAL_SERVICIO} DESC, ${TIENE_HORARIO} DESC, (s.cupos_oferta > 0) DESC, s.id DESC`,
     12,
     excluidos,
+    viewerCalifica,
   );
   const tieneOfertasActivas = ofertasReales.some((r) => r.cupos_oferta > 0);
   let ofertas: ServicioRow[] = [];
@@ -112,12 +119,12 @@ export async function getHomeDataRaw(): Promise<HomeDataRaw> {
     excluidos.push(...ofertasReales.map((r) => r.id));
     if (ofertas.length < 6) {
       const faltan = Math.min(3, 6 - ofertas.length);
-      const relleno = await fetchServiciosDedup("", [], `${TIENE_FOTO_REAL_SERVICIO} DESC, ${TIENE_HORARIO} DESC, s.id ASC`, faltan, excluidos);
+      const relleno = await fetchServiciosDedup("", [], `${TIENE_FOTO_REAL_SERVICIO} DESC, ${TIENE_HORARIO} DESC, s.id ASC`, faltan, excluidos, viewerCalifica);
       ofertas.push(...relleno);
     }
   }
 
-  const apuntesRecomendados = await fetchApuntesRecomendados();
+  const apuntesRecomendados = await fetchApuntesRecomendados(viewerCalifica);
 
   return { serviciosRecomendados, serviciosNuevos, apuntesRecomendados, clasesPaes, ofertas };
 }

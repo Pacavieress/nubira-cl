@@ -1,6 +1,7 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
 import { construirCondicionTexto, esBusquedaPaes } from "../../lib/busquedaTexto.js";
+import { demoExclusionParam } from "../../lib/demoTutorVisibility.js";
 import type {
   ApunteDetalleRow,
   ApunteRow,
@@ -63,9 +64,9 @@ function ordenSql(orden: string | undefined): string {
   }
 }
 
-export async function searchApuntesPublicos(filters: SearchApuntesFilters): Promise<SearchApuntesResult> {
-  const conditions: string[] = [];
-  const params: Array<string | number> = [];
+export async function searchApuntesPublicos(filters: SearchApuntesFilters, viewerCalifica: boolean): Promise<SearchApuntesResult> {
+  const conditions: string[] = ["ap.id_alumno != ?"];
+  const params: Array<string | number> = [demoExclusionParam(viewerCalifica)];
 
   if (filters.nivel && NIVELES_VALIDOS.has(filters.nivel)) {
     conditions.push("ap.nivel_academico = ?");
@@ -117,16 +118,18 @@ export async function searchApuntesPublicos(filters: SearchApuntesFilters): Prom
 
 // Puerto exacto de vitrina_apuntes.php:60-75 — a propósito NO reutiliza WHERE_VISIBLE:
 // la query real de los chips no filtra por al.bloqueado, distinto del listado principal.
-export async function getCategoriasApuntes(): Promise<CategoriaApunteRow[]> {
-  const [rows] = await pool.query<CategoriaApunteRowPacket[]>(`
-    SELECT ap.categoria, COUNT(*) AS total
+export async function getCategoriasApuntes(viewerCalifica: boolean): Promise<CategoriaApunteRow[]> {
+  const [rows] = await pool.query<CategoriaApunteRowPacket[]>(
+    `SELECT ap.categoria, COUNT(*) AS total
     FROM apuntes ap
     JOIN alumnos al ON al.id = ap.id_alumno
     WHERE ap.publico = 1 AND ap.visible = 1 AND al.visible = 1
       AND ap.categoria IS NOT NULL AND ap.categoria != ''
+      AND ap.id_alumno != ?
     GROUP BY ap.categoria
-    ORDER BY total DESC
-  `);
+    ORDER BY total DESC`,
+    [demoExclusionParam(viewerCalifica)],
+  );
   return rows;
 }
 

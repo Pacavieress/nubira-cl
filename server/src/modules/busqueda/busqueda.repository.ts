@@ -1,6 +1,7 @@
 import type { RowDataPacket } from "mysql2";
 import { pool } from "../../db/pool.js";
 import { construirCondicionTexto, esBusquedaPaes } from "../../lib/busquedaTexto.js";
+import { demoExclusionParam } from "../../lib/demoTutorVisibility.js";
 import type { ApunteRow } from "../apuntes/apuntes.types.js";
 import type { ServicioRow } from "../servicios/servicios.types.js";
 import type { BusquedaFilters, OrdenBusqueda } from "./busqueda.types.js";
@@ -92,7 +93,7 @@ interface CondicionesBusqueda {
 // excluirCategoria=true arma la misma combinación que $sql_extra_s_facet en busqueda.php
 // (todos los filtros MENOS categoría) — para que el facet de categorías-con-resultados no
 // se auto-excluya la categoría ya elegida.
-function condicionesServicios(f: BusquedaFilters, excluirCategoria: boolean): CondicionesBusqueda {
+function condicionesServicios(f: BusquedaFilters, excluirCategoria: boolean, viewerCalifica: boolean): CondicionesBusqueda {
   const params: Array<string | number> = [];
   let where = f.q.length > 1 ? construirCondicionTexto(f.q, CAMPOS_TEXTO_SERVICIO, params) : "1=1";
 
@@ -117,11 +118,14 @@ function condicionesServicios(f: BusquedaFilters, excluirCategoria: boolean): Co
   if (f.video) {
     extra += " AND s.video_estado = 'aprobado'";
   }
+  // [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica.
+  extra += " AND s.alumno_id != ?";
+  params.push(demoExclusionParam(viewerCalifica));
 
   return { where: `${WHERE_SERVICIOS_BUSQUEDA} AND (${where})${extra}`, params };
 }
 
-function condicionesApuntes(f: BusquedaFilters): CondicionesBusqueda {
+function condicionesApuntes(f: BusquedaFilters, viewerCalifica: boolean): CondicionesBusqueda {
   const params: Array<string | number> = [];
   let where = f.q.length > 1 ? construirCondicionTexto(f.q, CAMPOS_TEXTO_APUNTE, params) : "1=1";
 
@@ -139,12 +143,15 @@ function condicionesApuntes(f: BusquedaFilters): CondicionesBusqueda {
     extra += " AND ap.precio <= ?";
     params.push(f.precioMax);
   }
+  // [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica.
+  extra += " AND ap.id_alumno != ?";
+  params.push(demoExclusionParam(viewerCalifica));
 
   return { where: `${WHERE_APUNTES_BUSQUEDA} AND (${where})${extra}`, params };
 }
 
-export async function countServiciosBusqueda(f: BusquedaFilters): Promise<number> {
-  const { where, params } = condicionesServicios(f, false);
+export async function countServiciosBusqueda(f: BusquedaFilters, viewerCalifica: boolean): Promise<number> {
+  const { where, params } = condicionesServicios(f, false, viewerCalifica);
   const [rows] = await pool.query<CountRowPacket[]>(
     `SELECT COUNT(*) AS total FROM servicios s LEFT JOIN alumnos a ON s.alumno_id = a.id ${where}`,
     params,
@@ -152,8 +159,8 @@ export async function countServiciosBusqueda(f: BusquedaFilters): Promise<number
   return rows[0]?.total ?? 0;
 }
 
-export async function countApuntesBusqueda(f: BusquedaFilters): Promise<number> {
-  const { where, params } = condicionesApuntes(f);
+export async function countApuntesBusqueda(f: BusquedaFilters, viewerCalifica: boolean): Promise<number> {
+  const { where, params } = condicionesApuntes(f, viewerCalifica);
   const [rows] = await pool.query<CountRowPacket[]>(
     `SELECT COUNT(*) AS total FROM apuntes ap LEFT JOIN alumnos a ON ap.id_alumno = a.id ${where}`,
     params,
@@ -163,8 +170,8 @@ export async function countApuntesBusqueda(f: BusquedaFilters): Promise<number> 
 
 // Puerto exacto de busqueda.php:414-427 — categorías con >=1 resultado real bajo los
 // filtros actuales (sin la categoría misma).
-export async function getCategoriasConResultadosBusqueda(f: BusquedaFilters): Promise<string[]> {
-  const { where, params } = condicionesServicios(f, true);
+export async function getCategoriasConResultadosBusqueda(f: BusquedaFilters, viewerCalifica: boolean): Promise<string[]> {
+  const { where, params } = condicionesServicios(f, true, viewerCalifica);
   const [rows] = await pool.query<CategoriaRowPacket[]>(
     `SELECT s.categoria, COUNT(*) AS total FROM servicios s LEFT JOIN alumnos a ON s.alumno_id = a.id ${where} GROUP BY s.categoria`,
     params,
@@ -172,8 +179,8 @@ export async function getCategoriasConResultadosBusqueda(f: BusquedaFilters): Pr
   return rows.map((r) => r.categoria);
 }
 
-export async function searchServiciosBusqueda(f: BusquedaFilters, limit: number, offset: number): Promise<ServicioRow[]> {
-  const { where, params } = condicionesServicios(f, false);
+export async function searchServiciosBusqueda(f: BusquedaFilters, limit: number, offset: number, viewerCalifica: boolean): Promise<ServicioRow[]> {
+  const { where, params } = condicionesServicios(f, false, viewerCalifica);
   const [rows] = await pool.query<ServicioRowPacket[]>(
     `${SELECT_SERVICIO_BUSQUEDA} ${where} ORDER BY ${ordenServicios(f.orden)} LIMIT ? OFFSET ?`,
     [...params, limit, offset],
@@ -181,8 +188,8 @@ export async function searchServiciosBusqueda(f: BusquedaFilters, limit: number,
   return rows;
 }
 
-export async function searchApuntesBusqueda(f: BusquedaFilters, limit: number, offset: number): Promise<ApunteRow[]> {
-  const { where, params } = condicionesApuntes(f);
+export async function searchApuntesBusqueda(f: BusquedaFilters, limit: number, offset: number, viewerCalifica: boolean): Promise<ApunteRow[]> {
+  const { where, params } = condicionesApuntes(f, viewerCalifica);
   const [rows] = await pool.query<ApunteRowPacket[]>(
     `${SELECT_APUNTE_BUSQUEDA} ${where} ORDER BY ${ordenApuntes(f.orden)} LIMIT ? OFFSET ?`,
     [...params, limit, offset],

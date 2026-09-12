@@ -45,6 +45,10 @@ define('UNSUB_SECRET', getenv('UNSUB_SECRET') ?: '');
 // Tiempo máximo para liberar fondos a vendedor (en días)
 define('CONTRATO_LIBERACION_DIAS', 3);
 
+// Cuenta demo de tutor (contacto@nubira.cl) usada para publicar ejemplos — su contenido
+// solo debe verse por viewers que califican (ver app/helpers/demo_visibility.php).
+define('DEMO_TUTOR_USER_ID', 167);
+
 // Zona horaria
 date_default_timezone_set('America/Santiago');
 

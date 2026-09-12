@@ -9,6 +9,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/helpers/demo_visibility.php';
 
 if (!isset($_SESSION['usuario_id'])) {
   http_response_code(401);
@@ -32,6 +33,9 @@ $tipos       = $_POST['tipos'] ?? ['apunte','servicio'];
 if (!is_array($tipos) || empty($tipos)) $tipos = ['apunte','servicio'];
 
 $asig_score_pattern = $asig_filter !== '' ? $asig_filter : $carrera;
+
+// [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica.
+$demo_excl_s = nb_viewer_ve_demo($conn) ? "" : " AND s.alumno_id != " . DEMO_TUTOR_USER_ID . " ";
 
 // Helpers
 function q($conn, $sql, $types = '', $params = []) {
@@ -141,6 +145,7 @@ try {
       FROM servicios s
       WHERE
         (s.estado IS NULL OR s.estado IN ('aprobado','Aprobado','publicado','Publicada','activo','Activo','Aprobada','aprobada',''))
+        {$demo_excl_s}
         AND NOT EXISTS (
           SELECT 1 FROM interacciones_descubre i
           WHERE i.usuario_id = ?

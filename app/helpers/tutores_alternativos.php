@@ -4,6 +4,10 @@
  * Extraído de notificar_alternativas_chat.php para reutilizarse también
  * desde paneles de campaña manuales (ej. enviar_cupon_alternativas.php).
  */
+require_once __DIR__ . '/demo_visibility.php';
+
+// [DEMO] Estas funciones corren desde cron/paneles admin, sin viewer HTTP real que pueda
+// "calificar" — la cuenta demo (contacto@nubira.cl) se excluye siempre, nunca condicional.
 
 if (!function_exists('buscar_tutores_alternativos')) {
     function buscar_tutores_alternativos($conn, $categoria, $tutor_original_id) {
@@ -17,7 +21,7 @@ if (!function_exists('buscar_tutores_alternativos')) {
             FROM servicios s
             INNER JOIN alumnos a ON s.alumno_id = a.id
             WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0
-              AND s.categoria = ? AND a.id != ?
+              AND s.categoria = ? AND a.id != ? AND a.id != " . DEMO_TUTOR_USER_ID . "
             HAVING tiempo_resp_calculado IS NOT NULL AND tiempo_resp_calculado < 60
             ORDER BY tiempo_resp_calculado ASC
             LIMIT 3
@@ -42,7 +46,7 @@ if (!function_exists('buscar_tutores_alternativos')) {
             FROM servicios s
             INNER JOIN alumnos a ON s.alumno_id = a.id
             WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0
-              AND s.categoria = ? AND a.id != ?
+              AND s.categoria = ? AND a.id != ? AND a.id != " . DEMO_TUTOR_USER_ID . "
             ORDER BY tiempo_resp_calculado IS NULL, tiempo_resp_calculado ASC
             LIMIT 3
         ";
@@ -67,7 +71,7 @@ if (!function_exists('obtener_tutores_por_ids')) {
             FROM servicios s
             INNER JOIN alumnos a ON s.alumno_id = a.id
             WHERE s.estado = 'aprobado' AND s.visible = 1 AND a.bloqueado = 0
-              AND s.categoria = ? AND a.id != ? AND s.id IN ($placeholders)
+              AND s.categoria = ? AND a.id != ? AND a.id != " . DEMO_TUTOR_USER_ID . " AND s.id IN ($placeholders)
         ";
         $stmt = $conn->prepare($sql);
         $tipos = "si" . str_repeat('i', count($ids));

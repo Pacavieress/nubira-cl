@@ -9,6 +9,7 @@ require_once __DIR__ . '/helpers/seo.php';
 require_once __DIR__ . '/helpers/ofertas.php';
 require_once __DIR__ . '/iconos.php';
 require_once __DIR__ . '/componentes/card_servicio_grid.php';  // render_card_servicio_grid()
+require_once __DIR__ . '/helpers/demo_visibility.php';
 
 // 1. VALIDACIÓN DE PARÁMETROS
 $tipo = $_GET['tipo'] ?? '';
@@ -79,6 +80,9 @@ try {
 
 // 3. CONSULTA PÚBLICA POR CATEGORÍA (o por título LIKE si filtro_like está definido)
 $filas = [];
+// [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica.
+$demo_excl_s  = nb_viewer_ve_demo($conn) ? "" : " AND s.alumno_id != " . DEMO_TUTOR_USER_ID . " ";
+$demo_excl_ap = nb_viewer_ve_demo($conn) ? "" : " AND ap.id_alumno != " . DEMO_TUTOR_USER_ID . " ";
 // [PAES] Solo en la landing de PAES específicamente (no contamina otras categorías):
 // suma servicios/apuntes marcados es_paes/nivel_academico='paes' aunque su categoría
 // de materia sea otra (ej. un servicio de Matemáticas marcado "Prepara para la PAES").
@@ -97,7 +101,7 @@ if ($tipo === 'clases') {
             WHERE TRIM(LOWER(s.estado)) IN ('aprobado','publicado','activo')
               AND s.visible = 1
               AND COALESCE(a.visible, 1) = 1
-              AND a.bloqueado = 0";
+              AND a.bloqueado = 0 {$demo_excl_s}";
     if ($categoria === 'PAES') {
         // [PAES] Mismo criterio amplio que busqueda.php: LIKE sobre 6 campos + es_paes=1,
         // en vez de categoria exacta — cubre servicios de otras categorías que mencionan PAES
@@ -123,7 +127,7 @@ if ($tipo === 'clases') {
             WHERE ap.publico = 1
               AND ap.visible = 1
               AND al.visible = 1
-              AND al.bloqueado = 0";
+              AND al.bloqueado = 0 {$demo_excl_ap}";
     if ($categoria === 'PAES') {
         // [PAES] Mismo criterio que busqueda.php usa para apuntes: LIKE sobre
         // titulo/descripcion/asignatura/materia + nivel_academico='paes'. Apuntes no

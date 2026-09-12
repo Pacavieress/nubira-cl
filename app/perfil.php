@@ -23,6 +23,7 @@ require_once __DIR__ . '/helpers/institucion.php';     // institucion_tutor()
 require_once __DIR__ . '/helpers/seo.php';
 require_once __DIR__ . '/helpers/ofertas.php';         // oferta_vigente() — espejo de cargar_servicios.php
 require_once __DIR__ . '/helpers/portada_helper.php';  // obtenerMiniaturaApunte()
+require_once __DIR__ . '/helpers/demo_visibility.php';
 
 // [NUBIRA SHIELD] Cargar enmascarador de URLs
 $rutas_shield = [__DIR__ . '/seguridad_url.php', __DIR__ . '/app/seguridad_url.php', $_SERVER['DOCUMENT_ROOT'] . '/app/seguridad_url.php'];
@@ -111,6 +112,13 @@ if ($perfil_id_ver <= 0) {
 // 6. DEFINIR PERMISOS
 $es_propio = ($usuario_logueado_id === $perfil_id_ver && !$es_visitante);
 $es_admin  = ($rol_logueado === 'admin');
+
+// [DEMO] Perfil de la cuenta demo (contacto@nubira.cl) — invisible a quien no califica,
+// mismo destino que un perfil inexistente (ver punto 8 más abajo).
+if ($perfil_id_ver === DEMO_TUTOR_USER_ID && !$es_propio && !$es_admin && !nb_viewer_ve_demo($conn)) {
+    header("Location: /");
+    exit;
+}
 
 // 7. HELPERS VISUALES
 if (!function_exists('formatearNombrePrivado')) {

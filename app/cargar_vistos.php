@@ -18,9 +18,12 @@ require_once $base_path . '/conexion.php';
 require_once $base_path . '/helpers/ofertas.php';
 require_once $base_path . '/helpers/imagen_servicio.php'; // [BANCO] resolver unificado
 require_once $base_path . '/helpers/seo.php';
+require_once $base_path . '/helpers/demo_visibility.php';
 
 if (!isset($_SESSION['usuario_id'])) exit;
 $usuario_id = (int)$_SESSION['usuario_id'];
+$demo_excl_s  = nb_viewer_ve_demo($conn) ? "" : " AND s.alumno_id != " . DEMO_TUTOR_USER_ID . " ";
+$demo_excl_ap = nb_viewer_ve_demo($conn) ? "" : " AND ap.id_alumno != " . DEMO_TUTOR_USER_ID . " ";
 
 // 2. CONSULTA SQL (LOGS)
 $sql_log = "SELECT entidad_tipo, entidad_id, MAX(fecha) as fecha_reciente
@@ -73,7 +76,7 @@ if (!empty($ids_servicios)) {
         FROM servicios s
         LEFT JOIN alumnos a ON s.alumno_id = a.id
         LEFT JOIN banco_imagenes bi ON bi.id = s.imagen_banco_id
-        WHERE s.id IN ($ids_in) AND s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0
+        WHERE s.id IN ($ids_in) AND s.estado = 'aprobado' AND (s.visible = 1 OR s.visible IS NULL) AND a.bloqueado = 0 {$demo_excl_s}
     ");
     if($res) while ($r = $res->fetch_assoc()) $data_servicios[$r['id']] = $r;
 }
@@ -85,7 +88,7 @@ if (!empty($ids_apuntes)) {
                a.nombre as tutor_nombre, a.foto_perfil
         FROM apuntes ap
         LEFT JOIN alumnos a ON ap.id_alumno = a.id
-        WHERE ap.id IN ($ids_in) AND ap.estado = 'aprobado' AND ap.visible = 1 AND a.bloqueado = 0
+        WHERE ap.id IN ($ids_in) AND ap.estado = 'aprobado' AND ap.visible = 1 AND a.bloqueado = 0 {$demo_excl_ap}
     ");
     if($res) while ($r = $res->fetch_assoc()) $data_apuntes[$r['id']] = $r;
 }

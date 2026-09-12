@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { viewerCalificaDemo } from "../../lib/demoTutorVisibility.js";
 import { mapApunteRow } from "../apuntes/apuntes.mapper.js";
 import { mapServicioRow } from "../servicios/servicios.mapper.js";
 import {
@@ -80,10 +81,12 @@ export async function getBusqueda(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const viewerCalifica = await viewerCalificaDemo(req.usuarioId);
+
   const [totalServicios, totalApuntes, categoriasConResultadosRaw] = await Promise.all([
-    countServiciosBusqueda(filtros),
-    countApuntesBusqueda(filtros),
-    getCategoriasConResultadosBusqueda(filtros),
+    countServiciosBusqueda(filtros, viewerCalifica),
+    countApuntesBusqueda(filtros, viewerCalifica),
+    getCategoriasConResultadosBusqueda(filtros, viewerCalifica),
   ]);
   const setResultados = new Set(categoriasConResultadosRaw);
   const categoriasConResultados = CATEGORIAS_VALIDAS_ORDEN.filter(
@@ -115,8 +118,8 @@ export async function getBusqueda(req: Request, res: Response): Promise<void> {
   }
 
   const [serviciosRows, apuntesRows] = await Promise.all([
-    ejecutarServicios ? searchServiciosBusqueda(filtros, limitS, offsetS) : Promise.resolve([]),
-    ejecutarApuntes ? searchApuntesBusqueda(filtros, limitA, offsetA) : Promise.resolve([]),
+    ejecutarServicios ? searchServiciosBusqueda(filtros, limitS, offsetS, viewerCalifica) : Promise.resolve([]),
+    ejecutarApuntes ? searchApuntesBusqueda(filtros, limitA, offsetA, viewerCalifica) : Promise.resolve([]),
   ]);
 
   // Puerto exacto de busqueda.php:479-487 — sensor de búsqueda sin resultados. req.usuarioId

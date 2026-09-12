@@ -30,6 +30,14 @@ foreach ($rutas_shield as $rs) {
     }
 }
 
+$rutas_demo_visibility = [__DIR__ . '/helpers/demo_visibility.php', dirname(__DIR__) . '/app/helpers/demo_visibility.php', $_SERVER['DOCUMENT_ROOT'] . '/app/helpers/demo_visibility.php'];
+foreach ($rutas_demo_visibility as $rdv) {
+    if (file_exists($rdv)) {
+        require_once $rdv;
+        break;
+    }
+}
+
 $usuario_id = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : 0;
 $rol        = $_SESSION['rol'] ?? 'visitante';
 
@@ -151,6 +159,13 @@ $filtros = [
 $params  = [];
 $tipos   = "";
 
+// [DEMO] Cuenta demo (contacto@nubira.cl) oculta a quien no califica.
+if (!nb_viewer_ve_demo($conn)) {
+    $filtros[] = "ap.id_alumno != ?";
+    $params[]  = DEMO_TUTOR_USER_ID;
+    $tipos     .= "i";
+}
+
 if ($q !== '') {
     $filtros[] = "(ap.titulo LIKE ? OR ap.asignatura LIKE ? OR ap.nombre_curso LIKE ? OR ap.ia_keywords LIKE ? OR ap.categoria LIKE ?)";
     $like = "%{$q}%";
@@ -172,7 +187,6 @@ if ($nivelFiltro !== '' && in_array($nivelFiltro, $niveles_validos, true)) {
 
 // OPTIMIZACIÓN DE ORDENAMIENTO
 $orderBy = 'ap.fecha_subida DESC, ap.id DESC';
-$seed_int = crc32(date('Y-m-d') . floor(date('G') / 4));
 
 switch ($order) {
     case 'fecha_asc':   $orderBy = 'ap.fecha_subida ASC, ap.id ASC'; break;
@@ -183,7 +197,10 @@ switch ($order) {
         $orderBy = "ventas_totales DESC, ap.id DESC";
         break;
     default:
-        $orderBy = "RAND($seed_int)";
+        // Random puro (sin criterio de prioridad — apuntes no tiene sistema de badges),
+        // reseeded cada 30 min (antes: crc32+4h). Mismo mecanismo que busqueda.php/
+        // cargar_servicios.php para la rotación del Copiloto de Marketing.
+        $orderBy = "RAND(FLOOR(UNIX_TIMESTAMP()/1800))";
         break;
 }
 

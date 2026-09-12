@@ -36,7 +36,9 @@ if (isset($conn)) {
 }
 // =========================================================================
 
-require_once __DIR__ . '/iconos.php'; 
+require_once __DIR__ . '/iconos.php';
+require_once __DIR__ . '/helpers/demo_visibility.php';
+$demo_excl_s = nb_viewer_ve_demo($conn) ? "" : " AND s.alumno_id != " . DEMO_TUTOR_USER_ID . " ";
 
 // 2. DATOS USUARIO
 $rol             = $_SESSION['rol'] ?? 'alumno';
@@ -76,6 +78,7 @@ $stmtCat = $conn->prepare("
     WHERE s.estado = 'aprobado' AND s.visible = 1
       AND COALESCE(a.visible, 1) = 1 AND COALESCE(a.bloqueado, 0) = 0
       AND s.categoria IS NOT NULL AND s.categoria != ''
+      {$demo_excl_s}
     GROUP BY s.categoria
     ORDER BY total DESC
 ");
