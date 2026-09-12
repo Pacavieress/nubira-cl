@@ -1,10 +1,24 @@
 "use client";
 
+// Patrones de referrer que indican que venimos de una pasarela de pago — puerto exacto
+// de la variante de navegacionSeguraNubira() de ver_apunte.php:1161-1170 (distinta de la
+// de guias.php/guia_post.php: esa no tiene este chequeo). Con `evitarBucleDePago`, si el
+// referrer matchea, se ignora history.back() del todo y se va directo al fallback — evita
+// quedar rebotando hacia la pasarela de pago al volver desde una compra.
+const PATRONES_REFERRER_PAGO = ["mercadopago", "pago_error", "contratar_servicio", "iniciar_pago", "iniciar-pago"];
+
 // Puerto exacto de navegacionSeguraNubira() (guias.php:243-249, guia_post.php:545-554) —
 // history.back() si hay desde dónde volver, si no un fallback contextual fijo (nunca un
 // destino genérico como "/").
-export function VolverButton({ fallbackHref }: { fallbackHref: string }) {
+export function VolverButton({ fallbackHref, evitarBucleDePago = false }: { fallbackHref: string; evitarBucleDePago?: boolean }) {
   function volver() {
+    if (evitarBucleDePago) {
+      const ref = document.referrer.toLowerCase();
+      if (PATRONES_REFERRER_PAGO.some((p) => ref.includes(p))) {
+        window.location.href = fallbackHref;
+        return;
+      }
+    }
     if (window.history.length > 1) {
       window.history.back();
     } else {
