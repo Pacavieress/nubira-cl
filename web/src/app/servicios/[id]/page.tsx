@@ -205,7 +205,7 @@ export default async function DetalleServicio({ params }: DetalleProps) {
             aparecer si isOwner (o admin), único caso en que estado!='aprobado' llega
             hasta acá — ver el fix de visibilidad en servicios.controller.ts. */}
         {isOwner && servicio.estado === "pendiente" && (
-          <div className="mb-6 bg-amber-50 border border-yellow-200 rounded-2xl p-4 flex items-start md:items-center gap-4 shadow-sm">
+          <div className="mb-6 bg-amber-50 border border-yellow-200 rounded-2xl p-4 flex items-start md:items-center gap-4 shadow-sm animate-pulse">
             <div className="w-10 h-10 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center shrink-0 mt-1 md:mt-0">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -474,6 +474,7 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                 {servicio.tutorEnClase && (
                   <div className="mb-5 bg-orange-50 border border-orange-100 rounded-xl p-3.5 flex items-start gap-3 shadow-sm">
                     <div className="relative flex h-2.5 w-2.5 mt-1 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500 border border-white" />
                     </div>
                     <div>
