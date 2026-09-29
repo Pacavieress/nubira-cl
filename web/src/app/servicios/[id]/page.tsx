@@ -258,7 +258,10 @@ export default async function DetalleServicio({ params }: DetalleProps) {
 
               <h1 className="text-3xl md:text-4xl font-medium text-[#222222] leading-tight mb-6 mt-3 tracking-[-0.01em]">{servicio.titulo}</h1>
 
-              <div className="flex items-center gap-4 pb-6 border-b border-[#f0f0f0] w-full">
+              <Link
+                href={`/tutores/${servicio.tutor.id}`}
+                className="flex items-center gap-4 pb-6 border-b border-[#f0f0f0] w-full hover:bg-gray-50 p-3 rounded-xl transition -mx-3"
+              >
                 <div className="w-24 h-24 rounded-full border border-[#f0f0f0] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex-shrink-0">
                   {servicio.tutor.fotoUrl ? (
                     <img src={servicio.tutor.fotoUrl} alt={servicio.tutor.nombre ?? "Tutor"} className="w-full h-full object-cover" />
@@ -298,7 +301,7 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                     <TiempoRespuestaPill tono={servicio.tiempoRespuesta.tono} texto={servicio.tiempoRespuesta.texto} ratingPromedio={servicio.rating.promedio} votos={servicio.rating.votos} />
                   </div>
                 </div>
-              </div>
+              </Link>
 
               {/* Puerto de detalle_servicio.php:547-568 — "Sobre este servicio" va
                   INMEDIATAMENTE después del bloque del tutor, antes del video. */}
