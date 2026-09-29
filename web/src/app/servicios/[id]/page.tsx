@@ -11,6 +11,7 @@ import { DescripcionExpandible } from "@/components/DescripcionExpandible";
 import { FavoritoToggle } from "@/components/FavoritoToggle";
 import { Header } from "@/components/Header";
 import { IniciarChatBoton } from "@/components/IniciarChatBoton";
+import { SelectorSlotsDetalle } from "@/components/SelectorSlotsDetalle";
 import { ServicioCardCarrusel } from "@/components/ServicioCardCarrusel";
 import { TiempoRespuestaPill } from "@/components/TiempoRespuestaPill";
 import { VideoTutorPlayer } from "@/components/VideoTutorPlayer";
@@ -127,6 +128,10 @@ export default async function DetalleServicio({ params }: DetalleProps) {
   }
 
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
+  // Mismo patrón de login con redir absoluto hacia esta app que apunte/[id]/page.tsx:114,120
+  // y guias/[cat]/page.tsx — lo usa SelectorSlotsDetalle para el visitante sin sesión.
+  const nextjsSiteUrl = process.env.NEXTJS_SITE_URL ?? "http://nubira.local:3000";
+  const loginRedirHref = `${phpSiteUrl}/login?redir=${encodeURIComponent(`${nextjsSiteUrl}/servicios/${servicio.id}`)}`;
   const disponibilidad = parsearHorariosServicio(servicio.horarios);
   const pctDescuento =
     servicio.ofertaVigente && servicio.precio && servicio.precio > 0 && servicio.precioOferta !== null
@@ -379,31 +384,12 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                       </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {disponibilidad.dias.map(({ dia, bloques }) => {
-                      const esProximo = dia === disponibilidad.diaProximo;
-                      return (
-                        <div
-                          key={dia}
-                          className={`text-left bg-white border rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] relative ${
-                            esProximo ? "border-[#54A6D8] ring-2 ring-blue-100" : "border-[#f0f0f0]"
-                          }`}
-                        >
-                          {esProximo && (
-                            <span className="absolute -top-2 -right-2 bg-[#54A6D8] text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">Próximo</span>
-                          )}
-                          <p className={`text-xs font-medium mb-2 ${esProximo ? "text-[#54A6D8]" : "text-[#222222]"}`}>{dia}</p>
-                          <div className="flex flex-col gap-1.5">
-                            {bloques.map((bloque) => (
-                              <span key={bloque} className="bg-blue-50 text-[#54A6D8] text-[10px] font-medium px-2 py-1 rounded-md text-center border border-blue-100/50 truncate">
-                                {bloque}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <SelectorSlotsDetalle
+                    servicioId={servicio.id}
+                    disponibilidad={disponibilidad}
+                    esGuest={!isAuthenticated}
+                    loginHref={loginRedirHref}
+                  />
                 </div>
               ) : (
                 <div className="mt-8 pt-8 border-t border-gray-50">
