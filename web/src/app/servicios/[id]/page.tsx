@@ -174,7 +174,9 @@ export default async function DetalleServicio({ params }: DetalleProps) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(courseLd) }} />
-      <Header titulo={servicio.titulo} />
+      <div className="hidden md:block">
+        <Header titulo={servicio.titulo} />
+      </div>
       {!isOwner && <VistaTracker publicacionId={servicio.id} />}
       {/* Puerto de detalle_servicio.php:412-420 — "Modo Task" en móvil: esta página oculta el
           nav inferior global (BottomNav, montado en layout.tsx para todas las páginas) para
@@ -197,7 +199,7 @@ export default async function DetalleServicio({ params }: DetalleProps) {
           es un bug nuevo de esta página, es un patrón pre-existente del sitio). padding-left sí
           se absorbe dentro del border-box y no desborda. Pendiente aparte: evaluar si conviene
           aplicar el mismo cambio ml-64→pl-64 al resto de páginas portadas. */}
-      <main className={`max-w-full overflow-hidden mx-auto px-4 md:px-10 pt-20 pb-24 lg:pb-16 lg:pl-64 ${mostrarBarraMovil ? "pb-40 lg:pb-16" : ""}`}>
+      <main className={`max-w-full overflow-hidden mx-auto px-4 md:px-10 pt-4 md:pt-20 pb-24 lg:pb-16 lg:pl-64 ${mostrarBarraMovil ? "pb-40 lg:pb-16" : ""}`}>
         <div className="max-w-[1400px] mx-auto">
         {/* Banner propietario — puerto de detalle_servicio.php:444-466. Solo puede
             aparecer si isOwner (o admin), único caso en que estado!='aprobado' llega
