@@ -102,9 +102,14 @@ export default async function GuiaArticuloPage({ params }: ArticuloProps) {
       {breadcrumbLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />}
 
       <Header titulo={articulo.titulo} />
-      {/* lg:pl-72 (no lg:pl-64) en vez de lg:ml-64 — overflow horizontal bajo <body flex
-          flex-col>, ver web/src/app/apuntes/page.tsx para el diagnóstico completo. */}
-      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 pt-20 pb-24 lg:pb-10 lg:pl-72">
+      {/* [11/09/2026] lg:ml-64, SIN max-w-[1600px] (a diferencia de guias/page.tsx y
+          guias/[cat]/page.tsx) — fidelidad exacta a guia_post.php:386, cuyo <main> real usa
+          `max-w-full lg:ml-64` sin tope propio: el ancho de lectura del artículo lo controla
+          el wrapper interno `<div className="max-w-[900px]">` (línea ~124 de este archivo),
+          no el <main>. Como ese wrapper es independiente del ancho del padre, cambiar acá a
+          ml-64 no ensancha las líneas de texto — solo cambia cuánto aire queda a la derecha
+          de la columna de 900px en pantallas anchas. */}
+      <main className="max-w-full lg:ml-64 px-4 md:px-8 pt-20 pb-24 lg:pb-10">
         {mostrarBreadcrumb && (
           <nav className="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-gray-700">
