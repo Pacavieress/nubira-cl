@@ -9,14 +9,19 @@ import { ContratarForm } from "@/components/ContratarForm";
 
 interface ContratarPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ fechaClase?: string | string[] }>;
 }
 
 // Puerto de contratar_servicio.php (GET) — Grupo de Contratación, 26/08/2026. La rama de
 // selección de horario/cupón/notas y el submit viven en ContratarForm (client component,
 // necesita interactividad real). Esta página solo hace el gate de sesión + la carga inicial
 // (mismos 2 chequeos que el PHP real: servicio existe y no es el propio).
-export default async function ContratarPage({ params }: ContratarPageProps) {
+export default async function ContratarPage({ params, searchParams }: ContratarPageProps) {
   const { id } = await params;
+  // Puerto de contratar_servicio.php:46-50 — misma regex; si no calza, se ignora en silencio.
+  const { fechaClase } = await searchParams;
+  const fechaClaseCruda = Array.isArray(fechaClase) ? fechaClase[0] : fechaClase;
+  const preseleccion = fechaClaseCruda && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(fechaClaseCruda) ? fechaClaseCruda : null;
   const servicioId = Number(id);
   const phpSiteUrl = process.env.PHP_SITE_URL ?? "http://nubira.local";
 
@@ -64,7 +69,7 @@ export default async function ContratarPage({ params }: ContratarPageProps) {
           </div>
         </div>
 
-        <ContratarForm servicio={servicio} disponibilidad={disponibilidad} cuponInicial={datos.cupon} phpSiteUrl={phpSiteUrl} />
+        <ContratarForm servicio={servicio} disponibilidad={disponibilidad} cuponInicial={datos.cupon} phpSiteUrl={phpSiteUrl} preseleccion={preseleccion} />
       </main>
     </>
   );

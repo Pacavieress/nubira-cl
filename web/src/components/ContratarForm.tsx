@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ResultadoCupon, ServicioCheckout } from "@/lib/api";
 import type { DisponibilidadServicio } from "@/lib/horarios";
@@ -37,14 +37,22 @@ export function ContratarForm({
   disponibilidad,
   cuponInicial,
   phpSiteUrl,
+  preseleccion,
 }: {
   servicio: ServicioCheckout;
   disponibilidad: DisponibilidadServicio;
   cuponInicial: ResultadoCupon | null;
   phpSiteUrl: string;
+  // Horario elegido en detalle_servicio (YYYY-MM-DD HH:MM:SS, ya validado por la página).
+  preseleccion: string | null;
 }) {
   const router = useRouter();
-  const dias = proximosDias(14);
+  // La preselección viene de detalle_servicio (hasta ~27 días adelante: 4ª fecha del día);
+  // con 14 fijos esas fechas no aparecerían. Sin preselección, sigue siendo 14.
+  const diasHasta = preseleccion
+    ? Math.ceil((new Date(`${preseleccion.slice(0, 10)}T00:00:00`).getTime() - Date.now()) / 86400000) + 1
+    : 0;
+  const dias = proximosDias(Math.max(14, diasHasta));
   const diasHabilitados = new Set(disponibilidad.dias.map((d) => d.dia));
 
   const [fecha, setFecha] = useState<string | null>(null);
@@ -64,7 +72,7 @@ export function ContratarForm({
 
   const montoFinal = cupon && cupon.ok ? cupon.montoFinal : servicio.montoInicial;
 
-  async function seleccionarDia(fechaElegida: string) {
+  async function seleccionarDia(fechaElegida: string, slotPreseleccionado?: string) {
     setFecha(fechaElegida);
     setSlotElegido(null);
     setMotivoSinSlots(null);
@@ -74,10 +82,28 @@ export function ContratarForm({
       const data = (await res.json()) as { slots: SlotDisponible[]; motivo?: string };
       setSlots(data.slots ?? []);
       setMotivoSinSlots(data.slots?.length ? null : (data.motivo ?? "sin_slots_validos"));
+      // Igual que renderSlots() (agenda_slots.js:183-188): solo un slot LIBRE con datetime
+      // exacto se marca; si ya no está disponible, no se selecciona nada y sin mensaje.
+      if (slotPreseleccionado && data.slots?.some((s) => s.datetime === slotPreseleccionado && s.disponible)) {
+        setSlotElegido(slotPreseleccionado);
+      }
     } finally {
       setCargandoSlots(false);
     }
   }
+
+  // Preselección desde detalle_servicio: se consume una sola vez al montar, como el flujo
+  // único de agenda_slots.js. Va ANTES del return temprano de abajo (reglas de hooks).
+  useEffect(() => {
+    if (!preseleccion || !disponibilidad.tieneHorarios) return;
+    const fechaPre = preseleccion.slice(0, 10);
+    const dow = new Date(`${fechaPre}T00:00:00`).getDay();
+    const objetivo =
+      dias.find((d) => d.fecha === fechaPre && diasHabilitados.has(d.diaSemana)) ??
+      dias.find((d) => d.diaSemana === DIAS_ES[dow] && diasHabilitados.has(d.diaSemana));
+    if (objetivo) void seleccionarDia(objetivo.fecha, preseleccion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar, como el flujo único de agenda_slots.js
+  }, []);
 
   if (!disponibilidad.tieneHorarios) {
     return (
