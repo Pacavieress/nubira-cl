@@ -3,10 +3,16 @@
 import { useState } from "react";
 import { CompartirServicioModal } from "./CompartirServicioModal";
 
+// Puerto exacto de icon('share-outline', ...) en app/iconos.php:45 — arrow-up-tray
+// (caja con flecha hacia arriba), no el paper-airplane que había acá antes.
 function IconoCompartir() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 8.25H6a2.25 2.25 0 00-2.25 2.25v9A2.25 2.25 0 006 21.75h12A2.25 2.25 0 0020.25 19.5v-9A2.25 2.25 0 0018 8.25h-1.5M12 3v12m0-12L8.25 6.75M12 3l3.75 3.75"
+      />
     </svg>
   );
 }
