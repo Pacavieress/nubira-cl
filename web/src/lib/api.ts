@@ -254,6 +254,14 @@ export async function getCategoriasApuntes(): Promise<CategoriaApunteChip[]> {
 // criterio que ServicioDetalle: no es un import compartido a propósito.
 export interface ApunteDetalle extends Omit<ApunteListado, "descripcionCorta"> {
   descripcion: string | null;
+  // Fase 0 del visor (solo lectura) — ver server/src/modules/apuntes/apuntes.types.ts para
+  // la nota completa de cada campo. fileUrl es null salvo que viewer.accesoCompleto sea true
+  // (y el VPS tenga NUBIRA_HMAC_SECRET configurado — si falta, el controller lo loguea y
+  // devuelve null en vez de romper el resto del detalle).
+  previewPaginasUrls: string[];
+  esPDF: boolean;
+  esImagen: boolean;
+  fileUrl: string | null;
   asignatura: string | null;
   materia: string | null;
   nivelAcademico: string | null;
@@ -265,7 +273,7 @@ export interface ApunteDetalle extends Omit<ApunteListado, "descripcionCorta"> {
     institucion: string | null;
     verificado: boolean;
   };
-  viewer: { isAuthenticated: boolean; isOwner: boolean };
+  viewer: { isAuthenticated: boolean; isOwner: boolean; accesoCompleto: boolean };
 }
 
 // Mismo bug real que tenía getServicioDetalle (corregido en la Fase 7, favoritos): esta
