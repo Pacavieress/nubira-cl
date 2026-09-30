@@ -6,6 +6,7 @@
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/seguridad_url.php';
 require_once __DIR__ . '/helpers/imagen_compartir_apunte.php';
+require_once __DIR__ . '/helpers/ip_real.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -40,7 +41,7 @@ function check_img_apunte_rate_limit(mysqli $conn): void {
         bloqueado_hasta INT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $ip = ip_real();
     $ahora = time();
     $limit_requests = 40;
     $limit_window = 60;

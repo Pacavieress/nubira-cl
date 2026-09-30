@@ -5,10 +5,12 @@
 
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) session_start();
 
+require_once __DIR__ . '/../helpers/ip_real.php';
+
 function check_nubira_shield($conn, array $opts = []) {
     // 1. IPs en lista blanca (No bloquear nunca)
     $whitelist_ips = ['127.0.0.1', '::1']; // Localhost
-    $ip_usuario = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $ip_usuario = ip_real();
 
     if (in_array($ip_usuario, $whitelist_ips)) {
         return true; // Pase libre

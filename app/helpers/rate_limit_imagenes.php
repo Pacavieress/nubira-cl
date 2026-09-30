@@ -4,6 +4,8 @@
 // de cada endpoint. NO lo usa img_servicio.php a propósito — ese endpoint ya está en
 // producción con su propia copia verificada, no se toca ni se hace depender de este archivo.
 
+require_once __DIR__ . '/ip_real.php';
+
 if (!function_exists('nb_servir_placeholder_novedad')) {
     function nb_servir_placeholder_novedad(int $code = 404): void {
         http_response_code($code);
@@ -37,7 +39,7 @@ if (!function_exists('check_img_novedad_rate_limit')) {
             bloqueado_hasta INT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip = ip_real();
         $ahora = time();
         $limit_requests = 40;
         $limit_window = 60;
