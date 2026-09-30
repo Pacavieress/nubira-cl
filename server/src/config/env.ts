@@ -70,4 +70,12 @@ export const env = {
   // mismo HMAC "vacío" — si algún día se define en producción, hay que espejarla acá
   // también o los links firmados por un lado no van a verificar contra el otro.
   unsubSecret: process.env.UNSUB_SECRET ?? "",
+  // Clave HMAC que firma los links de descarga de apuntes (app/helpers/comprador_invitado.php
+  // ::enlaceDescargaApunte(), NUBIRA_HMAC_SECRET). Mismo .env raíz que UNSUB_SECRET arriba
+  // (C:/nubira/.env) — a diferencia de ese caso, acá NO se tolera vacío/fallback: el PHP real
+  // tiene un fallback hardcodeado ('NUBIRA_SECRET_TEMP_CAMBIAR') que es justo lo que no
+  // queremos replicar en Node, así que esta queda "" por defecto (no required() al boot, no
+  // bloquea el resto de la API) y src/lib/enlaceDescargaApunte.ts revienta con throw ruidoso
+  // si la usa vacía — nunca genera un link firmado con un secreto adivinable.
+  nubiraHmacSecret: process.env.NUBIRA_HMAC_SECRET ?? "",
 };
