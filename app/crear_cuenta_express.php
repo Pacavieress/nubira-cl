@@ -67,8 +67,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // respeta si la conexión directa viene de un proxy de confianza (si no, cualquiera podría
 // falsificar la cabecera y saltarse el límite). El proxy debe SOBRESCRIBIR la cabecera con
 // la IP real del visitante, nunca agregarla a una que traiga el cliente.
-// PRODUCCIÓN: agregar aquí la IP del servidor de Next.
-$proxies_confiables = ['127.0.0.1', '::1'];
+// 187.127.58.175 = servidor de Next en producción.
+$proxies_confiables = ['127.0.0.1', '::1', '187.127.58.175'];
 $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 if (in_array($ip, $proxies_confiables, true) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     foreach (explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']) as $candidata) {
