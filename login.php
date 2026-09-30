@@ -4,6 +4,7 @@ require_once(__DIR__ . '/app/conexion.php');
 require_once(__DIR__ . '/app/config.php');
 require_once(__DIR__ . '/app/helpers/seo.php');
 require_once(__DIR__ . '/app/helpers/redir_seguro.php');
+require_once(__DIR__ . '/app/helpers/ip_real.php');
 
 // Auto-migración: sistema de verificación híbrido
 try { $conn->query("ALTER TABLE alumnos ADD COLUMN verificacion_estado VARCHAR(20) DEFAULT NULL"); } catch (Throwable $e) {}
@@ -139,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $correo = strtolower(trim($_POST['correo'] ?? ''));
     $contrasena = $_POST['contrasena'] ?? '';
     $redir_post = $_POST['redir'] ?? ''; 
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $ip = ip_real();
 
     $limite_intentos = 5;  
     $tiempo_bloqueo  = 15; 
