@@ -80,12 +80,17 @@ if (in_array($ip, $proxies_confiables, true) && !empty($_SERVER['HTTP_X_FORWARDE
     }
 }
 
+// bind_param recibe sus argumentos por referencia: no acepta constantes directas (lanza
+// Error, que el catch de abajo tragaba en silencio y dejaba el límite sin efecto).
+$rate_key = RATE_KEY;
+$rate_min = RATE_MIN;
+
 try {
     $stmt_rate = $conn->prepare(
         "SELECT COUNT(*) AS intentos FROM login_fallos
          WHERE ip = ? AND correo = ? AND fecha > (NOW() - INTERVAL ? MINUTE)"
     );
-    $stmt_rate->bind_param("ssi", $ip, RATE_KEY, RATE_MIN);
+    $stmt_rate->bind_param("ssi", $ip, $rate_key, $rate_min);
     $stmt_rate->execute();
     $intentos = (int)$stmt_rate->get_result()->fetch_assoc()['intentos'];
     $stmt_rate->close();
@@ -101,7 +106,7 @@ if ($intentos >= RATE_MAX) {
 // Registrar este intento (antes del resultado, para contar éxitos y fallos)
 try {
     $stmt_log = $conn->prepare("INSERT INTO login_fallos (correo, ip) VALUES (?, ?)");
-    $stmt_log->bind_param("ss", RATE_KEY, $ip);
+    $stmt_log->bind_param("ss", $rate_key, $ip);
     $stmt_log->execute();
     $stmt_log->close();
 } catch (Throwable $e) { /* silencioso */ }
