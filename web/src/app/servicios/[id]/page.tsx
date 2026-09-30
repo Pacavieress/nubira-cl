@@ -11,6 +11,7 @@ import { DescripcionExpandible } from "@/components/DescripcionExpandible";
 import { FavoritoToggle } from "@/components/FavoritoToggle";
 import { Header } from "@/components/Header";
 import { IniciarChatBoton } from "@/components/IniciarChatBoton";
+import { ModalCuentaExpress } from "@/components/ModalCuentaExpress";
 import { SelectorSlotsDetalle } from "@/components/SelectorSlotsDetalle";
 import { ServicioCardCarrusel } from "@/components/ServicioCardCarrusel";
 import { TiempoRespuestaPill } from "@/components/TiempoRespuestaPill";
@@ -509,13 +510,16 @@ export default async function DetalleServicio({ params }: DetalleProps) {
                     </a>
                   ) : !isAuthenticated ? (
                     <>
-                      <a
-                        href={`${phpSiteUrl}/app/iniciar_chat.php?servicio_id=${servicio.id}`}
+                      <ModalCuentaExpress
+                        servicioId={servicio.id}
+                        nombreTutor={abreviarNombre(servicio.tutor.nombre)}
+                        loginHref={loginRedirHref}
+                        phpSiteUrl={phpSiteUrl}
                         className="mt-1 w-full bg-[#54A6D8] text-white font-bold rounded-xl text-sm px-5 py-3.5 hover:bg-blue-600 transition-all shadow-md flex items-center justify-center gap-2"
                       >
                         <IconChatOutline className="w-5 h-5" />
                         <span>Iniciar chat</span>
-                      </a>
+                      </ModalCuentaExpress>
                       <div className="flex items-center gap-2 my-3">
                         <div className="flex-1 h-px bg-gray-200" />
                         <span className="text-xs text-gray-400 font-medium">o</span>
@@ -615,10 +619,16 @@ export default async function DetalleServicio({ params }: DetalleProps) {
             </div>
             {!isAuthenticated ? (
               <div className="flex gap-2 shrink-0">
-                <a href={`${phpSiteUrl}/app/iniciar_chat.php?servicio_id=${servicio.id}`} className="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-4 py-3 text-sm shadow-md transition-all whitespace-nowrap flex items-center gap-1.5">
+                <ModalCuentaExpress
+                  servicioId={servicio.id}
+                  nombreTutor={abreviarNombre(servicio.tutor.nombre)}
+                  loginHref={loginRedirHref}
+                  phpSiteUrl={phpSiteUrl}
+                  className="bg-[#54A6D8] hover:bg-blue-600 text-white font-bold rounded-xl px-4 py-3 text-sm shadow-md transition-all whitespace-nowrap flex items-center gap-1.5"
+                >
                   <IconChatOutline className="w-4 h-4" />
                   <span>Iniciar chat</span>
-                </a>
+                </ModalCuentaExpress>
                 <a href={`${phpSiteUrl}/login`} className="bg-white border border-gray-300 text-gray-700 font-bold rounded-xl px-4 py-3 text-sm transition-all whitespace-nowrap">
                   Ingresar
                 </a>
