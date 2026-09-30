@@ -50,3 +50,4 @@ Thumbs.db
 app/sala_activa_*.txt
 app/_logger_sonda.txt
 .claude/
+app/mp_webhook.log
