@@ -18,6 +18,7 @@ define('RATE_MAX',  3);    // máx intentos por IP en la ventana
 define('RATE_MIN',  60);   // ventana en minutos
 
 require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/env_loader.php'; // carga el .env (PROXY_SHARED_SECRET), igual que config.php
 
 // ─── Utilidad: salir con error JSON ───────────────────────────────────────────
 function express_error(string $msg, int $code = 400): never {
@@ -69,8 +70,14 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // la IP real del visitante, nunca agregarla a una que traiga el cliente.
 // 187.127.58.175 = servidor de Next en producción.
 $proxies_confiables = ['127.0.0.1', '::1', '187.127.58.175'];
+// Alternativa a la lista de IPs: secreto compartido con el proxy de Next (PROXY_SHARED_SECRET
+// en el .env; el proxy lo manda en X-Nubira-Proxy-Key). Sirve cuando REMOTE_ADDR no es estable
+// (ej. IPv6 o cambios de IP saliente). Sin secreto definido, o vacío, este camino no existe.
+$secreto_proxy = (string)(getenv('PROXY_SHARED_SECRET') ?: '');
+$proxy_por_secreto = $secreto_proxy !== ''
+    && hash_equals($secreto_proxy, (string)($_SERVER['HTTP_X_NUBIRA_PROXY_KEY'] ?? ''));
 $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-if (in_array($ip, $proxies_confiables, true) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+if ((in_array($ip, $proxies_confiables, true) || $proxy_por_secreto) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     foreach (explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']) as $candidata) {
         $candidata = trim($candidata);
         if (filter_var($candidata, FILTER_VALIDATE_IP)) {

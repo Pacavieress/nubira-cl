@@ -26,6 +26,12 @@ const PHP_SITE_URL = process.env.PHP_SITE_URL ?? "http://nubira.local";
 const HOPS_CONFIABLES = Number(process.env.TRUSTED_PROXY_HOPS ?? 0);
 const IP_FALLBACK = "127.0.0.1";
 
+// Secreto compartido con crear_cuenta_express.php (PROXY_SHARED_SECRET en el .env de PHP): si
+// está definido, se manda en X-Nubira-Proxy-Key y PHP confía en X-Forwarded-For aunque la IP de
+// este servidor no esté en su lista de proxies de confianza. Solo autentica al proxy ante PHP;
+// la IP correcta del visitante sigue dependiendo de TRUSTED_PROXY_HOPS (ver arriba). Nunca se loguea.
+const SECRETO_PROXY = process.env.PROXY_SHARED_SECRET;
+
 function ipDelVisitante(req: Request): string {
   if (Number.isInteger(HOPS_CONFIABLES) && HOPS_CONFIABLES > 0) {
     const partes = (req.headers.get("x-forwarded-for") ?? "")
@@ -56,6 +62,7 @@ export async function POST(req: Request) {
       headers: {
         "Content-Type": "application/json",
         "X-Forwarded-For": ipDelVisitante(req),
+        ...(SECRETO_PROXY ? { "X-Nubira-Proxy-Key": SECRETO_PROXY } : {}),
         ...(phpSessId ? { Cookie: `PHPSESSID=${phpSessId}` } : {}),
       },
       body,
