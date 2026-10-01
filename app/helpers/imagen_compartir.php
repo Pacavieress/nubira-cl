@@ -483,26 +483,24 @@ if (!function_exists('nb_dibujar_features_fijas')) {
     }
 }
 
-/* ---------- Generador POST 1080x1080 ---------- */
+/* ---------- Cabecera común de las cards de servicio ---------- */
 
-if (!function_exists('nb_generar_imagen_post')) {
-    function nb_generar_imagen_post(array $s, string $output_path): bool {
-        // 4:5 — formato recomendado por Instagram para feed (evita el recorte lateral que
-        // aplica la cuadrícula de perfil 3:4 desde ene/2026 a posts 1:1).
-        $W = 1080; $H = 1350;
-        $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
-        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
-        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
-        foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
-
-        $img = imagecreatetruecolor($W, $H);
-        imageantialias($img, true); // suaviza círculos/elipses: anillo del avatar, esquinas de píldoras, puntos decorativos
-        $pal = nb_paleta_marca($img);
-        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2']; $cBlanco = $pal['blanco'];
+if (!function_exists('nb_dibujar_header_tutor')) {
+    /**
+     * Dibuja sobre $img (ya con fondo) la cabecera del tutor: avatar grande, nombre público,
+     * institución, badge de categoría, rating y badge "Disponible". Es exactamente lo que
+     * antes vivía inline en nb_generar_imagen_post() (PARTES 1 y 2), con las mismas
+     * coordenadas, para que la card 1 salga idéntica.
+     *
+     * @param array $pal paleta de nb_paleta_marca($img)
+     * @return array{M:int, avBottom:int, yDisponibleBottom:int} margen lateral y bordes
+     *         inferiores, para que cada card ubique su contenido debajo.
+     */
+    function nb_dibujar_header_tutor($img, array $s, array $pal, string $fReg, string $fSemi, string $fBold, int $W): array {
+        $cAcento = $pal['acento']; $cTxt2 = $pal['txt2']; $cBlanco = $pal['blanco'];
         // #10B981 (emerald-500) — mismo verde que usa detalle_servicio.php para "Disponible",
         // NO el #16A34A (green-600) del badge OFERTA (son conceptos y colores distintos).
         $cVerdeDisp = imagecolorallocate($img, 16, 185, 129);
-        imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
         /* ===== PARTE 1: avatar grande + nombre + institución (badge Disponible ya NO va
            acá — se movió a PARTE 2, debajo de la línea de rating, cambio pedido
@@ -545,8 +543,36 @@ if (!function_exists('nb_generar_imagen_post')) {
         [$bwDisp, $bhDisp] = nb_dibujar_badge_pill($img, $fSemi, 20, 'Disponible', $colX, $yDisponibleTop, $cVerdeDisp, $cBlanco);
         $yDisponibleBottom = $yDisponibleTop + $bhDisp;
 
+        return ['M' => $M, 'avBottom' => $avBottom, 'yDisponibleBottom' => $yDisponibleBottom];
+    }
+}
+
+/* ---------- Generador POST 1080x1080 ---------- */
+
+if (!function_exists('nb_generar_imagen_post')) {
+    function nb_generar_imagen_post(array $s, string $output_path): bool {
+        // 4:5 — formato recomendado por Instagram para feed (evita el recorte lateral que
+        // aplica la cuadrícula de perfil 3:4 desde ene/2026 a posts 1:1).
+        $W = 1080; $H = 1350;
+        $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
+        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
+        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
+        foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
+
+        $img = imagecreatetruecolor($W, $H);
+        imageantialias($img, true); // suaviza círculos/elipses: anillo del avatar, esquinas de píldoras, puntos decorativos
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cTxt2 = $pal['txt2']; $cBlanco = $pal['blanco'];
+        imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
+
+        /* ===== PARTES 1 y 2: cabecera del tutor (avatar, nombre, institución, categoría,
+           rating, "Disponible") — extraída a nb_dibujar_header_tutor() para reutilizarla
+           en las demás cards de servicio sin duplicar coordenadas. ===== */
+        $hdr = nb_dibujar_header_tutor($img, $s, $pal, $fReg, $fSemi, $fBold, $W);
+        $M = $hdr['M'];
+
         /* ===== PARTE 3: título genérico (categoría en acento) — sin bio (privacidad: ver nota) ===== */
-        $y = max($avBottom, $yDisponibleBottom + 20) + 110;
+        $y = max($hdr['avBottom'], $hdr['yDisponibleBottom'] + 20) + 110;
 
         $categoriaTxt = trim((string)($s['categoria'] ?? ''));
         $tituloGenerico = 'Clases particulares de ' . $categoriaTxt;
