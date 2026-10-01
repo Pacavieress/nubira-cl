@@ -4,11 +4,16 @@
 require_once __DIR__ . '/foto_tutor.php';
 require_once __DIR__ . '/nombre_publico.php';
 require_once __DIR__ . '/institucion.php';
+require_once __DIR__ . '/horarios.php'; // parsear_horarios_servicio() — la card 2 solo aplica si hay horarios publicados
 
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
 // visual, porque entra en el fingerprint (no depende solo de los datos del servicio).
 if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v24');
+
+// Versión propia de la card 2 ("Trabaja con {nombre}"). Se suma al fingerprint de la card 2
+// (nb_fingerprint_equipo) y NO al de la card 1: subirla invalida solo el cache de la card 2.
+if (!defined('NB_CARD2_VERSION')) define('NB_CARD2_VERSION', 'c2-v1');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -627,6 +632,116 @@ if (!function_exists('nb_generar_imagen_post')) {
     }
 }
 
+/* ---------- Card 2: "Trabaja con {nombre}" (flujo real de contratación) ---------- */
+
+if (!function_exists('nb_pasos_equipo')) {
+    /**
+     * Pasos de la card 2. Cada uno describe algo que el sitio hace de verdad:
+     *  - chat anónimo antes de contratar ........ detalle_servicio.php ("Chat anónimo antes de contratar")
+     *  - elegir un horario de la agenda publicada  agenda_slots.js / crear_contrato.php (exige horarios_json)
+     *  - pago con MercadoPago, protegido ......... crear_contrato.php (estado pendiente_pago) y
+     *                                              detalle_servicio.php ("Garantía Nubira")
+     *  - clase online en Nubira .................. mini_aula.php (sala de espera + video Daily.co)
+     *  - confirmas la clase y se libera el pago .. mini_aula.php (comprador finaliza) y
+     *                                              pago_exitoso_contrato.php ("liberado ... una vez que se finalice el contrato")
+     * Sin promesas de reembolso ni de plazos: el código no define ninguno.
+     * Servicio gratis (crear_contrato.php: monto 0 → 'en_progreso' sin pago): no hay paso de
+     * pago ni de liberación de pago.
+     */
+    function nb_pasos_equipo(array $s): array {
+        $of = (float)($s['precio_oferta'] ?? 0);
+        $pr = (float)($s['precio'] ?? 0);
+        $gratis = ($of > 0 ? $of : $pr) <= 0;
+
+        $pasos = ['Chat anónimo antes de contratar', 'Elige un horario de su agenda'];
+        if (!$gratis) $pasos[] = 'Paga con MercadoPago, pago protegido';
+        $pasos[] = 'Haz la clase online en Nubira';
+        $pasos[] = $gratis ? 'Confirma la clase al terminar' : 'Confirma la clase y se libera el pago';
+        return $pasos;
+    }
+}
+
+if (!function_exists('nb_generar_imagen_equipo')) {
+    // 1080x1350, misma paleta/fuentes/margen/cabecera que la card 1. Devuelve false (y NO crea
+    // archivo) si el servicio no tiene horarios publicados: sin horarios_json crear_contrato.php
+    // responde "no acepta reservas en línea", así que el flujo que describe la card no aplica.
+    function nb_generar_imagen_equipo(array $s, string $output_path): bool {
+        if (!parsear_horarios_servicio($s['horarios_json'] ?? null)['tiene_horarios']) return false;
+
+        $W = 1080; $H = 1350;
+        $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
+        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
+        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
+        foreach ([$fReg, $fSemi, $fBold] as $f) if (!is_file($f)) return false;
+
+        $img = imagecreatetruecolor($W, $H);
+        imageantialias($img, true);
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cBlanco = $pal['blanco'];
+        imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
+
+        $hdr = nb_dibujar_header_tutor($img, $s, $pal, $fReg, $fSemi, $fBold, $W);
+        $M = $hdr['M'];
+        $y = max($hdr['avBottom'], $hdr['yDisponibleBottom'] + 20) + 110;
+
+        // Título "Trabaja con {nombre público}" — nombre en acento, igual que la categoría en la
+        // card 1. Solo nombre público (nombre_publico_tutor): nunca el apellido completo.
+        $prefijo = 'Trabaja con ';
+        $wPref   = nb_ancho_texto($fSemi, 34, $prefijo);
+        $nombre  = nb_truncar_una_linea($fSemi, 34, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $W - ($M * 2) - $wPref);
+        $wNom    = nb_ancho_texto($fSemi, 34, $nombre);
+        $xTit    = (int)(($W - $wPref - $wNom) / 2);
+        imagettftext($img, 34, 0, $xTit, $y, $cTxt, $fSemi, $prefijo);
+        imagettftext($img, 34, 0, $xTit + $wPref, $y, $cAcento, $fSemi, $nombre);
+        $y += 46 + 40 + 20;
+
+        // Pasos numerados: círculo acento con número blanco + texto de 1 línea.
+        $pasos = nb_pasos_equipo($s);
+        $diam = 44; $rowGap = 72; $gapTxt = 22; $szTxt = 30;
+        $xTexto = $M + $diam + $gapTxt;
+        $maxW   = ($W - $M) - $xTexto;
+        foreach ($pasos as $i => $txt) {
+            $yBase = $y + $i * $rowGap;
+            $cx = $M + (int)($diam / 2);
+            $cy = $yBase - (int)($szTxt * 0.37); // centro óptico de la línea de texto
+            imagefilledellipse($img, $cx, $cy, $diam, $diam, $cAcento);
+            $num  = (string)($i + 1);
+            $xNum = $cx - (int)(nb_ancho_texto($fBold, 22, $num) / 2);
+            $yNum = nb_centrar_baseline_vertical($fBold, 22, $num, $cy - (int)($diam / 2), $diam);
+            imagettftext($img, 22, 0, $xNum, $yNum, $cBlanco, $fBold, $num);
+            nb_texto_izquierda($img, $fSemi, $szTxt, $cTxt, nb_truncar_una_linea($fSemi, $szTxt, $txt, $maxW), $xTexto, $yBase);
+        }
+        $yFin = $y + (count($pasos) - 1) * $rowGap + 40;
+
+        // Pie igual que la card 1: "Nubira.cl" abajo a la derecha y recuadro de precio a la
+        // izquierda, alineado con el texto de la lista.
+        $y = $yFin + 60;
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - $M, $y + 57);
+        nb_dibujar_precio_caja($img, $s, $fBold, $fSemi, $fReg, $xTexto, $y, $cAcento);
+
+        $ok = imagejpeg($img, $output_path, 90);
+        imagedestroy($img);
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('nb_fingerprint_equipo')) {
+    // Propio de la card 2: incluye NB_IMG_VERSION (la cabecera es compartida con la card 1, si
+    // su diseño cambia la card 2 debe regenerarse) + NB_CARD2_VERSION (diseño propio). Solo
+    // datos que la card dibuja: la bio no entra porque no se dibuja. Agrega la vigencia de
+    // la oferta porque el recuadro de precio muestra o no el badge OFERTA según ella.
+    function nb_fingerprint_equipo(array $s): string {
+        $ofertaVigente = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
+            && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'));
+        $base = NB_IMG_VERSION . '|' . NB_CARD2_VERSION . '|' . ($s['id'] ?? '')
+              . '|' . ($s['nombre_alumno'] ?? $s['nombre'] ?? '') . '|' . ($s['foto_perfil'] ?? '')
+              . '|' . ($s['categoria'] ?? '') . '|' . ($s['institucion_maestra'] ?? '')
+              . '|' . ($s['rating_prom'] ?? '') . '|' . ($s['rating_votos'] ?? '')
+              . '|' . ($s['precio'] ?? '') . '|' . ($s['precio_oferta'] ?? '') . '|' . ($ofertaVigente ? '1' : '0');
+        return substr(md5($base), 0, 10);
+    }
+}
+
 /* ============================================================
    PASO 3 — HISTORY 1080x1920 + cache por fingerprint
    ============================================================ */
@@ -1016,7 +1131,8 @@ if (!function_exists('nb_version_imagen_servicio')) {
 
 if (!function_exists('nb_obtener_imagen_compartir')) {
     // Devuelve la RUTA FÍSICA del JPG (cache hit o recién generado), o '' si falla.
-    function nb_obtener_imagen_compartir(int $servicio_id, string $formato): string {
+    // $variante: 'post' (default, card 1 y su history, sin cambios) | 'equipo' (card 2).
+    function nb_obtener_imagen_compartir(int $servicio_id, string $formato, string $variante = 'post'): string {
         global $conn;
         $formato = ($formato === 'history') ? 'history' : 'post';
         if (!isset($conn) || !($conn instanceof mysqli) || $servicio_id <= 0) return '';
@@ -1044,13 +1160,20 @@ if (!function_exists('nb_obtener_imagen_compartir')) {
 
         require_once __DIR__ . '/../seguridad_url.php';
         $hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($servicio_id) : (string)$servicio_id;
-        $fp   = nb_fingerprint_servicio($s);
+        $esEquipo = ($variante === 'equipo');
+        if ($esEquipo) $formato = 'equipo'; // la card 2 es solo POST 4:5: ignora $formato
+        $fp   = $esEquipo ? nb_fingerprint_equipo($s) : nb_fingerprint_servicio($s);
 
         $dir = nb_compartir_dir();
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $file = $dir . $hash . '_' . $formato . '_' . $fp . '.jpg';
 
         if (is_file($file)) return $file; // cache hit
+
+        if ($esEquipo) {
+            // false cuando el servicio no tiene horarios publicados: no se crea archivo.
+            return nb_generar_imagen_equipo($s, $file) && is_file($file) ? $file : '';
+        }
 
         // link corto para el CTA del history
         require_once __DIR__ . '/link_corto.php';
