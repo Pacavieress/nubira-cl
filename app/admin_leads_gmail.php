@@ -32,6 +32,13 @@ $admin_nombre = 'recuperar_gmails_jun2026';
 $asunto            = '¿Necesitas un tutor?';
 $titulo_plantilla  = 'Tutores, apuntes y clases particulares universitarias en Chile';
 
+// ¿Existe la columna interesados_registro.origen? (sql/interesados_registro_origen.sql). Si el SQL aún no se
+// ejecutó, el panel sigue funcionando como antes y solo se bloquea "Añadir y enviar".
+function leadsTieneOrigen(mysqli $conn): bool {
+    $r = $conn->query("SHOW COLUMNS FROM interesados_registro LIKE 'origen'");
+    return $r && $r->num_rows > 0;
+}
+
 // ── POST: envío selectivo a leads marcados ─────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -115,17 +122,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ya_baja = array_flip(array_column($stmtU->get_result()->fetch_all(MYSQLI_ASSOC), 'correo'));
         $stmtU->close();
 
-        $stmtIns   = $conn->prepare("INSERT INTO interesados_registro (correo) VALUES (?)");
+        // Los leads añadidos desde el panel quedan con origen 'manual' (si la columna ya existe).
+        $tiene_origen_a = leadsTieneOrigen($conn);
+        $stmtIns   = $conn->prepare($tiene_origen_a
+            ? "INSERT INTO interesados_registro (correo, origen) VALUES (?, 'manual')"
+            : "INSERT INTO interesados_registro (correo) VALUES (?)");
         $agregados = 0;
         $saltados  = [];
 
         foreach ($candidatos as $correo) {
-            if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            if (strlen($correo) > 100 || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
                 $saltados[] = ['correo' => $correo, 'razon' => 'formato inválido'];
                 continue;
             }
-            if (!str_ends_with($correo, '@gmail.com')) {
-                $saltados[] = ['correo' => $correo, 'razon' => 'no es @gmail.com, no aparecería en este panel'];
+            // Cualquier dominio se acepta SOLO como lead 'manual'. Sin la columna origen (SQL sin ejecutar) un
+            // lead no-Gmail quedaría invisible en la lista, así que ahí se sigue exigiendo @gmail.com.
+            if (!$tiene_origen_a && !str_ends_with($correo, '@gmail.com')) {
+                $saltados[] = ['correo' => $correo, 'razon' => 'otro dominio: falta ejecutar sql/interesados_registro_origen.sql'];
                 continue;
             }
             if (isset($ya_baja[$correo])) {
@@ -155,6 +168,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtIns->close();
 
         echo json_encode(['ok' => true, 'agregados' => $agregados, 'saltados' => $saltados]);
+        exit;
+    }
+
+    // ── Feature C: añadir UN correo manual y enviarlo ahora (mismo pipeline del envío masivo) ──
+    // Sin pausa de 2 s: es un solo correo (la pausa existe entre correos de un lote). Respeta el tope diario.
+    if ($accion === 'agregar_y_enviar') {
+        $rechazar = function (string $motivo, int $http = 200): void {
+            http_response_code($http);
+            echo json_encode(['ok' => false, 'error' => $motivo]);
+            exit;
+        };
+
+        $correo_m = strtolower(trim((string)($_POST['email_manual'] ?? '')));
+        if ($correo_m === '' || strlen($correo_m) > 100 || !filter_var($correo_m, FILTER_VALIDATE_EMAIL)) {
+            $rechazar('Correo inválido.', 400);
+        }
+        // Cualquier dominio es válido aquí: el lead queda con origen 'manual', que la lista y el envío aceptan
+        // sin importar el dominio. Requiere la columna origen.
+        if (!leadsTieneOrigen($conn)) {
+            $rechazar('Falta ejecutar sql/interesados_registro_origen.sql en esta base de datos.', 500);
+        }
+
+        $codigo_m = strtoupper(trim($_POST['codigo'] ?? ''));
+        $cupon_m  = null;
+        if ($codigo_m !== '') {
+            $cupon_m = nb_consultar_cupon_global($conn, $codigo_m);
+            if (!$cupon_m['ok']) $rechazar($cupon_m['error'], 400);
+        }
+
+        if (campanaCupoRestante($conn) < 1) {
+            $rechazar('Se alcanzó el tope diario de ' . CAMPANA_TOPE_DIARIO . ' correos de campaña. Inténtalo mañana.');
+        }
+
+        // Motivos de rechazo, sin duplicar (consultas preparadas).
+        $existe = function (string $sql) use ($conn, $correo_m): bool {
+            $st = $conn->prepare($sql);
+            $st->bind_param('s', $correo_m);
+            $st->execute();
+            $hay = $st->get_result()->num_rows > 0;
+            $st->close();
+            return $hay;
+        };
+        if ($existe("SELECT 1 FROM unsubscribed WHERE LOWER(TRIM(correo)) = ? LIMIT 1")) {
+            $rechazar('Está dado de baja: no se le puede enviar.');
+        }
+        if ($existe("SELECT 1 FROM alumnos WHERE visible = 1 AND LOWER(TRIM(correo)) = ? LIMIT 1")) {
+            $rechazar('Ya es usuario registrado.');
+        }
+        if ($existe("SELECT 1 FROM interesados_registro WHERE LOWER(TRIM(correo)) = ? LIMIT 1")) {
+            $ya_enviado = $existe("SELECT 1 FROM correos_admin WHERE LOWER(TRIM(destinatario)) = ? AND admin_nombre = 'recuperar_gmails_jun2026' AND exito = 1 LIMIT 1");
+            $rechazar($ya_enviado
+                ? 'Ya está en la lista y ya recibió el correo (usa el reenvío forzado desde la lista).'
+                : 'Ya está en la lista y aún no recibe el correo: márcalo en la tabla y envíalo desde ahí.');
+        }
+
+        // 1) Lead en su propia transacción, confirmada ANTES de enviar (no se mantiene una transacción abierta durante el SMTP).
+        $conn->begin_transaction();
+        try {
+            $ins = $conn->prepare("INSERT INTO interesados_registro (correo, origen) VALUES (?, 'manual')");
+            $ins->bind_param('s', $correo_m);
+            if (!$ins->execute()) {
+                $dup = ($ins->errno === 1062);
+                $ins->close();
+                $conn->rollback();
+                $rechazar($dup ? 'Ya está en la lista.' : 'Error de base de datos al añadir el correo.', $dup ? 200 : 500);
+            }
+            $ins->close();
+            $conn->commit();
+        } catch (\Throwable $e) {
+            $conn->rollback();
+            $rechazar('Error de base de datos al añadir el correo.', 500);
+        }
+
+        // 2) Envío con el mismo flujo del masivo: cupón, enlace de baja, bloque de feedback, Reply-To/Message-ID.
+        $unsub_m  = generarUnsubUrl($correo_m);
+        $bloque_m = $cupon_m ? nb_bloque_cupon_html($codigo_m, $cupon_m['porcentaje'], $cupon_m['fecha_expiracion']) : '';
+        $html_m   = generarHtmlEmailRecuperarGmail($unsub_m, $bloque_m, $correo_m);
+        $exito_m  = enviarDormidoConUnsubscribe($correo_m, $asunto, $html_m, $unsub_m, 'noreply', $titulo_plantilla, true);
+
+        // 3) Registro en correos_admin (misma campaña, para que cuente en el tope y en el estado de la lista).
+        $admin_id_m = (int)$_SESSION['usuario_id'];
+        $exito_int  = $exito_m ? 1 : 0;
+        $forzado_m  = 0;
+        $lg = $conn->prepare("INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito, forzado) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $lg->bind_param('issssii', $admin_id_m, $admin_nombre, $correo_m, $asunto, $html_m, $exito_int, $forzado_m);
+        $lg->execute();
+        $lg->close();
+        logCampana('[RECUPERAR MANUAL ' . ($exito_m ? 'OK' : 'FAIL') . '] ' . $correo_m);
+
+        echo json_encode(['ok' => true, 'agregado' => true, 'enviado' => $exito_m]);
         exit;
     }
 
@@ -194,7 +297,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Nunca confiamos en el estado que venía marcado en el HTML del panel.
     // $con_exclusion_enviado=true -> flujo normal (bloquea 'enviado'); false -> reenvío
     // forzado (salta ESA exclusión puntual, pero unsubscribed/registrado siguen intactos).
-    $validar = function (array $lista, bool $con_exclusion_enviado) use ($conn, $admin_nombre) {
+    // Dominio: @gmail.com, o cualquiera si el lead es origen 'manual' (solo si la columna origen existe).
+    $filtro_dominio = leadsTieneOrigen($conn)
+        ? "(ir.correo LIKE '%@gmail.com' OR ir.origen = 'manual')"
+        : "ir.correo LIKE '%@gmail.com'";
+    $validar = function (array $lista, bool $con_exclusion_enviado) use ($conn, $admin_nombre, $filtro_dominio) {
         if (empty($lista)) return [];
         $placeholders = implode(',', array_fill(0, count($lista), '?'));
         $tipos        = str_repeat('s', count($lista));
@@ -202,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             SELECT DISTINCT LOWER(TRIM(ir.correo)) AS correo
             FROM interesados_registro ir
             WHERE LOWER(TRIM(ir.correo)) IN ($placeholders)
-              AND ir.correo LIKE '%@gmail.com'
+              AND {$filtro_dominio}
               AND LOWER(TRIM(ir.correo)) NOT IN (
                   SELECT LOWER(TRIM(correo)) FROM unsubscribed
               )
@@ -314,9 +421,15 @@ $filtros_validos = ['todos', 'registrado', 'enviado', 'fallo', 'sin_contacto', '
 if (!in_array($filtro, $filtros_validos, true)) $filtro = 'todos';
 
 // ── Query ─────────────────────────────────────────────────────
+// origen: 'manual' si lo añadió un admin desde el panel (MAX deja 'manual' si hubiera filas mixtas); sin columna, 'formulario'.
+$tiene_origen = leadsTieneOrigen($conn);
+$sel_origen   = $tiene_origen ? "MAX(ir.origen)" : "'formulario'";
+// Lista: los @gmail.com de siempre, más los de origen 'manual' de cualquier dominio. Los 'formulario' no-Gmail siguen fuera.
+$where_dominio = $tiene_origen ? "(ir.correo LIKE '%@gmail.com' OR ir.origen = 'manual')" : "ir.correo LIKE '%@gmail.com'";
 $sql = "
     SELECT
         correos.correo,
+        correos.origen,
         correos.fecha_original,
         correos.fecha_email,
         correos.email_exito,
@@ -327,6 +440,7 @@ $sql = "
     FROM (
         SELECT
             LOWER(TRIM(ir.correo))  AS correo,
+            {$sel_origen}           AS origen,
             MIN(ir.fecha)           AS fecha_original,
             MAX(ca.fecha_envio)     AS fecha_email,
             MAX(ca.exito)           AS email_exito
@@ -334,7 +448,7 @@ $sql = "
         LEFT JOIN correos_admin ca
             ON  LOWER(TRIM(ca.destinatario)) = LOWER(TRIM(ir.correo))
             AND ca.admin_nombre = 'recuperar_gmails_jun2026'
-        WHERE ir.correo LIKE '%@gmail.com'
+        WHERE {$where_dominio}
         GROUP BY LOWER(TRIM(ir.correo))
     ) correos
     ORDER BY correos.fecha_original ASC
@@ -373,9 +487,11 @@ function leadEstado(array $row): string {
 // ── Stats + filtrado en PHP (dataset ~93 filas) ───────────────
 $stats = ['registrado' => 0, 'enviado' => 0, 'fallo' => 0, 'sin_contacto' => 0, 'baja' => 0];
 $leads = [];
+$n_manuales = 0; // ya están incluidos en $stats y en $total; solo se cuentan aparte para mostrarlos
 foreach ($todos as $row) {
     $estado = leadEstado($row);
     $stats[$estado]++;
+    if (($row['origen'] ?? '') === 'manual') $n_manuales++;
     $row['_estado'] = $estado;
     if ($filtro === 'todos' || $filtro === $estado) {
         $leads[] = $row;
@@ -419,6 +535,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         </h1>
         <p class="text-sm text-gray-500 mt-0.5">Seguimiento de los ~93 Gmails históricos invitados a registrarse.</p>
         <p class="text-xs text-gray-400 mt-0.5">Cupo de hoy: <?= (int)$cupo_hoy ?> de <?= CAMPANA_TOPE_DIARIO ?> correos disponibles.
+          &middot; Añadidos manualmente: <span class="font-semibold text-gray-600"><?= (int)$n_manuales ?></span> (incluidos en los contadores)
           &middot; Feedback del correo: <span class="font-semibold text-gray-600">Útil <?= $fb['util'] ?></span> / <span class="font-semibold text-gray-600">No es útil <?= $fb['no_util'] ?></span></p>
       </div>
       <div class="flex items-center gap-2 shrink-0 flex-wrap">
@@ -427,6 +544,12 @@ require_once $app_dir . '/componentes/sidebar.php';
         <button type="button" id="btn-enviar-prueba"
                 class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
           Enviar prueba
+        </button>
+        <input type="email" id="input-email-manual" placeholder="nuevo@correo.com"
+               class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm w-44 focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none">
+        <button type="button" id="btn-agregar-enviar"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#54A6D8] border border-[#54A6D8] rounded-xl text-sm font-bold text-white hover:bg-sky-500 transition shadow-sm">
+          Añadir correo manual y enviar
         </button>
         <button type="button" id="btn-preview-cupon"
                 class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-[#54A6D8] hover:text-[#54A6D8] transition shadow-sm">
@@ -508,7 +631,7 @@ require_once $app_dir . '/componentes/sidebar.php';
         <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
           Correos nuevos (uno por línea, o separados por coma/;)
         </label>
-        <textarea id="textarea-leads-nuevos" rows="4" placeholder="correo1@gmail.com&#10;correo2@gmail.com"
+        <textarea id="textarea-leads-nuevos" rows="4" placeholder="correo1@gmail.com&#10;correo2@otrodominio.cl"
                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-mono text-sm focus:border-[#54A6D8] focus:ring-1 focus:ring-[#54A6D8]/30 outline-none"></textarea>
         <div class="mt-3">
           <button type="button" id="btn-agregar-leads"
@@ -611,6 +734,9 @@ require_once $app_dir . '/componentes/sidebar.php';
 
             <td class="px-5 py-3.5 font-mono text-xs text-gray-800 font-medium">
               <?= htmlspecialchars($lead['correo']) ?>
+              <?php if (($lead['origen'] ?? '') === 'manual'): ?>
+                <span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold font-sans bg-violet-50 text-violet-600 border border-violet-100">manual</span>
+              <?php endif; ?>
             </td>
 
             <td class="px-5 py-3.5">
@@ -899,6 +1025,44 @@ function escHtml(s) {
   d.textContent = s;
   return d.innerHTML;
 }
+
+// ── Feature C: añadir un correo manual y enviarlo ahora ──────
+document.getElementById('btn-agregar-enviar')?.addEventListener('click', async () => {
+  const btn   = document.getElementById('btn-agregar-enviar');
+  const email = document.getElementById('input-email-manual').value.trim().toLowerCase();
+  if (!email) { mostrarToast('Ingresa un correo', 'error'); return; }
+  const codigoM = chkIncluirCupon.checked ? document.getElementById('input-codigo').value.trim() : '';
+  if (!confirm(`¿Añadir ${email} a la lista y enviarle la campaña ahora${codigoM ? ' con el cupón ' + codigoM : ''}?`)) return;
+
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Enviando…';
+
+  const body = new URLSearchParams();
+  body.append('csrf_token', CSRF_TOKEN);
+  body.append('accion', 'agregar_y_enviar');
+  body.append('email_manual', email);
+  if (codigoM) body.append('codigo', codigoM);
+
+  try {
+    const res  = await fetch(window.location.pathname + window.location.search, { method: 'POST', body });
+    const data = await res.json();
+    if (data.ok && data.enviado) {
+      mostrarToast(`${email} añadido y correo enviado`, 'ok');
+      setTimeout(() => location.reload(), 1800);
+    } else if (data.ok) {
+      mostrarToast(`${email} se añadió, pero el envío falló: reinténtalo desde la lista`, 'error');
+      setTimeout(() => location.reload(), 3000);
+    } else {
+      mostrarToast(data.error || 'No se pudo añadir el correo', 'error');
+    }
+  } catch {
+    mostrarToast('Error de conexión', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+});
 
 // ── Feature A: enviar prueba ─────────────────────────────────
 document.getElementById('btn-enviar-prueba')?.addEventListener('click', async () => {
