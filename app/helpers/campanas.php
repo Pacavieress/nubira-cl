@@ -134,7 +134,7 @@ function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '',
 <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#F0F9FF;border:1px solid #e5e7eb;border-radius:12px;margin:24px 0;overflow:hidden;\">
   <tr>
     <td>
-      <img src=\"https://nubira.cl/upload/email/card-paes.png\" alt=\"PAES\" style=\"display:block;width:100%;height:auto;background-color:#DCEBF7;\">
+      <img src=\"https://nubira.cl/upload/email/card-paes.png\" alt=\"PAES\" width=\"540\" height=\"181\" style=\"display:block;width:100%;max-width:540px;height:auto;border:0;background-color:#DCEBF7;\">
     </td>
   </tr>
   <tr>
@@ -224,10 +224,10 @@ function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '',
 </p>
 <p style=\"text-align:center;margin-bottom:24px;\">
   <a href=\"https://instagram.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
-    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" height=\"26\" style=\"display:inline-block;border:0;\">
   </a>
   <a href=\"https://facebook.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
-    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" height=\"26\" style=\"display:inline-block;border:0;\">
   </a>
 </p>
 {$bloqueCuponHtml}
