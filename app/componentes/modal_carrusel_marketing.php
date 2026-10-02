@@ -30,6 +30,22 @@
       <p class="text-[11px] text-gray-400 text-center mt-2 leading-relaxed">
         El orden de descarga es el mismo orden en que aparecen abajo. Usa ▲▼ para reordenar antes de descargar.
       </p>
+
+      <!-- Opción B: solo se revela tras descargar/compartir, y solo si el caller pasó
+           permitirMarcarPromocion=true (ver window.abrirCarruselMarketing más abajo). -->
+      <div id="carrusel-mkt-confirmar-promo" class="hidden mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3">
+        <p class="text-xs text-gray-700 mb-2">¿Ya publicaste esto en Instagram?</p>
+        <div class="flex items-center gap-2">
+          <button type="button" id="carrusel-mkt-btn-si-promo"
+                  class="flex-1 bg-[#54A6D8] hover:bg-blue-600 text-white text-xs font-bold py-2 rounded-lg transition-colors disabled:opacity-60">
+            <span class="carrusel-mkt-btn-si-promo-texto">Sí, marcar como promocionado</span>
+          </button>
+          <button type="button" id="carrusel-mkt-btn-no-promo"
+                  class="flex-1 border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60">
+            Todavía no
+          </button>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -43,7 +59,16 @@
   const lista   = document.getElementById('carrusel-mkt-lista');
   const contador = document.getElementById('carrusel-mkt-count');
   const btnTodas = document.getElementById('carrusel-mkt-btn-todas');
+  const confirmarPromo = document.getElementById('carrusel-mkt-confirmar-promo');
+  const btnSiPromo = document.getElementById('carrusel-mkt-btn-si-promo');
+  const btnNoPromo = document.getElementById('carrusel-mkt-btn-no-promo');
   if (!modal || !lista) return;
+
+  // Flag de seguridad (Opción B): solo la tab Servicios pasa permitirMarcarPromocion=true
+  // al abrir este modal — evita que un futuro caller genérico (ej. el carrusel de slides
+  // del calendario, donde item.id sería un número de slide, no un servicio_id real) ofrezca
+  // "marcar como promocionado" sobre ids que no son servicios de verdad.
+  let permitirMarcarPromocionActual = false;
 
   // iOS Safari rompe la descarga múltiple encadenada (setTimeout + .click() en loop pierde
   // el gesto de usuario confiable, solo la primera imagen se descarga). En táctil+Web Share
@@ -61,10 +86,11 @@
     li.className = 'flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl p-2.5';
     li.dataset.imgUrl = item.url;
     li.dataset.titulo = item.titulo;
+    li.dataset.servicioId = item.id;
 
     li.innerHTML = `
       <img src="${item.url}" alt="" loading="lazy" class="w-14 h-14 rounded-lg object-cover border border-gray-200 bg-white shrink-0">
-      <p class="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">${item.titulo}</p>
+      <p class="carrusel-mkt-titulo flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate"></p>
       <div class="flex flex-col shrink-0">
         <button type="button" class="carrusel-mkt-up w-6 h-5 flex items-center justify-center text-gray-400 hover:text-[#54A6D8]" title="Subir" aria-label="Subir"><i class="fa-solid fa-chevron-up text-[10px]"></i></button>
         <button type="button" class="carrusel-mkt-down w-6 h-5 flex items-center justify-center text-gray-400 hover:text-[#54A6D8]" title="Bajar" aria-label="Bajar"><i class="fa-solid fa-chevron-down text-[10px]"></i></button>
@@ -81,6 +107,7 @@
         </a>
       </div>
     `;
+    li.querySelector('.carrusel-mkt-titulo').textContent = item.titulo;
     return li;
   }
 
@@ -88,8 +115,11 @@
     contador.textContent = lista.children.length;
   }
 
-  window.abrirCarruselMarketing = function (items) {
+  window.abrirCarruselMarketing = function (items, opciones = {}) {
     if (!Array.isArray(items) || items.length === 0) return;
+
+    permitirMarcarPromocionActual = !!(opciones && opciones.permitirMarcarPromocion);
+    if (confirmarPromo) confirmarPromo.classList.add('hidden'); // reset por si quedó visible de una apertura anterior
 
     lista.innerHTML = '';
     items.forEach((item, i) => lista.appendChild(crearItem(item, i)));
@@ -99,6 +129,12 @@
     requestAnimationFrame(() => card.classList.remove('translate-y-full', 'opacity-0'));
     document.body.style.overflow = 'hidden';
   };
+
+  function revelarConfirmacionPromo() {
+    if (permitirMarcarPromocionActual && confirmarPromo) {
+      confirmarPromo.classList.remove('hidden');
+    }
+  }
 
   function cerrar() {
     card.classList.add('translate-y-full', 'opacity-0');
@@ -183,6 +219,7 @@
         // de archivos silenciosamente (ver investigación).
         if (navigator.canShare({ files: archivos })) {
           await navigator.share({ files: archivos });
+          revelarConfirmacionPromo();
           return;
         }
       } catch (err) {
@@ -193,6 +230,53 @@
     links.forEach((a, i) => {
       setTimeout(() => a.click(), i * 400);
     });
+    revelarConfirmacionPromo();
   });
+
+  // Opción B — "Todavía no": solo oculta el aviso, no llama a nada.
+  if (btnNoPromo) {
+    btnNoPromo.addEventListener('click', () => {
+      confirmarPromo.classList.add('hidden');
+    });
+  }
+
+  // Opción B — "Sí, marcar como promocionado": recolecta los servicio_ids de los <li>
+  // actuales (respeta el orden final tras los ▲▼) y llama al MISMO endpoint/contrato que
+  // ya usa "Marcar como publicados" en la tab Servicios — sin crear nada nuevo del lado
+  // backend. CSRF_TOKEN se lee acá adentro (no en el nivel superior del script) porque
+  // este modal se incluye ANTES del <script> de admin_marketing_cards.php que lo declara —
+  // para cuando el admin hace clic, la página ya terminó de cargar y CSRF_TOKEN ya existe.
+  if (btnSiPromo) {
+    btnSiPromo.addEventListener('click', async () => {
+      const servicioIds = [...lista.querySelectorAll('li')]
+        .map(li => li.dataset.servicioId)
+        .filter(Boolean);
+      if (servicioIds.length === 0) return;
+
+      const textoSpan = btnSiPromo.querySelector('.carrusel-mkt-btn-si-promo-texto');
+      const original = textoSpan.textContent;
+      btnSiPromo.disabled = true;
+      if (btnNoPromo) btnNoPromo.disabled = true;
+
+      try {
+        const body = new URLSearchParams();
+        body.append('csrf_token', CSRF_TOKEN);
+        servicioIds.forEach(id => body.append('servicio_ids[]', id));
+
+        const r = await fetch('/app/admin_marcar_promocionados.php', { method: 'POST', body });
+        const data = await r.json();
+        textoSpan.textContent = data.ok ? '¡Marcado!' : (data.error || 'Error');
+      } catch (e) {
+        textoSpan.textContent = 'Error';
+      }
+
+      setTimeout(() => {
+        confirmarPromo.classList.add('hidden');
+        textoSpan.textContent = original;
+        btnSiPromo.disabled = false;
+        if (btnNoPromo) btnNoPromo.disabled = false;
+      }, 2000);
+    });
+  }
 })();
 </script>
