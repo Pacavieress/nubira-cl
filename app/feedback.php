@@ -20,7 +20,7 @@ $token   = trim((string)($_GET['token'] ?? ''));
 
 $valido = $correo !== ''
     && filter_var($correo, FILTER_VALIDATE_EMAIL)
-    && preg_match('/^[a-z0-9_]{1,60}$/', $campana)
+    && in_array($campana, FEEDBACK_CAMPANAS, true)   // lista blanca de campañas (helpers/campanas.php)
     && in_array($voto, ['util', 'no_util'], true)
     && UNSUB_SECRET !== ''
     && hash_equals(feedbackToken($correo, $campana, $voto), $token);

@@ -12,6 +12,7 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $correo
     $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     $unsub_safe = htmlspecialchars(generarUnsubUrl($correo), ENT_QUOTES, 'UTF-8');
     $utm_base   = 'utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=despertar_dormidos';
+    $bloqueFeedback = nb_bloque_feedback_html($correo, 'despertar_dormidos'); // "¿Te resultó útil este correo?"
     $saludo = $nombre_safe !== ''
         ? "Hola <strong>{$nombre_safe}</strong>, hace un tiempo no te vemos por Nubira."
         : "Hola, hace un tiempo no te vemos por Nubira.";
@@ -24,7 +25,7 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $correo
 <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#F0F9FF;border:1px solid #e5e7eb;border-radius:12px;margin:24px 0;overflow:hidden;\">
   <tr>
     <td>
-      <img src=\"https://nubira.cl/upload/email/card-paes.png\" alt=\"PAES\" style=\"display:block;width:100%;height:auto;background-color:#DCEBF7;\">
+      <img src=\"https://nubira.cl/upload/email/card-paes.png\" alt=\"PAES\" width=\"540\" height=\"181\" style=\"display:block;width:100%;max-width:540px;height:auto;border:0;background-color:#DCEBF7;\">
     </td>
   </tr>
   <tr>
@@ -114,12 +115,13 @@ function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $correo
 </p>
 <p style=\"text-align:center;margin-bottom:24px;\">
   <a href=\"https://instagram.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
-    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" height=\"26\" style=\"display:inline-block;border:0;\">
   </a>
   <a href=\"https://facebook.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
-    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" height=\"26\" style=\"display:inline-block;border:0;\">
   </a>
 </p>
+{$bloqueFeedback}
 <hr style=\"margin:30px 0;border:none;border-top:1px solid #eee;\">
 <p style=\"font-size:11px;color:#888;\">
   Si no quieres seguir recibiendo estos correos, puedes <a href=\"{$unsub_safe}\" style=\"color:#888;\">darte de baja aquí</a>.
@@ -168,6 +170,7 @@ if (php_sapi_name() === 'cli') {
               SELECT LOWER(TRIM(destinatario)) FROM correos_admin
               WHERE admin_nombre = 'despertar_dormidos_jun2026' AND exito = 1
           )
+          AND NOT EXISTS (SELECT 1 FROM unsubscribed u WHERE LOWER(TRIM(u.correo)) = LOWER(TRIM(a.correo)))
         ORDER BY a.id ASC
     ";
 
@@ -452,7 +455,7 @@ if (isset($_GET['preview_cupon'])) {
 
 // ── GET: listado ──────────────────────────────────────────────
 $filtro = $_GET['filtro'] ?? 'pendiente';
-if (!in_array($filtro, ['pendiente', 'enviado', 'todos'], true)) $filtro = 'pendiente';
+if (!in_array($filtro, ['pendiente', 'enviado', 'baja', 'todos'], true)) $filtro = 'pendiente';
 
 $orden = $_GET['orden'] ?? 'id_asc';
 if (!in_array($orden, ['id_asc','id_desc','correo_asc','correo_desc','nombre_asc','nombre_desc','estado'], true)) $orden = 'id_asc';
@@ -479,7 +482,9 @@ $sql = "
               AND ca.exito = 1) AS fecha_enviado,
         (SELECT MAX(ca.exito) FROM correos_admin ca
             WHERE LOWER(TRIM(ca.destinatario)) = LOWER(TRIM(a.correo))
-              AND ca.admin_nombre = 'despertar_dormidos_jun2026') AS estado_envio
+              AND ca.admin_nombre = 'despertar_dormidos_jun2026') AS estado_envio,
+        (SELECT 1 FROM unsubscribed u
+            WHERE LOWER(TRIM(u.correo)) = LOWER(TRIM(a.correo)) LIMIT 1) AS dado_baja
     FROM alumnos a
     WHERE a.visible = 1
       AND a.bloqueado = 0
@@ -499,6 +504,17 @@ $stmt = $conn->prepare($sql);
 $stmt->execute();
 $todos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
+// Feedback del correo (tabla correo_feedback). Si aún no existe, la página sigue funcionando.
+$fb = ['util' => 0, 'no_util' => 0];
+try {
+    $rs = $conn->prepare("SELECT voto, COUNT(*) AS n FROM correo_feedback
+                           WHERE campana = 'despertar_dormidos' AND correo NOT LIKE 'prueba@%'
+                             AND correo NOT LIKE 'preview@%' AND correo NOT LIKE '%@ejemplo.com'
+                           GROUP BY voto");
+    $rs->execute();
+    foreach ($rs->get_result()->fetch_all(MYSQLI_ASSOC) as $r) { $fb[$r['voto']] = (int)$r['n']; }
+    $rs->close();
+} catch (\Throwable $e) { /* tabla pendiente de crear */ }
 $conn->close();
 
 function clasificar_proveedor(string $correo): string {
@@ -531,13 +547,17 @@ if ($proveedores_raw === '' || $proveedores_raw === 'todos') {
     if (empty($proveedores_activos)) $proveedores_activos = $proveedores_validos;
 }
 
-$stats = ['total' => count($todos), 'enviados' => 0, 'pendientes' => 0, 'fallidos' => 0];
+$stats = ['total' => count($todos), 'enviados' => 0, 'pendientes' => 0, 'fallidos' => 0, 'bajas' => 0];
 $stats_prov = array_fill_keys($proveedores_validos, 0);
 $filas = [];
 
 foreach ($todos as $row) {
     $e = $row['estado_envio'];
-    if (is_null($e)) {
+    if (!empty($row['dado_baja'])) {
+        // Dados de baja: no son "pendientes" ni se pueden seleccionar (el POST igual los excluye).
+        $row['_estado'] = 'baja';
+        $stats['bajas']++;
+    } elseif (is_null($e)) {
         $row['_estado'] = 'pendiente';
         $stats['pendientes']++;
     } elseif ((int)$e === 1) {
@@ -553,6 +573,7 @@ foreach ($todos as $row) {
     $pasa_estado = match($filtro) {
         'pendiente' => in_array($row['_estado'], ['pendiente', 'fallo']),
         'enviado'   => $row['_estado'] === 'enviado',
+        'baja'      => $row['_estado'] === 'baja',
         default     => true,
     };
 
@@ -611,6 +632,7 @@ require_once $app_dir . '/componentes/sidebar.php';
       <div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Campaña: Despertar Dormidos</h1>
         <p class="text-sm text-gray-500 mt-0.5">Usuarios confirmados que nunca publicaron ni contrataron.</p>
+        <p class="text-xs text-gray-400 mt-0.5">Feedback del correo: <span class="font-semibold text-gray-600">Útil <?= $fb['util'] ?></span> / <span class="font-semibold text-gray-600">No es útil <?= $fb['no_util'] ?></span></p>
       </div>
       <div class="flex items-center gap-2 shrink-0 flex-wrap">
         <input type="email" id="input-email-prueba" placeholder="tu@correo.com"
@@ -674,6 +696,7 @@ require_once $app_dir . '/componentes/sidebar.php';
       $ops = [
           'pendiente' => ['Pendientes', $stats['pendientes'] + $stats['fallidos']],
           'enviado'   => ['Ya enviados', $stats['enviados']],
+          'baja'      => ['Bajas', $stats['bajas']],
           'todos'     => ['Todos', $stats['total']],
       ];
       foreach ($ops as $key => [$label, $cnt]):
@@ -741,13 +764,18 @@ require_once $app_dir . '/componentes/sidebar.php';
                                   ? date('d/m', strtotime($fila['fecha_enviado']))
                                   : '')],
                 'fallo'   => ['bg-amber-100 text-amber-700 border-amber-200', 'Falló'],
+                'baja'    => ['bg-red-100 text-red-700 border-red-200',       'Baja'],
                 default   => ['bg-gray-100 text-gray-500 border-gray-200',    'Pendiente'],
             };
           ?>
           <tr class="hover:bg-gray-50/70 transition-colors">
             <td class="px-4 py-3 text-center">
+              <?php if ($estado === 'baja'): ?>
+                <span class="text-gray-200" title="Dado de baja: no se le puede enviar">—</span>
+              <?php else: ?>
               <input type="checkbox" class="row-check w-4 h-4 rounded accent-[#54A6D8] cursor-pointer"
                      value="<?= (int)$fila['alumno_id'] ?>">
+              <?php endif; ?>
             </td>
             <td class="px-4 py-3 text-xs text-gray-400 font-mono"><?= (int)$fila['alumno_id'] ?></td>
             <td class="px-4 py-3 font-semibold text-gray-800"><?= htmlspecialchars($fila['nombre']) ?></td>

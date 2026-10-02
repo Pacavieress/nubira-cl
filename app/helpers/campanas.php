@@ -17,14 +17,33 @@ function generarUnsubUrl($correo) {
 // Feedback "¿Te resultó útil este correo?" (tabla correo_feedback). Mismo secreto que la baja, pero con prefijo
 // 'feedback|' y el voto dentro de la firma: un token de baja no sirve para votar y un voto no se puede cambiar editando el enlace.
 const CAMPANA_FEEDBACK = 'recuperar_gmails';
+// Lista blanca de campañas que aceptan feedback (la usan generarFeedbackUrl() y feedback.php). El nombre de la
+// campaña ya va dentro de la firma, así que los tokens de 'recuperar_gmails' ya enviados siguen validando igual.
+const FEEDBACK_CAMPANAS = ['recuperar_gmails', 'despertar_dormidos'];
 
 function feedbackToken(string $correo, string $campana, string $voto): string {
     return hash_hmac('sha256', 'feedback|' . $campana . '|' . $voto . '|' . $correo, UNSUB_SECRET);
 }
 
 function generarFeedbackUrl(string $correo, string $voto, string $campana = CAMPANA_FEEDBACK): string {
+    if (!in_array($campana, FEEDBACK_CAMPANAS, true)) {
+        throw new \InvalidArgumentException('Campaña de feedback no permitida: ' . $campana);
+    }
     return 'https://nubira.cl/feedback?c=' . rawurlencode($campana) . '&v=' . $voto
          . '&e=' . rawurlencode($correo) . '&token=' . feedbackToken($correo, $campana, $voto);
+}
+
+// Bloque "¿Te resultó útil este correo?" para campañas nuevas (el de recuperar_gmails sigue inline en su generador).
+function nb_bloque_feedback_html(string $correo, string $campana): string {
+    $util   = htmlspecialchars(generarFeedbackUrl($correo, 'util', $campana), ENT_QUOTES, 'UTF-8');
+    $noutil = htmlspecialchars(generarFeedbackUrl($correo, 'no_util', $campana), ENT_QUOTES, 'UTF-8');
+    return "
+<p style=\"text-align:center;margin:24px 0 0 0;font-size:13px;color:#555;\">
+  ¿Te resultó útil este correo?
+  <a href=\"{$util}\" style=\"color:#54A6D8;font-weight:bold;text-decoration:none;margin:0 6px;\">Útil</a>
+  &middot;
+  <a href=\"{$noutil}\" style=\"color:#6B7280;font-weight:bold;text-decoration:none;margin:0 6px;\">No es útil</a>
+</p>";
 }
 
 // Tope diario de correos de campaña (Hostinger limita el SMTP por día). Ajustable.
@@ -370,6 +389,7 @@ function nb_generar_email_cupon_promocional(string $primer_nombre, string $codig
     $nombre_safe = htmlspecialchars($primer_nombre, ENT_QUOTES, 'UTF-8');
     $bloqueCupon = nb_bloque_cupon_html($codigo, $porcentaje, $fecha_expiracion);
     $unsub_safe = htmlspecialchars(generarUnsubUrl($correo), ENT_QUOTES, 'UTF-8');
+    $bloqueFeedback = nb_bloque_feedback_html($correo, 'despertar_dormidos'); // solo lo usa la campaña despertar_dormidos
     return "
 <p>Hola <strong>{$nombre_safe}</strong>,</p>
 <p>{$intro}</p>
@@ -388,12 +408,13 @@ function nb_generar_email_cupon_promocional(string $primer_nombre, string $codig
 </p>
 <p style=\"text-align:center;margin-bottom:24px;\">
   <a href=\"https://instagram.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
-    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+    <img src=\"https://nubira.cl/upload/email/icon-instagram.png\" alt=\"Instagram Nubira\" width=\"26\" height=\"26\" style=\"display:inline-block;border:0;\">
   </a>
   <a href=\"https://facebook.com/nubira.cl\" target=\"_blank\" style=\"margin:0 8px;display:inline-block;\">
-    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" style=\"display:inline-block;border:0;\">
+    <img src=\"https://nubira.cl/upload/email/icon-facebook.png\" alt=\"Facebook Nubira\" width=\"26\" height=\"26\" style=\"display:inline-block;border:0;\">
   </a>
 </p>
+{$bloqueFeedback}
 <hr style=\"margin:30px 0;border:none;border-top:1px solid #eee;\">
 <p style=\"font-size:11px;color:#888;\">
   Si no quieres seguir recibiendo estos correos, puedes <a href=\"{$unsub_safe}\" style=\"color:#888;\">darte de baja aquí</a>.
