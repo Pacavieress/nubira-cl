@@ -5,7 +5,11 @@
  * MODO CLI: php app/enviar_despertar_dormidos.php [limite]
  * MODO WEB GET:  Panel de selección manual
  * MODO WEB POST: Envío a IDs seleccionados (CSRF + JSON response)
+ *
+ * Esta campaña se reenvía periódicamente: no se envía a quien la recibió (exito=1) hace menos de
+ * DESPERTAR_DORMIDOS_INTERVALO_DIAS días. El correo normal y el de cupón cuentan como el mismo envío.
  */
+if (!defined('DESPERTAR_DORMIDOS_INTERVALO_DIAS')) define('DESPERTAR_DORMIDOS_INTERVALO_DIAS', 15);
 
 // ── Función compartida (CLI + web) ────────────────────────────
 function generarHtmlEmailDespertarDormidos(string $primer_nombre, string $correo): string {
@@ -169,16 +173,19 @@ if (php_sapi_name() === 'cli') {
           AND LOWER(TRIM(a.correo)) NOT IN (
               SELECT LOWER(TRIM(destinatario)) FROM correos_admin
               WHERE admin_nombre = 'despertar_dormidos_jun2026' AND exito = 1
+                AND fecha_envio >= DATE_SUB(NOW(), INTERVAL ? DAY)
           )
           AND NOT EXISTS (SELECT 1 FROM unsubscribed u WHERE LOWER(TRIM(u.correo)) = LOWER(TRIM(a.correo)))
         ORDER BY a.id ASC
     ";
 
+    $intervalo_dias = (int)DESPERTAR_DORMIDOS_INTERVALO_DIAS;
     if ($LIMITE > 0) {
         $stmt = $conn->prepare($sql_cli . " LIMIT ?");
-        $stmt->bind_param('i', $LIMITE);
+        $stmt->bind_param('ii', $intervalo_dias, $LIMITE);
     } else {
         $stmt = $conn->prepare($sql_cli);
+        $stmt->bind_param('i', $intervalo_dias);
     }
     $stmt->execute();
     $res = $stmt->get_result();
@@ -318,15 +325,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    // Guard real en el servidor: excluye a quien ya tiene exito=1 para esta campaña,
-    // aunque el admin lo haya vuelto a seleccionar a mano con el filtro "todos".
-    // Usa $admin_nombre (misma variable que ya define la campaña arriba, línea ~154)
-    // en vez de repetir el literal, para que no puedan divergir.
+    // Guard real en el servidor: revalida todo y excluye solo a quien recibió el correo con éxito hace menos
+    // de DESPERTAR_DORMIDOS_INTERVALO_DIAS días (haberlo recibido antes, fuera del intervalo, NO excluye).
+    // Usa $admin_nombre (misma variable que ya define la campaña arriba) en vez de repetir el literal.
+    $intervalo_dias = (int)DESPERTAR_DORMIDOS_INTERVALO_DIAS;
     $stmt = $conn->prepare("
         SELECT a.id, a.nombre, LOWER(TRIM(a.correo)) AS correo
         FROM alumnos a
         WHERE a.id IN ($placeholders)
+          AND a.id != 1
           AND a.visible = 1
+          AND a.bloqueado = 0
           AND a.confirmado = 1
           AND a.recibir_emails = 1
           AND NOT EXISTS (SELECT 1 FROM servicios s WHERE s.alumno_id = a.id)
@@ -336,34 +345,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           AND LOWER(TRIM(a.correo)) NOT IN (
               SELECT LOWER(TRIM(destinatario)) FROM correos_admin
               WHERE admin_nombre = ? AND exito = 1
+                AND fecha_envio >= DATE_SUB(NOW(), INTERVAL ? DAY)
           )
         ORDER BY a.id ASC
     ");
-    $params_sel = array_merge($ids, [$admin_nombre]);
-    $stmt->bind_param(str_repeat('i', count($ids)) . 's', ...$params_sel);
+    $params_sel = array_merge($ids, [$admin_nombre, $intervalo_dias]);
+    $stmt->bind_param(str_repeat('i', count($ids)) . 'si', ...$params_sel);
     $stmt->execute();
     $usuarios = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    // Cuántos de los IDs pedidos ya estaban contactados con éxito — se reporta aparte,
-    // no se cuentan como enviados ni como fallidos.
-    $stmt_ya = $conn->prepare("
-        SELECT COUNT(DISTINCT a.id)
-        FROM alumnos a
-        WHERE a.id IN ($placeholders)
-          AND LOWER(TRIM(a.correo)) IN (
-              SELECT LOWER(TRIM(destinatario)) FROM correos_admin
-              WHERE admin_nombre = ? AND exito = 1
-          )
-    ");
-    $params_ya = array_merge($ids, [$admin_nombre]);
-    $stmt_ya->bind_param(str_repeat('i', count($ids)) . 's', ...$params_ya);
-    $stmt_ya->execute();
-    $stmt_ya->bind_result($ya_contactados);
-    $stmt_ya->fetch();
-    $stmt_ya->close();
-
-    $omitidos = count($ids) - count($usuarios) - $ya_contactados;
+    // Omitidos con desglose para el toast: baja, recibió el correo dentro del intervalo, u otro motivo
+    // (ya no califica: bloqueado, sin confirmar, ya usó la plataforma, sin preferencia de correos…).
+    $ids_ok        = array_map('intval', array_column($usuarios, 'id'));
+    $omitidos_ids  = array_values(array_diff($ids, $ids_ok));
+    $omitidos_baja = 0;
+    $omitidos_reciente = 0;
+    if (!empty($omitidos_ids)) {
+        $ph_o = implode(',', array_fill(0, count($omitidos_ids), '?'));
+        $stmt_o = $conn->prepare("
+            SELECT a.id,
+                   EXISTS (SELECT 1 FROM unsubscribed u WHERE LOWER(TRIM(u.correo)) = LOWER(TRIM(a.correo))) AS es_baja,
+                   EXISTS (SELECT 1 FROM correos_admin ca
+                            WHERE LOWER(TRIM(ca.destinatario)) = LOWER(TRIM(a.correo))
+                              AND ca.admin_nombre = ? AND ca.exito = 1
+                              AND ca.fecha_envio >= DATE_SUB(NOW(), INTERVAL ? DAY)) AS es_reciente
+            FROM alumnos a
+            WHERE a.id IN ($ph_o)
+        ");
+        $params_o = array_merge([$admin_nombre, $intervalo_dias], $omitidos_ids);
+        $stmt_o->bind_param('si' . str_repeat('i', count($omitidos_ids)), ...$params_o);
+        $stmt_o->execute();
+        foreach ($stmt_o->get_result()->fetch_all(MYSQLI_ASSOC) as $o) {
+            if ((int)$o['es_baja'] === 1)          $omitidos_baja++;      // la baja tiene prioridad sobre el motivo "reciente"
+            elseif ((int)$o['es_reciente'] === 1)  $omitidos_reciente++;
+        }
+        $stmt_o->close();
+    }
+    $omitidos        = count($omitidos_ids);
+    $omitidos_otros  = $omitidos - $omitidos_baja - $omitidos_reciente;
 
     $admin_id = (int)$_SESSION['usuario_id'];
     $stmt_log = $conn->prepare(
@@ -417,7 +437,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt_log->close();
     $conn->close();
 
-    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos, 'ya_contactados' => $ya_contactados]);
+    echo json_encode([
+        'ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos,
+        'omitidos_baja' => $omitidos_baja, 'omitidos_reciente' => $omitidos_reciente, 'omitidos_otros' => $omitidos_otros,
+    ]);
     exit;
 }
 
@@ -455,7 +478,7 @@ if (isset($_GET['preview_cupon'])) {
 
 // ── GET: listado ──────────────────────────────────────────────
 $filtro = $_GET['filtro'] ?? 'pendiente';
-if (!in_array($filtro, ['pendiente', 'enviado', 'baja', 'todos'], true)) $filtro = 'pendiente';
+if (!in_array($filtro, ['pendiente', 'reciente', 'reenviable', 'fallo', 'baja', 'todos'], true)) $filtro = 'pendiente';
 
 $orden = $_GET['orden'] ?? 'id_asc';
 if (!in_array($orden, ['id_asc','id_desc','correo_asc','correo_desc','nombre_asc','nombre_desc','estado'], true)) $orden = 'id_asc';
@@ -547,34 +570,50 @@ if ($proveedores_raw === '' || $proveedores_raw === 'todos') {
     if (empty($proveedores_activos)) $proveedores_activos = $proveedores_validos;
 }
 
-$stats = ['total' => count($todos), 'enviados' => 0, 'pendientes' => 0, 'fallidos' => 0, 'bajas' => 0];
+$intervalo_dias = (int)DESPERTAR_DORMIDOS_INTERVALO_DIAS;
+$stats = ['total' => count($todos), 'enviados' => 0, 'pendientes' => 0, 'fallidos' => 0,
+          'reciente' => 0, 'reenviable' => 0, 'bajas' => 0];
 $stats_prov = array_fill_keys($proveedores_validos, 0);
 $filas = [];
 
+// Estados (en este orden de prioridad):
+//   baja        -> en unsubscribed: sin casilla.
+//   reciente    -> último envío exitoso hace menos de N días: sin casilla hasta cumplir el intervalo.
+//   reenviable  -> último envío exitoso hace N días o más: con casilla.
+//   fallo       -> solo intentos fallidos: con casilla (reintento).
+//   pendiente   -> nunca se le ha intentado enviar: con casilla.
 foreach ($todos as $row) {
-    $e = $row['estado_envio'];
+    $ts_envio = !empty($row['fecha_enviado']) ? strtotime($row['fecha_enviado']) : null;
     if (!empty($row['dado_baja'])) {
-        // Dados de baja: no son "pendientes" ni se pueden seleccionar (el POST igual los excluye).
         $row['_estado'] = 'baja';
         $stats['bajas']++;
-    } elseif (is_null($e)) {
-        $row['_estado'] = 'pendiente';
-        $stats['pendientes']++;
-    } elseif ((int)$e === 1) {
-        $row['_estado'] = 'enviado';
+    } elseif ($ts_envio !== null) {
+        $row['_reenviable_ts'] = strtotime("+{$intervalo_dias} days", $ts_envio);
+        if ($row['_reenviable_ts'] > time()) {
+            $row['_estado'] = 'reciente';
+            $stats['reciente']++;
+        } else {
+            $row['_estado'] = 'reenviable';
+            $stats['reenviable']++;
+        }
         $stats['enviados']++;
-    } else {
+    } elseif (!is_null($row['estado_envio'])) {
         $row['_estado'] = 'fallo';
         $stats['fallidos']++;
+    } else {
+        $row['_estado'] = 'pendiente';
+        $stats['pendientes']++;
     }
 
     $row['_proveedor'] = clasificar_proveedor($row['correo']);
 
     $pasa_estado = match($filtro) {
-        'pendiente' => in_array($row['_estado'], ['pendiente', 'fallo']),
-        'enviado'   => $row['_estado'] === 'enviado',
-        'baja'      => $row['_estado'] === 'baja',
-        default     => true,
+        'pendiente'  => $row['_estado'] === 'pendiente',
+        'reciente'   => $row['_estado'] === 'reciente',
+        'reenviable' => $row['_estado'] === 'reenviable',
+        'fallo'      => $row['_estado'] === 'fallo',
+        'baja'       => $row['_estado'] === 'baja',
+        default      => true,
     };
 
     if ($pasa_estado) {
@@ -694,10 +733,12 @@ require_once $app_dir . '/componentes/sidebar.php';
     <div class="flex flex-wrap gap-2">
       <?php
       $ops = [
-          'pendiente' => ['Pendientes', $stats['pendientes'] + $stats['fallidos']],
-          'enviado'   => ['Ya enviados', $stats['enviados']],
-          'baja'      => ['Bajas', $stats['bajas']],
-          'todos'     => ['Todos', $stats['total']],
+          'pendiente'  => ['Pendientes', $stats['pendientes']],
+          'reciente'   => ['Enviado reciente (últimos ' . DESPERTAR_DORMIDOS_INTERVALO_DIAS . ' días)', $stats['reciente']],
+          'reenviable' => ['Reenviable (hace ' . DESPERTAR_DORMIDOS_INTERVALO_DIAS . ' días o más)', $stats['reenviable']],
+          'fallo'      => ['Falló', $stats['fallidos']],
+          'baja'       => ['Baja', $stats['bajas']],
+          'todos'      => ['Todos', $stats['total']],
       ];
       foreach ($ops as $key => [$label, $cnt]):
       ?>
@@ -758,20 +799,26 @@ require_once $app_dir . '/componentes/sidebar.php';
         <tbody class="divide-y divide-gray-50">
           <?php foreach ($filas as $fila):
             $estado = $fila['_estado'];
+            $f_envio = !empty($fila['fecha_enviado']) ? date('d/m/Y', strtotime($fila['fecha_enviado'])) : '';
+            $f_reenv = !empty($fila['_reenviable_ts']) ? date('d/m/Y', $fila['_reenviable_ts']) : '';
             $badge  = match($estado) {
-                'enviado' => ['bg-green-100 text-green-700 border-green-200',
-                              'Enviado ' . ($fila['fecha_enviado']
-                                  ? date('d/m', strtotime($fila['fecha_enviado']))
-                                  : '')],
-                'fallo'   => ['bg-amber-100 text-amber-700 border-amber-200', 'Falló'],
-                'baja'    => ['bg-red-100 text-red-700 border-red-200',       'Baja'],
-                default   => ['bg-gray-100 text-gray-500 border-gray-200',    'Pendiente'],
+                'reciente'   => ['bg-blue-100 text-blue-700 border-blue-200',
+                                 "Enviado {$f_envio} · reenviable el {$f_reenv}"],
+                'reenviable' => ['bg-green-100 text-green-700 border-green-200',
+                                 "Reenviable · último envío {$f_envio}"],
+                'fallo'      => ['bg-amber-100 text-amber-700 border-amber-200', 'Falló'],
+                'baja'       => ['bg-red-100 text-red-700 border-red-200',       'Baja'],
+                default      => ['bg-gray-100 text-gray-500 border-gray-200',    'Pendiente'],
             };
+            $sin_casilla = [
+                'baja'     => 'Dado de baja: no se le puede enviar',
+                'reciente' => 'Recibió el correo hace menos de ' . DESPERTAR_DORMIDOS_INTERVALO_DIAS . ' días: reenviable el ' . $f_reenv,
+            ];
           ?>
           <tr class="hover:bg-gray-50/70 transition-colors">
             <td class="px-4 py-3 text-center">
-              <?php if ($estado === 'baja'): ?>
-                <span class="text-gray-200" title="Dado de baja: no se le puede enviar">—</span>
+              <?php if (isset($sin_casilla[$estado])): ?>
+                <span class="text-gray-200" title="<?= htmlspecialchars($sin_casilla[$estado]) ?>">—</span>
               <?php else: ?>
               <input type="checkbox" class="row-check w-4 h-4 rounded accent-[#54A6D8] cursor-pointer"
                      value="<?= (int)$fila['alumno_id'] ?>">
@@ -851,6 +898,7 @@ require_once $app_dir . '/componentes/modal_explora.php';
 
 <script>
 const CSRF_TOKEN = <?= json_encode($csrf_token) ?>;
+const INTERVALO_DIAS = <?= (int)DESPERTAR_DORMIDOS_INTERVALO_DIAS ?>;
 
 window.onload = () => {
   const l = document.getElementById('loader');
@@ -920,11 +968,18 @@ btnEnviar?.addEventListener('click', async () => {
     const res  = await fetch(window.location.pathname, { method: 'POST', body });
     const data = await res.json();
     if (data.ok) {
-      const msg = `${data.enviados} enviado${data.enviados !== 1 ? 's' : ''}`
-        + (data.fallidos > 0 ? `, ${data.fallidos} fallido${data.fallidos !== 1 ? 's' : ''}` : '')
-        + (data.omitidos > 0 ? `, ${data.omitidos} omitido${data.omitidos !== 1 ? 's' : ''} (ya no calificaba)` : '');
-      mostrarToast(msg, 'ok');
-      setTimeout(() => location.reload(), 2500);
+      // Desglose de omitidos: "0 enviados · 3 omitidos: 2 recibieron el correo hace menos de 15 días, 1 dado de baja"
+      const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+      const motivos = [];
+      if (data.omitidos_reciente > 0) motivos.push(`${plural(data.omitidos_reciente, 'recibió', 'recibieron')} el correo hace menos de ${INTERVALO_DIAS} días`);
+      if (data.omitidos_baja > 0)     motivos.push(plural(data.omitidos_baja, 'dado de baja', 'dados de baja'));
+      if (data.omitidos_otros > 0)    motivos.push(`${plural(data.omitidos_otros, 'ya no calificaba', 'ya no calificaban')}`);
+      const msg = plural(data.enviados, 'enviado', 'enviados')
+        + (data.fallidos > 0 ? ` · ${plural(data.fallidos, 'fallido', 'fallidos')}` : '')
+        + (data.omitidos > 0 ? ` · ${plural(data.omitidos, 'omitido', 'omitidos')}: ${motivos.join(', ')}` : '');
+      // Rojo si no se envió ninguno y hubo omitidos, para que no parezca un éxito.
+      mostrarToast(msg, (data.enviados === 0 && data.omitidos > 0) ? 'error' : 'ok');
+      setTimeout(() => location.reload(), data.omitidos > 0 ? 5000 : 2500);
     } else {
       mostrarToast(data.error || 'Error al enviar', 'error');
       resetBtn();
