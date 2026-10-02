@@ -19,7 +19,7 @@ function generarUnsubUrl($correo) {
 const CAMPANA_FEEDBACK = 'recuperar_gmails';
 // Lista blanca de campañas que aceptan feedback (la usan generarFeedbackUrl() y feedback.php). El nombre de la
 // campaña ya va dentro de la firma, así que los tokens de 'recuperar_gmails' ya enviados siguen validando igual.
-const FEEDBACK_CAMPANAS = ['recuperar_gmails', 'despertar_dormidos'];
+const FEEDBACK_CAMPANAS = ['recuperar_gmails', 'despertar_dormidos', 'anuncio_video_tutores'];
 
 function feedbackToken(string $correo, string $campana, string $voto): string {
     return hash_hmac('sha256', 'feedback|' . $campana . '|' . $voto . '|' . $correo, UNSUB_SECRET);
