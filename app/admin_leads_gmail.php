@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $unsubUrl_test    = generarUnsubUrl($correo_prueba);
         $bloqueCupon_test = $cupon_info_pv ? nb_bloque_cupon_html($codigo_cupon_pv, $cupon_info_pv['porcentaje'], $cupon_info_pv['fecha_expiracion']) : '';
-        $html_test        = generarHtmlEmailRecuperarGmail($unsubUrl_test, $bloqueCupon_test);
+        $html_test        = generarHtmlEmailRecuperarGmail($unsubUrl_test, $bloqueCupon_test, $correo_prueba);
         $exito_test       = enviarDormidoConUnsubscribe($correo_prueba, $asunto, $html_test, $unsubUrl_test, 'noreply', $titulo_plantilla, true);
 
         logCampana('[PRUEBA] ' . ($exito_test ? 'OK' : 'FAIL') . ' ' . $correo_prueba);
@@ -260,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($envios as [$correo, $forzado]) {
         $unsubUrl    = generarUnsubUrl($correo);
         $bloqueCupon = $cupon_info ? nb_bloque_cupon_html($codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion']) : '';
-        $html        = generarHtmlEmailRecuperarGmail($unsubUrl, $bloqueCupon);
+        $html        = generarHtmlEmailRecuperarGmail($unsubUrl, $bloqueCupon, $correo);
         $exito       = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply', $titulo_plantilla, true);
         $exito_int   = $exito ? 1 : 0;
         $forzado_int = $forzado ? 1 : 0;
@@ -303,7 +303,7 @@ if (isset($_GET['preview_cupon'])) {
         $bloqueCupon_pv = nb_bloque_cupon_html($codigo_pv, $cupon_pv['porcentaje'], $cupon_pv['fecha_expiracion']);
     }
 
-    $html_pv = generarHtmlEmailRecuperarGmail($unsubUrl_pv, $bloqueCupon_pv);
+    $html_pv = generarHtmlEmailRecuperarGmail($unsubUrl_pv, $bloqueCupon_pv, 'preview@nubira.cl');
     echo plantillaMaestra($titulo_plantilla, $html_pv);
     exit;
 }
@@ -345,6 +345,19 @@ $stmt->execute();
 $todos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 $cupo_hoy = campanaCupoRestante($conn);
+// Feedback del correo. Si la tabla aún no existe (SQL sin ejecutar), el panel sigue funcionando.
+$fb = ['util' => 0, 'no_util' => 0];
+try {
+    // Se excluyen los votos de las direcciones de prueba y preview del propio panel.
+    $rs = $conn->prepare("SELECT voto, COUNT(*) AS n FROM correo_feedback
+                           WHERE campana = ? AND correo NOT LIKE 'prueba@%' AND correo NOT LIKE 'preview@%'
+                           GROUP BY voto");
+    $camp_fb = CAMPANA_FEEDBACK;
+    $rs->bind_param('s', $camp_fb);
+    $rs->execute();
+    foreach ($rs->get_result()->fetch_all(MYSQLI_ASSOC) as $r) { $fb[$r['voto']] = (int)$r['n']; }
+    $rs->close();
+} catch (\Throwable $e) { /* tabla pendiente de crear */ }
 $conn->close();
 
 // ── Clasificación de estado ───────────────────────────────────
@@ -405,7 +418,8 @@ require_once $app_dir . '/componentes/sidebar.php';
           <span class="ml-2 text-base font-normal text-gray-400">— Campaña jun 2026</span>
         </h1>
         <p class="text-sm text-gray-500 mt-0.5">Seguimiento de los ~93 Gmails históricos invitados a registrarse.</p>
-        <p class="text-xs text-gray-400 mt-0.5">Cupo de hoy: <?= (int)$cupo_hoy ?> de <?= CAMPANA_TOPE_DIARIO ?> correos disponibles.</p>
+        <p class="text-xs text-gray-400 mt-0.5">Cupo de hoy: <?= (int)$cupo_hoy ?> de <?= CAMPANA_TOPE_DIARIO ?> correos disponibles.
+          &middot; Feedback del correo: <span class="font-semibold text-gray-600">Útil <?= $fb['util'] ?></span> / <span class="font-semibold text-gray-600">No es útil <?= $fb['no_util'] ?></span></p>
       </div>
       <div class="flex items-center gap-2 shrink-0 flex-wrap">
         <input type="email" id="input-email-prueba" placeholder="tu@correo.com"

@@ -7,4 +7,5 @@ Disallow: /reportar-servicio
 Disallow: /app/*.php
 Disallow: /login
 Disallow: /registro
+Disallow: /feedback
 Sitemap: https://nubira.cl/sitemap.xml

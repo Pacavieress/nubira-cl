@@ -113,7 +113,7 @@ while ($row = $res->fetch_assoc()) {
     $procesados++;
 
     $unsubUrl  = generarUnsubUrl($correo);
-    $html      = generarHtmlEmailRecuperarGmail($unsubUrl);
+    $html      = generarHtmlEmailRecuperarGmail($unsubUrl, '', $correo);
     $exito     = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply', null, true);
     $exito_int = $exito ? 1 : 0;
 

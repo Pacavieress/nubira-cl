@@ -14,6 +14,19 @@ function generarUnsubUrl($correo) {
     return 'https://nubira.cl/unsubscribe?token=' . $token . '&e=' . urlencode($correo);
 }
 
+// Feedback "¿Te resultó útil este correo?" (tabla correo_feedback). Mismo secreto que la baja, pero con prefijo
+// 'feedback|' y el voto dentro de la firma: un token de baja no sirve para votar y un voto no se puede cambiar editando el enlace.
+const CAMPANA_FEEDBACK = 'recuperar_gmails';
+
+function feedbackToken(string $correo, string $campana, string $voto): string {
+    return hash_hmac('sha256', 'feedback|' . $campana . '|' . $voto . '|' . $correo, UNSUB_SECRET);
+}
+
+function generarFeedbackUrl(string $correo, string $voto, string $campana = CAMPANA_FEEDBACK): string {
+    return 'https://nubira.cl/feedback?c=' . rawurlencode($campana) . '&v=' . $voto
+         . '&e=' . rawurlencode($correo) . '&token=' . feedbackToken($correo, $campana, $voto);
+}
+
 // Tope diario de correos de campaña (Hostinger limita el SMTP por día). Ajustable.
 if (!defined('CAMPANA_TOPE_DIARIO')) define('CAMPANA_TOPE_DIARIO', 100);
 // Campañas que cuentan contra el tope (valores de correos_admin.admin_nombre). Exactos + prefijos con LIKE
@@ -97,8 +110,20 @@ Mientras tanto, nuestros tutores han ayudado a estudiantes en:</p>
 ";
 }
 
-function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '') {
+function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '', ?string $correo = null) {
     $unsub_safe = htmlspecialchars($unsubUrl, ENT_QUOTES, 'UTF-8');
+    $bloqueFeedback = '';
+    if ($correo !== null && $correo !== '') {
+        $fb_util   = htmlspecialchars(generarFeedbackUrl($correo, 'util'), ENT_QUOTES, 'UTF-8');
+        $fb_noutil = htmlspecialchars(generarFeedbackUrl($correo, 'no_util'), ENT_QUOTES, 'UTF-8');
+        $bloqueFeedback = "
+<p style=\"text-align:center;margin:24px 0 0 0;font-size:13px;color:#555;\">
+  ¿Te resultó útil este correo?
+  <a href=\"{$fb_util}\" style=\"color:#54A6D8;font-weight:bold;text-decoration:none;margin:0 6px;\">Útil</a>
+  &middot;
+  <a href=\"{$fb_noutil}\" style=\"color:#6B7280;font-weight:bold;text-decoration:none;margin:0 6px;\">No es útil</a>
+</p>";
+    }
     $utm_base   = 'utm_source=email&amp;utm_medium=reactivacion&amp;utm_campaign=recuperar_gmails';
     return "
 <p>En <strong>Nubira</strong> encuentras tutores para lo que estés estudiando.</p>
@@ -206,6 +231,7 @@ function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '')
   </a>
 </p>
 {$bloqueCuponHtml}
+{$bloqueFeedback}
 <hr style=\"margin:30px 0;border:none;border-top:1px solid #eee;\">
 <p style=\"font-size:11px;color:#888;\">
   Si no quieres recibir más correos de Nubira,
@@ -230,9 +256,10 @@ function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsu
         $mail->setFrom($cfg['user'], $cfg['name']);
         $mail->addAddress($destinatario);
         $mail->addReplyTo(CAMPANA_REPLY_TO, 'Equipo Nubira');
-        if ($usarSenderContacto) {
-            $mail->Sender = CAMPANA_REPLY_TO; // Return-Path / MAIL FROM (solo campañas de leads)
-        }
+        // $usarSenderContacto queda en la firma sin efecto: Hostinger rechaza MAIL FROM distinto al usuario SMTP.
+        // if ($usarSenderContacto) {
+        //     $mail->Sender = CAMPANA_REPLY_TO; // Return-Path / MAIL FROM
+        // }
         $mail->MessageID = sprintf('<%s@nubira.cl>', bin2hex(random_bytes(16)));
 
         $mail->addCustomHeader(
