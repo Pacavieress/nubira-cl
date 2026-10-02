@@ -80,7 +80,10 @@ if ($tab === 'servicios') {
 
     $where = 'WHERE ' . implode(' AND ', $condicion);
 
+    // descripcion/modalidad/duracion_minutos/es_paes/horarios_json: lo que dibujan las cards 2 y 3, para calcular sus
+    // fingerprints (?v=) y saber si el servicio tiene horarios publicados (card 3).
     $sql = "SELECT s.id, s.titulo, s.categoria, s.institucion, s.fecha_publicacion, s.video_estado,
+                   s.descripcion, s.modalidad, s.duracion_minutos, s.es_paes, s.horarios_json,
                    a.nombre AS tutor_nombre
             FROM servicios s
             JOIN alumnos a ON s.alumno_id = a.id
@@ -102,6 +105,14 @@ if ($tab === 'servicios') {
         $hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id((int)$s['id']) : (string)$s['id'];
         $v = nb_version_imagen_servicio((int)$s['id']);
         $s['img_url'] = "/api/img/servicio/{$hash}/post.jpg?v={$v}";
+
+        // Cards 2 (resumen) y 3 (horario publicado): mismo endpoint, cada una con el fingerprint de SU contenido como ?v=
+        // (las URLs son immutable: el ?v= es lo que rompe la caché del navegador cuando cambia el texto o el horario).
+        // La card 3 solo existe si el servicio tiene horarios publicados.
+        $s['nombre_alumno']     = $s['tutor_nombre']; // nb_contenido_equipo() descarta frases que traen el apellido del tutor
+        $s['img_url_equipo']    = "/api/img/servicio/{$hash}/equipo.jpg?v=" . nb_fingerprint_equipo($s);
+        $s['tiene_card3']       = (bool)nb_horarios_filas($s['horarios_json'] ?? null);
+        $s['img_url_horarios']  = $s['tiene_card3'] ? "/api/img/servicio/{$hash}/horarios.jpg?v=" . nb_fingerprint_horarios($s) : '';
     }
     unset($s);
 
@@ -513,6 +524,8 @@ require_once $app_dir . '/componentes/sidebar.php';
                     <div class="mkt-card relative bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden group"
                          data-id="<?= (int)$s['id'] ?>"
                          data-img-url="<?= htmlspecialchars($s['img_url'], ENT_QUOTES, 'UTF-8') ?>"
+                         data-img-url-equipo="<?= htmlspecialchars($s['img_url_equipo'], ENT_QUOTES, 'UTF-8') ?>"
+                         data-img-url-horarios="<?= htmlspecialchars($s['img_url_horarios'], ENT_QUOTES, 'UTF-8') ?>"
                          data-titulo="<?= htmlspecialchars($s['titulo'], ENT_QUOTES, 'UTF-8') ?>">
 
                         <label class="absolute top-2 left-2 z-10 w-6 h-6 rounded-md bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center cursor-pointer shadow-sm">
@@ -538,6 +551,7 @@ require_once $app_dir . '/componentes/sidebar.php';
                                 <span class="text-[9px] font-bold uppercase tracking-wide text-[#54A6D8] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full truncate max-w-[70%]"><?= htmlspecialchars($s['categoria'], ENT_QUOTES, 'UTF-8') ?></span>
                                 <span class="text-[9px] text-gray-400 shrink-0"><?= date('d/m/Y', strtotime($s['fecha_publicacion'])) ?></span>
                             </div>
+                            <p class="text-[9px] text-gray-400 mt-1.5"><?= $s['tiene_card3'] ? 'Carrusel: 3 imágenes' : 'Carrusel: 2 imágenes (sin horario publicado)' ?></p>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -1177,15 +1191,23 @@ const preseleccionarId = <?= $preseleccionar_id ?>;
     }
 
     btnCarrusel.addEventListener('click', () => {
+        // 3 imágenes por servicio, juntas y en este orden: post (principal), equipo (resumen) y horarios (solo si el
+        // servicio tiene horarios publicados: data-img-url-horarios viene vacío si no). Cada una con su nombre de
+        // descarga propio y su URL con ?v={fingerprint}. Todas llevan el mismo id de servicio.
         const items = rowChecks()
             .filter(c => c.checked)
-            .map(c => {
+            .flatMap(c => {
                 const card = c.closest('.mkt-card');
-                return {
-                    id: card.dataset.id,
-                    url: card.dataset.imgUrl,
-                    titulo: card.dataset.titulo,
-                };
+                const id = card.dataset.id;
+                const titulo = card.dataset.titulo;
+                const lista = [
+                    { id, url: card.dataset.imgUrl,       titulo: titulo + ' · principal', archivo: `nubira-${id}-post.jpg` },
+                    { id, url: card.dataset.imgUrlEquipo, titulo: titulo + ' · resumen',   archivo: `nubira-${id}-equipo.jpg` },
+                ];
+                if (card.dataset.imgUrlHorarios) {
+                    lista.push({ id, url: card.dataset.imgUrlHorarios, titulo: titulo + ' · horario', archivo: `nubira-${id}-horarios.jpg` });
+                }
+                return lista;
             });
 
         if (items.length === 0) return;

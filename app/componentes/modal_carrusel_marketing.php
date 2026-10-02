@@ -108,6 +108,9 @@
       </div>
     `;
     li.querySelector('.carrusel-mkt-titulo').textContent = item.titulo;
+    // Nombre de descarga propio de cada imagen (un servicio aporta hasta 3: post, equipo, horarios). Sin item.archivo
+    // se queda con el nombre de siempre (nubira-{id}-post.jpg). Se asigna por DOM, no interpolado en el HTML.
+    if (item.archivo) li.querySelector('a[download]').setAttribute('download', item.archivo);
     return li;
   }
 
@@ -248,9 +251,11 @@
   // para cuando el admin hace clic, la página ya terminó de cargar y CSRF_TOKEN ya existe.
   if (btnSiPromo) {
     btnSiPromo.addEventListener('click', async () => {
-      const servicioIds = [...lista.querySelectorAll('li')]
+      // Cada servicio aporta hasta 3 <li> (post, equipo, horarios) con el mismo servicio_id: se envía UNA vez por
+      // servicio, en el orden de la lista. (El endpoint también deduplica con array_unique; esto evita mandar ids repetidos.)
+      const servicioIds = [...new Set([...lista.querySelectorAll('li')]
         .map(li => li.dataset.servicioId)
-        .filter(Boolean);
+        .filter(Boolean))];
       if (servicioIds.length === 0) return;
 
       const textoSpan = btnSiPromo.querySelector('.carrusel-mkt-btn-si-promo-texto');
