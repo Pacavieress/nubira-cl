@@ -1,9 +1,9 @@
 <?php
 // Endpoint público de feedback de correos de campaña. NO requiere login ni expone datos.
 // URL: /feedback?c=CAMPAÑA&v=util|no_util&e=CORREO&token=HMAC
-// GET  -> muestra una página con un botón de confirmar (los escáneres de enlaces de los proveedores de correo
-//         hacen GET automáticamente; así no se registra un voto sin que la persona confirme).
-// POST -> guarda el voto. El token es bearer: hash_hmac('sha256', 'feedback|campaña|voto|correo', UNSUB_SECRET).
+// El GET con token válido guarda el voto de inmediato (sin pantalla de confirmación) y ofrece cambiarlo con el
+// enlace firmado del voto contrario. HEAD no guarda nada. El token es bearer:
+// hash_hmac('sha256', 'feedback|campaña|voto|correo', UNSUB_SECRET), con el voto dentro de la firma.
 
 require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/config.php';            // define UNSUB_SECRET (desde .env)
@@ -25,9 +25,9 @@ $valido = $correo !== ''
     && UNSUB_SECRET !== ''
     && hash_equals(feedbackToken($correo, $campana, $voto), $token);
 
-$estado = $valido ? 'confirmar' : 'invalido';
+$estado = $valido ? 'gracias' : 'invalido';
 
-if ($valido && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($valido && $_SERVER['REQUEST_METHOD'] !== 'HEAD') {
     try {
         $stmt = $conn->prepare(
             "INSERT INTO correo_feedback (correo, campana, voto) VALUES (?, ?, ?)
@@ -36,7 +36,6 @@ if ($valido && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param('sss', $correo, $campana, $voto);
         $stmt->execute();
         $stmt->close();
-        $estado = 'gracias';
     } catch (\Throwable $e) {
         error_log('feedback.php: ' . $e->getMessage());
         $estado = 'error';
@@ -46,7 +45,10 @@ $conn->close();
 
 http_response_code(in_array($estado, ['invalido'], true) ? 400 : ($estado === 'error' ? 500 : 200));
 header('Cache-Control: no-store');
-$etiqueta = $voto === 'util' ? 'Útil' : 'No es útil';
+// Enlace firmado del voto contrario, para "¿Fue un error?" (misma campaña y correo, token propio).
+$voto_otro     = $voto === 'util' ? 'no_util' : 'util';
+$etiqueta_otro = $voto_otro === 'util' ? 'Útil' : 'No es útil';
+$url_otro      = $valido ? generarFeedbackUrl($correo, $voto_otro, $campana) : '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -66,22 +68,15 @@ $etiqueta = $voto === 'util' ? 'Útil' : 'No es útil';
   <div class="bg-white border border-gray-100 rounded-3xl shadow-md max-w-md w-full p-10 text-center">
     <div class="mb-6"><span class="text-2xl font-extrabold tracking-tight text-[#54A6D8]">nubira.cl</span></div>
 
-    <?php if ($estado === 'confirmar'): ?>
-      <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-3">¿Confirmas tu respuesta?</h1>
-      <p class="text-gray-500 leading-relaxed mb-8">
-        Quieres responder que el correo que te enviamos fue: <strong class="text-gray-900"><?= htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') ?></strong>.
-      </p>
-      <form method="POST" action="<?= htmlspecialchars($_SERVER['REQUEST_URI'], ENT_QUOTES, 'UTF-8') ?>">
-        <button type="submit"
-                class="inline-block bg-[#54A6D8] text-white font-bold px-6 py-3 rounded-xl transition-all hover:shadow-md hover:scale-[1.01]">
-          Confirmar respuesta
-        </button>
-      </form>
-    <?php elseif ($estado === 'gracias'): ?>
+    <?php if ($estado === 'gracias'): ?>
       <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-3">Gracias por tu respuesta</h1>
       <p class="text-gray-500 leading-relaxed mb-8">Nos ayuda a mejorar los correos que enviamos.</p>
       <a href="https://nubira.cl/explorar"
          class="inline-block bg-[#54A6D8] text-white font-bold px-6 py-3 rounded-xl transition-all hover:shadow-md hover:scale-[1.01]">Ir a Nubira</a>
+      <p class="mt-6 text-xs text-gray-400">
+        ¿Fue un error?
+        <a href="<?= htmlspecialchars($url_otro, ENT_QUOTES, 'UTF-8') ?>" class="underline hover:text-gray-600">Cambiar a <?= htmlspecialchars($etiqueta_otro, ENT_QUOTES, 'UTF-8') ?></a>
+      </p>
     <?php elseif ($estado === 'error'): ?>
       <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-3">No pudimos guardar tu respuesta</h1>
       <p class="text-gray-500 leading-relaxed mb-8">Inténtalo de nuevo en unos minutos.</p>
