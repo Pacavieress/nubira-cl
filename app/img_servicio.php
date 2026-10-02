@@ -1,5 +1,6 @@
 <?php
-// Endpoint público: sirve la imagen compartible (POST/HISTORY) de un servicio.
+// Endpoint público: sirve la imagen compartible de un servicio. ?f=post|history → card 1 (POST/HISTORY),
+// ?f=equipo → card 2 (resumen del servicio), ?f=horarios → card 3 (horario publicado).
 // SIN el shield general (app/middleware/antibot.php) — ese bloquea por User-Agent
 // (curl, python-requests, node-fetch, etc.), y los crawlers de preview de WhatsApp/
 // Telegram/Slack/Discord suelen usar exactamente esas firmas. Bloquearlos rompería
@@ -109,21 +110,27 @@ function check_img_servicio_rate_limit(mysqli $conn): void {
 }
 check_img_servicio_rate_limit($conn);
 
-$formato = (($_GET['f'] ?? 'post') === 'history') ? 'history' : 'post';
+// f=history → card 1 en 9:16; f=equipo|horarios → cards 2 y 3 (variante); cualquier otro valor → card 1 POST, como siempre.
+$f        = (string)($_GET['f'] ?? 'post');
+$variante = in_array($f, ['equipo', 'horarios'], true) ? $f : 'post';
+$formato  = ($f === 'history') ? 'history' : 'post';
 $servicio_id = nubira_desencriptar_id($_GET['id'] ?? '');
 
 if ($servicio_id <= 0) nb_servir_placeholder();
 
 // Validar servicio aprobado + visible
-$st = $conn->prepare("SELECT estado, COALESCE(visible,1) AS v FROM servicios WHERE id = ? LIMIT 1");
+$st = $conn->prepare("SELECT estado, COALESCE(visible,1) AS v, horarios_json FROM servicios WHERE id = ? LIMIT 1");
 $st->bind_param('i', $servicio_id);
 $st->execute();
 $row = $st->get_result()->fetch_assoc();
 $st->close();
 if (!$row || $row['estado'] !== 'aprobado' || (int)$row['v'] !== 1) nb_servir_placeholder();
 
+// Card 3 sin horarios publicados: no existe → 404 (no es un fallo de generación, que sería 500)
+if ($variante === 'horarios' && !nb_horarios_filas($row['horarios_json'] ?? null)) nb_servir_placeholder(404);
+
 // Generar o servir desde cache (helper del Paso 3)
-$file = nb_obtener_imagen_compartir($servicio_id, $formato);
+$file = nb_obtener_imagen_compartir($servicio_id, $formato, $variante);
 if ($file === '' || !is_file($file)) nb_servir_placeholder(500);
 
 // Servir el JPG con cache largo

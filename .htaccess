@@ -54,6 +54,8 @@ RewriteRule ^r/([a-zA-Z0-9]+)$ app/redirigir_corto.php?codigo=$1 [L,QSA]
 # Imagen compartible de servicio (POST/HISTORY) → endpoint que sirve JPG
 RewriteRule ^api/img/servicio/([a-zA-Z0-9_-]+)/post\.jpg$    app/img_servicio.php?id=$1&f=post     [L,QSA]
 RewriteRule ^api/img/servicio/([a-zA-Z0-9_-]+)/history\.jpg$ app/img_servicio.php?id=$1&f=history [L,QSA]
+# Cards 2 (resumen del servicio) y 3 (horario publicado) del carrusel de marketing → mismo endpoint
+RewriteRule ^api/img/servicio/([a-zA-Z0-9_-]+)/(equipo|horarios)\.jpg$ app/img_servicio.php?id=$1&f=$2 [L,QSA]
 # Imagen compartible de apunte (POST/HISTORY) → endpoint que sirve JPG
 RewriteRule ^api/img/apunte/([a-zA-Z0-9_-]+)/post\.jpg$    app/img_apunte.php?id=$1&f=post     [L,QSA]
 RewriteRule ^api/img/apunte/([a-zA-Z0-9_-]+)/history\.jpg$ app/img_apunte.php?id=$1&f=history [L,QSA]
