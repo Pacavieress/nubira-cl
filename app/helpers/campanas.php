@@ -14,6 +14,54 @@ function generarUnsubUrl($correo) {
     return 'https://nubira.cl/unsubscribe?token=' . $token . '&e=' . urlencode($correo);
 }
 
+// Tope diario de correos de campaña (Hostinger limita el SMTP por día). Ajustable.
+if (!defined('CAMPANA_TOPE_DIARIO')) define('CAMPANA_TOPE_DIARIO', 100);
+// Campañas que cuentan contra el tope (valores de correos_admin.admin_nombre). Exactos + prefijos con LIKE
+// (admin_campanas.php genera 'campaña_dormidos_YYYYMMDD_HHMM'; enviar_dormidos.php usa 'campaña_dormidos_v1').
+const CAMPANA_NOMBRES_TOPE = [
+    'recuperar_gmails_jun2026',
+    'despertar_dormidos_jun2026',
+    'anuncio_video_tutores_jun2026',
+    'cupon_alternativas_jul2026',
+    'perfil_incompleto_v1',
+];
+const CAMPANA_PREFIJOS_TOPE = ['campaña_dormidos_%'];
+const CAMPANA_REPLY_TO = 'contacto@nubira.cl';
+
+// Cupo que queda hoy: tope menos los envíos exitosos de hoy (hora Chile, la fija conexion.php).
+function campanaCupoRestante(mysqli $conn): int {
+    $ph      = implode(',', array_fill(0, count(CAMPANA_NOMBRES_TOPE), '?'));
+    $likes   = implode(' OR ', array_fill(0, count(CAMPANA_PREFIJOS_TOPE), 'admin_nombre LIKE ?'));
+    $params  = array_merge(CAMPANA_NOMBRES_TOPE, CAMPANA_PREFIJOS_TOPE);
+    $stmt    = $conn->prepare("SELECT COUNT(*) FROM correos_admin
+                                WHERE exito = 1 AND DATE(fecha_envio) = CURDATE()
+                                  AND (admin_nombre IN ($ph) OR $likes)");
+    $stmt->bind_param(str_repeat('s', count($params)), ...$params);
+    $stmt->execute();
+    $hoy = (int)$stmt->get_result()->fetch_row()[0];
+    $stmt->close();
+    return max(0, CAMPANA_TOPE_DIARIO - $hoy);
+}
+
+// HTML final -> texto plano: enlaces como "texto (url)", saltos de línea por bloque.
+function nb_html_a_texto(string $html): string {
+    $t = preg_replace('~<(head|style|script)\b.*?</\1>~is', '', $html);
+    $t = preg_replace_callback('~<img\b[^>]*\balt=(["\'])(.*?)\1[^>]*>~is', fn($m) => $m[2], $t);
+    $t = preg_replace_callback('~<a\b[^>]*\bhref=(["\'])(.*?)\1[^>]*>(.*?)</a>~is', function ($m) {
+        $url   = trim(html_entity_decode($m[2], ENT_QUOTES, 'UTF-8'));
+        $texto = trim(preg_replace('/\s+/', ' ', strip_tags($m[3])));
+        if ($url === '' || $url[0] === '#') return $texto;
+        return ($texto === '' || $texto === $url) ? $url : "$texto ($url)";
+    }, $t);
+    $t = preg_replace('~<br\s*/?>|</(p|div|h[1-6]|tr|ul|ol|table)>~i', "\n", $t);
+    $t = preg_replace('~<li\b[^>]*>~i', "\n- ", $t);
+    $t = html_entity_decode(strip_tags($t), ENT_QUOTES, 'UTF-8');
+    $t = str_replace(["\r\n", "\r"], "\n", $t); // las plantillas heredoc pueden venir con CRLF
+    $t = preg_replace('/[ \t\x{00A0}]+/u', ' ', $t);
+    $t = preg_replace('/ *\n */', "\n", $t);
+    return trim(preg_replace('/\n{3,}/', "\n\n", $t));
+}
+
 function generarHtmlEmailDormido($nombre, $dias, $unsubUrl) {
     $nombre_safe = htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8');
     return "
@@ -166,7 +214,7 @@ function generarHtmlEmailRecuperarGmail($unsubUrl, string $bloqueCuponHtml = '')
 ";
 }
 
-function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsubUrl, $sender = 'contacto', ?string $tituloPlantilla = null) {
+function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsubUrl, $sender = 'contacto', ?string $tituloPlantilla = null, bool $usarSenderContacto = false) {
     $cfg  = getSmtpConfig($sender);
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
     try {
@@ -181,7 +229,11 @@ function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsu
 
         $mail->setFrom($cfg['user'], $cfg['name']);
         $mail->addAddress($destinatario);
-        $mail->addReplyTo($cfg['user'], $cfg['name']);
+        $mail->addReplyTo(CAMPANA_REPLY_TO, 'Equipo Nubira');
+        if ($usarSenderContacto) {
+            $mail->Sender = CAMPANA_REPLY_TO; // Return-Path / MAIL FROM (solo campañas de leads)
+        }
+        $mail->MessageID = sprintf('<%s@nubira.cl>', bin2hex(random_bytes(16)));
 
         $mail->addCustomHeader(
             'List-Unsubscribe',
@@ -191,8 +243,9 @@ function enviarDormidoConUnsubscribe($destinatario, $asunto, $htmlInterno, $unsu
 
         $mail->isHTML(true);
         $mail->Subject = $asunto;
-        $mail->Body    = plantillaMaestra($tituloPlantilla ?? $asunto, $htmlInterno);
-        $mail->AltBody = strip_tags($htmlInterno);
+        $htmlFinal     = plantillaMaestra($tituloPlantilla ?? $asunto, $htmlInterno);
+        $mail->Body    = $htmlFinal;
+        $mail->AltBody = nb_html_a_texto($htmlFinal); // plantilla + pie incluidos
 
         $mail->send();
         return true;

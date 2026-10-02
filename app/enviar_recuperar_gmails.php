@@ -70,12 +70,8 @@ $sql_base = "
     ORDER BY ir.fecha ASC
 ";
 
-if ($LIMITE > 0) {
-    $stmt = $conn->prepare($sql_base . " LIMIT ?");
-    $stmt->bind_param('i', $LIMITE);
-} else {
-    $stmt = $conn->prepare($sql_base);
-}
+// Sin LIMIT en SQL: el corte por límite y por tope diario se aplica en el loop.
+$stmt = $conn->prepare($sql_base);
 $stmt->execute();
 $res = $stmt->get_result();
 $stmt->close();
@@ -94,22 +90,31 @@ $stmt_log = $conn->prepare(
      VALUES (?, ?, ?, ?, ?, ?)"
 );
 
+$cupo       = campanaCupoRestante($conn);
+$objetivo   = $LIMITE > 0 ? min($LIMITE, $res->num_rows) : $res->num_rows;
+$a_enviar   = min($objetivo, $cupo);
+$diferidos  = $objetivo - $a_enviar;
+$procesados = 0;
+
 $enviados = 0;
 $fallidos = 0;
 $detalle  = [];
 
 // ── Loop de envío ─────────────────────────────────────────────
 while ($row = $res->fetch_assoc()) {
+    if ($procesados >= $a_enviar) break;
+
     $correo = strtolower(trim($row['correo']));
 
     if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
         logCampana('[RECUPERAR SKIP] correo inválido: ' . $correo);
         continue;
     }
+    $procesados++;
 
     $unsubUrl  = generarUnsubUrl($correo);
     $html      = generarHtmlEmailRecuperarGmail($unsubUrl);
-    $exito     = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply');
+    $exito     = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply', null, true);
     $exito_int = $exito ? 1 : 0;
 
     $stmt_log->bind_param('issssi', $admin_id, $admin_nombre, $correo, $asunto, $html, $exito_int);
@@ -154,6 +159,9 @@ $conn->close();
   Fallidos: <span class="fail"><?= $fallidos ?></span> &nbsp;|&nbsp;
   Límite aplicado: <b><?= $LIMITE === 0 ? 'Sin límite' : $LIMITE ?></b>
 </p>
+<?php if ($diferidos > 0): ?>
+<p><b>Tope diario de <?= CAMPANA_TOPE_DIARIO ?>:</b> <?= $diferidos ?> correo<?= $diferidos !== 1 ? 's' : '' ?> quedaron pendientes para mañana.</p>
+<?php endif; ?>
 <table>
   <thead><tr><th>Correo</th><th>Estado</th></tr></thead>
   <tbody>

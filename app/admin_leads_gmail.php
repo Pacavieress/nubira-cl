@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $unsubUrl_test    = generarUnsubUrl($correo_prueba);
         $bloqueCupon_test = $cupon_info_pv ? nb_bloque_cupon_html($codigo_cupon_pv, $cupon_info_pv['porcentaje'], $cupon_info_pv['fecha_expiracion']) : '';
         $html_test        = generarHtmlEmailRecuperarGmail($unsubUrl_test, $bloqueCupon_test);
-        $exito_test       = enviarDormidoConUnsubscribe($correo_prueba, $asunto, $html_test, $unsubUrl_test, 'noreply', $titulo_plantilla);
+        $exito_test       = enviarDormidoConUnsubscribe($correo_prueba, $asunto, $html_test, $unsubUrl_test, 'noreply', $titulo_plantilla, true);
 
         logCampana('[PRUEBA] ' . ($exito_test ? 'OK' : 'FAIL') . ' ' . $correo_prueba);
 
@@ -235,6 +235,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $cupo = campanaCupoRestante($conn);
+
     $admin_id = (int)$_SESSION['usuario_id'];
     $stmt_log = $conn->prepare(
         "INSERT INTO correos_admin (admin_id, admin_nombre, destinatario, asunto, mensaje, exito, forzado)
@@ -244,6 +246,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $envios = [];
     foreach ($validos as $c) $envios[] = [$c, false];
     foreach ($validos_forzados as $c) $envios[] = [$c, true];
+    $diferidos = max(0, count($envios) - $cupo);
+    $envios    = array_slice($envios, 0, $cupo); // normales primero; los forzados son los primeros en quedar fuera
+
+    if ($cupo === 0) {
+        echo json_encode(['ok' => true, 'enviados' => 0, 'fallidos' => 0, 'omitidos' => $omitidos, 'forzados' => 0,
+                          'diferidos' => $diferidos, 'tope' => CAMPANA_TOPE_DIARIO]);
+        exit;
+    }
 
     $enviados = 0; $fallidos = 0; $forzados_ok = 0;
 
@@ -251,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $unsubUrl    = generarUnsubUrl($correo);
         $bloqueCupon = $cupon_info ? nb_bloque_cupon_html($codigo_cupon, $cupon_info['porcentaje'], $cupon_info['fecha_expiracion']) : '';
         $html        = generarHtmlEmailRecuperarGmail($unsubUrl, $bloqueCupon);
-        $exito       = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply', $titulo_plantilla);
+        $exito       = enviarDormidoConUnsubscribe($correo, $asunto, $html, $unsubUrl, 'noreply', $titulo_plantilla, true);
         $exito_int   = $exito ? 1 : 0;
         $forzado_int = $forzado ? 1 : 0;
 
@@ -266,7 +276,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt_log->close();
     $conn->close();
 
-    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos, 'forzados' => $forzados_ok]);
+    echo json_encode(['ok' => true, 'enviados' => $enviados, 'fallidos' => $fallidos, 'omitidos' => $omitidos, 'forzados' => $forzados_ok,
+                      'diferidos' => $diferidos, 'tope' => CAMPANA_TOPE_DIARIO]);
     exit;
 }
 
@@ -333,6 +344,7 @@ $stmt = $conn->prepare($sql);
 $stmt->execute();
 $todos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
+$cupo_hoy = campanaCupoRestante($conn);
 $conn->close();
 
 // ── Clasificación de estado ───────────────────────────────────
@@ -393,6 +405,7 @@ require_once $app_dir . '/componentes/sidebar.php';
           <span class="ml-2 text-base font-normal text-gray-400">— Campaña jun 2026</span>
         </h1>
         <p class="text-sm text-gray-500 mt-0.5">Seguimiento de los ~93 Gmails históricos invitados a registrarse.</p>
+        <p class="text-xs text-gray-400 mt-0.5">Cupo de hoy: <?= (int)$cupo_hoy ?> de <?= CAMPANA_TOPE_DIARIO ?> correos disponibles.</p>
       </div>
       <div class="flex items-center gap-2 shrink-0 flex-wrap">
         <input type="email" id="input-email-prueba" placeholder="tu@correo.com"
@@ -794,8 +807,9 @@ btnEnviar?.addEventListener('click', async () => {
       if (data.forzados > 0) msg += ` (${data.forzados} forzado${data.forzados !== 1 ? 's' : ''})`;
       if (data.fallidos > 0) msg += `, ${data.fallidos} fallido${data.fallidos !== 1 ? 's' : ''}`;
       if (data.omitidos > 0) msg += `, ${data.omitidos} omitido${data.omitidos !== 1 ? 's' : ''} (ya no elegible)`;
+      if (data.diferidos > 0) msg += `. Tope diario de ${data.tope}: ${data.diferidos} quedaron pendientes para mañana`;
       mostrarToast(msg, 'ok');
-      setTimeout(() => location.reload(), 2500);
+      setTimeout(() => location.reload(), data.diferidos > 0 ? 6000 : 2500);
     } else {
       mostrarToast(data.error || 'Error al enviar', 'error');
       resetBtn();
