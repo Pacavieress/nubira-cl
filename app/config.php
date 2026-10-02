@@ -69,6 +69,29 @@ if (GEMINI_API_KEY === '') { error_log('[Nubira] GEMINI_API_KEY no configurada e
 define('LIMITE_GENERACIONES_IA_GRATIS', 1);
 
 // =========================
+// IA MULTI-PROVEEDOR (failover) — app/helpers/ia_proveedores.php
+// =========================
+// Claves SOLO desde .env (nunca en el repo). Son opcionales: un proveedor sin clave se omite de la cadena,
+// por eso NO se hace error_log aquí (config.php se carga en casi todas las páginas).
+define('GROQ_API_KEY', $_ENV['GROQ_API_KEY'] ?? '');
+define('OPENROUTER_API_KEY', $_ENV['OPENROUTER_API_KEY'] ?? '');
+
+// Orden en que se prueban los proveedores (izquierda a derecha). Se puede cambiar aquí o con las variables
+// IA_ORDEN_DESAFIO / IA_ORDEN_APUNTES en .env. 'apuntes' NUNCA usa OpenRouter (regla fija en el helper:
+// los modelos gratuitos pueden registrar los prompts y ahí viajan apuntes de usuarios).
+define('IA_PROVEEDORES_DESAFIO', array_values(array_filter(array_map('trim', explode(',', $_ENV['IA_ORDEN_DESAFIO'] ?? 'gemini,groq,openrouter')))));
+define('IA_PROVEEDORES_APUNTES', array_values(array_filter(array_map('trim', explode(',', $_ENV['IA_ORDEN_APUNTES'] ?? 'gemini,groq')))));
+
+define('IA_MODELO_GEMINI', 'gemini-2.5-flash');
+define('IA_MODELO_GROQ', 'llama-3.3-70b-versatile');
+// Los ids de modelos :free de OpenRouter cambian con el tiempo: verificar el vigente y, si hace falta,
+// sobrescribirlo con IA_MODELO_OPENROUTER en .env sin tocar el código.
+define('IA_MODELO_OPENROUTER', $_ENV['IA_MODELO_OPENROUTER'] ?? 'meta-llama/llama-3.3-70b-instruct:free');
+
+define('IA_TIMEOUT_PROVEEDOR', 12);      // segundos por llamada
+define('IA_PRESUPUESTO_SEGUNDOS', 40);   // tope total para toda la cadena de failover
+
+// =========================
 // INSTAGRAM (Fase 2 Copiloto — cuenta oficial Nubira)
 // =========================
 define('IG_ACCESS_TOKEN', $_ENV['IG_ACCESS_TOKEN'] ?? '');
