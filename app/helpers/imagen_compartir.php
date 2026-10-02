@@ -4,7 +4,8 @@
 require_once __DIR__ . '/foto_tutor.php';
 require_once __DIR__ . '/nombre_publico.php';
 require_once __DIR__ . '/institucion.php';
-require_once __DIR__ . '/horarios.php'; // parsear_horarios_servicio() — la card 2 solo aplica si hay horarios publicados
+require_once __DIR__ . '/horarios.php'; // parsear_horarios_servicio() — la card 3 solo aplica si hay horarios publicados
+require_once __DIR__ . '/dlp.php';      // patrones de contacto/identidad: filtro de la descripción en la card 2
 
 // Versión del generador de imágenes. Incrementar (v1 → v2 → ...) invalida
 // AUTOMÁTICAMENTE todo el cache de /upload/compartir/ cuando se cambia el diseño
@@ -13,7 +14,10 @@ if (!defined('NB_IMG_VERSION')) define('NB_IMG_VERSION', 'v24');
 
 // Versión propia de la card 2 ("Trabaja con {nombre}"). Se suma al fingerprint de la card 2
 // (nb_fingerprint_equipo) y NO al de la card 1: subirla invalida solo el cache de la card 2.
-if (!defined('NB_CARD2_VERSION')) define('NB_CARD2_VERSION', 'c2-v1');
+if (!defined('NB_CARD2_VERSION')) define('NB_CARD2_VERSION', 'c2-v5');
+
+// Ídem para la card 3 ("Horarios disponibles"): invalida solo el cache de la card 3.
+if (!defined('NB_CARD3_VERSION')) define('NB_CARD3_VERSION', 'c3-v4');
 
 if (!function_exists('nb_fonts_dir')) {
     function nb_fonts_dir(): string { return __DIR__ . '/../assets/fonts/'; }
@@ -632,42 +636,144 @@ if (!function_exists('nb_generar_imagen_post')) {
     }
 }
 
-/* ---------- Card 2: "Trabaja con {nombre}" (flujo real de contratación) ---------- */
+/* ---------- Marca "Nubira.cl" de las cards 2 y 3 ---------- */
 
-if (!function_exists('nb_pasos_equipo')) {
+if (!function_exists('nb_dibujar_marca')) {
+    // "Nubira.cl" con las MISMAS coordenadas con que la dibuja la card 1 (nb_generar_imagen_post):
+    // nb_texto_derecha, Inter Bold 28 pt, color de acento, borde derecho en $W - $M = 970 y baseline
+    // 1161 (= yFeaturesFin 1014 + 90 + 57). Así la marca queda en el mismo lugar en las tres cards.
+    // La card 1 no la usa: conserva su propio cálculo, intacto.
+    function nb_dibujar_marca($img, string $fBold, int $cAcento): void {
+        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', 970, 1161);
+    }
+}
+
+/* ---------- Card 2: resumen de lo que ofrece el tutor (título, ficha y descripción) ---------- */
+
+if (!function_exists('nb_frase_con_datos_privados')) {
     /**
-     * Pasos de la card 2. Cada uno describe algo que el sitio hace de verdad:
-     *  - chat anónimo antes de contratar ........ detalle_servicio.php ("Chat anónimo antes de contratar")
-     *  - elegir un horario de la agenda publicada  agenda_slots.js / crear_contrato.php (exige horarios_json)
-     *  - pago con MercadoPago, protegido ......... crear_contrato.php (estado pendiente_pago) y
-     *                                              detalle_servicio.php ("Garantía Nubira")
-     *  - clase online en Nubira .................. mini_aula.php (sala de espera + video Daily.co)
-     *  - confirmas la clase y se libera el pago .. mini_aula.php (comprador finaliza) y
-     *                                              pago_exitoso_contrato.php ("liberado ... una vez que se finalice el contrato")
-     * Sin promesas de reembolso ni de plazos: el código no define ninguno.
-     * Servicio gratis (crear_contrato.php: monto 0 → 'en_progreso' sin pago): no hay paso de
-     * pago ni de liberación de pago.
+     * true si la frase trae datos que no deben salir en una imagen pública: correos, teléfonos,
+     * redes sociales, links, @usuarios, formas de presentarse ("mi nombre es…") o un APELLIDO del
+     * tutor (la card solo muestra el nombre público, "Karen A.").
+     *
+     * Reutiliza de dlp.php los patrones email, telefono, redes e identidad, y el quitado de links
+     * propios (nubira.cl). NO usa banco ni intencion_contacto: ese motor sirve para BLOQUEAR
+     * mensajes de chat y esas dos listas ("estado", "contacto", "mp", "calle"…) descartarían
+     * frases normales de una descripción de clases.
      */
-    function nb_pasos_equipo(array $s): array {
-        $of = (float)($s['precio_oferta'] ?? 0);
-        $pr = (float)($s['precio'] ?? 0);
-        $gratis = ($of > 0 ? $of : $pr) <= 0;
+    function nb_frase_con_datos_privados(string $frase, string $nombreTutor = ''): bool {
+        $l = mb_strtolower($frase, 'UTF-8');
+        $p = nb_dlp_patrones();
+        foreach (['email', 'telefono', 'redes', 'identidad'] as $k) {
+            if (preg_match($p[$k], $l)) return true;
+        }
+        $sinPropios = nb_dlp_quitar_links_propios($l);
+        if (preg_match($p['urls'], $sinPropios)) return true;
+        if (preg_match('~\b[a-z0-9-]+\.(?:com|cl|net|org|io|me|co|ly|app|dev)\b~', $sinPropios)) return true;
+        if (preg_match('/@\w/u', $frase)) return true;
 
-        $pasos = ['Chat anónimo antes de contratar', 'Elige un horario de su agenda'];
-        if (!$gratis) $pasos[] = 'Paga con MercadoPago, pago protegido';
-        $pasos[] = 'Haz la clase online en Nubira';
-        $pasos[] = $gratis ? 'Confirma la clase al terminar' : 'Confirma la clase y se libera el pago';
-        return $pasos;
+        // Apellido(s) del tutor: toda palabra del nombre completo salvo la primera.
+        $partes = preg_split('/\s+/u', trim($nombreTutor), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        foreach (array_slice($partes, 1) as $apellido) {
+            if (mb_strlen($apellido, 'UTF-8') < 3) continue;
+            $re = '/(?<![\p{L}\p{N}])' . preg_quote(mb_strtolower($apellido, 'UTF-8'), '/') . '(?![\p{L}\p{N}])/u';
+            if (preg_match($re, $l)) return true;
+        }
+        return false;
+    }
+}
+
+if (!function_exists('nb_descripcion_publica')) {
+    /**
+     * Descripción del servicio lista para una imagen pública, o '' si no queda nada usable.
+     * Mismo punto de partida que detalle_servicio.php:583-588 (entidades HTML, alternativas
+     * "(a|b)") pero DETERMINISTA: el detalle elige una alternativa al azar en cada carga, la
+     * imagen se cachea, así que acá siempre se toma la primera. Se descartan FRASES completas
+     * (no palabras sueltas, para no dejar "contáctame al   ") que traigan datos privados.
+     * Sin emojis: Inter no los dibuja y saldrían como cuadritos.
+     */
+    function nb_descripcion_publica(string $raw, string $nombreTutor = ''): string {
+        $t = html_entity_decode(trim($raw), ENT_QUOTES, 'UTF-8');
+        $t = (string)preg_replace_callback('/\(([^)]+\|[^)]+)\)/u', static fn($m) => explode('|', $m[1])[0], $t);
+        $t = (string)preg_replace('/[^\p{L}\p{N}\p{P}\p{Zs}\p{Sc}\p{Sm}\r\n\t]/u', '', $t);
+
+        $frases = preg_split('/(?<=[.!?…])\s+|[\r\n]+/u', $t, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $limpias = [];
+        foreach ($frases as $f) {
+            $f = trim((string)preg_replace('/\s+/u', ' ', $f));
+            if ($f === '' || nb_frase_con_datos_privados($f, $nombreTutor)) continue;
+            $limpias[] = $f;
+        }
+        return implode(' ', $limpias);
+    }
+}
+
+if (!function_exists('nb_contenido_equipo')) {
+    /**
+     * Todo el TEXTO que dibuja la card 2 (sin tipografía ni coordenadas), para poder meterlo en
+     * el fingerprint. Campos reales de servicios: titulo, descripcion, modalidad,
+     * duracion_minutos, es_paes (categoria ya sale en el badge de la cabecera). materia, area,
+     * asignatura y nivel no se usan: en la práctica vienen vacíos o con el valor por defecto y
+     * detalle_servicio.php tampoco los muestra. NUNCA la bio del tutor.
+     *
+     * @return array{titulo:string, chips:string[], descripcion:string}
+     */
+    function nb_contenido_equipo(array $s): array {
+        $nombre = (string)($s['nombre_alumno'] ?? $s['nombre'] ?? '');
+        $cat    = trim((string)($s['categoria'] ?? ''));
+
+        $titulo = html_entity_decode(trim((string)($s['titulo'] ?? '')), ENT_QUOTES, 'UTF-8');
+        $titulo = trim((string)preg_replace('/\s+/u', ' ', (string)preg_replace('/[^\p{L}\p{N}\p{P}\p{Zs}\p{Sc}\p{Sm}]/u', '', $titulo)));
+        if ($titulo === '' || nb_frase_con_datos_privados($titulo, $nombre)) {
+            $titulo = 'Clases particulares' . ($cat !== '' ? ' de ' . $cat : '');
+        }
+
+        $chips = [];
+        $mod = trim((string)($s['modalidad'] ?? ''));
+        if ($mod !== '') $chips[] = mb_convert_case($mod, MB_CASE_TITLE, 'UTF-8');
+        $dur = (int)($s['duracion_minutos'] ?? 0);
+        if ($dur > 0) $chips[] = $dur . ' min';
+        if (!empty($s['es_paes'])) $chips[] = 'Preparación PAES';
+
+        return ['titulo' => $titulo, 'chips' => $chips, 'descripcion' => nb_descripcion_publica((string)($s['descripcion'] ?? ''), $nombre)];
+    }
+}
+
+if (!function_exists('nb_wrap_palabras')) {
+    // Word-wrap por palabras completas a $maxLineas líneas. Si sobra texto, la última línea pierde
+    // palabras enteras hasta que quepa con "…" pegado a la última palabra: nunca corta una palabra
+    // (salvo una palabra suelta más ancha que toda la línea, que se trunca con nb_truncar_una_linea).
+    function nb_wrap_palabras(string $font, float $size, string $txt, int $maxW, int $maxLineas): array {
+        $palabras = preg_split('/\s+/u', trim($txt), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $n = count($palabras); $i = 0; $lineas = [];
+        while ($i < $n && count($lineas) < $maxLineas) {
+            $linea = '';
+            while ($i < $n) {
+                $prueba = $linea === '' ? $palabras[$i] : $linea . ' ' . $palabras[$i];
+                if (nb_ancho_texto($font, $size, $prueba) <= $maxW) { $linea = $prueba; $i++; continue; }
+                if ($linea === '') { $linea = nb_truncar_una_linea($font, $size, $palabras[$i], $maxW); $i++; }
+                break;
+            }
+            $lineas[] = $linea;
+        }
+        if ($i < $n && $lineas) {
+            $ult = count($lineas) - 1;
+            $pal = explode(' ', $lineas[$ult]);
+            while (count($pal) > 1 && nb_ancho_texto($font, $size, implode(' ', $pal) . '…') > $maxW) array_pop($pal);
+            $lineas[$ult] = rtrim(implode(' ', $pal), " ,;:.-–") . '…';
+        }
+        return $lineas;
     }
 }
 
 if (!function_exists('nb_generar_imagen_equipo')) {
-    // 1080x1350, misma paleta/fuentes/margen/cabecera que la card 1. Devuelve false (y NO crea
-    // archivo) si el servicio no tiene horarios publicados: sin horarios_json crear_contrato.php
-    // responde "no acepta reservas en línea", así que el flujo que describe la card no aplica.
+    // 1080x1350, misma paleta/fuentes/margen que la card 1. Título del servicio (hasta 2 líneas),
+    // fichas (modalidad · duración · PAES) y "Sobre este servicio" con la descripción filtrada, de
+    // hasta 4 líneas y cortada por palabra completa con "…". Si no queda descripción usable se omite
+    // ese bloque (sin inventar texto de relleno) y quedan solo título + fichas. Sin cabecera del
+    // tutor y sin precio (ni OFERTA ni "Gratis"): el único texto del pie es "Nubira.cl", en el mismo
+    // lugar que en la card 1 (nb_dibujar_marca). No depende de horarios_json.
     function nb_generar_imagen_equipo(array $s, string $output_path): bool {
-        if (!parsear_horarios_servicio($s['horarios_json'] ?? null)['tiene_horarios']) return false;
-
         $W = 1080; $H = 1350;
         $fReg  = nb_fonts_dir() . 'Inter-Regular.ttf';
         $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
@@ -677,47 +783,54 @@ if (!function_exists('nb_generar_imagen_equipo')) {
         $img = imagecreatetruecolor($W, $H);
         imageantialias($img, true);
         $pal = nb_paleta_marca($img);
-        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cBlanco = $pal['blanco'];
+        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt'];
+        $cCeleste = imagecolorallocate($img, 224, 240, 250);
         imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
 
-        $hdr = nb_dibujar_header_tutor($img, $s, $pal, $fReg, $fSemi, $fBold, $W);
-        $M = $hdr['M'];
-        $y = max($hdr['avBottom'], $hdr['yDisponibleBottom'] + 20) + 110;
+        $M = 110;
+        $maxW = $W - 2 * $M;
 
-        // Título "Trabaja con {nombre público}" — nombre en acento, igual que la categoría en la
-        // card 1. Solo nombre público (nombre_publico_tutor): nunca el apellido completo.
-        $prefijo = 'Trabaja con ';
-        $wPref   = nb_ancho_texto($fSemi, 34, $prefijo);
-        $nombre  = nb_truncar_una_linea($fSemi, 34, nombre_publico_tutor((string)($s['nombre_alumno'] ?? $s['nombre'] ?? '')), $W - ($M * 2) - $wPref);
-        $wNom    = nb_ancho_texto($fSemi, 34, $nombre);
-        $xTit    = (int)(($W - $wPref - $wNom) / 2);
-        imagettftext($img, 34, 0, $xTit, $y, $cTxt, $fSemi, $prefijo);
-        imagettftext($img, 34, 0, $xTit + $wPref, $y, $cAcento, $fSemi, $nombre);
-        $y += 46 + 40 + 20;
+        $c = nb_contenido_equipo($s);
+        $lineasTit  = nb_wrap_palabras($fSemi, 38, $c['titulo'], $maxW, 2);
+        $lineasDesc = $c['descripcion'] !== '' ? nb_wrap_palabras($fReg, 30, $c['descripcion'], $maxW, 4) : [];
+        $lhTit = 50; $lhDesc = 46; $altoChip = 45; $szChip = 22;
 
-        // Pasos numerados: círculo acento con número blanco + texto de 1 línea.
-        $pasos = nb_pasos_equipo($s);
-        $diam = 44; $rowGap = 72; $gapTxt = 22; $szTxt = 30;
-        $xTexto = $M + $diam + $gapTxt;
-        $maxW   = ($W - $M) - $xTexto;
-        foreach ($pasos as $i => $txt) {
-            $yBase = $y + $i * $rowGap;
-            $cx = $M + (int)($diam / 2);
-            $cy = $yBase - (int)($szTxt * 0.37); // centro óptico de la línea de texto
-            imagefilledellipse($img, $cx, $cy, $diam, $diam, $cAcento);
-            $num  = (string)($i + 1);
-            $xNum = $cx - (int)(nb_ancho_texto($fBold, 22, $num) / 2);
-            $yNum = nb_centrar_baseline_vertical($fBold, 22, $num, $cy - (int)($diam / 2), $diam);
-            imagettftext($img, 22, 0, $xNum, $yNum, $cBlanco, $fBold, $num);
-            nb_texto_izquierda($img, $fSemi, $szTxt, $cTxt, nb_truncar_una_linea($fSemi, $szTxt, $txt, $maxW), $xTexto, $yBase);
+        // Posiciones relativas al tope del bloque ($b): baselines del título, fichas, rótulo y descripción.
+        $yTit0  = 38;
+        $yTitN  = $yTit0 + (count($lineasTit) - 1) * $lhTit;
+        $yChips = $yTitN + 35;
+        $yFin   = $c['chips'] ? $yChips + $altoChip : $yTitN;
+        $yRotulo = $yFin + 88;
+        $yDesc0  = $yRotulo + 50;
+
+        // Bloque ANCLADO ARRIBA (no centrado): el tope queda siempre en y=380, así el título empieza en la
+        // misma altura en todas las cards. Caso más largo (título de 2 líneas + 4 de descripción): la
+        // última línea cae en y≈824, lejos de la marca ("Nubira.cl", baseline 1161). El margen superior
+        // mínimo es 110.
+        $b = 380;
+
+        foreach ($lineasTit as $i => $ln) {
+            nb_texto_centrado($img, $fSemi, 38, $cTxt, $ln, $W, $b + $yTit0 + $i * $lhTit);
         }
-        $yFin = $y + (count($pasos) - 1) * $rowGap + 40;
 
-        // Pie igual que la card 1: "Nubira.cl" abajo a la derecha y recuadro de precio a la
-        // izquierda, alineado con el texto de la lista.
-        $y = $yFin + 60;
-        nb_texto_derecha($img, $fBold, 28, $cAcento, 'Nubira.cl', $W - $M, $y + 57);
-        nb_dibujar_precio_caja($img, $s, $fBold, $fSemi, $fReg, $xTexto, $y, $cAcento);
+        if ($c['chips']) {
+            $gap = 14; $padX = 16;
+            $anchos = array_map(static fn($t) => nb_ancho_texto($fSemi, $szChip, $t) + $padX * 2, $c['chips']);
+            $x = intdiv($W - (array_sum($anchos) + $gap * (count($anchos) - 1)), 2);
+            foreach ($c['chips'] as $i => $t) {
+                nb_dibujar_badge_pill($img, $fSemi, $szChip, $t, $x, $b + $yChips, $cCeleste, $cAcento, $padX, 10);
+                $x += $anchos[$i] + $gap;
+            }
+        }
+
+        if ($lineasDesc) {
+            nb_texto_izquierda($img, $fSemi, 26, $cAcento, 'Sobre este servicio', $M, $b + $yRotulo);
+            foreach ($lineasDesc as $i => $ln) {
+                nb_texto_izquierda($img, $fReg, 30, $cTxt, $ln, $M, $b + $yDesc0 + $i * $lhDesc);
+            }
+        }
+
+        nb_dibujar_marca($img, $fBold, $cAcento);
 
         $ok = imagejpeg($img, $output_path, 90);
         imagedestroy($img);
@@ -726,18 +839,237 @@ if (!function_exists('nb_generar_imagen_equipo')) {
 }
 
 if (!function_exists('nb_fingerprint_equipo')) {
-    // Propio de la card 2: incluye NB_IMG_VERSION (la cabecera es compartida con la card 1, si
-    // su diseño cambia la card 2 debe regenerarse) + NB_CARD2_VERSION (diseño propio). Solo
-    // datos que la card dibuja: la bio no entra porque no se dibuja. Agrega la vigencia de
-    // la oferta porque el recuadro de precio muestra o no el badge OFERTA según ella.
+    // Propio de la card 2: su versión (NB_CARD2_VERSION) + el id + el TEXTO que realmente se dibuja
+    // (nb_contenido_equipo: título, fichas y descripción ya filtrada). La card no tiene cabecera ni
+    // precio, así que nombre, foto, categoría, institución, rating y precio NO entran: cambiarlos
+    // no regenera la imagen. (Si cambiar el nombre del tutor altera el texto filtrado — descarta
+    // frases con su apellido —, el cambio entra a través de nb_contenido_equipo.) Tampoco NB_IMG_VERSION:
+    // ese número versiona el diseño de la card 1 y de su cabecera.
     function nb_fingerprint_equipo(array $s): string {
-        $ofertaVigente = !empty($s['is_subvencionado']) && (int)$s['is_subvencionado'] === 1
-            && (empty($s['oferta_termino']) || $s['oferta_termino'] >= date('Y-m-d'));
-        $base = NB_IMG_VERSION . '|' . NB_CARD2_VERSION . '|' . ($s['id'] ?? '')
-              . '|' . ($s['nombre_alumno'] ?? $s['nombre'] ?? '') . '|' . ($s['foto_perfil'] ?? '')
-              . '|' . ($s['categoria'] ?? '') . '|' . ($s['institucion_maestra'] ?? '')
-              . '|' . ($s['rating_prom'] ?? '') . '|' . ($s['rating_votos'] ?? '')
-              . '|' . ($s['precio'] ?? '') . '|' . ($s['precio_oferta'] ?? '') . '|' . ($ofertaVigente ? '1' : '0');
+        $base = NB_CARD2_VERSION . '|' . ($s['id'] ?? '')
+              . '|' . json_encode(nb_contenido_equipo($s), JSON_UNESCAPED_UNICODE);
+        return substr(md5($base), 0, 10);
+    }
+}
+
+/* ---------- Card 3: "Horarios disponibles" (horario semanal PUBLICADO) ---------- */
+
+if (!function_exists('nb_horarios_filas')) {
+    /**
+     * Horario semanal publicado, normalizado: una fila por día CON rangos, en orden
+     * Lunes→Domingo (omite los vacíos). Los rangos de un día se ordenan y se fusionan si son
+     * contiguos o se solapan (10:00-12:00 + 12:00-14:00 → 10:00 – 14:00). Es el contenido
+     * publicado en servicios.horarios_json: NO resta reservas_slots ni slots_excepcion, o sea
+     * no es disponibilidad en tiempo real.
+     *
+     * @param bool $compacto true → "18:00–21:00" (sin espacios alrededor del guion): variante que
+     *        usa la imagen solo cuando el formato normal no cabe en el ancho.
+     * @return array<string,string> ['Lunes' => '18:00 – 21:00 · 22:00 – 23:00', ...]
+     */
+    function nb_horarios_filas(?string $horarios_json, bool $compacto = false): array {
+        $guion = $compacto ? '–' : ' – ';
+        $fmt = static fn(int $min): string => sprintf('%02d:%02d', intdiv($min, 60), $min % 60);
+        $filas = [];
+        foreach (parsear_horarios_servicio($horarios_json)['dias'] as $dia => $bloques) {
+            $rangos = [];
+            foreach ($bloques as $b) {
+                if (!is_string($b) || !preg_match('/^(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})$/', $b, $m)) continue;
+                $ini = (int)$m[1] * 60 + (int)$m[2];
+                $fin = (int)$m[3] * 60 + (int)$m[4];
+                if ($fin > $ini) $rangos[] = [$ini, $fin];
+            }
+            if (!$rangos) continue;
+            usort($rangos, static fn($a, $b) => $a[0] <=> $b[0]);
+
+            $fusionados = [$rangos[0]];
+            foreach (array_slice($rangos, 1) as $r) {
+                $ult = count($fusionados) - 1;
+                if ($r[0] <= $fusionados[$ult][1]) {
+                    $fusionados[$ult][1] = max($fusionados[$ult][1], $r[1]);
+                } else {
+                    $fusionados[] = $r;
+                }
+            }
+            $filas[$dia] = implode(' · ', array_map(static fn($r) => $fmt($r[0]) . $guion . $fmt($r[1]), $fusionados));
+        }
+        return $filas;
+    }
+}
+
+if (!function_exists('nb_horarios_plan')) {
+    /**
+     * Planifica la grilla de cajitas por día de la card 3 (copia de la sección "Disponibilidad" de
+     * detalle_servicio.php: 3 columnas, nombre del día arriba y cada rango en una pastilla celeste).
+     * Prueba 3 tamaños (L, M, S) y se queda con el mayor cuyo bloque (pastilla verde + grilla) cabe en
+     * $zonaH. Si ni S cabe (muchos rangos en un día) recorta los rangos de cada cajita por RANGO
+     * COMPLETO: deja los K-1 primeros y una pastilla "· …". Si un rango no cabe a lo ancho de la
+     * pastilla usa el formato compacto ("18:00–21:00") para todas. Es función pura (solo mide texto)
+     * para poder verificarla sin dibujar.
+     *
+     * @return array|null ['preset'=>[...], 'layout'=>[...], 'encaja'=>bool, 'idx'=>int] o null si no hay rangos
+     */
+    function nb_horarios_plan(array $s, string $fSemi, int $cw, int $zonaH): ?array {
+        $normal = nb_horarios_filas($s['horarios_json'] ?? null);
+        if (!$normal) return null;
+        $compacto = nb_horarios_filas($s['horarios_json'] ?? null, true);
+        $dias  = array_map(static fn($t) => explode(' · ', $t), $normal);
+        $diasC = array_map(static fn($t) => explode(' · ', $t), $compacto);
+
+        // lab/rng: tamaño (pt) del día y del rango; pillH: alto de la pastilla del rango; pad: relleno de la
+        // cajita; gapP: separación entre pastillas apiladas; gapLab: día→primera pastilla; gapRow: entre filas
+        // de cajitas; dispSz/dispH: pastilla verde; gapPG: pastilla verde→grilla.
+        $presets = [
+            ['lab' => 30, 'rng' => 24, 'pillH' => 46, 'pad' => 18, 'gapP' => 10, 'gapLab' => 10, 'gapRow' => 20, 'dispSz' => 26, 'dispH' => 48, 'gapPG' => 22],
+            ['lab' => 26, 'rng' => 22, 'pillH' => 40, 'pad' => 16, 'gapP' => 8,  'gapLab' => 10, 'gapRow' => 16, 'dispSz' => 24, 'dispH' => 44, 'gapPG' => 22],
+            ['lab' => 22, 'rng' => 20, 'pillH' => 32, 'pad' => 10, 'gapP' => 5,  'gapLab' => 8,  'gapRow' => 12, 'dispSz' => 22, 'dispH' => 38, 'gapPG' => 18],
+        ];
+
+        $armar = static function (array $p, int $maxK) use ($dias, $diasC, $fSemi, $cw): ?array {
+            $innerW = $cw - 2 * $p['pad'] - 16; // ancho útil del texto dentro de la pastilla del rango
+            $cabe = static function (array $d) use ($fSemi, $p, $innerW): bool {
+                foreach ($d as $rs) foreach ($rs as $t) if (nb_ancho_texto($fSemi, $p['rng'], $t) > $innerW) return false;
+                return true;
+            };
+            $usar = $dias; $esCompacto = false;
+            if (!$cabe($usar)) {
+                $usar = $diasC; $esCompacto = true;
+                if (!$cabe($usar)) return null;
+            }
+            $truncado = false;
+            foreach ($usar as $dia => $rs) {
+                if (count($rs) > $maxK) {
+                    $usar[$dia] = array_merge(array_slice($rs, 0, $maxK - 1), ['· …']);
+                    $truncado = true;
+                }
+            }
+            $filas = array_chunk($usar, 3, true);
+            $altos = [];
+            foreach ($filas as $fila) {
+                $max = 0;
+                foreach ($fila as $rs) {
+                    $k = count($rs);
+                    $max = max($max, $p['pad'] * 2 + (int)round($p['lab'] * 1.25) + $p['gapLab'] + $k * $p['pillH'] + ($k - 1) * $p['gapP']);
+                }
+                $altos[] = $max;
+            }
+            $gridH = array_sum($altos) + (count($altos) - 1) * $p['gapRow'];
+            return ['filas' => $filas, 'altos' => $altos, 'gridH' => $gridH, 'block' => $p['dispH'] + $p['gapPG'] + $gridH,
+                    'compacto' => $esCompacto, 'truncado' => $truncado];
+        };
+
+        foreach ($presets as $i => $p) {
+            $r = $armar($p, 99);
+            if ($r && $r['block'] <= $zonaH) return ['preset' => $p, 'layout' => $r, 'encaja' => true, 'idx' => $i];
+        }
+        $i = count($presets) - 1; $p = $presets[$i];
+        for ($k = max(array_map('count', $dias)) - 1; $k >= 2; $k--) {
+            $r = $armar($p, $k);
+            if ($r && $r['block'] <= $zonaH) return ['preset' => $p, 'layout' => $r, 'encaja' => true, 'idx' => $i];
+        }
+        $r = $armar($p, 2) ?? $armar($p, 99);
+        return $r ? ['preset' => $p, 'layout' => $r, 'encaja' => false, 'idx' => $i] : null;
+    }
+}
+
+if (!function_exists('nb_generar_imagen_horarios')) {
+    // 1080x1350, misma paleta/fuentes/margen que las cards 1 y 2. Título "Horario publicado por el
+    // tutor" arriba de todo (aclara que no es disponibilidad en tiempo real), pastilla verde
+    // "Disponible N días a la semana" y cajitas por día (ver nb_horarios_plan). Sin cabecera del
+    // tutor, sin precio y sin badge "Próximo" (depende de la fecha y la imagen se cachea). "Nubira.cl"
+    // en el mismo lugar que en la card 1 (nb_dibujar_marca). Devuelve false (y NO crea archivo) si
+    // horarios_json no tiene ningún rango.
+    function nb_generar_imagen_horarios(array $s, string $output_path): bool {
+        $W = 1080; $H = 1350;
+        $fSemi = nb_fonts_dir() . 'Inter-SemiBold.ttf';
+        $fBold = nb_fonts_dir() . 'Inter-Bold.ttf';
+        foreach ([$fSemi, $fBold] as $f) if (!is_file($f)) return false;
+
+        // Plan primero (función pura, no dibuja): sin horarios no se crea ni la imagen.
+        $M = 110; $gapCol = 20;
+        $cw = intdiv($W - 2 * $M - 2 * $gapCol, 3);                 // ancho de cada cajita
+        $yTitulo = 154;                                             // baseline del título: la tinta de sus ascendentes llega a y≈110 (margen superior mínimo)
+        $zonaTop = $yTitulo + 50;                                   // la pastilla verde empieza 50 px bajo la baseline del título
+        $zonaBot = 1110;                                            // la marca ("Nubira.cl", baseline 1161) tiene su tope en ≈1141
+        $zonaH   = $zonaBot - $zonaTop;
+        $plan = nb_horarios_plan($s, $fSemi, $cw, $zonaH);
+        if (!$plan) return false;
+        $p = $plan['preset']; $r = $plan['layout'];
+        $n = 0; foreach ($r['filas'] as $fila) $n += count($fila);
+
+        $img = imagecreatetruecolor($W, $H);
+        imageantialias($img, true);
+        $pal = nb_paleta_marca($img);
+        $cBg = $pal['bg']; $cAcento = $pal['acento']; $cTxt = $pal['txt']; $cBlanco = $pal['blanco'];
+        $cBorde      = imagecolorallocate($img, 240, 240, 240);  // #f0f0f0 — borde de la cajita (como el sitio)
+        $cPillFondo  = imagecolorallocate($img, 239, 246, 255);  // blue-50
+        $cPillBorde  = imagecolorallocate($img, 219, 234, 254);  // blue-100
+        $cVerdeFondo = imagecolorallocate($img, 236, 253, 245);  // emerald-50
+        $cVerdeBorde = imagecolorallocate($img, 209, 250, 229);  // emerald-100
+        $cVerdePunto = imagecolorallocate($img, 16, 185, 129);   // emerald-500
+        $cVerdeTxt   = imagecolorallocate($img, 4, 120, 87);     // emerald-700
+        imagefilledrectangle($img, 0, 0, $W, $H, $cBg);
+
+        // Título arriba de todo: 38 pt SemiBold centrado, como el de la card 2.
+        nb_texto_centrado($img, $fSemi, 38, $cTxt, 'Horario publicado por el tutor', $W, $yTitulo);
+
+        // Bloque (pastilla + grilla) anclado justo debajo del título (como la card 2, anclada arriba).
+        $yBloque = $zonaTop;
+
+        // Pastilla verde "Disponible N días a la semana" (mismos colores que la del sitio).
+        $texto = 'Disponible ' . $n . ($n === 1 ? ' día' : ' días') . ' a la semana';
+        $padX = 24; $dot = 12; $gapDot = 14;
+        $wPill = $padX * 2 + $dot + $gapDot + nb_ancho_texto($fSemi, $p['dispSz'], $texto);
+        $xPill = intdiv($W - $wPill, 2);
+        $rPill = intdiv($p['dispH'], 2);
+        nb_rect_redondeado($img, $xPill, $yBloque, $xPill + $wPill, $yBloque + $p['dispH'], $rPill, $cVerdeBorde);
+        nb_rect_redondeado($img, $xPill + 2, $yBloque + 2, $xPill + $wPill - 2, $yBloque + $p['dispH'] - 2, $rPill - 2, $cVerdeFondo);
+        imagefilledellipse($img, $xPill + $padX + intdiv($dot, 2), $yBloque + $rPill, $dot, $dot, $cVerdePunto);
+        imagettftext($img, $p['dispSz'], 0, $xPill + $padX + $dot + $gapDot,
+            nb_centrar_baseline_vertical($fSemi, $p['dispSz'], $texto, $yBloque, $p['dispH']), $cVerdeTxt, $fSemi, $texto);
+
+        // Grilla de cajitas: nombre del día arriba y, debajo, cada rango en una pastilla celeste.
+        $yGrid = $yBloque + $p['dispH'] + $p['gapPG'];
+        foreach ($r['filas'] as $fi => $fila) {
+            $yFila = $yGrid + array_sum(array_slice($r['altos'], 0, $fi)) + $fi * $p['gapRow'];
+            $hFila = $r['altos'][$fi];
+            $col = 0;
+            foreach ($fila as $dia => $rangos) {
+                $x = $M + $col * ($cw + $gapCol);
+                nb_rect_redondeado($img, $x, $yFila, $x + $cw, $yFila + $hFila, 22, $cBorde);
+                nb_rect_redondeado($img, $x + 2, $yFila + 2, $x + $cw - 2, $yFila + $hFila - 2, 20, $cBlanco);
+
+                nb_texto_izquierda($img, $fSemi, $p['lab'], $cTxt, $dia, $x + $p['pad'], $yFila + $p['pad'] + (int)round($p['lab'] * 0.8));
+
+                $yPill = $yFila + $p['pad'] + (int)round($p['lab'] * 1.25) + $p['gapLab'];
+                $xPillR = $x + $p['pad']; $wPillR = $cw - 2 * $p['pad'];
+                foreach ($rangos as $t) {
+                    nb_rect_redondeado($img, $xPillR, $yPill, $xPillR + $wPillR, $yPill + $p['pillH'], 12, $cPillBorde);
+                    nb_rect_redondeado($img, $xPillR + 1, $yPill + 1, $xPillR + $wPillR - 1, $yPill + $p['pillH'] - 1, 11, $cPillFondo);
+                    $xt = $xPillR + intdiv($wPillR - nb_ancho_texto($fSemi, $p['rng'], $t), 2);
+                    imagettftext($img, $p['rng'], 0, $xt, nb_centrar_baseline_vertical($fSemi, $p['rng'], $t, $yPill, $p['pillH']), $cAcento, $fSemi, $t);
+                    $yPill += $p['pillH'] + $p['gapP'];
+                }
+                $col++;
+            }
+        }
+
+        nb_dibujar_marca($img, $fBold, $cAcento);
+
+        $ok = imagejpeg($img, $output_path, 90);
+        imagedestroy($img);
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('nb_fingerprint_horarios')) {
+    // Propio de la card 3: su versión (NB_CARD3_VERSION) + el id + el horario NORMALIZADO que se
+    // dibuja (nb_horarios_filas: días vacíos fuera, rangos ordenados y fusionados), así que reordenar
+    // o fusionar rangos sin cambiar el horario real no regenera la imagen. La card no tiene
+    // cabecera ni precio: nombre, foto, categoría, institución, rating y precio NO entran. Tampoco
+    // NB_IMG_VERSION (versiona el diseño de la card 1 y de su cabecera).
+    function nb_fingerprint_horarios(array $s): string {
+        $base = NB_CARD3_VERSION . '|' . ($s['id'] ?? '')
+              . '|' . json_encode(nb_horarios_filas($s['horarios_json'] ?? null), JSON_UNESCAPED_UNICODE);
         return substr(md5($base), 0, 10);
     }
 }
@@ -1131,7 +1463,8 @@ if (!function_exists('nb_version_imagen_servicio')) {
 
 if (!function_exists('nb_obtener_imagen_compartir')) {
     // Devuelve la RUTA FÍSICA del JPG (cache hit o recién generado), o '' si falla.
-    // $variante: 'post' (default, card 1 y su history, sin cambios) | 'equipo' (card 2).
+    // $variante: 'post' (default, card 1 y su history, sin cambios) | 'equipo' (card 2) |
+    // 'horarios' (card 3). Las variantes 'equipo' y 'horarios' son solo POST 4:5 e ignoran $formato.
     function nb_obtener_imagen_compartir(int $servicio_id, string $formato, string $variante = 'post'): string {
         global $conn;
         $formato = ($formato === 'history') ? 'history' : 'post';
@@ -1160,9 +1493,12 @@ if (!function_exists('nb_obtener_imagen_compartir')) {
 
         require_once __DIR__ . '/../seguridad_url.php';
         $hash = function_exists('nubira_encriptar_id') ? nubira_encriptar_id($servicio_id) : (string)$servicio_id;
-        $esEquipo = ($variante === 'equipo');
-        if ($esEquipo) $formato = 'equipo'; // la card 2 es solo POST 4:5: ignora $formato
-        $fp   = $esEquipo ? nb_fingerprint_equipo($s) : nb_fingerprint_servicio($s);
+        $esEquipo   = ($variante === 'equipo');
+        $esHorarios = ($variante === 'horarios');
+        if ($esEquipo)        $formato = 'equipo';   // la card 2 es solo POST 4:5: ignora $formato
+        elseif ($esHorarios)  $formato = 'horarios'; // ídem la card 3
+        $fp   = $esEquipo ? nb_fingerprint_equipo($s)
+              : ($esHorarios ? nb_fingerprint_horarios($s) : nb_fingerprint_servicio($s));
 
         $dir = nb_compartir_dir();
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
@@ -1173,6 +1509,10 @@ if (!function_exists('nb_obtener_imagen_compartir')) {
         if ($esEquipo) {
             // false cuando el servicio no tiene horarios publicados: no se crea archivo.
             return nb_generar_imagen_equipo($s, $file) && is_file($file) ? $file : '';
+        }
+        if ($esHorarios) {
+            // false cuando horarios_json no tiene ningún rango: no se crea archivo.
+            return nb_generar_imagen_horarios($s, $file) && is_file($file) ? $file : '';
         }
 
         // link corto para el CTA del history
