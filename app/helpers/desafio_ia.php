@@ -25,6 +25,12 @@ require_once __DIR__ . '/ia_proveedores.php';
 const NB_DESAFIO_IA_TIPOS         = ['alternativas', 'vf'];
 const NB_DESAFIO_IA_MAX_POR_LOTE  = 10;
 
+// ── Reposición de stock (Lote 4): valores por defecto; se pueden sobrescribir definiendo la constante en config.php ──
+if (!defined('DESAFIO_STOCK_OBJETIVO'))    define('DESAFIO_STOCK_OBJETIVO', 6);      // aprobados + pendientes IA por materia y dificultad (alternativas y V/F)
+if (!defined('DESAFIO_IA_LOTE_N'))         define('DESAFIO_IA_LOTE_N', 5);           // ejercicios por lote (un lote = una llamada exitosa a la IA)
+if (!defined('DESAFIO_IA_TOPE_LOTES_DIA')) define('DESAFIO_IA_TOPE_LOTES_DIA', 6);   // lotes al día (cuenta TODA generación del día, manual o automática)
+if (!defined('DESAFIO_IA_MAX_PENDIENTES')) define('DESAFIO_IA_MAX_PENDIENTES', 30);  // no se genera más mientras haya tantos ejercicios IA sin revisar
+
 /** Normaliza texto para comparar/deduplicar: minúsculas, sin tildes, espacios colapsados, sin signos de pregunta. */
 function nb_desafio_ia_normalizar(string $s): string {
     $s = mb_strtolower(trim($s), 'UTF-8');
@@ -300,4 +306,147 @@ function nb_desafio_ia_generar(mysqli $conn, string $materia_slug, int $dificult
 
     $base['ok'] = true;
     return $base;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+// LOTE 4 — REPOSICIÓN DE STOCK (solo con el botón "Reponer faltantes" del panel; sin cron por ahora)
+// La reposición NUNCA se dispara por un usuario de /desafio. Cada llamada a nb_desafio_ia_reponer_siguiente() genera
+// UN solo lote; el panel la repite hasta que no haya motivo para seguir (evita requests largos y timeouts del hosting).
+// Solo genera ejercicios de tipo 'alternativas' (sin V/F), que quedan SIN aprobar como siempre.
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+
+/** Configuración efectiva (constantes + sobrescrituras, estas últimas pensadas para pruebas). */
+function nb_desafio_ia_cfg(array $o = []): array {
+    return [
+        'objetivo'       => (int)($o['objetivo'] ?? DESAFIO_STOCK_OBJETIVO),
+        'lote_n'         => max(1, min(NB_DESAFIO_IA_MAX_POR_LOTE, (int)($o['lote_n'] ?? DESAFIO_IA_LOTE_N))),
+        'tope_lotes_dia' => (int)($o['tope_lotes_dia'] ?? DESAFIO_IA_TOPE_LOTES_DIA),
+        'max_pendientes' => (int)($o['max_pendientes'] ?? DESAFIO_IA_MAX_PENDIENTES),
+    ];
+}
+
+/** Stock por materia y dificultad: aprobados (activos) y pendientes de revisión de origen IA. Solo alternativas + V/F. */
+function nb_desafio_ia_stock(mysqli $conn): array {
+    $res = $conn->query(
+        "SELECT materia_slug, dificultad,
+                SUM(activa = 1 AND revisado_por_admin = 1)                   AS aprobados,
+                SUM(activa = 1 AND revisado_por_admin = 0 AND origen = 'ia') AS pendientes
+           FROM desafio_preguntas
+          WHERE ambito = 'desafio' AND tipo IN ('alternativas', 'vf')
+          GROUP BY materia_slug, dificultad"
+    );
+    $out = [];
+    foreach ($res->fetch_all(MYSQLI_ASSOC) as $r) {
+        $out[$r['materia_slug']][(int)$r['dificultad']] = ['aprobados' => (int)$r['aprobados'], 'pendientes' => (int)$r['pendientes']];
+    }
+    return $out;
+}
+
+/**
+ * Celdas materia×dificultad con (aprobados + pendientes) < objetivo, de mayor a menor prioridad:
+ * dificultad 3 primero, luego mayor déficit, luego el orden de las materias. $omitir = ["slug:dificultad", ...].
+ */
+function nb_desafio_ia_deficits(mysqli $conn, ?int $objetivo = null, array $omitir = []): array {
+    $objetivo = $objetivo ?? DESAFIO_STOCK_OBJETIVO;
+    $materias = $conn->query("SELECT slug, nombre FROM materias WHERE activa = 1 ORDER BY orden ASC")->fetch_all(MYSQLI_ASSOC);
+    $stock = nb_desafio_ia_stock($conn);
+    $celdas = [];
+    foreach ($materias as $i => $m) {
+        foreach ([1, 2, 3] as $dif) {
+            if (in_array($m['slug'] . ':' . $dif, $omitir, true)) continue;
+            $s = $stock[$m['slug']][$dif] ?? ['aprobados' => 0, 'pendientes' => 0];
+            $deficit = $objetivo - ($s['aprobados'] + $s['pendientes']);
+            if ($deficit > 0) {
+                $celdas[] = ['materia_slug' => $m['slug'], 'materia' => $m['nombre'], 'dificultad' => $dif, 'aprobados' => $s['aprobados'],
+                             'pendientes' => $s['pendientes'], 'deficit' => $deficit, '_orden' => $i];
+            }
+        }
+    }
+    usort($celdas, fn($a, $b) => [$b['dificultad'], $b['deficit'], $a['_orden']] <=> [$a['dificultad'], $a['deficit'], $b['_orden']]);
+    return $celdas;
+}
+
+/** Lotes generados con éxito hoy (llamadas OK de 'desafio_generar'). null si ia_llamadas_log no existe. */
+function nb_desafio_ia_lotes_hoy(mysqli $conn, string $tabla = 'ia_llamadas_log'): ?int {
+    if (!preg_match('/^[a-z_]+$/', $tabla)) return null;
+    try {
+        $r = $conn->query("SELECT COUNT(*) FROM `$tabla` WHERE funcion = 'desafio_generar' AND ok = 1 AND fecha >= CURDATE()");
+        return $r ? (int)$r->fetch_row()[0] : null;
+    } catch (\Throwable $e) {
+        return null;
+    }
+}
+
+/** Ejercicios IA pendientes de revisión (activos, sin aprobar). */
+function nb_desafio_ia_pendientes_ia(mysqli $conn): int {
+    return (int)$conn->query("SELECT COUNT(*) FROM desafio_preguntas WHERE origen = 'ia' AND revisado_por_admin = 0 AND activa = 1 AND ambito = 'desafio'")->fetch_row()[0];
+}
+
+/**
+ * Genera UN lote para la celda más prioritaria con faltante, respetando: tope diario de lotes, máximo de pendientes y
+ * un candado (GET_LOCK) para que dos clics simultáneos no excedan el tope. Se detiene ante el primer fallo de la IA.
+ *
+ * @param array $opts omitir (["slug:dif"]), usuario_id, objetivo / lote_n / tope_lotes_dia / max_pendientes (pruebas),
+ *                    tabla_log (pruebas)
+ * @return array{ok:bool, hecho:?array, motivo:?string, error:?string, continuar:bool, lotes_hoy:?int, tope:int,
+ *               pendientes:int, celdas_faltantes:int}
+ */
+function nb_desafio_ia_reponer_siguiente(mysqli $conn, array $opts = []): array {
+    $cfg = nb_desafio_ia_cfg($opts);
+    $r = ['ok' => true, 'hecho' => null, 'motivo' => null, 'error' => null, 'continuar' => false,
+          'lotes_hoy' => null, 'tope' => $cfg['tope_lotes_dia'], 'pendientes' => 0, 'celdas_faltantes' => 0];
+
+    $lock = (int)$conn->query("SELECT GET_LOCK('nubira_desafio_ia_reponer', 0)")->fetch_row()[0];
+    if ($lock !== 1) { $r['motivo'] = 'Ya hay una reposición en curso. Espera a que termine.'; return $r; }
+
+    try {
+        $hoy = nb_desafio_ia_lotes_hoy($conn, $opts['tabla_log'] ?? 'ia_llamadas_log');
+        if ($hoy === null) {
+            $r['ok'] = false;
+            $r['error'] = 'Falta la tabla ia_llamadas_log (sql/ia_llamadas_log.sql): sin ella no se puede controlar el tope diario.';
+            return $r;
+        }
+        $r['lotes_hoy'] = $hoy;
+        $pend = nb_desafio_ia_pendientes_ia($conn);
+        $r['pendientes'] = $pend;
+        $omitir = array_values(array_filter((array)($opts['omitir'] ?? []), fn($x) => is_string($x) && preg_match('/^[a-z0-9_]+:[1-3]$/', $x)));
+        $celdas = nb_desafio_ia_deficits($conn, $cfg['objetivo'], $omitir);
+        $r['celdas_faltantes'] = count($celdas);
+
+        if ($hoy >= $cfg['tope_lotes_dia']) { $r['motivo'] = "Tope diario alcanzado ({$hoy} de {$cfg['tope_lotes_dia']} lotes). Mañana se puede seguir."; return $r; }
+        if ($pend >= $cfg['max_pendientes'])  { $r['motivo'] = "Hay {$pend} ejercicios pendientes de revisión (máximo {$cfg['max_pendientes']}). Revisa antes de generar más."; return $r; }
+        if (!$celdas)                         { $r['motivo'] = 'No hay faltantes: todas las celdas alcanzan el objetivo (o ya se intentaron en esta pasada).'; return $r; }
+
+        $c = $celdas[0];
+        $n = min($cfg['lote_n'], $c['deficit'], $cfg['max_pendientes'] - $pend);   // nunca pasar el objetivo ni el máximo de pendientes
+        try {
+            $g = nb_desafio_ia_generar($conn, $c['materia_slug'], $c['dificultad'], $n, ['tipos' => ['alternativas'], 'usuario_id' => $opts['usuario_id'] ?? null]);
+        } catch (\Throwable $e) {
+            $g = ['ok' => false, 'error' => nb_ia_error_corto('error interno: ' . $e->getMessage()), 'insertados' => 0, 'duplicados' => 0, 'descartados' => []];
+        }
+        $r['hecho'] = ['materia_slug' => $c['materia_slug'], 'materia' => $c['materia'], 'dificultad' => $c['dificultad'], 'pedidos' => $n,
+                       'insertados' => (int)($g['insertados'] ?? 0), 'duplicados' => (int)($g['duplicados'] ?? 0),
+                       'descartados' => count($g['descartados'] ?? []), 'proveedor' => $g['proveedor'] ?? null];
+        if (!$g['ok']) {
+            $r['ok'] = false;
+            $r['error'] = $g['error'] ?? 'La IA no entregó ejercicios utilizables.';   // se detiene al primer fallo
+            return $r;
+        }
+
+        // estado actualizado para decidir si conviene seguir
+        $r['lotes_hoy']        = (int)nb_desafio_ia_lotes_hoy($conn, $opts['tabla_log'] ?? 'ia_llamadas_log');
+        $r['pendientes']       = nb_desafio_ia_pendientes_ia($conn);
+        $omitir_sig            = $omitir;
+        if ($r['hecho']['insertados'] === 0) $omitir_sig[] = $c['materia_slug'] . ':' . $c['dificultad'];   // todo duplicado/inválido: no insistir en la misma celda
+        $restantes             = nb_desafio_ia_deficits($conn, $cfg['objetivo'], $omitir_sig);
+        $r['celdas_faltantes'] = count($restantes);
+        $r['continuar']        = $r['lotes_hoy'] < $cfg['tope_lotes_dia'] && $r['pendientes'] < $cfg['max_pendientes'] && $restantes !== [];
+        if (!$r['continuar']) {
+            $r['motivo'] = $r['lotes_hoy'] >= $cfg['tope_lotes_dia'] ? "Tope diario alcanzado ({$r['lotes_hoy']} de {$cfg['tope_lotes_dia']} lotes)."
+                : ($r['pendientes'] >= $cfg['max_pendientes'] ? "Hay {$r['pendientes']} pendientes de revisión (máximo {$cfg['max_pendientes']})." : 'Listo: no quedan faltantes.');
+        }
+        return $r;
+    } finally {
+        $conn->query("SELECT RELEASE_LOCK('nubira_desafio_ia_reponer')");
+    }
 }

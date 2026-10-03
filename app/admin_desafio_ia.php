@@ -67,6 +67,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // "Reponer faltantes": genera UN lote por llamada (el navegador repite hasta que 'continuar' sea false). Respeta el
+    // objetivo de stock, el tope diario de lotes y el máximo de pendientes (ver nb_desafio_ia_reponer_siguiente).
+    if ($accion === 'reponer') {
+        set_time_limit(120);
+        $omitir = array_map('strval', (array)($_POST['omitir'] ?? []));
+        try {
+            $r = nb_desafio_ia_reponer_siguiente($conn, ['omitir' => $omitir, 'usuario_id' => (int)$_SESSION['usuario_id']]);
+        } catch (\Throwable $e) {
+            error_log('[admin_desafio_ia] reponer: ' . nb_ia_error_corto($e->getMessage()));
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => 'Error interno al reponer. Revisa el log del servidor.', 'continuar' => false]);
+            exit;
+        }
+        echo json_encode($r, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($accion === 'aprobar' || $accion === 'rechazar') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) { http_response_code(400); echo json_encode(['ok' => false, 'error' => 'ID inválido.']); exit; }
@@ -91,10 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ── GET: datos del panel ──────────────────────────────────────
 $materias = $conn->query("SELECT slug, nombre FROM materias WHERE activa = 1 ORDER BY orden ASC")->fetch_all(MYSQLI_ASSOC);
 
-$stock = [];
-$res = $conn->query("SELECT materia_slug, dificultad, COUNT(*) AS n FROM desafio_preguntas
-                      WHERE activa = 1 AND revisado_por_admin = 1 AND ambito = 'desafio' GROUP BY materia_slug, dificultad");
-foreach ($res->fetch_all(MYSQLI_ASSOC) as $r) $stock[$r['materia_slug']][(int)$r['dificultad']] = (int)$r['n'];
+// Stock por celda (alternativas + V/F): aprobados y pendientes IA. Objetivo y topes salen de las constantes DESAFIO_*.
+$stock      = nb_desafio_ia_stock($conn);
+$cfg        = nb_desafio_ia_cfg();
+$lotes_hoy  = nb_desafio_ia_lotes_hoy($conn);          // null si ia_llamadas_log no existe
+$n_faltan   = count(nb_desafio_ia_deficits($conn, $cfg['objetivo']));
 
 $pend_por_materia = [];
 $res = $conn->query("SELECT materia_slug, COUNT(*) AS n FROM desafio_preguntas
@@ -171,15 +189,34 @@ require_once $app_dir . '/componentes/sidebar.php';
 
     <!-- Stock -->
     <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-x-auto">
-      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Stock aprobado (activo) por dificultad</h2>
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div>
+          <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Stock por dificultad: aprobados (+ pendientes de revisión)</h2>
+          <p class="text-xs text-gray-500 mt-1">Objetivo: <b><?= (int)$cfg['objetivo'] ?></b> por materia y dificultad (alternativas y V/F; cuenta aprobados + pendientes).
+            Hoy: <b><?= $lotes_hoy === null ? '—' : (int)$lotes_hoy ?></b> de <b><?= (int)$cfg['tope_lotes_dia'] ?></b> lotes.
+            Pendientes: <b><?= (int)$total_pend ?></b> (máx. <?= (int)$cfg['max_pendientes'] ?>).
+            Celdas con faltante: <b><?= (int)$n_faltan ?></b>.</p>
+        </div>
+        <button type="button" id="btn-reponer" <?= ($lotes_hoy === null || $n_faltan === 0) ? 'disabled' : '' ?>
+                class="px-5 py-2.5 bg-[#54A6D8] hover:bg-sky-500 text-white rounded-xl text-sm font-bold shadow-sm transition disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
+          Reponer faltantes</button>
+      </div>
+      <p id="progreso-reponer" class="text-sm text-gray-500 mb-3 hidden"></p>
+      <?php if ($lotes_hoy === null): ?>
+        <p class="text-xs text-red-500 mb-3">Falta la tabla ia_llamadas_log (sql/ia_llamadas_log.sql): sin ella no se puede controlar el tope diario y la reposición está desactivada.</p>
+      <?php endif; ?>
       <table class="w-full text-sm">
-        <thead class="text-gray-500 text-xs uppercase"><tr><th class="text-left py-2">Materia</th><th>Fácil</th><th>Medio</th><th>Difícil</th><th>Pendientes IA</th></tr></thead>
+        <thead class="text-gray-500 text-xs uppercase"><tr><th class="text-left py-2">Materia</th><th>Fácil</th><th>Medio</th><th>Difícil</th></tr></thead>
         <tbody class="divide-y divide-gray-50">
-          <?php foreach ($materias as $m): $s = $stock[$m['slug']] ?? []; ?>
+          <?php foreach ($materias as $m): ?>
           <tr class="text-center">
             <td class="text-left py-2 font-medium text-gray-800"><?= htmlspecialchars($m['nombre']) ?></td>
-            <td><?= (int)($s[1] ?? 0) ?></td><td><?= (int)($s[2] ?? 0) ?></td><td><?= (int)($s[3] ?? 0) ?></td>
-            <td class="<?= !empty($pend_por_materia[$m['slug']]) ? 'text-amber-600 font-bold' : 'text-gray-300' ?>"><?= (int)($pend_por_materia[$m['slug']] ?? 0) ?></td>
+            <?php foreach ([1, 2, 3] as $dif):
+                $c = $stock[$m['slug']][$dif] ?? ['aprobados' => 0, 'pendientes' => 0];
+                $bajo = ($c['aprobados'] + $c['pendientes']) < $cfg['objetivo'];
+            ?>
+              <td class="<?= $bajo ? 'text-amber-600 font-semibold' : 'text-gray-700' ?>"><?= (int)$c['aprobados'] ?><?= $c['pendientes'] > 0 ? ' <span class="text-gray-400 font-normal">(+' . (int)$c['pendientes'] . ')</span>' : '' ?></td>
+            <?php endforeach; ?>
           </tr>
           <?php endforeach; ?>
         </tbody>
@@ -273,6 +310,35 @@ document.getElementById('form-generar').addEventListener('submit', async (e) => 
     }
   } catch { mostrarToast('Error de conexión', 'error'); }
   finally { btn.disabled = false; btn.textContent = txt; }
+});
+
+// ── Reponer faltantes: repite "un lote por llamada" hasta que el servidor diga que no hay que seguir ──
+const OBJETIVO = <?= (int)$cfg['objetivo'] ?>;
+document.getElementById('btn-reponer')?.addEventListener('click', async () => {
+  const btn = document.getElementById('btn-reponer');
+  const info = document.getElementById('progreso-reponer');
+  if (!confirm('¿Generar ejercicios para completar el objetivo de ' + OBJETIVO + ' por materia y dificultad? Cada lote usa una llamada a la IA (puede tardar hasta ~40 s) y queda pendiente de tu revisión.')) return;
+  btn.disabled = true; info.classList.remove('hidden');
+  const omitir = []; let lotes = 0, guardados = 0, parar = '';
+  try {
+    for (let i = 0; i < 12; i++) {                       // tope de seguridad del lado del navegador
+      info.textContent = `Generando… lotes hechos: ${lotes}, ejercicios guardados: ${guardados}`;
+      const body = new URLSearchParams();
+      body.append('csrf_token', CSRF_TOKEN); body.append('accion', 'reponer');
+      omitir.forEach(o => body.append('omitir[]', o));
+      const res = await fetch(window.location.pathname, { method: 'POST', body });
+      const d = await res.json();
+      if (d.hecho) {
+        lotes++; guardados += d.hecho.insertados;
+        if (d.hecho.insertados === 0) omitir.push(`${d.hecho.materia_slug}:${d.hecho.dificultad}`);
+      }
+      if (!d.ok) { parar = d.error || 'Error al reponer'; break; }
+      if (!d.continuar) { parar = d.motivo || ''; break; }
+    }
+  } catch { parar = 'Error de conexión'; }
+  info.textContent = `Reposición terminada: ${lotes} lote${lotes === 1 ? '' : 's'}, ${guardados} ejercicio${guardados === 1 ? '' : 's'} guardado${guardados === 1 ? '' : 's'} para revisión.` + (parar ? ' ' + parar : '');
+  mostrarToast(`${guardados} ejercicio${guardados === 1 ? '' : 's'} para revisar`, guardados > 0 ? 'ok' : 'error');
+  if (guardados > 0) setTimeout(() => location.reload(), 3500); else btn.disabled = false;
 });
 
 document.getElementById('lista-pendientes').addEventListener('click', async (e) => {
