@@ -164,6 +164,7 @@ function nb_desafio_ia_prompt(string $materia_nombre, int $dificultad, int $n, a
     $tipos_txt = $con_vf
         ? "Mezcla los tipos: la mayoría \"alternativas\" y algunos \"vf\" (afirmación Verdadera o Falsa)."
         : "Todos los ejercicios son del tipo \"alternativas\".";
+    $cantidad_txt = $n === 1 ? 'exactamente 1 ejercicio' : "exactamente {$n} ejercicios";
     $evitar_txt = '';
     if ($evitar) {
         $evitar_txt = "\nYA EXISTEN estas preguntas (NO repitas ni parafrasees ninguna):\n- " . implode("\n- ", array_map(fn($e) => mb_substr($e, 0, 110), $evitar)) . "\n";
@@ -175,7 +176,7 @@ Escribe en español neutro de Chile (tuteo: "tú", no "vos").
 
 MATERIA: {$materia_nombre}
 DIFICULTAD: {$nivel}
-CANTIDAD: exactamente {$n} ejercicios.
+CANTIDAD: {$cantidad_txt}.
 {$tipos_txt}
 
 REGLAS:

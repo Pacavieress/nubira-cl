@@ -50,8 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $materia   = trim((string)($_POST['materia'] ?? ''));
         $dificultad = (int)($_POST['dificultad'] ?? 0);
         $cantidad  = (int)($_POST['cantidad'] ?? 5);
-        $tipos     = array_values(array_intersect((array)($_POST['tipos'] ?? ['alternativas']), NB_DESAFIO_IA_TIPOS));
-        if (!$tipos) $tipos = ['alternativas'];
+        // 'alternativas' siempre; el checkbox "Incluir verdadero/falso" AGREGA 'vf' (antes lo reemplazaba y el validador
+        // rechazaba todo ejercicio de alternativas con "tipo no permitido").
+        $tipos = ['alternativas'];
+        if (in_array('vf', (array)($_POST['tipos'] ?? []), true)) $tipos[] = 'vf';
 
         try {
             $r = nb_desafio_ia_generar($conn, $materia, $dificultad, $cantidad, ['tipos' => $tipos, 'usuario_id' => (int)$_SESSION['usuario_id']]);
