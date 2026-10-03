@@ -135,6 +135,7 @@ try {   // si ia_llamadas_log aún no existe (SQL sin ejecutar), el panel sigue 
 
 $nombres_materia = array_column($materias, 'nombre', 'slug');
 $cuales = ['gemini' => 'Gemini', 'groq' => 'Groq', 'openrouter' => 'OpenRouter'];
+$estado_ia = nb_ia_estado_proveedores($conn, 'desafio');   // uso por proveedor frente a sus topes locales y enfriamiento
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -185,6 +186,33 @@ require_once $app_dir . '/componentes/sidebar.php';
                 class="px-5 py-2.5 bg-[#54A6D8] hover:bg-sky-500 text-white rounded-xl text-sm font-bold shadow-sm transition">Generar</button>
       </form>
       <p id="resultado-generar" class="text-sm text-gray-500 mt-3 hidden"></p>
+    </section>
+
+    <!-- Proveedores de IA: uso frente a los topes locales (config.php) y enfriamiento tras 429/503 -->
+    <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-x-auto">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Proveedores de IA (orden de uso)</h2>
+      <table class="w-full text-sm">
+        <thead class="text-gray-500 text-xs uppercase"><tr><th class="text-left py-2">Proveedor</th><th>Clave</th><th>Último minuto</th><th>Últimas 24 h</th><th>Estado</th></tr></thead>
+        <tbody class="divide-y divide-gray-50">
+          <?php foreach ($estado_ia as $e):
+              $lleno = ($e['usados_min'] !== null && $e['usados_min'] >= $e['limite_min']) || ($e['usados_dia'] !== null && $e['usados_dia'] >= $e['limite_dia']);
+          ?>
+          <tr class="text-center">
+            <td class="text-left py-2 font-medium text-gray-800"><?= htmlspecialchars($cuales[$e['proveedor']] ?? $e['proveedor']) ?></td>
+            <td class="<?= $e['con_clave'] ? 'text-green-600' : 'text-red-500 font-semibold' ?>"><?= $e['con_clave'] ? 'configurada' : 'falta en .env' ?></td>
+            <td><?= $e['usados_min'] === null ? '—' : (int)$e['usados_min'] ?> / <?= (int)$e['limite_min'] ?></td>
+            <td><?= $e['usados_dia'] === null ? '—' : (int)$e['usados_dia'] ?> / <?= (int)$e['limite_dia'] ?></td>
+            <td class="<?= ($e['enfriamiento'] || $lleno) ? 'text-amber-600 font-semibold' : 'text-gray-500' ?>">
+              <?php if ($e['enfriamiento']): ?>en enfriamiento hasta las <?= htmlspecialchars(substr($e['enfriamiento'], 11, 5)) ?>
+              <?php elseif ($lleno): ?>en su tope local
+              <?php elseif (!$e['con_clave']): ?>omitido
+              <?php else: ?>disponible<?php endif; ?></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+      <p class="text-xs text-gray-400 mt-3">Los topes locales (por minuto y por día, fallidas incluidas) se ajustan en config.php. Tras un 429 o 503, el proveedor descansa
+        <?= (int)IA_ENFRIAMIENTO_MINUTOS ?> min para todas las peticiones.</p>
     </section>
 
     <!-- Stock -->

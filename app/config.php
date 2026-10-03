@@ -91,6 +91,17 @@ define('IA_MODELO_OPENROUTER', $_ENV['IA_MODELO_OPENROUTER'] ?? 'meta-llama/llam
 define('IA_TIMEOUT_PROVEEDOR', 12);      // segundos por llamada
 define('IA_PRESUPUESTO_SEGUNDOS', 40);   // tope total para toda la cadena de failover
 
+// Topes LOCALES por proveedor (llamadas HTTP, fallidas incluidas, en ventanas móviles de 60 s y 24 h) para no agotar
+// los límites gratuitos. Los límites reales de cada proveedor cambian con el tiempo: verifícalos en su panel y ajusta.
+define('IA_LIMITE_MIN_GEMINI', 10);      define('IA_LIMITE_DIA_GEMINI', 200);
+define('IA_LIMITE_MIN_GROQ', 10);        define('IA_LIMITE_DIA_GROQ', 200);
+define('IA_LIMITE_MIN_OPENROUTER', 10);  define('IA_LIMITE_DIA_OPENROUTER', 200);
+// Tras un HTTP 429 o 503, el proveedor se deja de consultar este tiempo para TODAS las peticiones (tabla ia_proveedor_estado).
+define('IA_ENFRIAMIENTO_MINUTOS', 2);
+// Límite por usuario para llamadas de IA iniciadas por usuarios (generaciones exitosas). Listo, aún no conectado a ia_nubira.php.
+define('IA_USUARIO_MAX_HORA', 10);
+define('IA_USUARIO_MAX_DIA', 30);
+
 // =========================
 // INSTAGRAM (Fase 2 Copiloto — cuenta oficial Nubira)
 // =========================

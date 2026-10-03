@@ -225,6 +225,175 @@ function nb_ia_registrar($conn, string $funcion, string $prov, string $modelo, b
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+// LOTE 5 — LÍMITES DE USO: topes por proveedor, enfriamiento tras 429/503 y límite por usuario.
+// Valores por defecto (se sobrescriben definiendo las constantes en config.php, que se carga antes).
+// Si faltan las tablas (ia_llamadas_log / ia_proveedor_estado) todo DEGRADA sin romperse: no se aplica el control que
+// dependía de la tabla ausente (comportamiento anterior al Lote 5).
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+foreach (['GEMINI', 'GROQ', 'OPENROUTER'] as $__p) {
+    if (!defined("IA_LIMITE_MIN_$__p")) define("IA_LIMITE_MIN_$__p", 10);
+    if (!defined("IA_LIMITE_DIA_$__p")) define("IA_LIMITE_DIA_$__p", 200);
+}
+unset($__p);
+if (!defined('IA_ENFRIAMIENTO_MINUTOS')) define('IA_ENFRIAMIENTO_MINUTOS', 2);
+if (!defined('IA_USUARIO_MAX_HORA'))     define('IA_USUARIO_MAX_HORA', 10);
+if (!defined('IA_USUARIO_MAX_DIA'))      define('IA_USUARIO_MAX_DIA', 30);
+
+/** Topes locales ['min' => n, 'dia' => n] de un proveedor conocido. */
+function nb_ia_limites(string $prov): array {
+    if (!in_array($prov, NB_IA_PROVEEDORES_CONOCIDOS, true)) return ['min' => 0, 'dia' => 0];
+    $P = strtoupper($prov);
+    return ['min' => (int)constant("IA_LIMITE_MIN_$P"), 'dia' => (int)constant("IA_LIMITE_DIA_$P")];
+}
+
+/** Llamadas HTTP registradas de un proveedor en los últimos $segundos (fallidas incluidas). null si no se puede contar. */
+function nb_ia_uso_proveedor($conn, string $prov, int $segundos, string $tabla = 'ia_llamadas_log'): ?int {
+    if (!($conn instanceof mysqli) || !preg_match('/^[a-z_]+$/', $tabla)) return null;
+    try {
+        $st = $conn->prepare("SELECT COUNT(*) FROM `$tabla` WHERE proveedor = ? AND fecha >= (NOW() - INTERVAL ? SECOND)");
+        if (!$st) return null;
+        $st->bind_param('si', $prov, $segundos);
+        $st->execute();
+        $st->bind_result($n);
+        $st->fetch();
+        $st->close();
+        return (int)$n;
+    } catch (\Throwable $e) {
+        return null;
+    }
+}
+
+/** Fecha 'Y-m-d H:i:s' hasta la que el proveedor está en enfriamiento, o null si no lo está (o no hay tabla). */
+function nb_ia_enfriamiento_hasta($conn, string $prov, string $tabla = 'ia_proveedor_estado'): ?string {
+    if (!($conn instanceof mysqli) || !preg_match('/^[a-z_]+$/', $tabla)) return null;
+    try {
+        $st = $conn->prepare("SELECT bloqueado_hasta FROM `$tabla` WHERE proveedor = ? AND bloqueado_hasta > NOW()");
+        if (!$st) return null;
+        $st->bind_param('s', $prov);
+        $st->execute();
+        $st->bind_result($hasta);
+        $ok = $st->fetch();
+        $st->close();
+        return $ok ? (string)$hasta : null;
+    } catch (\Throwable $e) {
+        return null;
+    }
+}
+
+/** Deja al proveedor en enfriamiento $minutos. Nunca rompe a quien llama. */
+function nb_ia_marcar_enfriamiento($conn, string $prov, int $minutos, string $motivo, string $tabla = 'ia_proveedor_estado'): void {
+    if (!($conn instanceof mysqli) || $minutos <= 0 || !preg_match('/^[a-z_]+$/', $tabla)) return;
+    try {
+        $st = $conn->prepare("INSERT INTO `$tabla` (proveedor, bloqueado_hasta, motivo) VALUES (?, DATE_ADD(NOW(), INTERVAL ? MINUTE), ?)
+                              ON DUPLICATE KEY UPDATE bloqueado_hasta = VALUES(bloqueado_hasta), motivo = VALUES(motivo)");
+        if (!$st) return;
+        $motivo = mb_substr($motivo, 0, 120);
+        $st->bind_param('sis', $prov, $minutos, $motivo);
+        $st->execute();
+        $st->close();
+    } catch (\Throwable $e) {
+        // tabla inexistente: sin enfriamiento compartido (se ignora a propósito)
+    }
+}
+
+/**
+ * ¿Se puede consultar a este proveedor ahora? Revisa (1) enfriamiento tras 429/503, (2) tope por minuto, (3) tope por día.
+ * @param array $o limite_min, limite_dia (pruebas), tabla_log, tabla_estado (pruebas)
+ * @return array{ok:bool, motivo?:string}
+ */
+function nb_ia_proveedor_disponible($conn, string $prov, array $o = []): array {
+    if (!($conn instanceof mysqli)) return ['ok' => true];
+    $hasta = nb_ia_enfriamiento_hasta($conn, $prov, $o['tabla_estado'] ?? 'ia_proveedor_estado');
+    if ($hasta !== null) return ['ok' => false, 'motivo' => 'en enfriamiento hasta las ' . substr($hasta, 11, 5)];
+
+    $lim = nb_ia_limites($prov);
+    $lim_min = (int)($o['limite_min'] ?? $lim['min']);
+    $lim_dia = (int)($o['limite_dia'] ?? $lim['dia']);
+    $tabla = $o['tabla_log'] ?? 'ia_llamadas_log';
+
+    $uso_min = nb_ia_uso_proveedor($conn, $prov, 60, $tabla);
+    if ($uso_min !== null && $uso_min >= $lim_min) return ['ok' => false, 'motivo' => "tope local por minuto ({$uso_min} de {$lim_min})"];
+    $uso_dia = nb_ia_uso_proveedor($conn, $prov, 86400, $tabla);
+    if ($uso_dia !== null && $uso_dia >= $lim_dia) return ['ok' => false, 'motivo' => "tope local por día ({$uso_dia} de {$lim_dia})"];
+    return ['ok' => true];
+}
+
+/** Estado de cada proveedor del uso indicado (para el panel de admin). */
+function nb_ia_estado_proveedores($conn, string $uso = 'desafio'): array {
+    $out = [];
+    foreach (nb_ia_orden($uso) as $prov) {
+        $lim = nb_ia_limites($prov);
+        $out[] = [
+            'proveedor'    => $prov,
+            'con_clave'    => nb_ia_clave($prov) !== '',
+            'usados_min'   => nb_ia_uso_proveedor($conn, $prov, 60),
+            'limite_min'   => $lim['min'],
+            'usados_dia'   => nb_ia_uso_proveedor($conn, $prov, 86400),
+            'limite_dia'   => $lim['dia'],
+            'enfriamiento' => nb_ia_enfriamiento_hasta($conn, $prov),
+        ];
+    }
+    return $out;
+}
+
+/**
+ * Límite por usuario para llamadas de IA iniciadas por usuarios: generaciones EXITOSAS de $funcion en la última hora y
+ * en las últimas 24 h (ia_llamadas_log). Cuenta solo éxitos para que un fallo del proveedor no castigue al usuario.
+ * Sin tabla: no bloquea ('degradado' => true). Aún NO está conectado a ia_nubira.php (Lote 6).
+ *
+ * @param array $o max_hora, max_dia, tabla_log (pruebas)
+ * @return array{ok:bool, motivo?:string, reintentar_en?:int, usadas_hora:?int, usadas_dia:?int, max_hora:int, max_dia:int, degradado?:bool}
+ */
+function nb_ia_limite_usuario($conn, int $usuario_id, string $funcion, array $o = []): array {
+    $max_h = (int)($o['max_hora'] ?? IA_USUARIO_MAX_HORA);
+    $max_d = (int)($o['max_dia'] ?? IA_USUARIO_MAX_DIA);
+    $tabla = $o['tabla_log'] ?? 'ia_llamadas_log';
+    $r = ['ok' => true, 'usadas_hora' => null, 'usadas_dia' => null, 'max_hora' => $max_h, 'max_dia' => $max_d];
+    if (!($conn instanceof mysqli) || !preg_match('/^[a-z_]+$/', $tabla) || $usuario_id <= 0) { $r['degradado'] = true; return $r; }
+
+    try {
+        $cuenta = function (int $segundos) use ($conn, $tabla, $usuario_id, $funcion): int {
+            $st = $conn->prepare("SELECT COUNT(*) FROM `$tabla` WHERE usuario_id = ? AND funcion = ? AND ok = 1 AND fecha >= (NOW() - INTERVAL ? SECOND)");
+            $st->bind_param('isi', $usuario_id, $funcion, $segundos);
+            $st->execute();
+            $st->bind_result($n);
+            $st->fetch();
+            $st->close();
+            return (int)$n;
+        };
+        // segundos hasta que se libere un cupo: la fila (usadas - max) en orden de antigüedad debe salir de la ventana
+        $espera = function (int $segundos, int $usadas, int $max) use ($conn, $tabla, $usuario_id, $funcion): int {
+            $k = $usadas - $max;
+            $st = $conn->prepare("SELECT TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(fecha, INTERVAL ? SECOND)) FROM `$tabla`
+                                   WHERE usuario_id = ? AND funcion = ? AND ok = 1 AND fecha >= (NOW() - INTERVAL ? SECOND)
+                                   ORDER BY fecha ASC LIMIT 1 OFFSET ?");
+            $st->bind_param('iisii', $segundos, $usuario_id, $funcion, $segundos, $k);
+            $st->execute();
+            $st->bind_result($s);
+            $st->fetch();
+            $st->close();
+            return max(1, (int)$s);
+        };
+
+        $r['usadas_hora'] = $cuenta(3600);
+        $r['usadas_dia']  = $cuenta(86400);
+        $bloqueos = [];
+        if ($r['usadas_hora'] >= $max_h) $bloqueos[] = [$espera(3600, $r['usadas_hora'], $max_h), "límite por hora ({$r['usadas_hora']} de {$max_h})"];
+        if ($r['usadas_dia']  >= $max_d) $bloqueos[] = [$espera(86400, $r['usadas_dia'], $max_d), "límite por día ({$r['usadas_dia']} de {$max_d})"];
+        if ($bloqueos) {
+            usort($bloqueos, fn($a, $b) => $b[0] <=> $a[0]);   // si hay dos, manda el que tarda más en liberarse
+            $r['ok'] = false;
+            $r['reintentar_en'] = $bloqueos[0][0];
+            $r['motivo'] = 'Alcanzaste el ' . $bloqueos[0][1] . '. Intenta de nuevo en ' . ($bloqueos[0][0] >= 3600 ? ceil($bloqueos[0][0] / 3600) . ' h' : ceil($bloqueos[0][0] / 60) . ' min') . '.';
+        }
+    } catch (\Throwable $e) {
+        $r['degradado'] = true;      // sin tabla de log: no se bloquea a nadie
+        $r['ok'] = true;
+    }
+    return $r;
+}
+
 /**
  * Genera texto (o JSON) con failover entre proveedores.
  *
@@ -262,6 +431,8 @@ function nb_ia_generar(string $prompt, array $opts = []): array {
     $inicio   = microtime(true);
     $intentos = [];
     $ultimo_error = 'No hay proveedores de IA configurados';
+    $llamadas = 0;     // llamadas HTTP reales hechas
+    $omitidos = 0;     // proveedores saltados por tope local o enfriamiento (Lote 5)
 
     foreach ($orden as $prov) {
         $modelo = nb_ia_modelo($prov);
@@ -273,6 +444,16 @@ function nb_ia_generar(string $prompt, array $opts = []): array {
         $prompt_actual = $prompt;
         $max = ($json && $reparar) ? 2 : 1;
         for ($i = 1; $i <= $max; $i++) {
+            // Lote 5: tope local por minuto/día y enfriamiento tras 429/503. Un proveedor saltado NO se registra en el log
+            // (no hubo llamada) y la cadena sigue con el siguiente.
+            $disp = nb_ia_proveedor_disponible($conn, $prov);
+            if (!$disp['ok']) {
+                $omitidos++;
+                $ultimo_error = "{$prov}: {$disp['motivo']}";
+                $intentos[] = ['proveedor' => $prov, 'ok' => false, 'http' => null, 'ms' => 0, 'error' => 'omitido: ' . $disp['motivo']];
+                break;
+            }
+
             $restante = $presup - (microtime(true) - $inicio);
             if ($restante < 2) {
                 $ultimo_error = 'Se agotó el tiempo total disponible para la IA';
@@ -282,6 +463,7 @@ function nb_ia_generar(string $prompt, array $opts = []): array {
             $t = (int)max(2, min($timeout, floor($restante)));
 
             $r = nb_ia_llamar_proveedor($prov, $prompt_actual, $opts, $t);
+            $llamadas++;
 
             $parsed = null;
             $motivo_contenido = null;
@@ -298,7 +480,10 @@ function nb_ia_generar(string $prompt, array $opts = []): array {
             $ok_final = $r['ok'] && $motivo_contenido === null;
             $err      = $ok_final ? null : ($r['error'] ?? $motivo_contenido);
             nb_ia_registrar($conn, $funcion, $prov, $modelo, $ok_final, $r['http'] ?? null, $r['ms'] ?? null, $uid, $err);
-            $intentos[] = ['proveedor' => $prov, 'ok' => $ok_final, 'http' => $r['http'] ?? null, 'ms' => $r['ms'] ?? 0, 'error' => $err];
+            if (in_array((int)($r['http'] ?? 0), [429, 503], true)) {   // el proveedor se está limitando: dejarlo descansar para todos
+                nb_ia_marcar_enfriamiento($conn, $prov, (int)IA_ENFRIAMIENTO_MINUTOS, 'HTTP ' . (int)$r['http']);
+            }
+            $intentos[] =['proveedor' => $prov, 'ok' => $ok_final, 'http' => $r['http'] ?? null, 'ms' => $r['ms'] ?? 0, 'error' => $err];
 
             if ($ok_final) {
                 $res = ['ok' => true, 'proveedor' => $prov, 'modelo' => $modelo, 'texto' => $r['texto'], 'intentos' => $intentos];
@@ -317,5 +502,8 @@ function nb_ia_generar(string $prompt, array $opts = []): array {
         }
     }
 
+    if ($llamadas === 0 && $omitidos > 0) {
+        $ultimo_error = 'Todos los proveedores de IA están en su tope local o en enfriamiento. Reintenta en unos minutos.';
+    }
     return ['ok' => false, 'error' => $ultimo_error, 'intentos' => $intentos];
 }
