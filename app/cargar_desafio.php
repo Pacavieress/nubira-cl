@@ -61,7 +61,7 @@ function nb_desafio_preguntas_candidatas(mysqli $conn, string $materia, int $usu
     $sql = "SELECT id, tipo, enunciado, desarrollo, opcion_a, opcion_b, opcion_c, opcion_d,
                    tiempo_limite_segundos, nivel_paes
             FROM desafio_preguntas
-            WHERE materia_slug = ? AND activa = 1 AND revisado_por_admin = 1
+            WHERE materia_slug = ? AND ambito = 'desafio' AND activa = 1 AND revisado_por_admin = 1
               AND id NOT IN (SELECT pregunta_id FROM desafio_preguntas_vistas WHERE usuario_id = ?)";
     $tipos = 'si';
     $params = [$materia, $usuario_id];
@@ -110,7 +110,7 @@ if (count($rows) < 3) {
     $del = $conn->prepare(
         "DELETE dpv FROM desafio_preguntas_vistas dpv
          INNER JOIN desafio_preguntas dp ON dp.id = dpv.pregunta_id
-         WHERE dpv.usuario_id = ? AND dp.materia_slug = ?"
+         WHERE dpv.usuario_id = ? AND dp.materia_slug = ? AND dp.ambito = 'desafio'"
     );
     $del->bind_param('is', $usuario_id, $materia);
     $del->execute();

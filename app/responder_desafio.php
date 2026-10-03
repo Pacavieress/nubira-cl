@@ -64,7 +64,7 @@ if (count(array_unique($pregunta_ids)) !== 3) {
 // y exige que las 3 preguntas pertenezcan de verdad a la materia declarada.
 $stmt = $conn->prepare(
     "SELECT id, tipo, respuesta_correcta FROM desafio_preguntas
-     WHERE id IN (?,?,?) AND materia_slug = ? AND activa = 1 AND revisado_por_admin = 1"
+     WHERE id IN (?,?,?) AND materia_slug = ? AND ambito = 'desafio' AND activa = 1 AND revisado_por_admin = 1"
 );
 $stmt->bind_param('iiis', $pregunta_ids[0], $pregunta_ids[1], $pregunta_ids[2], $materia);
 $stmt->execute();
