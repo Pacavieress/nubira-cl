@@ -48,6 +48,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../conexion.php';
 require_once __DIR__ . '/../helpers/sanitizar_html.php';
 require_once __DIR__ . '/../helpers/creditos_ia.php';
+require_once __DIR__ . '/../helpers/ia_proveedores.php'; // failover Gemini -> Groq, topes por proveedor, límite por usuario
 
 // [NUBIRA 2.0] Cupo combinado: gratis (alumnos.generaciones_ia_usadas) + planes
 // pagados vigentes (compras_creditos_ia). Ver app/helpers/creditos_ia.php.
@@ -78,6 +79,25 @@ if (($ahora - $ultima) < 5) {
         'segundos_restantes' => 5 - ($ahora - $ultima)
     ], JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+// Límite por usuario guardado en BD (no se evade abriendo otra sesión): IA_USUARIO_MAX_HORA por hora y IA_USUARIO_MAX_DIA
+// por día de generaciones exitosas. Los admins están exentos (igual que del cupo). Responde con el MISMO formato
+// 'rate_limit' que ya entiende el frontend (exito=false, error, mensaje, segundos_restantes); 'limite' es un campo extra
+// que el frontend ignora. Si ia_llamadas_log no existe, no se bloquea a nadie (degrada al comportamiento anterior).
+if ($cupo_origen !== 'admin') {
+    $lim_usuario = nb_ia_limite_usuario($conn, (int)$_SESSION['usuario_id'], 'ia_nubira');
+    if (!$lim_usuario['ok']) {
+        http_response_code(429);
+        echo json_encode([
+            'exito' => false,
+            'error' => 'rate_limit',
+            'mensaje' => $lim_usuario['motivo'],
+            'segundos_restantes' => $lim_usuario['reintentar_en'],
+            'limite' => 'usuario'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }
 
 $filename  = $input['filename'] ?? 'Documento_Nubira';
@@ -357,45 +377,71 @@ if (!$json_payload) {
 }
 
 // =========================================================================
-// LLAMADA A GEMINI — con retry automático (máx 2 intentos) ante fallos de
-// bajo nivel (timeout, error de curl, respuesta sin la estructura esperada).
-// NO reintenta si Gemini respondió bien pero el contenido no es JSON parseable
-// — ese caso tiene su propio camino de éxito degradado más abajo ("_plano").
+// LLAMADA A LA IA (Lote 6) — deja en $final_text el texto crudo del proveedor y en $intento_exitoso si hubo respuesta.
+//
+//  * TEXTO / SOLO TÍTULO: failover Gemini -> Groq (sin OpenRouter: aquí viajan apuntes de usuarios) con helpers/
+//    ia_proveedores.php: topes locales por proveedor, enfriamiento tras 429/503, 1 reparación si el JSON viene mal y
+//    registro de cada llamada en ia_llamadas_log (función 'ia_nubira', base del límite por usuario).
+//  * IMAGEN: solo Gemini (Groq no recibe imágenes). Mismo flujo de antes (2 intentos), ahora por el transporte con SSL
+//    verificado, con la clave en la cabecera (no en la URL) y registrando cada llamada.
+// Si ningún proveedor responde: $intento_exitoso = false -> emitir_fallback(), igual que antes (sin consumir cupo).
 // =========================================================================
-$intentos_maximos = 2;
 $intento_exitoso = false;
+$final_text = '';
+$uid_ia = (int)$_SESSION['usuario_id'];
+$es_imagen = empty($text_data) && !empty($image_b64);
 
-for ($intento = 1; $intento <= $intentos_maximos; $intento++) {
-    $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$API_KEY");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $json_payload);
-    curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, $curl_timeout);
-
-    $response     = curl_exec($ch);
-    $http_code    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_error   = curl_error($ch);
-    $curl_errno   = curl_errno($ch);
-    $tiempo_total = curl_getinfo($ch, CURLINFO_TOTAL_TIME);
-    curl_close($ch);
-
-    if ($http_code === 200 && $response) {
-        $decoded_check = json_decode($response, true);
-        if (isset($decoded_check['candidates'][0]['content']['parts'][0]['text'])) {
-            $intento_exitoso = true;
-            break; // éxito de bajo nivel — sale del loop, sigue el procesamiento normal
-        } else {
-            error_log("Nubira IA Error: Estructura inesperada (intento $intento). Body: " . $response);
-        }
+if (!$es_imagen) {
+    $res_ia = nb_ia_generar($parts[0]['text'], [
+        'uso'           => 'apuntes',                 // Gemini -> Groq; OpenRouter excluido por regla fija del helper
+        'funcion'       => 'ia_nubira',
+        'usuario_id'    => $uid_ia,
+        'conn'          => $conn,
+        'temperature'   => 0.95,
+        'response_json' => true,
+        'timeout'       => $curl_timeout,             // 25 s por proveedor (como antes con Gemini)
+        'presupuesto'   => ($curl_timeout * 2) + 5,   // alcanza para Gemini + Groq dentro de set_time_limit(80)
+        'validador'     => fn($j) => $j !== [] ? true : 'JSON vacío',
+    ]);
+    if ($res_ia['ok']) {
+        $intento_exitoso = true;
+        $final_text = $res_ia['texto'];
     } else {
-        error_log("Nubira IA HTTP Error (intento $intento, $http_code): " . ($response ?: $curl_error));
+        error_log('Nubira IA: ningún proveedor respondió (ia_nubira): ' . nb_ia_error_corto((string)($res_ia['error'] ?? '')));
     }
-
-    if ($intento < $intentos_maximos) {
-        usleep(500000); // 500ms antes de reintentar
+} else {
+    $disp_gemini = nb_ia_proveedor_disponible($conn, 'gemini');
+    if (!$disp_gemini['ok']) {
+        error_log('Nubira IA: Gemini no disponible para imagen (' . $disp_gemini['motivo'] . ')');
+    } else {
+        for ($intento = 1; $intento <= 2; $intento++) {
+            $r_img = nb_ia_http_post(
+                'https://generativelanguage.googleapis.com/v1beta/models/' . IA_MODELO_GEMINI . ':generateContent',
+                ['Content-Type: application/json', 'x-goog-api-key: ' . $API_KEY],
+                $json_payload,
+                $curl_timeout
+            );
+            $http_img = (int)($r_img['http'] ?? 0);
+            $texto_img = null;
+            if ($http_img === 200 && empty($r_img['errno'])) {
+                $dec_img = json_decode((string)($r_img['body'] ?? ''), true);
+                $texto_img = $dec_img['candidates'][0]['content']['parts'][0]['text'] ?? null;
+            }
+            $ok_img = is_string($texto_img) && $texto_img !== '';
+            $err_img = $ok_img ? null : nb_ia_error_corto(!empty($r_img['errno']) ? 'error de red/timeout' : ('HTTP ' . $http_img . ' o estructura inesperada'));
+            nb_ia_registrar($conn, 'ia_nubira', 'gemini', IA_MODELO_GEMINI, $ok_img, $http_img, (int)($r_img['ms'] ?? 0), $uid_ia, $err_img);
+            if ($ok_img) {
+                $intento_exitoso = true;
+                $final_text = $texto_img;
+                break;
+            }
+            error_log("Nubira IA HTTP Error imagen (intento $intento, $http_img): " . $err_img);
+            if (in_array($http_img, [429, 503], true)) {   // el proveedor se está limitando: no insistir ni a nadie más por unos minutos
+                nb_ia_marcar_enfriamiento($conn, 'gemini', (int)IA_ENFRIAMIENTO_MINUTOS, 'HTTP ' . $http_img);
+                break;
+            }
+            if ($intento < 2) usleep(500000); // 500ms antes de reintentar
+        }
     }
 }
 
@@ -491,8 +537,7 @@ function normalizarCampoTexto($valor): string {
 // PROCESAR Y VALIDAR RESPUESTA
 // =========================================================================
 if ($intento_exitoso) {
-    $decoded = json_decode($response, true);
-    $final_text = $decoded['candidates'][0]['content']['parts'][0]['text'];
+    // $final_text ya viene seteado por el bloque de llamada a la IA (Gemini o Groq); el resto del procesamiento no cambia.
 
     if (preg_match('/\{[\s\S]*\}/', $final_text, $m)) {
         $final_text = $m[0];
