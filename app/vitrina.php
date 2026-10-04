@@ -865,7 +865,7 @@ require_once __DIR__ . '/componentes/header.php';
 <section class="mb-3 md:mb-5 relative ">
 <div class="flex items-end justify-between mb-3 px-4 md:px-10 md:pl-11 gap-3">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]"><?= $titulo_servicios ?></h2>
-        <a href="/servicios" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <a href="/servicios" aria-label="Ver todo" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 min-w-[36px] min-h-[36px] justify-center md:min-w-0 md:min-h-0"><span class="hidden md:inline">Ver todo</span> <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
     
     <div class="relative group">
@@ -1252,7 +1252,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
 <section class="mb-3 md:mb-5 relative">
 <div class="flex items-center justify-between mb-3 px-4 md:px-10 md:pl-11">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]"><?= $titulo_apuntes ?></h2>
-        <a href="/apuntes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <a href="/apuntes" aria-label="Ver todo" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 min-w-[36px] min-h-[36px] justify-center md:min-w-0 md:min-h-0"><span class="hidden md:inline">Ver todo</span> <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
 
     <div class="relative group">
@@ -1358,7 +1358,7 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="flex items-center justify-between mb-3 px-4 md:px-10 md:pl-11">
     <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Clases particulares para la PAES</h2>
-    <a href="/clases/paes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+    <a href="/clases/paes" aria-label="Ver todo" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 min-w-[36px] min-h-[36px] justify-center md:min-w-0 md:min-h-0"><span class="hidden md:inline">Ver todo</span> <?= icon('arrow-right', 'w-3 h-3') ?></a>
 </div>
     <div class="relative group">
         <button onclick="scrollCarrusel('sec-clases-paes', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
@@ -1619,7 +1619,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
     <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Apuntes nuevos</h2>
-        <a href="/apuntes?orden=nuevos" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <a href="/apuntes?orden=nuevos" aria-label="Ver todo" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 min-w-[36px] min-h-[36px] justify-center md:min-w-0 md:min-h-0"><span class="hidden md:inline">Ver todo</span> <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
     <div class="relative group">
         <button onclick="scrollCarrusel('sec-apuntes-nuevos', -1)" class="hidden md:flex absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-[40%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] items-center justify-center z-10 text-gray-400 hover:text-[#54A6D8] border border-[#f0f0f0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 transition-[transform,color,box-shadow] duration-150 ease-out hover:scale-110"><i class="fa-solid fa-chevron-left text-xs"></i></button>
@@ -1733,7 +1733,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
    <div class="flex items-end justify-between mb-3 px-4 md:px-10 max-w-[1600px] mx-auto gap-3">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Apuntes y guías para la PAES</h2>
-        <a href="/apuntes?nivel=paes" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">Ver todo <?= icon('arrow-right', 'w-3 h-3') ?></a>
+        <a href="/apuntes?nivel=paes" aria-label="Ver todo" class="text-xs font-medium text-[#54A6D8] hover:underline hover:bg-[#eef6fb] transition-colors duration-150 ease-out bg-gray-50 px-3 py-1.5 rounded-2xl border border-[#f0f0f0] flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2 min-w-[36px] min-h-[36px] justify-center md:min-w-0 md:min-h-0"><span class="hidden md:inline">Ver todo</span> <?= icon('arrow-right', 'w-3 h-3') ?></a>
     </div>
     
     <div class="relative group">
