@@ -1839,7 +1839,7 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
 require_once __DIR__ . '/helpers/seo.php';
 $materias_chips = array_diff_key(nubira_categorias_seo(), array_flip(['asesoria']));
 ?>
-<section class="mb-3 md:mb-5 relative animate-fade-in-up">
+<section class="mb-3 md:mb-5 relative animate-fade-in-up hidden md:block">
     <div class="flex items-center justify-between mb-3 px-4 md:px-10 md:pl-11">
         <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Clases particulares por materia</h2>
     </div>
