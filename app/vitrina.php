@@ -1354,26 +1354,6 @@ $portada_url_n = $portada_set_n['card']; // src base = 480px (mejor calidad inic
     </div>
 </section>
 
-<?php
-// [SEO] Clases por materia: un <a> real por materia, sin queries ni JS. Excluye 'asesoria' (no es una materia).
-require_once __DIR__ . '/helpers/seo.php';
-$materias_chips = array_diff_key(nubira_categorias_seo(), array_flip(['asesoria']));
-?>
-<section class="mb-3 md:mb-5 relative animate-fade-in-up">
-    <div class="flex items-center justify-between mb-3 px-4 md:px-10 md:pl-11">
-        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Clases particulares por materia</h2>
-    </div>
-    <nav aria-label="Clases particulares por materia"
-         class="flex gap-2 md:gap-3 overflow-x-auto md:overflow-visible md:flex-wrap snap-x pb-3 no-scrollbar pl-4 pr-4 md:pl-10 md:pr-10">
-        <?php foreach ($materias_chips as $slug_chip => $nombre_chip): ?>
-        <a href="/clases/<?= htmlspecialchars($slug_chip) ?>"
-           class="flex-shrink-0 snap-start px-3.5 py-1.5 md:px-4 md:py-2 text-sm font-medium text-[#222222] bg-white border border-[#f0f0f0] rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-[#eef6fb] hover:text-[#54A6D8] transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#54A6D8] focus-visible:ring-offset-2">
-            <?= $slug_chip === 'paes' ? 'Clases para la PAES' : 'Clases de ' . htmlspecialchars($nombre_chip) ?>
-        </a>
-        <?php endforeach; ?>
-    </nav>
-</section>
-
 <?php if ($res_clases_paes && $res_clases_paes->num_rows > 0): ?>
 <section class="mb-3 md:mb-5 relative animate-fade-in-up">
  <div class="flex items-center justify-between mb-3 px-4 md:px-10 md:pl-11">
@@ -1853,6 +1833,29 @@ $portada_url_of = $portada_set_of['thumb']; // miniatura 90x90 → thumb es sufi
     </div>
 </section>
 <?php endif; ?>
+
+<?php
+// [SEO] Clases por materia: un <a> real por materia, sin queries ni JS. Excluye 'asesoria' (no es una materia).
+require_once __DIR__ . '/helpers/seo.php';
+$materias_chips = array_diff_key(nubira_categorias_seo(), array_flip(['asesoria']));
+?>
+<section class="mb-3 md:mb-5 relative animate-fade-in-up">
+    <div class="flex items-center justify-between mb-3 px-4 md:px-10 md:pl-11">
+        <h2 class="text-lg md:text-xl font-medium text-[#222222] tracking-[-0.01em]">Clases particulares por materia</h2>
+    </div>
+    <nav aria-label="Clases particulares por materia" class="px-4 md:px-10 md:pl-11 pb-3">
+        <ul class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-2">
+            <?php foreach ($materias_chips as $slug_chip => $nombre_chip): ?>
+            <li>
+                <a href="/clases/<?= htmlspecialchars($slug_chip) ?>" class="text-sm text-[#6a6a6a] hover:underline hover:text-[#54A6D8]">
+                    <?= $slug_chip === 'paes' ? 'Clases para la PAES' : 'Clases de ' . htmlspecialchars($nombre_chip) ?>
+                </a>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+    </nav>
+</section>
+
 <div class="hidden md:block w-full border-t border-gray-100 mt-5 pt-4 pb-0 px-2 overflow-hidden">
     <?php 
         $rutas_footer = [__DIR__ . '/componentes/footer_minimal.php', __DIR__ . '/app/componentes/footer_minimal.php'];
